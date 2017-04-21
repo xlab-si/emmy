@@ -12,7 +12,7 @@ The required properties for zero knowledge proofs are:
  
 A good resource on zero-knowledge proofs is [1].
 
-Zero-knowledge proofs can be built upon sigma protocols. Sigma protocols are three-move protocols (commitment, challenge and response) which have the following properties: completeness, special soundness, and special honest zero knowledge verifier (not going into definitions here). An example sigma protocol is Schnorr protocol:
+Zero-knowledge proofs can be built upon sigma protocols. Sigma protocols are three-move protocols (commitment, challenge and response) which have the following properties: completeness, special soundness, and special honest zero knowledge verifier (not going into definitions here, see [1]). An example sigma protocol is Schnorr protocol:
 
 ![schnorr protocol](https://raw.github.com/xlab-si/emmy/master/img/schnorr_protocol.png)
 
@@ -24,14 +24,14 @@ The key is to enforce the verifier to behave honestly. It can be achieved using 
 
 ![zero knowledge from sigma](https://raw.github.com/xlab-si/emmy/master/img/zk_from_sigma_protocol.png)
 
-This library aims to provide various proofs (currently supported are listed below) which can be used in scenarios like anonymous digital credentials. Each proof is implemented as sigma protocol which can be turned into zero-knowledge proof using commitments.
+This library aims to provide various proofs (currently supported are listed below) which can be used in scenarios like anonymous digital credentials. Each proof is implemented as sigma protocol which can be turned into zero-knowledge proof and zero-knowledge proof of knowledge using commitments.
 
-For communication between prover and verifier gRPC is used. Each sigma protocol contains two message types:
+For communication between the prover and the verifier gRPC is used. Each sigma protocol contains two message types:
 
  * ProofRandomData: exchanged in the first step of sigma protocol (based on some randomly generated numbers)
  * ProofData: exchanged in the second step of sigma protocol
- 
-When zero-knowledge property is required, additional message is exchanged at the beginning - prover asks for a commitment to a challenge - this makes sigma protocol a zero-knowledge proof. If trapdoor is sent in the last message to the verifier and validated, then we have zero-knowledge proof of knowledge.
+
+To convert sigma protocol into zero-knowledge proof or zero-knowledge proof of knowledge, additional message (OpeningMsg) is exchanged at the beginning. Prover asks for a commitment to a challenge - this makes sigma protocol a zero-knowledge proof. If trapdoor is sent in the last message to the verifier and validated, then we have zero-knowledge proof of knowledge.
 
 
 ## Currently supported schemes
@@ -42,7 +42,7 @@ When zero-knowledge property is required, additional message is exchanged at the
 
 Prover wants to prove that it knows w such that g^w = h mod p.
 
-To run an example of a proof, run a server:
+To run an example of a proof, run a server (see cli.go):
 
 ```
 emmy -example=schnorr -client=false
