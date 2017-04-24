@@ -1,11 +1,13 @@
 package tests
 
 import (
-	"testing"
-	"math/big"
-	"github.com/stretchr/testify/assert"	
+	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/encryption"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
+	"math/big"
+	"path/filepath"
+	"testing"
 )
 
 func TestPaillier(t *testing.T) {
@@ -21,25 +23,27 @@ func TestPaillier(t *testing.T) {
 }
 
 func TestCSPaillier(t *testing.T) {
-	secParams := encryption.CSPaillierSecParams{
+	secParams := encryption.CSPaillierSecParams {
 		L: 512,
 		RoLength: 160,
 		K: 158,
 		K1: 158,
-	}	
+	}
+
+	dir := config.LoadTestKeyDirFromConfig()
+	secKeyPath := filepath.Join(dir, "cspaillierseckey.txt")
+	pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
+
 	cspaillier := encryption.NewCSPaillier(&secParams)
-	secPath := "/home/mihas/work/src/github.com/xlab-si/emmy/demokeys/cspaillierseckey.txt"
-	cspaillier.StoreSecKey(secPath)
-	pubPath := "/home/mihas/work/src/github.com/xlab-si/emmy/demokeys/cspaillierpubkey.txt"
-	cspaillier.StorePubKey(pubPath)
+	cspaillier.StoreSecKey(secKeyPath)
+	cspaillier.StorePubKey(pubKeyPath)
 	
-	cspaillierPub, _ := encryption.NewCSPaillierFromPubKeyFile(pubPath)
+	cspaillierPub, _ := encryption.NewCSPaillierFromPubKeyFile(pubKeyPath)
 	
 	m := common.GetRandomInt(big.NewInt(8685849))
 	label := common.GetRandomInt(big.NewInt(340002223232))
 	u, e, v, _ := cspaillierPub.Encrypt(m, label)
 	
-	secKeyPath := "/home/mihas/work/src/github.com/xlab-si/emmy/demokeys/cspaillierseckey.txt"
 	cspaillierSec, _ := encryption.NewCSPaillierFromSecKey(secKeyPath)
 	p, _ := cspaillierSec.Decrypt(u, e, v, label)
 	

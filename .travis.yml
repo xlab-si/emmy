@@ -1,0 +1,16 @@
+language: go
+
+go:
+  #- 1.6
+  #- 1.7
+  #- 1.8
+  - tip
+
+go_import_path: github.com/xlab-si/emmy
+  
+install:
+  - go get github.com/stretchr/testify/assert
+  - go get -u -t github.com/xlab-si/emmy
+  
+script: 
+  - go test -v test/*
