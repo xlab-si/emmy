@@ -2,7 +2,7 @@
 
 Library for zero-knowledge proofs. 
 
-[![Build Status](https://travis-ci.org/mancabizjak/emmy.svg?branch=master)](https://travis-ci.org/mancabizjak/emmy)
+[![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
 A zero-knowledge proof is protocol by which one party (prover) proves to another party (verifier) that a given statement is true, without conveying any information apart from the fact that the statement is indeed true.
 
