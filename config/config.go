@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	viper.AddConfigPath("$GOPATH/src/github.com/mancabizjak/emmy/config")
+	viper.AddConfigPath("$GOPATH/src/github.com/xlab-si/emmy/config")
 }
 
 func LoadConfig(configName string) {
