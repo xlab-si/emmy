@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
-	"github.com/mancabizjak/emmy/config"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/secretsharing"
 	"github.com/xlab-si/emmy/encryption"
@@ -185,7 +185,7 @@ func main() {
 	    }
 	} else if *examplePtr == "cspaillier" {
 		dir := config.LoadKeyDirFromConfig()
-		
+
 		if (*clientPtr == true) {
 			pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
 	    	cspaillierProtocolClient, _ := encryption.NewCSPaillierProtocolClient(pubKeyPath)

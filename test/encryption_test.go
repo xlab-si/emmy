@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/encryption"
 	"github.com/xlab-si/emmy/common"
-	"github.com/mancabizjak/emmy/config"
+	"github.com/xlab-si/emmy/config"
 	"math/big"
 	"path/filepath"
 	"testing"
