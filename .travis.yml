@@ -9,8 +9,7 @@ go:
 go_import_path: github.com/xlab-si/emmy
   
 install:
-  - go get github.com/stretchr/testify/assert
-  - go get -u github.com/mancabizjak/emmy
+  - go get -u -t github.com/mancabizjak/emmy
   
 script: 
   - go test -v test/*
