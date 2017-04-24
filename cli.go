@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
+	"github.com/mancabizjak/emmy/config"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/secretsharing"
 	"github.com/xlab-si/emmy/encryption"
 	"github.com/pkg/profile" // go tool pprof -text emmy /tmp/profile102918543/cpu.pprof
+	"path/filepath"
 	"strings"
 	"log"
 )
@@ -182,9 +184,11 @@ func main() {
 			log.Println(recoveredSecret)
 	    }
 	} else if *examplePtr == "cspaillier" {
+		dir := config.LoadKeyDirFromConfig()
+		
 		if (*clientPtr == true) {
-			pubPath := "/home/mihas/work/src/github.com/xlab-si/emmy/demokeys/cspaillierpubkey.txt"
-	    	cspaillierProtocolClient, _ := encryption.NewCSPaillierProtocolClient(pubPath)
+			pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
+	    	cspaillierProtocolClient, _ := encryption.NewCSPaillierProtocolClient(pubKeyPath)
 	    	
 			m := common.GetRandomInt(big.NewInt(8685849))
 			label := common.GetRandomInt(big.NewInt(340002223232))
@@ -197,7 +201,7 @@ func main() {
 			}
 			
 	    } else {
-			secKeyPath := "/home/mihas/work/src/github.com/xlab-si/emmy/demokeys/cspaillierseckey.txt"
+			secKeyPath := filepath.Join(dir, "cspaillierseckey.txt")
 			
 	    	cspaillierProtocolServer, err := encryption.NewCSPaillierProtocolServer(secKeyPath)
 	    	log.Println(err)
