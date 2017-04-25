@@ -1,3 +1,0 @@
-# Absolute path to the folder where secret and public keys are serialized to
-# Must exist prior to execution of tests
-key_folder: '/tmp'

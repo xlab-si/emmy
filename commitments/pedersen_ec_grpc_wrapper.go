@@ -2,10 +2,11 @@ package commitments
 
 import (
 	"math/big"
-	"net"
+	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"log"
 )
@@ -17,7 +18,8 @@ type PedersenECProtocolClient struct {
 }
 
 func NewPedersenECProtocolClient() *PedersenECProtocolClient {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	port := config.LoadServerPort()
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -86,19 +88,6 @@ func NewPedersenECProtocolServer() *PedersenECProtocolServer {
 	}
 
 	return &protocolServer
-}
-
-func (server *PedersenECProtocolServer) Listen() {
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	s := grpc.NewServer()	
-	
-	pb.RegisterPedersenECServer(s, server)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
 }
 
 func (s *PedersenECProtocolServer) GetH(ctx context.Context, 

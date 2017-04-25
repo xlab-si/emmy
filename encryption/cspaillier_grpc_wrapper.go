@@ -3,10 +3,11 @@ package encryption
 import (
 	"math/big"
 	pb "github.com/xlab-si/emmy/comm/pro"
+	"github.com/xlab-si/emmy/config"
 	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
-	"net"
 	"log"
 )
 
@@ -17,7 +18,8 @@ type CSPaillierProtocolClient struct {
 }
 
 func NewCSPaillierProtocolClient(pubPath string) (*CSPaillierProtocolClient, error) {
-    conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+    port := config.LoadServerPort()
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.New("could not connect")	
 	}
@@ -172,23 +174,3 @@ func (s *CSPaillierProtocolServer) ProofData(ctx context.Context,
 	
 	return &pb.Status{Success: isOk}, nil
 }
-
-func (server *CSPaillierProtocolServer) Listen() {
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	s := grpc.NewServer()	
-	
-	pb.RegisterCSPaillierProtocolServer(s, server)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
-}
-
-
-
-
-
-
-

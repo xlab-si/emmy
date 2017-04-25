@@ -4,10 +4,11 @@ import (
 	"math/big"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
 	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
-	"net"
 	"log"
 )
 
@@ -19,7 +20,8 @@ type SchnorrECProtocolClient struct {
 }
 
 func NewSchnorrECProtocolClient(protocolType common.ProtocolType) (*SchnorrECProtocolClient, error) {
-    conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+    port := config.LoadServerPort()
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.New("could not connect")	
 	}
@@ -124,19 +126,6 @@ func NewSchnorrECProtocolServer(protocolType common.ProtocolType) *SchnorrECProt
 	}
 
 	return &protocolServer
-}
-
-func (server *SchnorrECProtocolServer) Listen() {
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	s := grpc.NewServer()	
-	
-	pb.RegisterSchnorrECProtocolServer(s, server)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
 }
 
 func (s *SchnorrECProtocolServer) OpeningMsg(ctx context.Context, 

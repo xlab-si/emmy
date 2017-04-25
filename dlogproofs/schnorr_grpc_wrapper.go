@@ -4,10 +4,11 @@ import (
 	"math/big"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
 	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
-	"net"
 	"log"
 )
 
@@ -19,7 +20,8 @@ type SchnorrProtocolClient struct {
 }
 
 func NewSchnorrProtocolClient(protocolType common.ProtocolType) (*SchnorrProtocolClient, error) {
-    conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+    port := config.LoadServerPort()
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.New("could not connect")	
 	}
@@ -125,24 +127,12 @@ type SchnorrProtocolServer struct {
 
 func NewSchnorrProtocolServer(protocolType common.ProtocolType) *SchnorrProtocolServer {
 	verifier := NewSchnorrVerifier(protocolType)
+
 	protocolServer := SchnorrProtocolServer {
 		verifier: verifier,
 		protocolType: protocolType,
 	}
 	return &protocolServer
-}
-
-func (server *SchnorrProtocolServer) Listen() {
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	s := grpc.NewServer()	
-	
-	pb.RegisterSchnorrProtocolServer(s, server)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
 }
 
 func (s *SchnorrProtocolServer) OpeningMsg(ctx context.Context, 
@@ -194,11 +184,3 @@ func (s *SchnorrProtocolServer) ProofData(ctx context.Context,
 
 	return &pb.Status{Success: valid}, nil
 }
-
-
-
-
-
-
-
-

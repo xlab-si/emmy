@@ -7,6 +7,8 @@ import (
 
 func init() {
 	viper.AddConfigPath("$GOPATH/src/github.com/xlab-si/emmy/config")
+	LoadConfig("server")
+	//LoadConfig("client")
 }
 
 func LoadConfig(configName string) {
@@ -20,9 +22,11 @@ func LoadConfig(configName string) {
 }
 
 func LoadKeyDirFromConfig() (string) {
-	LoadConfig("cli")
-	key_path := viper.GetString("key_folder")
-	return key_path
+	return viper.GetString("key_folder")
+}
+
+func LoadServerPort() int {
+	return viper.GetInt("port")
 }
 
 func LoadTestKeyDirFromConfig() (string) {
