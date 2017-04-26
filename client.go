@@ -1,146 +1,89 @@
 package main
 
 import (
-	"flag"
-	"math/big"
 	"fmt"
-	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/dlogproofs"
-	//"github.com/xlab-si/emmy/secretsharing"
-	"github.com/xlab-si/emmy/encryption"
+	"github.com/xlab-si/emmy/examples"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
-	"log"
+	"sync"
 )
 
-// Run server (verifier) in one terminal, for example for SchnorrEC:
-// emmy -example=schnorr_ec -client=false
-// Run client (prover) in another:
-// emmy -example=schnorr_ec -client=true
-
-// Verifiable encryption
-// emmy -example=cspaillier -client=false
-// emmy -example=cspaillier -client=true
-
 func main() {
-    example := flag.String("example", "pedersen", "which example to run")
-    flag.Parse()
-    
-    switch *example {
-    	case "pedersen":
-    		pedersenProtocolClient := commitments.NewPedersenProtocolClient()
-	    	
-			err := pedersenProtocolClient.ObtainH()
-			if err != nil {
-				fmt.Println("getting h not successful")
-				fmt.Println(err)
-			}
-	    	
-			valToBeCommitted := big.NewInt(121212121)
-			success, err := pedersenProtocolClient.Commit(valToBeCommitted) // TODO: this should return only err
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				//fmt.Println("ok")
-			}
-		    	
-			success, err = pedersenProtocolClient.Decommit()
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				fmt.Println("ok")
-			} else {
-				fmt.Println("not ok")
-			}
-			break
-		case "pedersen_ec":
-			pedersenProtocolClient := commitments.NewPedersenECProtocolClient()
-	    	
-			err := pedersenProtocolClient.ObtainH()
-			if err != nil {
-				fmt.Println("getting h not successful")
-				fmt.Println(err)
-			}
-	    	
-			valToBeCommitted := big.NewInt(121212121)
-			success, err := pedersenProtocolClient.Commit(valToBeCommitted) // TODO: this should return only err
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				//fmt.Println("ok")
-			}
-		    	
-			success, err = pedersenProtocolClient.Decommit()
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				fmt.Println("ok")
-			} else {
-				fmt.Println("not ok")
-			}
-			break
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: go run examples.go [pedersen|pedersen_ec|schnorr|schnorr_ec|cspaillier]\n")
+		return
+	}
 
-		case "schnorr", "schnorr_zkp", "schnorr_zkpok":
-			protocolType := getProtocolType(*example)
-			schnorrProtocolClient, err := dlogproofs.NewSchnorrProtocolClient(protocolType)
-			if err != nil {
-				log.Fatalf("error when creating Schnorr protocol client: %v", err)
-			}
-			
-			secret := big.NewInt(345345345334)
-			isProved, err := schnorrProtocolClient.Run(secret)
-			
-			if isProved == true {
-				log.Println("knowledge proved")
-			} else {
-				log.Println("knowledge NOT proved")
-			}
-			break
-		
-		case "schnorr_ec",  "schnorr_ec_zkp", "schnorr_ec_zkpok":
-			protocolType := getProtocolType(*example)
-			schnorrECProtocolClient, _ := dlogproofs.NewSchnorrECProtocolClient(protocolType)
-			secret := big.NewInt(345345345334)
-	    	proved, _ := schnorrECProtocolClient.Run(secret)	
-	    	
-	    	if proved {
-	    		log.Println("proved")
-			} else {
-	    		log.Println("NOT proved")
-			}
-			break
-		
-		case "cspaillier":
-			dir := config.LoadKeyDirFromConfig()
+	example := os.Args[1]
+	n := 1
+	var err error
 
-			pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
-	    	cspaillierProtocolClient, _ := encryption.NewCSPaillierProtocolClient(pubKeyPath)
-	    	
-			m := common.GetRandomInt(big.NewInt(8685849))
-			label := common.GetRandomInt(big.NewInt(340002223232))
-			
-	    	proved, _ := cspaillierProtocolClient.Run(m, label)
-	    	if proved {
-	    		log.Println("proved")
-			} else {
-	    		log.Println("NOT proved")
-			}
-			break
+	if len(os.Args) <= 4 {
+		n, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Printf("Could not convert '%s' to integer, running a single client process\n", os.Args[2])
+			n = 1
+		}
+	}
 
-		default:
-			fmt.Printf("ERROR: Invalid example: %s", *example)
-    }
+	runConcurrently := false
+	if len(os.Args) == 4 {
+		if strings.Compare(os.Args[3], "concurrent") == 0 {
+			fmt.Println("Will start clients concurrently")
+			runConcurrently = true
+		} else {
+			fmt.Println("Will start clients sequentially")
+		}
+	}
 
+	var wg sync.WaitGroup
+	wg.Add(n)
+
+	for i := 0; i < n; i++ {
+		fmt.Printf("Running client #%d\n", i)
+		if runConcurrently {
+			go runExample(example, i, &wg)
+		} else {
+			runExample(example, i, &wg)
+		}
+	}
+	wg.Wait()
+	return
+}
+
+func runExample(example string, i int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	switch example {
+	case "pedersen":
+		examples.Pedersen()
+		break
+	case "pedersen_ec":
+		examples.PedersenEC()
+		break
+	case "schnorr", "schnorr_zkp", "schnorr_zkpok":
+		protocolType := getProtocolType(example)
+		examples.Schnorr(protocolType)
+		break
+	case "schnorr_ec", "schnorr_ec_zkp", "schnorr_ec_zkpok":
+		protocolType := getProtocolType(example)
+		examples.SchnorrEC(protocolType)
+
+	case "cspaillier":
+		dir := config.LoadKeyDirFromConfig()
+		pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
+		examples.Paillier(pubKeyPath)
+		break
+
+	default:
+		fmt.Printf("ERROR: Invalid example: %s\n", example)
+	}
+
+	fmt.Printf("[%d] done\n", i)
 }
 
 func getProtocolType(name string) common.ProtocolType {
