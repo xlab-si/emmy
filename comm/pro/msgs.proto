@@ -22,6 +22,12 @@ service PedersenEC {
   rpc Decommit(PedersenDecommitment) returns (Status) {}
 }
 
+service PedersenECStream {
+  rpc GetH(EmptyMsg) returns (ECGroupElement) {}
+  rpc Commit(ECGroupElement) returns (EmptyMsg) {}
+  rpc Decommit(PedersenDecommitment) returns (Status) {}
+}
+
 message EmptyMsg {}
 
 message PedersenDecommitment {
