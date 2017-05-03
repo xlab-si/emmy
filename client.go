@@ -61,24 +61,18 @@ func runExample(example string, i int, wg *sync.WaitGroup) {
 	switch example {
 	case "pedersen":
 		examples.Pedersen()
-		break
 	case "pedersen_ec":
 		examples.PedersenEC()
-		break
 	case "schnorr", "schnorr_zkp", "schnorr_zkpok":
 		protocolType := getProtocolType(example)
 		examples.Schnorr(protocolType)
-		break
 	case "schnorr_ec", "schnorr_ec_zkp", "schnorr_ec_zkpok":
 		protocolType := getProtocolType(example)
 		examples.SchnorrEC(protocolType)
-
 	case "cspaillier":
 		dir := config.LoadKeyDirFromConfig()
 		pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
 		examples.Paillier(pubKeyPath)
-		break
-
 	default:
 		fmt.Printf("ERROR: Invalid example: %s\n", example)
 	}
