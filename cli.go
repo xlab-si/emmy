@@ -184,6 +184,7 @@ func main() {
 			log.Println(recoveredSecret)
 	    }
 	} else if *examplePtr == "cspaillier" {
+		// generate file keys with encryption_test
 		dir := config.LoadKeyDirFromConfig()
 
 		if (*clientPtr == true) {
@@ -207,7 +208,53 @@ func main() {
 	    	log.Println(err)
 	    	cspaillierProtocolServer.Listen()
 	    }
-	} 
+	} else if *examplePtr == "dlog_equality" {
+		// no wrappers at the moment, because messages handling will be refactored
+		eProver, _ := dlogproofs.NewDLogEqualityProver()
+		eVerifier, _ := dlogproofs.NewDLogEqualityVerifier()
+
+		secret := big.NewInt(213412)
+		groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1)) 
+		g1, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
+		g2, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
+
+	    t1, _ := eProver.DLog.Exponentiate(g1, secret)
+	    t2, _ := eProver.DLog.Exponentiate(g2, secret)
+		eProver.SetInputData(g1, g2)
+
+		x1, x2 := eProver.GetProofRandomData(secret)
+		eVerifier.SetInputData(g1, g2, t1, t2)
+		eVerifier.SetProofRandomData(x1, x2)
+
+		challenge := eVerifier.GenerateChallenge()
+		z := eProver.GetProofData(challenge)
+		verified := eVerifier.Verify(z)
+
+		log.Println(verified)
+	} else if *examplePtr == "dlog_equality_blinded_transcript" {
+		// no wrappers at the moment, because messages handling will be refactored
+		eProver, _ := dlogproofs.NewDLogEqualityBTranscriptProver()
+		eVerifier, _ := dlogproofs.NewDLogEqualityBTranscriptVerifier()
+
+		secret := big.NewInt(213412)
+		groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1)) 
+		g1, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
+		g2, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
+		
+		t1, _ := eProver.DLog.Exponentiate(g1, secret)
+	    t2, _ := eProver.DLog.Exponentiate(g2, secret)
+		eProver.SetInputData(g1, g2)
+
+		x1, x2 := eProver.GetProofRandomData(secret)
+		eVerifier.SetInputData(g1, g2, t1, t2)
+		eVerifier.SetProofRandomData(x1, x2)
+
+		challenge := eVerifier.GenerateChallenge()
+		z := eProver.GetProofData(challenge)
+		verified := eVerifier.Verify(z)
+
+		log.Println(verified)
+	}
 	
     //fmt.Println("word:", *wordPtr)
     //fmt.Println("numb:", *numbPtr)

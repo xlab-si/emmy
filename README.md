@@ -1,4 +1,4 @@
-# emmy
+# emmy (after Emmy Noether)
 
 Library for zero-knowledge proofs. 
 
