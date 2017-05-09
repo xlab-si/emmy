@@ -10,6 +10,7 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/secretsharing"
 	"github.com/xlab-si/emmy/encryption"
+	"github.com/xlab-si/emmy/pseudonymsys"
 	"github.com/pkg/profile" // go tool pprof -text emmy /tmp/profile102918543/cpu.pprof
 	"path/filepath"
 	"strings"
@@ -209,28 +210,18 @@ func main() {
 	    	cspaillierProtocolServer.Listen()
 	    }
 	} else if *examplePtr == "dlog_equality" {
-		// no wrappers at the moment, because messages handling will be refactored
-		eProver, _ := dlogproofs.NewDLogEqualityProver()
-		eVerifier, _ := dlogproofs.NewDLogEqualityVerifier()
-
+		dlog := config.LoadPseudonymsysDLogFromConfig()
+		
 		secret := big.NewInt(213412)
-		groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1)) 
-		g1, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
-		g2, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
+		groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1)) 
+		g1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
+		g2, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
 
-	    t1, _ := eProver.DLog.Exponentiate(g1, secret)
-	    t2, _ := eProver.DLog.Exponentiate(g2, secret)
-		eProver.SetInputData(g1, g2)
+		t1, _ := dlog.Exponentiate(g1, secret)
+		t2, _ := dlog.Exponentiate(g2, secret)
+		proved := dlogproofs.RunDLogEquality(secret, g1, g2, t1, t2)
+		log.Println(proved)
 
-		x1, x2 := eProver.GetProofRandomData(secret)
-		eVerifier.SetInputData(g1, g2, t1, t2)
-		eVerifier.SetProofRandomData(x1, x2)
-
-		challenge := eVerifier.GenerateChallenge()
-		z := eProver.GetProofData(challenge)
-		verified := eVerifier.Verify(z)
-
-		log.Println(verified)
 	} else if *examplePtr == "dlog_equality_blinded_transcript" {
 		// no wrappers at the moment, because messages handling will be refactored
 		eProver, _ := dlogproofs.NewDLogEqualityBTranscriptProver()
@@ -243,17 +234,40 @@ func main() {
 		
 		t1, _ := eProver.DLog.Exponentiate(g1, secret)
 	    t2, _ := eProver.DLog.Exponentiate(g2, secret)
-		eProver.SetInputData(g1, g2)
+	    
+		x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
 
-		x1, x2 := eProver.GetProofRandomData(secret)
-		eVerifier.SetInputData(g1, g2, t1, t2)
-		eVerifier.SetProofRandomData(x1, x2)
-
-		challenge := eVerifier.GenerateChallenge()
+		challenge := eVerifier.GetChallenge(g1, g2, t1, t2, x1, x2)
 		z := eProver.GetProofData(challenge)
-		verified := eVerifier.Verify(z)
+		verified, transcript, G2, T2 := eVerifier.Verify(z)
 
 		log.Println(verified)
+		
+		log.Println("is the transcript valid:")
+		valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.DLog, g1, t1, G2, T2)
+		log.Println(valid)
+	} else if *examplePtr == "nymgen" {
+		orgName := "todo"
+		orgAddress := "todo"
+		user := pseudonymsys.NewUser(orgName, orgAddress)
+		org := pseudonymsys.NewOrganization()
+		
+		a_tilde, b_tilde := user.GetFirstPseudonymGenMsg()
+		a := org.GetFirstPseudonymsysGenReply(a_tilde, b_tilde)
+		
+		x1, x2 := user.GetPseudonymGenRandomProofData(a)
+		challenge := org.GetPseudonymGenChallenge(x1, x2)
+
+		z := user.GetPseudonymGenProofData(challenge)
+		verified := org.PseudonymGenVerify(z)
+	
+		log.Println(verified)
+		if verified {
+			nymA, nymB := user.GetNym()	
+			log.Println(nymA)
+			log.Println(nymB)
+			// todo: store in some DB: (orgName, nymA, nymB)
+		}
 	}
 	
     //fmt.Println("word:", *wordPtr)

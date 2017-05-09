@@ -2,16 +2,19 @@ package config
 
 import (
 	"fmt"
+	"math/big"
 	"github.com/spf13/viper"
+	"github.com/xlab-si/emmy/dlog"
 )
 
 func init() {
 	viper.AddConfigPath("$GOPATH/src/github.com/xlab-si/emmy/config")
 }
 
-func LoadConfig(configName string) {
+// Type can be "yml", "json" ...
+func LoadConfig(configName string, ctype string) {
 	viper.SetConfigName(configName)
-	viper.SetConfigType("yml")
+	viper.SetConfigType(ctype)
 
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -20,13 +23,35 @@ func LoadConfig(configName string) {
 }
 
 func LoadKeyDirFromConfig() (string) {
-	LoadConfig("cli")
+	LoadConfig("cli", "yml")
 	key_path := viper.GetString("key_folder")
 	return key_path
 }
 
 func LoadTestKeyDirFromConfig() (string) {
-	LoadConfig("test")
+	LoadConfig("test", "yml")
 	key_path := viper.GetString("key_folder")
 	return key_path
 }
+
+func LoadPseudonymsysDLogFromConfig() *dlog.ZpDLog {
+	LoadConfig("test", "yml")
+	LoadConfig("dlogs", "json")
+	dlogMap := viper.GetStringMap("pseudonymsys")
+	p, _ := new(big.Int).SetString(dlogMap["P"].(string), 10)
+	g, _ := new(big.Int).SetString(dlogMap["G"].(string), 10)
+	q, _ := new(big.Int).SetString(dlogMap["Q"].(string), 10)
+	dlog := dlog.ZpDLog{
+		P: p,
+		G: g,
+		OrderOfSubgroup: q,
+	}
+
+	return &dlog	
+}
+
+
+
+
+
+

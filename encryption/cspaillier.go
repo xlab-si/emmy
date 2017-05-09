@@ -7,9 +7,10 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/golang/protobuf/proto"
-	"crypto/sha512"
 	"log"
 )
+
+// todo: does hash really need to be into [0, 2^l]?
 
 // http://eprint.iacr.org/2002/161.pdf
 // Camenisch-Shoup variant of Paillier to make it (Paillier) CCA2 secure
@@ -276,7 +277,7 @@ func (cspaillier *CSPaillier) Encrypt(m, label *big.Int) (*big.Int, *big.Int, *b
 	e.Mod(e, n2)
 	
 	// v = abs((y2 * y3^hash(u, e, L))^r)	
-	hashNum := cspaillier.H(u, e, label)
+	hashNum := common.Hash(u, e, label)
 	
 	t := new(big.Int).Exp(cspaillier.PubKey.Y3, hashNum, n2) // y3^hashNum
 	t.Mul(cspaillier.PubKey.Y2, t) // y2 * y3^hashNum
@@ -302,7 +303,7 @@ func (cspaillier *CSPaillier) Decrypt(u, e, v, label *big.Int) (*big.Int, error)
 	
 	// check whether u^(2 * (x2 + hash(u, e, L) * x3)) = v^2:
 	// hash(u, e, L)
-	hashNum := cspaillier.H(u, e, label)
+	hashNum := common.Hash(u, e, label)
 	
 	// hash(u, e, L) * x3
 	t := new(big.Int).Mul(hashNum, cspaillier.SecretKey.X3)
@@ -341,19 +342,6 @@ func (cspaillier *CSPaillier) Decrypt(u, e, v, label *big.Int) (*big.Int, error)
 	m := new(big.Int).Div(m1min, cspaillier.PubKey.N)
 	
 	return m, nil
-}
-
-func (cspaillier *CSPaillier) H(u, e, label *big.Int) (*big.Int) {
-	toBeHashed := append(u.Bytes(), e.Bytes()...)
-	toBeHashed = append(toBeHashed, label.Bytes()...)
-	
-	// todo: does hash really need to be [2^l]?
-	sha512 := sha512.New()
-	sha512.Write(toBeHashed)
-	hashBytes := sha512.Sum(nil)
-	
-	hashNum := new(big.Int).SetBytes(hashBytes)
-	return hashNum
 }
 
 func (cspaillier *CSPaillier) Abs(a *big.Int) (*big.Int, error) {
@@ -522,7 +510,7 @@ func (cspaillier *CSPaillier) GetProofRandomData(u, e, label *big.Int) (*big.Int
 	e1.Mod(e1, n2)
 	
     // v1 = (y2 * y3^hash(u, e, L))^(2*r1)
-	hashNum := cspaillier.H(u, e, label)
+	hashNum := common.Hash(u, e, label)
     v11 := new(big.Int).Exp(cspaillier.PubKey.Y3, hashNum, n2)
     v11.Mul(v11, cspaillier.PubKey.Y2)
     v11.Mod(v11, n2)
@@ -612,7 +600,7 @@ func (cspaillier *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 	
     // check if v1 = v^(2*c) * (y2 * y3^hash(u, e, L))^(2*rTilde)
 	t1 = common.Exponentiate(cspaillier.verifierEncData.V, twoC, n2)
-	hashNum := cspaillier.H(cspaillier.verifierEncData.U, cspaillier.verifierEncData.E, 
+	hashNum := common.Hash(cspaillier.verifierEncData.U, cspaillier.verifierEncData.E, 
 		cspaillier.verifierEncData.Label)
 	y3 := common.Exponentiate(cspaillier.SecretKey.G, cspaillier.SecretKey.X3, n2)
 	t21 := new(big.Int).Exp(y3, hashNum, n2)

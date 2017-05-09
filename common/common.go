@@ -4,10 +4,26 @@ import (
 	"math/big"
 	"crypto/rand"
 	"crypto/dsa"
+	"crypto/sha512"
 	"errors"
 	"io"
 	"log"
 )
+
+// It appends the given number (bytes of each) and computes a hash.
+func Hash(numbers ...*big.Int) (*big.Int) {
+	var toBeHashed []byte
+	for _, n := range numbers {
+		toBeHashed = append(toBeHashed, n.Bytes()...)
+	}
+
+	sha512 := sha512.New()
+	sha512.Write(toBeHashed)
+	hashBytes := sha512.Sum(nil)
+	
+	hashNum := new(big.Int).SetBytes(hashBytes)
+	return hashNum
+}
 
 // It computes x^y mod m. Negative y are supported.
 func Exponentiate(x, y, m *big.Int) *big.Int {

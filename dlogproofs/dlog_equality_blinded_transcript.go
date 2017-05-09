@@ -3,11 +3,32 @@ package dlogproofs
 import (
 	"math/big"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 )
 
-
-// not finished
+// Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
+// and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
+// by verifier.
+func VerifyBlindedTranscript(transcript []*big.Int, dlog *dlog.ZpDLog, g1, t1, G2, T2 *big.Int) bool {
+	// Transcript should be in the following form: [alpha1, beta1, hash(alpha1, beta1), z+alpha]
+	// We need to verify (note that c-beta = hash(alpha1, beta1))
+	// g1^(z+alpha) = alpha1 * t1^(c-beta)
+	// G2^(z+alpha) = beta1 * T2^(c-beta)
+	left1, _ := dlog.Exponentiate(g1, transcript[3])
+	right1, _ := dlog.Exponentiate(t1, transcript[2])
+	right1, _ = dlog.Multiply(transcript[0], right1)
+	
+	left2, _ := dlog.Exponentiate(G2, transcript[3])
+	right2, _ := dlog.Exponentiate(T2, transcript[2])
+	right2, _ = dlog.Multiply(transcript[1], right2)
+		
+	if (left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0) {
+		return true	
+	} else {
+		return false	
+	}
+}
 
 type DLogEqualityBTranscriptProver struct {
 	DLog *dlog.ZpDLog
@@ -18,32 +39,24 @@ type DLogEqualityBTranscriptProver struct {
 }
 
 func NewDLogEqualityBTranscriptProver() (*DLogEqualityBTranscriptProver, error) {
-	p, _ := new(big.Int).SetString("16714772973240639959372252262788596420406994288943442724185217359247384753656472309049760952976644136858333233015922583099687128195321947212684779063190875332970679291085543110146729439665070418750765330192961290161474133279960593149307037455272278582955789954847238104228800942225108143276152223829168166008095539967222363070565697796008563529948374781419181195126018918350805639881625937503224895840081959848677868603567824611344898153185576740445411565094067875133968946677861528581074542082733743513314354002186235230287355796577107626422168586230066573268163712626444511811717579062108697723640288393001520781671", 10)
-	g, _ := new(big.Int).SetString("13435884250597730820988673213378477726569723275417649800394889054421903151074346851880546685189913185057745735207225301201852559405644051816872014272331570072588339952516472247887067226166870605704408444976351128304008060633104261817510492686675023829741899954314711345836179919335915048014505501663400445038922206852759960184725596503593479528001139942112019453197903890937374833630960726290426188275709258277826157649744326468681842975049888851018287222105796254410594654201885455104992968766625052811929321868035475972753772676518635683328238658266898993508045858598874318887564488464648635977972724303652243855656", 10)
-	q, _ := new(big.Int).SetString("98208916160055856584884864196345443685461747768186057136819930381973920107591", 10)
-	dlog := dlog.ZpDLog{
-		P: p,
-		G: g,
-		OrderOfSubgroup: q,
-	}
+	dlog := config.LoadPseudonymsysDLogFromConfig()
 	prover := DLogEqualityBTranscriptProver {
-		DLog: &dlog,
+		DLog: dlog,
 	}
 	
     return &prover, nil
 }
 
-// Sets the values that are needed before the protocol can be run.
-// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
-// that log_g1(t1) = log_g2(t2).
-func (prover *DLogEqualityBTranscriptProver) SetInputData(g1, g2 *big.Int) {
+// Prove that you know dlog_g1(h1), dlog_g2(h2) and that dlog_g1(h1) = dlog_g2(h2).
+func (prover *DLogEqualityBTranscriptProver) GetProofRandomData(secret, g1, g2 *big.Int) (*big.Int, 
+		*big.Int) {
+	// Set the values that are needed before the protocol can be run.
+	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
+	// that log_g1(t1) = log_g2(t2).
+	prover.secret = secret
 	prover.g1 = g1
 	prover.g2 = g2
-}
 
-// Prove that you know dlog_g1(h1), dlog_g2(h2) and that dlog_g1(h1) = dlog_g2(h2).
-func (prover *DLogEqualityBTranscriptProver) GetProofRandomData(secret *big.Int) (*big.Int, *big.Int) {
-	prover.secret = secret
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
     x1, _ := prover.DLog.Exponentiate(prover.g1, r)	
@@ -60,7 +73,6 @@ func (prover *DLogEqualityBTranscriptProver) GetProofData(challenge *big.Int) (*
 	return z
 }
 
-
 type DLogEqualityBTranscriptVerifier struct {
 	DLog *dlog.ZpDLog
 	gamma *big.Int
@@ -71,45 +83,34 @@ type DLogEqualityBTranscriptVerifier struct {
 	x2 *big.Int
 	t1 *big.Int
 	t2 *big.Int
+	transcript []*big.Int
+	alpha *big.Int
 }
 
 func NewDLogEqualityBTranscriptVerifier() (*DLogEqualityBTranscriptVerifier, error) {
-	p, _ := new(big.Int).SetString("16714772973240639959372252262788596420406994288943442724185217359247384753656472309049760952976644136858333233015922583099687128195321947212684779063190875332970679291085543110146729439665070418750765330192961290161474133279960593149307037455272278582955789954847238104228800942225108143276152223829168166008095539967222363070565697796008563529948374781419181195126018918350805639881625937503224895840081959848677868603567824611344898153185576740445411565094067875133968946677861528581074542082733743513314354002186235230287355796577107626422168586230066573268163712626444511811717579062108697723640288393001520781671", 10)
-	g, _ := new(big.Int).SetString("13435884250597730820988673213378477726569723275417649800394889054421903151074346851880546685189913185057745735207225301201852559405644051816872014272331570072588339952516472247887067226166870605704408444976351128304008060633104261817510492686675023829741899954314711345836179919335915048014505501663400445038922206852759960184725596503593479528001139942112019453197903890937374833630960726290426188275709258277826157649744326468681842975049888851018287222105796254410594654201885455104992968766625052811929321868035475972753772676518635683328238658266898993508045858598874318887564488464648635977972724303652243855656", 10)
-	q, _ := new(big.Int).SetString("98208916160055856584884864196345443685461747768186057136819930381973920107591", 10)
-
-	dlog := dlog.ZpDLog{
-		P: p,
-		G: g,
-		OrderOfSubgroup: q,
-	}
+	dlog := config.LoadPseudonymsysDLogFromConfig()
 	gamma := common.GetRandomInt(dlog.GetOrderOfSubgroup())
 	verifier := DLogEqualityBTranscriptVerifier {
-		DLog: &dlog,
+		DLog: dlog,
 		gamma: gamma,
 	}
 	
     return &verifier, nil
 }
 
-// Sets the values that are needed before the protocol can be run.
-// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
-// that log_g1(t1) = log_g2(t2).
-func (verifier *DLogEqualityBTranscriptVerifier) SetInputData(g1, g2, t1, t2 *big.Int) {
+func (verifier *DLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.Int) (*big.Int) {
+	// Set the values that are needed before the protocol can be run.
+	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
+	// that log_g1(t1) = log_g2(t2).
 	verifier.g1 = g1
 	verifier.g2 = g2
 	verifier.t1 = t1
 	verifier.t2 = t2
-}
 
-// Sets the values g1^r1 and g2^r2.
-func (verifier *DLogEqualityBTranscriptVerifier) SetProofRandomData(x1, x2 *big.Int) {
+	// Set the values g1^r1 and g2^r2.
 	verifier.x1 = x1
 	verifier.x2 = x2
-}
 
-func (verifier *DLogEqualityBTranscriptVerifier) GenerateChallenge() (*big.Int) {
-	/*
 	alpha := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
 	beta := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
 	
@@ -125,16 +126,27 @@ func (verifier *DLogEqualityBTranscriptVerifier) GenerateChallenge() (*big.Int) 
 	tmp, _ = verifier.DLog.Exponentiate(verifier.t2, beta)
 	beta1, _ = verifier.DLog.Multiply(beta1, tmp)
 	beta1, _ = verifier.DLog.Exponentiate(beta1, verifier.gamma)
-	*/
 	
-	challenge := big.NewInt(3424) // testing
+	// c = hash(alpha1, beta) + beta mod q
+	hashNum := common.Hash(alpha1, beta1)
+	challenge := new(big.Int).Add(hashNum, beta)
+	challenge.Mod(challenge, verifier.DLog.OrderOfSubgroup)
     verifier.challenge = challenge
+
+    var transcript []*big.Int
+    transcript = append(transcript, alpha1)
+    transcript = append(transcript, beta1)
+    transcript = append(transcript, hashNum)
+    verifier.transcript = transcript
+    verifier.alpha = alpha
+
     return challenge
 }
 
 // It receives z = r + secret * challenge. 
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
-func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool) {
+func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, []*big.Int, 
+		*big.Int, *big.Int) {
 	left1, _ := verifier.DLog.Exponentiate(verifier.g1, z)	
 	left2, _ := verifier.DLog.Exponentiate(verifier.g2, z)	
 
@@ -142,20 +154,21 @@ func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool) {
     r12, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.challenge)	
     right1, _ := verifier.DLog.Multiply(r11, verifier.x1)	
     right2, _ := verifier.DLog.Multiply(r12, verifier.x2)	
+
+	// transcript [(alpha1, beta1), hash(alpha1, beta1), z+alpha]
+	// however, we are actually returning [alpha1, beta1, hash(alpha1, beta1), z+alpha]
+	z1 := new(big.Int).Add(z, verifier.alpha)
+	verifier.transcript = append(verifier.transcript, z1)
 	
+	G2, _ := verifier.DLog.Exponentiate(verifier.g2, verifier.gamma)
+	T2, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.gamma)
+
 	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
-		return true
+		return true, verifier.transcript, G2, T2
 	} else {
-		return false
-	}
-	
-	
-	// g^(z+alpha) = alpha1 * t1^(c-beta)
-	// G2^(z+alpha) = beta1 * T2^(c-beta)
-	// transcript ((alpha1, beta1), hash(alpha1, beta1), z+alpha)
+		return false, nil, nil, nil
+	}	
 }
-
-
 
 
 

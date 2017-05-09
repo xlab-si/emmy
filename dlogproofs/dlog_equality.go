@@ -3,8 +3,22 @@ package dlogproofs
 import (
 	"math/big"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 )
+
+func RunDLogEquality(secret, g1, g2, t1, t2 *big.Int) bool {
+	// no wrappers at the moment, because messages handling will be refactored
+	eProver, _ := NewDLogEqualityProver()
+	eVerifier, _ := NewDLogEqualityVerifier()
+
+	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
+
+	challenge := eVerifier.GetChallenge(g1, g2, t1, t2, x1, x2)
+	z := eProver.GetProofData(challenge)
+	verified := eVerifier.Verify(z)
+	return verified
+}
 
 type DLogEqualityProver struct {
 	DLog *dlog.ZpDLog
@@ -15,32 +29,22 @@ type DLogEqualityProver struct {
 }
 
 func NewDLogEqualityProver() (*DLogEqualityProver, error) {
-	p, _ := new(big.Int).SetString("16714772973240639959372252262788596420406994288943442724185217359247384753656472309049760952976644136858333233015922583099687128195321947212684779063190875332970679291085543110146729439665070418750765330192961290161474133279960593149307037455272278582955789954847238104228800942225108143276152223829168166008095539967222363070565697796008563529948374781419181195126018918350805639881625937503224895840081959848677868603567824611344898153185576740445411565094067875133968946677861528581074542082733743513314354002186235230287355796577107626422168586230066573268163712626444511811717579062108697723640288393001520781671", 10)
-	g, _ := new(big.Int).SetString("13435884250597730820988673213378477726569723275417649800394889054421903151074346851880546685189913185057745735207225301201852559405644051816872014272331570072588339952516472247887067226166870605704408444976351128304008060633104261817510492686675023829741899954314711345836179919335915048014505501663400445038922206852759960184725596503593479528001139942112019453197903890937374833630960726290426188275709258277826157649744326468681842975049888851018287222105796254410594654201885455104992968766625052811929321868035475972753772676518635683328238658266898993508045858598874318887564488464648635977972724303652243855656", 10)
-	q, _ := new(big.Int).SetString("98208916160055856584884864196345443685461747768186057136819930381973920107591", 10)
-	dlog := dlog.ZpDLog{
-		P: p,
-		G: g,
-		OrderOfSubgroup: q,
-	}
+	dlog := config.LoadPseudonymsysDLogFromConfig()
 	prover := DLogEqualityProver {
-		DLog: &dlog,
+		DLog: dlog,
 	}
 	
     return &prover, nil
 }
 
-// Sets the values that are needed before the protocol can be run.
-// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
-// that log_g1(t1) = log_g2(t2).
-func (prover *DLogEqualityProver) SetInputData(g1, g2 *big.Int) {
+func (prover *DLogEqualityProver) GetProofRandomData(secret, g1, g2 *big.Int) (*big.Int, *big.Int) {
+	// Sets the values that are needed before the protocol can be run.
+	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
+	// that log_g1(t1) = log_g2(t2).
+	prover.secret = secret
 	prover.g1 = g1
 	prover.g2 = g2
-}
 
-// Prove that you know dlog_g1(h1), dlog_g2(h2) and that dlog_g1(h1) = dlog_g2(h2).
-func (prover *DLogEqualityProver) GetProofRandomData(secret *big.Int) (*big.Int, *big.Int) {
-	prover.secret = secret
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
     x1, _ := prover.DLog.Exponentiate(prover.g1, r)	
@@ -69,39 +73,28 @@ type DLogEqualityVerifier struct {
 	t2 *big.Int
 }
 
-func NewDLogEqualityVerifier() (*DLogEqualityVerifier, error) {
-	p, _ := new(big.Int).SetString("16714772973240639959372252262788596420406994288943442724185217359247384753656472309049760952976644136858333233015922583099687128195321947212684779063190875332970679291085543110146729439665070418750765330192961290161474133279960593149307037455272278582955789954847238104228800942225108143276152223829168166008095539967222363070565697796008563529948374781419181195126018918350805639881625937503224895840081959848677868603567824611344898153185576740445411565094067875133968946677861528581074542082733743513314354002186235230287355796577107626422168586230066573268163712626444511811717579062108697723640288393001520781671", 10)
-	g, _ := new(big.Int).SetString("13435884250597730820988673213378477726569723275417649800394889054421903151074346851880546685189913185057745735207225301201852559405644051816872014272331570072588339952516472247887067226166870605704408444976351128304008060633104261817510492686675023829741899954314711345836179919335915048014505501663400445038922206852759960184725596503593479528001139942112019453197903890937374833630960726290426188275709258277826157649744326468681842975049888851018287222105796254410594654201885455104992968766625052811929321868035475972753772676518635683328238658266898993508045858598874318887564488464648635977972724303652243855656", 10)
-	q, _ := new(big.Int).SetString("98208916160055856584884864196345443685461747768186057136819930381973920107591", 10)
-	dlog := dlog.ZpDLog{
-		P: p,
-		G: g,
-		OrderOfSubgroup: q,
-	}
+func NewDLogEqualityVerifier() (*DLogEqualityVerifier, error) {	
+	dlog := config.LoadPseudonymsysDLogFromConfig()
 	verifier := DLogEqualityVerifier {
-		DLog: &dlog,
+		DLog: dlog,
 	}
 	
     return &verifier, nil
 }
 
-// Sets the values that are needed before the protocol can be run.
-// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
-// that log_g1(t1) = log_g2(t2).
-func (verifier *DLogEqualityVerifier) SetInputData(g1, g2, t1, t2 *big.Int) {
+func (verifier *DLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.Int) (*big.Int) {
+	// Set the values that are needed before the protocol can be run.
+	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and 
+	// that log_g1(t1) = log_g2(t2).
 	verifier.g1 = g1
 	verifier.g2 = g2
 	verifier.t1 = t1
 	verifier.t2 = t2
-}
 
-// Sets the values g1^r1 and g2^r2.
-func (verifier *DLogEqualityVerifier) SetProofRandomData(x1, x2 *big.Int) {
+	// Sets the values g1^r1 and g2^r2.
 	verifier.x1 = x1
 	verifier.x2 = x2
-}
 
-func (verifier *DLogEqualityVerifier) GenerateChallenge() (*big.Int) {
 	challenge := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
     verifier.challenge = challenge
     return challenge
