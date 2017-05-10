@@ -35,7 +35,6 @@ func LoadTestKeyDirFromConfig() (string) {
 }
 
 func LoadPseudonymsysDLogFromConfig() *dlog.ZpDLog {
-	LoadConfig("test", "yml")
 	LoadConfig("dlogs", "json")
 	dlogMap := viper.GetStringMap("pseudonymsys")
 	p, _ := new(big.Int).SetString(dlogMap["P"].(string), 10)
@@ -48,6 +47,21 @@ func LoadPseudonymsysDLogFromConfig() *dlog.ZpDLog {
 	}
 
 	return &dlog	
+}
+
+func LoadPseudonymsysUserSecretFromConfig(user string) *big.Int {
+	LoadConfig("secrets", "json")
+	m := viper.GetStringMap("pseudonymsys")
+	s, _ := new(big.Int).SetString(m[user].(string), 10)
+	return s
+}
+
+func LoadPseudonymsysOrgSecretsFromConfig(org string) (*big.Int, *big.Int) {
+	LoadConfig("secrets", "json")
+	m := viper.GetStringMap("pseudonymsys")
+	s1, _ := new(big.Int).SetString(m[org].(map[string]interface{})["s1"].(string), 10)
+	s2, _ := new(big.Int).SetString(m[org].(map[string]interface{})["s2"].(string), 10)
+	return s1, s2
 }
 
 

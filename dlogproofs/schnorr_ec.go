@@ -26,6 +26,7 @@ import (
 // z = r2 + secret * e -->  (if ZKPOK, trapdoor is sent as well)
 type SchnorrECProver struct {
 	DLog *dlog.ECDLog
+	a *common.ECGroupElement
 	secret *big.Int
 	r *big.Int // ProofRandomData
 	pedersenReceiver *commitments.PedersenECReceiver // only needed for ZKP and ZKPOK, not for sigma
@@ -51,17 +52,18 @@ func (prover *SchnorrECProver) GetOpeningMsg() *common.ECGroupElement {
 	return prover.pedersenReceiver.GetH()
 }
 
-// It contains also value t = g^secret. TODO: t (public key) might be transferred at a different stage.
-func (prover *SchnorrECProver) GetProofRandomData(secret *big.Int) (*common.ECGroupElement, 
-		*common.ECGroupElement) {
+// It contains also value b = a^secret.
+func (prover *SchnorrECProver) GetProofRandomData(a *common.ECGroupElement, 
+		secret *big.Int) (*common.ECGroupElement, *common.ECGroupElement) {
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
+	prover.a = a
 	prover.secret = secret
-    x1, x2 := prover.DLog.ExponentiateBaseG(r)	
+    x1, x2 := prover.DLog.Exponentiate(a.X, a.Y, r)	
     
-    t1, t2 := prover.DLog.ExponentiateBaseG(secret) // t can be considered as a public key
+    b1, b2 := prover.DLog.Exponentiate(a.X, a.Y, secret) // b can be considered as a public key
     
-    return &common.ECGroupElement{X: x1, Y: x2}, &common.ECGroupElement{X: t1, Y: t2}
+    return &common.ECGroupElement{X: x1, Y: x2}, &common.ECGroupElement{X: b1, Y: b2}
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w
@@ -84,7 +86,8 @@ func (prover *SchnorrECProver) GetProofData(challenge *big.Int) (*big.Int, *big.
 type SchnorrECVerifier struct {
 	DLog *dlog.ECDLog
 	x *common.ECGroupElement
-	t *common.ECGroupElement
+	a *common.ECGroupElement
+	b *common.ECGroupElement
 	challenge *big.Int	
 	pedersenCommitter *commitments.PedersenECCommitter // not needed in sigma protocol, only in ZKP and ZKPOK
 	protocolType common.ProtocolType
@@ -120,9 +123,10 @@ func (verifier *SchnorrECVerifier) GetOpeningMsgReply(h *common.ECGroupElement) 
 }
 
 // TODO: t transferred at some other stage?
-func (verifier *SchnorrECVerifier) SetProofRandomData(x *common.ECGroupElement, t *common.ECGroupElement) {
+func (verifier *SchnorrECVerifier) SetProofRandomData(x, a, b *common.ECGroupElement) {
     verifier.x = x
-    verifier.t = t
+    verifier.a = a
+    verifier.b = b
 }
 
 // It returns a challenge and commitment to challenge (this latter only for ZKP and ZKPOK).
@@ -143,9 +147,9 @@ func (verifier *SchnorrECVerifier) Verify(z *big.Int, trapdoor *big.Int) (bool) 
 			return false
 		}
 	}
-	left1, left2 := verifier.DLog.ExponentiateBaseG(z)	
+	left1, left2 := verifier.DLog.Exponentiate(verifier.a.X, verifier.a.Y, z)	
 	
-    r1, r2 := verifier.DLog.Exponentiate(verifier.t.X, verifier.t.Y, verifier.challenge)	
+    r1, r2 := verifier.DLog.Exponentiate(verifier.b.X, verifier.b.Y, verifier.challenge)	
     right1, right2 := verifier.DLog.Multiply(r1, r2, verifier.x.X, verifier.x.Y)	
 	
 	if (left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0) {

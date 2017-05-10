@@ -7,6 +7,7 @@ import (
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/secretsharing"
 	"github.com/xlab-si/emmy/encryption"
@@ -34,7 +35,8 @@ func main() {
     
     if *examplePtr == "pedersen" {
 	    if (*clientPtr == true) {	   		
-	    	pedersenProtocolClient := commitments.NewPedersenProtocolClient()
+			dlog := config.LoadPseudonymsysDLogFromConfig()
+	    	pedersenProtocolClient := commitments.NewPedersenProtocolClient(dlog)
 	    	
 			err := pedersenProtocolClient.ObtainH()
 			if err != nil {
@@ -66,7 +68,8 @@ func main() {
 	    } else {
 			defer profile.Start().Stop()
 			
-	    	receiver := commitments.NewPedersenProtocolServer()
+			dlog := config.LoadPseudonymsysDLogFromConfig()
+	    	receiver := commitments.NewPedersenProtocolServer(dlog)
 	    	receiver.Listen()
 	    }
 	} else if *examplePtr == "pedersen_ec" {
@@ -115,13 +118,15 @@ func main() {
    		}
 	    if (*clientPtr == true) {
 	    	log.Println(protocolType)
-	    	schnorrProtocolClient, err := dlogproofs.NewSchnorrProtocolClient(protocolType)
+			dlog := config.LoadPseudonymsysDLogFromConfig()
+
+	    	schnorrProtocolClient, err := dlogproofs.NewSchnorrProtocolClient(dlog, protocolType)
 			if err != nil {
 				log.Fatalf("error when creating Schnorr protocol client: %v", err)
 			}
 			
 			secret := big.NewInt(345345345334)
-			isProved, err := schnorrProtocolClient.Run(secret)
+			isProved, err := schnorrProtocolClient.Run(dlog.G, secret)
 			
 			if isProved == true {
 				log.Println("knowledge proved")
@@ -131,7 +136,8 @@ func main() {
 			    	
 	    } else {
 	    	log.Println(protocolType)
-	    	schnorrServer := dlogproofs.NewSchnorrProtocolServer(protocolType)
+			dlog := config.LoadPseudonymsysDLogFromConfig()
+	    	schnorrServer := dlogproofs.NewSchnorrProtocolServer(dlog, protocolType)
 	    	schnorrServer.Listen()
 	    	
 	    }
@@ -148,7 +154,9 @@ func main() {
 	    	schnorrECProtocolClient, _ := 
 	    		dlogproofs.NewSchnorrECProtocolClient(protocolType)
 			secret := big.NewInt(345345345334)
-	    	proved, _ := schnorrECProtocolClient.Run(secret)	
+			dlog := dlog.NewECDLog()
+			a := common.ECGroupElement{X: dlog.Curve.Params().Gx, Y: dlog.Curve.Params().Gy}
+	    	proved, _ := schnorrECProtocolClient.Run(&a, secret)	
 	    	
 	    	if proved {
 	    		log.Println("proved")
@@ -219,13 +227,15 @@ func main() {
 
 		t1, _ := dlog.Exponentiate(g1, secret)
 		t2, _ := dlog.Exponentiate(g2, secret)
-		proved := dlogproofs.RunDLogEquality(secret, g1, g2, t1, t2)
+		proved := dlogproofs.RunDLogEquality(secret, g1, g2, t1, t2, dlog)
 		log.Println(proved)
 
 	} else if *examplePtr == "dlog_equality_blinded_transcript" {
+		dlog := config.LoadPseudonymsysDLogFromConfig()
+
 		// no wrappers at the moment, because messages handling will be refactored
-		eProver, _ := dlogproofs.NewDLogEqualityBTranscriptProver()
-		eVerifier, _ := dlogproofs.NewDLogEqualityBTranscriptVerifier()
+		eProver := dlogproofs.NewDLogEqualityBTranscriptProver(dlog)
+		eVerifier := dlogproofs.NewDLogEqualityBTranscriptVerifier(dlog)
 
 		secret := big.NewInt(213412)
 		groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1)) 
@@ -247,27 +257,26 @@ func main() {
 		valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.DLog, g1, t1, G2, T2)
 		log.Println(valid)
 	} else if *examplePtr == "nymgen" {
-		orgName := "todo"
-		orgAddress := "todo"
-		user := pseudonymsys.NewUser(orgName, orgAddress)
-		org := pseudonymsys.NewOrganization()
+		orgName := "org1"
+		userName := "user1"
 		
-		a_tilde, b_tilde := user.GetFirstPseudonymGenMsg()
-		a := org.GetFirstPseudonymsysGenReply(a_tilde, b_tilde)
+		dlog := config.LoadPseudonymsysDLogFromConfig()
+		userSecret := config.LoadPseudonymsysUserSecretFromConfig(userName)
 		
-		x1, x2 := user.GetPseudonymGenRandomProofData(a)
-		challenge := org.GetPseudonymGenChallenge(x1, x2)
-
-		z := user.GetPseudonymGenProofData(challenge)
-		verified := org.PseudonymGenVerify(z)
-	
-		log.Println(verified)
-		if verified {
-			nymA, nymB := user.GetNym()	
-			log.Println(nymA)
-			log.Println(nymB)
-			// todo: store in some DB: (orgName, nymA, nymB)
+		// register with orgName
+		nym := pseudonymsys.GenerateNym(userSecret, orgName, dlog)
+		nyms := make(map[string]*pseudonymsys.Pseudonym)
+		nyms[orgName] = nym
+		
+		// authenticate to the orgName and obtain a credential:
+		credential, err := pseudonymsys.IssueCredential(userSecret, nym, orgName, dlog)
+		if err != nil {
+			log.Fatal(err)	
 		}
+
+		log.Println(credential)
+		
+		
 	}
 	
     //fmt.Println("word:", *wordPtr)

@@ -3,7 +3,6 @@ package dlogproofs
 import (
 	"math/big"
 	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 )
 
@@ -38,13 +37,11 @@ type DLogEqualityBTranscriptProver struct {
 	g2 *big.Int
 }
 
-func NewDLogEqualityBTranscriptProver() (*DLogEqualityBTranscriptProver, error) {
-	dlog := config.LoadPseudonymsysDLogFromConfig()
+func NewDLogEqualityBTranscriptProver(dlog *dlog.ZpDLog) (*DLogEqualityBTranscriptProver) {
 	prover := DLogEqualityBTranscriptProver {
 		DLog: dlog,
 	}
-	
-    return &prover, nil
+    return &prover
 }
 
 // Prove that you know dlog_g1(h1), dlog_g2(h2) and that dlog_g1(h1) = dlog_g2(h2).
@@ -87,15 +84,14 @@ type DLogEqualityBTranscriptVerifier struct {
 	alpha *big.Int
 }
 
-func NewDLogEqualityBTranscriptVerifier() (*DLogEqualityBTranscriptVerifier, error) {
-	dlog := config.LoadPseudonymsysDLogFromConfig()
+func NewDLogEqualityBTranscriptVerifier(dlog *dlog.ZpDLog) (*DLogEqualityBTranscriptVerifier) {
 	gamma := common.GetRandomInt(dlog.GetOrderOfSubgroup())
 	verifier := DLogEqualityBTranscriptVerifier {
 		DLog: dlog,
 		gamma: gamma,
 	}
 	
-    return &verifier, nil
+    return &verifier
 }
 
 func (verifier *DLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.Int) (*big.Int) {

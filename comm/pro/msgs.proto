@@ -5,9 +5,6 @@ package comm;
 // P, OrderOfSubgroup, G could be actually fixed, or least not changed each time
 message PedersenFirst {
 	bytes H = 1;
-	bytes P = 2;
-	bytes OrderOfSubgroup = 3;
-	bytes G = 4;
 }
 
 service Pedersen {
@@ -44,26 +41,22 @@ message Status {
 
 message SchnorrProofRandomData {
 	bytes X = 1;
-	bytes P = 2;
-	bytes OrderOfSubgroup = 3;
-	bytes G = 4;
-	bytes T = 5;
+	bytes A = 2;
+	bytes B = 3;
 }
 
 service SchnorrProtocol {
-  // OpeningMsg is called in ZKP and ZKPOK, input is Pedersen's h = g^a and 
-  // dlog parameters, output is challenge commitment
+  // OpeningMsg is called in ZKP and ZKPOK, input is Pedersen's h = g^a, output is challenge commitment
   rpc OpeningMsg(PedersenFirst) returns (BigInt) {}
   // PedersenDecommitment is used even it is not ZKP or ZKPOK (trapdoor is empty for SigmaProtocol)
-  // TODO: SchnorrProofRandomData contains DLog parameters, however these are used only
-  // in SigmaProtocol while in ZKP/ZKPOK Pedersen's DLog is used (from PedersenFirst)
   rpc ProofRandomData(SchnorrProofRandomData) returns (PedersenDecommitment) {}
   rpc ProofData(SchnorrProofData) returns (Status) {}
 }
 
 message SchnorrECProofRandomData {
 	ECGroupElement X = 1;
-	ECGroupElement T = 2;
+	ECGroupElement A = 2;
+	ECGroupElement B = 3;
 }
 
 service SchnorrECProtocol {

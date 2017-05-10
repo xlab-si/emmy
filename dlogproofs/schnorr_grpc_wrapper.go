@@ -4,6 +4,7 @@ import (
 	"math/big"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/dlog"
 	"errors"
 	"google.golang.org/grpc"
 	"golang.org/x/net/context"
@@ -18,7 +19,8 @@ type SchnorrProtocolClient struct {
 	protocolType common.ProtocolType
 }
 
-func NewSchnorrProtocolClient(protocolType common.ProtocolType) (*SchnorrProtocolClient, error) {
+func NewSchnorrProtocolClient(dlog *dlog.ZpDLog, 
+		protocolType common.ProtocolType) (*SchnorrProtocolClient, error) {
     conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.New("could not connect")	
@@ -26,10 +28,7 @@ func NewSchnorrProtocolClient(protocolType common.ProtocolType) (*SchnorrProtoco
 		
 	client := pb.NewSchnorrProtocolClient(conn)
 	
-  	prover, err := NewSchnorrProver(protocolType)
-  	if err != nil {
-		return nil, errors.New("could not create SchnorrProver")	
-  	}
+  	prover := NewSchnorrProver(dlog, protocolType)
   	
 	protocolClient := SchnorrProtocolClient {
 		client: &client,
@@ -43,9 +42,8 @@ func NewSchnorrProtocolClient(protocolType common.ProtocolType) (*SchnorrProtoco
 // Sends H (see Pedersen receiver) to verifier (which acts as Pedersen committer)
 //  and get a commitment to a challenge. It returns the commitment.
 func (client *SchnorrProtocolClient) OpeningMsg() (*big.Int, error) {	
-	h, p, q, g := client.prover.GetOpeningMsg()
-	msg := &pb.PedersenFirst{H: h.Bytes(), P: p.Bytes(), 
-		OrderOfSubgroup: q.Bytes(), G: g.Bytes()}
+	h := client.prover.GetOpeningMsg()
+	msg := &pb.PedersenFirst{H: h.Bytes()}
 	reply, err := (*client.client).OpeningMsg(context.Background(), msg)
 	if err != nil {
 		return nil, err
@@ -56,12 +54,10 @@ func (client *SchnorrProtocolClient) OpeningMsg() (*big.Int, error) {
 }
 
 // Sends first message of sigma protocol and receives challenge decommitment.
-func (client *SchnorrProtocolClient) ProofRandomData(secret *big.Int) (*big.Int, *big.Int, error) {
-	x, t := client.prover.GetProofRandomData(secret)
+func (client *SchnorrProtocolClient) ProofRandomData(a, secret *big.Int) (*big.Int, *big.Int, error) {
+	x, b := client.prover.GetProofRandomData(a, secret)
     
-	msg := &pb.SchnorrProofRandomData{X: x.Bytes(), P: client.prover.DLog.P.Bytes(), 
-		OrderOfSubgroup: client.prover.DLog.GetOrderOfSubgroup().Bytes(), 
-		G: client.prover.DLog.G.Bytes(), T: t.Bytes()}
+	msg := &pb.SchnorrProofRandomData{X: x.Bytes(), A: a.Bytes(), B: b.Bytes()}
 		
 	reply, err := (*client.client).ProofRandomData(context.Background(), msg)
 	if err != nil {
@@ -88,13 +84,13 @@ func (client *SchnorrProtocolClient) ProofData(challenge *big.Int) (bool, error)
 	return status.Success, nil
 }
 
-func (client *SchnorrProtocolClient) Run(secret *big.Int) (bool, error) {	
+func (client *SchnorrProtocolClient) Run(a, secret *big.Int) (bool, error) {	
 	if client.protocolType != common.Sigma {
 		commitment, _ := client.OpeningMsg() // sends pedersen's h=g^trapdoor
 		client.prover.pedersenReceiver.SetCommitment(commitment)
 	}
 
-	challenge, r, err := client.ProofRandomData(secret)
+	challenge, r, err := client.ProofRandomData(a, secret)
 	if err != nil {
 		return false, err
 	}
@@ -123,8 +119,9 @@ type SchnorrProtocolServer struct {
 	protocolType common.ProtocolType
 }
 
-func NewSchnorrProtocolServer(protocolType common.ProtocolType) *SchnorrProtocolServer {
-	verifier := NewSchnorrVerifier(protocolType)
+func NewSchnorrProtocolServer(dlog *dlog.ZpDLog, 
+		protocolType common.ProtocolType) *SchnorrProtocolServer {
+	verifier := NewSchnorrVerifier(dlog, protocolType)
 	protocolServer := SchnorrProtocolServer {
 		verifier: verifier,
 		protocolType: protocolType,
@@ -148,34 +145,16 @@ func (server *SchnorrProtocolServer) Listen() {
 func (s *SchnorrProtocolServer) OpeningMsg(ctx context.Context, 
 		msg *pb.PedersenFirst) (*pb.BigInt, error) {
 	h := new(big.Int).SetBytes(msg.H)
-	p := new(big.Int).SetBytes(msg.P)
-	q := new(big.Int).SetBytes(msg.OrderOfSubgroup)
-	g := new(big.Int).SetBytes(msg.G)
-	
-	s.verifier.SetCommitmentGroup(p, q, g)
-	s.verifier.SetGroup(p, q, g)
-	
 	commitment := s.verifier.GetOpeningMsgReply(h)
 	return &pb.BigInt{X1: commitment.Bytes()}, nil
 }
 
 func (s *SchnorrProtocolServer) ProofRandomData(ctx context.Context, 
 		in *pb.SchnorrProofRandomData) (*pb.PedersenDecommitment, error) {
-	p := new(big.Int).SetBytes(in.P)
-	g := new(big.Int).SetBytes(in.G)
-	q := new(big.Int).SetBytes(in.OrderOfSubgroup)
-    
-    // TODO: in reality, dlog can be fixed or probably at least chosen by a verifier, but
-    // then dlog parameters would need to be communicated to the prover before the prover
-    // sends ProofRandomData 
-    
     x := new(big.Int).SetBytes(in.X)
-    t := new(big.Int).SetBytes(in.T)
-	s.verifier.SetProofRandomData(x, t)
-	
-	if s.protocolType == common.Sigma {
-		s.verifier.SetGroup(p, q, g)
-	}
+    a := new(big.Int).SetBytes(in.A)
+    b := new(big.Int).SetBytes(in.B)
+	s.verifier.SetProofRandomData(x, a, b)
 	
 	challenge, r2 := s.verifier.GetChallenge() // r2 is nil in sigma protocol
 	if r2 == nil {

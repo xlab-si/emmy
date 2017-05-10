@@ -3,14 +3,13 @@ package dlogproofs
 import (
 	"math/big"
 	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 )
 
-func RunDLogEquality(secret, g1, g2, t1, t2 *big.Int) bool {
+func RunDLogEquality(secret, g1, g2, t1, t2 *big.Int, dlog *dlog.ZpDLog) bool {
 	// no wrappers at the moment, because messages handling will be refactored
-	eProver, _ := NewDLogEqualityProver()
-	eVerifier, _ := NewDLogEqualityVerifier()
+	eProver := NewDLogEqualityProver(dlog)
+	eVerifier := NewDLogEqualityVerifier(dlog)
 
 	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
 
@@ -28,13 +27,12 @@ type DLogEqualityProver struct {
 	g2 *big.Int
 }
 
-func NewDLogEqualityProver() (*DLogEqualityProver, error) {
-	dlog := config.LoadPseudonymsysDLogFromConfig()
+func NewDLogEqualityProver(dlog *dlog.ZpDLog) (*DLogEqualityProver) {
 	prover := DLogEqualityProver {
 		DLog: dlog,
 	}
 	
-    return &prover, nil
+    return &prover
 }
 
 func (prover *DLogEqualityProver) GetProofRandomData(secret, g1, g2 *big.Int) (*big.Int, *big.Int) {
@@ -73,13 +71,12 @@ type DLogEqualityVerifier struct {
 	t2 *big.Int
 }
 
-func NewDLogEqualityVerifier() (*DLogEqualityVerifier, error) {	
-	dlog := config.LoadPseudonymsysDLogFromConfig()
+func NewDLogEqualityVerifier(dlog *dlog.ZpDLog) (*DLogEqualityVerifier) {	
 	verifier := DLogEqualityVerifier {
 		DLog: dlog,
 	}
 	
-    return &verifier, nil
+    return &verifier
 }
 
 func (verifier *DLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.Int) (*big.Int) {

@@ -8,22 +8,29 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 )
 
-type Organization struct {
+type OrgNymGen struct {
 	DLog *dlog.ZpDLog
+	s1 *big.Int
+	s2 *big.Int
+
+	// the following fields are needed for nym generation (registration of a user):
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
 	a *big.Int
 	b *big.Int
 	a_tilde *big.Int
 	b_tilde *big.Int
+
+	// the following fields are needed for issuing a credential
+	SchnorrVerifier *dlogproofs.SchnorrVerifier
 }
 
-func NewOrganization() (*Organization) {
+func NewOrgNymGen(orgName string) (*OrgNymGen) {
 	dlog := config.LoadPseudonymsysDLogFromConfig()
 
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	verifier, _ := dlogproofs.NewDLogEqualityVerifier()
-	org := Organization {
+	verifier := dlogproofs.NewDLogEqualityVerifier(dlog)
+	org := OrgNymGen {
 		DLog: dlog,	
 		EqualityVerifier: verifier,
 	}
@@ -31,7 +38,7 @@ func NewOrganization() (*Organization) {
 	return &org
 }
 
-func (org *Organization) GetFirstPseudonymsysGenReply(a_tilde, b_tilde *big.Int) *big.Int {
+func (org *OrgNymGen) GetFirstReply(a_tilde, b_tilde *big.Int) *big.Int {
 	r := common.GetRandomInt(org.DLog.GetOrderOfSubgroup())
 	a, _ := org.DLog.Exponentiate(a_tilde, r)
 	b, _ := org.DLog.Exponentiate(b_tilde, r)
@@ -42,13 +49,13 @@ func (org *Organization) GetFirstPseudonymsysGenReply(a_tilde, b_tilde *big.Int)
 	return a
 }
 
-func (org *Organization) GetPseudonymGenChallenge(x1, x2 *big.Int) *big.Int {
+func (org *OrgNymGen) GetChallenge(x1, x2 *big.Int) *big.Int {
 	challenge := org.EqualityVerifier.GetChallenge(org.a_tilde, org.a, 
 		org.b_tilde, org.b, x1, x2)
 	return challenge
 }
 
-func (org *Organization) PseudonymGenVerify(z *big.Int) bool {
+func (org *OrgNymGen) Verify(z *big.Int) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	return verified
 }
