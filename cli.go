@@ -35,7 +35,7 @@ func main() {
     
     if *examplePtr == "pedersen" {
 	    if (*clientPtr == true) {	   		
-			dlog := config.LoadPseudonymsysDLogFromConfig()
+			dlog := config.LoadPseudonymsysDLog()
 	    	pedersenProtocolClient := commitments.NewPedersenProtocolClient(dlog)
 	    	
 			err := pedersenProtocolClient.ObtainH()
@@ -68,7 +68,7 @@ func main() {
 	    } else {
 			defer profile.Start().Stop()
 			
-			dlog := config.LoadPseudonymsysDLogFromConfig()
+			dlog := config.LoadPseudonymsysDLog()
 	    	receiver := commitments.NewPedersenProtocolServer(dlog)
 	    	receiver.Listen()
 	    }
@@ -118,7 +118,7 @@ func main() {
    		}
 	    if (*clientPtr == true) {
 	    	log.Println(protocolType)
-			dlog := config.LoadPseudonymsysDLogFromConfig()
+			dlog := config.LoadPseudonymsysDLog()
 
 	    	schnorrProtocolClient, err := dlogproofs.NewSchnorrProtocolClient(dlog, protocolType)
 			if err != nil {
@@ -136,7 +136,7 @@ func main() {
 			    	
 	    } else {
 	    	log.Println(protocolType)
-			dlog := config.LoadPseudonymsysDLogFromConfig()
+			dlog := config.LoadPseudonymsysDLog()
 	    	schnorrServer := dlogproofs.NewSchnorrProtocolServer(dlog, protocolType)
 	    	schnorrServer.Listen()
 	    	
@@ -218,7 +218,7 @@ func main() {
 	    	cspaillierProtocolServer.Listen()
 	    }
 	} else if *examplePtr == "dlog_equality" {
-		dlog := config.LoadPseudonymsysDLogFromConfig()
+		dlog := config.LoadPseudonymsysDLog()
 		
 		secret := big.NewInt(213412)
 		groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1)) 
@@ -231,11 +231,11 @@ func main() {
 		log.Println(proved)
 
 	} else if *examplePtr == "dlog_equality_blinded_transcript" {
-		dlog := config.LoadPseudonymsysDLogFromConfig()
+		dlog := config.LoadPseudonymsysDLog()
 
 		// no wrappers at the moment, because messages handling will be refactored
 		eProver := dlogproofs.NewDLogEqualityBTranscriptProver(dlog)
-		eVerifier := dlogproofs.NewDLogEqualityBTranscriptVerifier(dlog)
+		eVerifier := dlogproofs.NewDLogEqualityBTranscriptVerifier(dlog, nil)
 
 		secret := big.NewInt(213412)
 		groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1)) 
@@ -257,24 +257,43 @@ func main() {
 		valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.DLog, g1, t1, G2, T2)
 		log.Println(valid)
 	} else if *examplePtr == "nymgen" {
-		orgName := "org1"
+		orgName1 := "org1"
+		orgName2 := "org2"
 		userName := "user1"
 		
-		dlog := config.LoadPseudonymsysDLogFromConfig()
-		userSecret := config.LoadPseudonymsysUserSecretFromConfig(userName)
-		
-		// register with orgName
-		nym := pseudonymsys.GenerateNym(userSecret, orgName, dlog)
+		dlog := config.LoadPseudonymsysDLog()
+		userSecret := config.LoadPseudonymsysUserSecret(userName)
+
+		orgPubKeys := make(map[string]*pseudonymsys.OrgPubKeys)
+		h11, h12 := config.LoadPseudonymsysOrgPubKeys(orgName1)
+		orgPubKeys[orgName1] = &pseudonymsys.OrgPubKeys{H1: h11, H2: h12}
+
+		h21, h22 := config.LoadPseudonymsysOrgPubKeys(orgName1)
+		orgPubKeys[orgName2] = &pseudonymsys.OrgPubKeys{H1: h21, H2: h22}
+
+		// register with orgName1
+		nym1 := pseudonymsys.GenerateNym(userSecret, orgName1, dlog)
 		nyms := make(map[string]*pseudonymsys.Pseudonym)
-		nyms[orgName] = nym
+		nyms[orgName1] = nym1
 		
-		// authenticate to the orgName and obtain a credential:
-		credential, err := pseudonymsys.IssueCredential(userSecret, nym, orgName, dlog)
+		// authenticate to the orgName1 and obtain a credential:
+		credential, err := pseudonymsys.IssueCredential(userSecret, nym1, 
+			orgName1, orgPubKeys[orgName1], dlog)
 		if err != nil {
 			log.Fatal(err)	
 		}
+		
+		//credentials := make(map[string]*pseudonymsys.PseudonymCredential)
+		//credentials[orgName1] = credential
 
-		log.Println(credential)
+		// register with orgName2
+		nym2 := pseudonymsys.GenerateNym(userSecret, orgName2, dlog)
+		nyms[orgName2] = nym2
+
+		authenticated, _ := pseudonymsys.TransferCredential(userSecret, credential, nym2, 
+			orgName2, orgPubKeys[orgName2], dlog)
+
+		log.Println(authenticated)
 		
 		
 	}

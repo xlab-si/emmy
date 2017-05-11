@@ -53,17 +53,15 @@ func (prover *SchnorrECProver) GetOpeningMsg() *common.ECGroupElement {
 }
 
 // It contains also value b = a^secret.
-func (prover *SchnorrECProver) GetProofRandomData(a *common.ECGroupElement, 
-		secret *big.Int) (*common.ECGroupElement, *common.ECGroupElement) {
+func (prover *SchnorrECProver) GetProofRandomData(secret *big.Int, 
+		a *common.ECGroupElement) (*common.ECGroupElement) {
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
 	prover.a = a
 	prover.secret = secret
     x1, x2 := prover.DLog.Exponentiate(a.X, a.Y, r)	
-    
-    b1, b2 := prover.DLog.Exponentiate(a.X, a.Y, secret) // b can be considered as a public key
-    
-    return &common.ECGroupElement{X: x1, Y: x2}, &common.ECGroupElement{X: b1, Y: b2}
+     
+    return &common.ECGroupElement{X: x1, Y: x2}
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w

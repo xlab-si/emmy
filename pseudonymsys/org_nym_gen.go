@@ -25,7 +25,7 @@ type OrgNymGen struct {
 }
 
 func NewOrgNymGen(orgName string) (*OrgNymGen) {
-	dlog := config.LoadPseudonymsysDLogFromConfig()
+	dlog := config.LoadPseudonymsysDLog()
 
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
@@ -57,6 +57,9 @@ func (org *OrgNymGen) GetChallenge(x1, x2 *big.Int) *big.Int {
 
 func (org *OrgNymGen) Verify(z *big.Int) bool {
 	verified := org.EqualityVerifier.Verify(z)
+	if verified {
+		// TODO: store (a, b) into a database	
+	}
 	return verified
 }
 

@@ -41,16 +41,16 @@ func (prover *SchnorrProver) GetOpeningMsg() (*big.Int) {
 }
 
 // It contains also value b = a^secret. TODO: b (public key) might be transferred at a different stage.
-func (prover *SchnorrProver) GetProofRandomData(a, secret *big.Int) (*big.Int, *big.Int) {
+func (prover *SchnorrProver) GetProofRandomData(secret, a *big.Int) (*big.Int) {
 	// x = a^r % p, where r is random
 	prover.a = a
 	prover.secret = secret
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
     x, _ := prover.DLog.Exponentiate(a, r)	
-    b, _ := prover.DLog.Exponentiate(a, secret) // t can be considered as a public key
+    //b, _ := prover.DLog.Exponentiate(a, secret) // b can be considered as a public key
     
-    return x, b
+    return x
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w

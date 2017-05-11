@@ -84,8 +84,11 @@ type DLogEqualityBTranscriptVerifier struct {
 	alpha *big.Int
 }
 
-func NewDLogEqualityBTranscriptVerifier(dlog *dlog.ZpDLog) (*DLogEqualityBTranscriptVerifier) {
-	gamma := common.GetRandomInt(dlog.GetOrderOfSubgroup())
+func NewDLogEqualityBTranscriptVerifier(dlog *dlog.ZpDLog, 
+		gamma *big.Int) *DLogEqualityBTranscriptVerifier {
+	if gamma == nil {
+		gamma = common.GetRandomInt(dlog.GetOrderOfSubgroup())
+	}
 	verifier := DLogEqualityBTranscriptVerifier {
 		DLog: dlog,
 		gamma: gamma,
@@ -158,7 +161,7 @@ func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, []*bi
 	
 	G2, _ := verifier.DLog.Exponentiate(verifier.g2, verifier.gamma)
 	T2, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.gamma)
-
+	
 	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
 		return true, verifier.transcript, G2, T2
 	} else {

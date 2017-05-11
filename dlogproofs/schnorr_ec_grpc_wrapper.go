@@ -57,8 +57,10 @@ func (client *SchnorrECProtocolClient) OpeningMsg() (*common.ECGroupElement, err
 // Sends first message of sigma protocol and receives challenge decommitment.
 func (client *SchnorrECProtocolClient) ProofRandomData(a *common.ECGroupElement, 
 		secret *big.Int) (*big.Int, *big.Int, error) {	
-	x, b := client.prover.GetProofRandomData(a, secret) // x = a^r, b = a^secret is "public key"
+	x := client.prover.GetProofRandomData(secret, a) // x = a^r, b = a^secret is "public key"
     
+    b1, b2 := client.prover.DLog.Exponentiate(a.X, a.Y, secret)
+    b := &common.ECGroupElement{X: b1, Y: b2}
 	msg := &pb.SchnorrECProofRandomData{X: common.ToPbECGroupElement(x), 
 		A: common.ToPbECGroupElement(a), B: common.ToPbECGroupElement(b)}
 		

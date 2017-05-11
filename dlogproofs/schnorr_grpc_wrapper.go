@@ -55,8 +55,9 @@ func (client *SchnorrProtocolClient) OpeningMsg() (*big.Int, error) {
 
 // Sends first message of sigma protocol and receives challenge decommitment.
 func (client *SchnorrProtocolClient) ProofRandomData(a, secret *big.Int) (*big.Int, *big.Int, error) {
-	x, b := client.prover.GetProofRandomData(a, secret)
+	x := client.prover.GetProofRandomData(secret, a)
     
+    b, _ := client.prover.DLog.Exponentiate(a, secret)
 	msg := &pb.SchnorrProofRandomData{X: x.Bytes(), A: a.Bytes(), B: b.Bytes()}
 		
 	reply, err := (*client.client).ProofRandomData(context.Background(), msg)

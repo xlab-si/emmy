@@ -5,7 +5,6 @@ import (
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
-	"log"
 )
 
 type Pseudonym struct {
@@ -33,7 +32,6 @@ func GenerateNym(userSecret *big.Int, orgName string, dlog *dlog.ZpDLog) *Pseudo
 	z := prover.GetProofData(challenge)
 	verified := org.Verify(z)
 
-	log.Println(verified)
 	if verified {
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return &Pseudonym{A: a, B: b}
