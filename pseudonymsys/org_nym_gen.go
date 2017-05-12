@@ -13,14 +13,12 @@ type OrgNymGen struct {
 	s1 *big.Int
 	s2 *big.Int
 
-	// the following fields are needed for nym generation (registration of a user):
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
 	a *big.Int
 	b *big.Int
 	a_tilde *big.Int
 	b_tilde *big.Int
 
-	// the following fields are needed for issuing a credential
 	SchnorrVerifier *dlogproofs.SchnorrVerifier
 }
 

@@ -97,6 +97,55 @@ emmy -example=schnorr_ec_zkpok -client=false
 emmy -example=schnorr_ec_zkpok -client=true
 ```
 
+#### Chaum-Pedersen protocol [4] to prove discrete logarithm equality
+
+```
+emmy -example=dlog_equality
+```
+
+#### Protocol to prove discrete logarithm equality that produces a blinded transcript [5]
+
+```
+emmy -example=dlog_equality_blinded_transcript
+```
+
+#### Chaum-Pedersen protocol [4] to prove discrete logarithm equality
+
+
+### Commitments
+
+#### Pedersen commitment in multiplicative group of integers modulo p
+
+For an example run:
+
+```
+emmy -example=pedersen -client=false
+emmy -example=pedersen -client=true
+```
+
+#### Pedersen commitment in EC group
+
+For an example run:
+
+```
+emmy -example=pedersen_ec -client=false
+emmy -example=pedersen_ec -client=true
+```
+
+### Pseudonym system [5]
+
+```
+emmy -example=pseudonymsys
+```
+
+### Verifiable encryption [2]
+
+For an example run:
+
+```
+emmy -example=cspaillier -client=false
+
+
 ### Commitments
 
 #### Pedersen commitment in multiplicative group of integers modulo p
@@ -167,3 +216,8 @@ protoc -I comm/pro/ comm/pro/msgs.proto --go_out=plugins=grpc:comm/pro
 [2] J. Camenisch and V. Shoup, Practical verifiable encryption and decryption of discrete logarithms, http://eprint.iacr.org/2002/161, 2002.
 
 [3] J. Camenisch and A. Lysyanskaya. A signature scheme with efficient protocols. In S. Cimato, C. Galdi, and G. Persiano, editors, Security in Communication Networks, Third International Conference, SCN 2002, volume 2576 of LNCS, pages 268–289. Springer Verlag, 2003.
+
+[4] D. Chaum and T. P. Pedersen, Wallet databases with observers, Advances in Cryptology — CRYPTO ’92 (E. F. Brickell, ed.), LNCS, vol. 740, Springer-Verlag, 1993, pp. 89– 105.
+
+[5] A. Lysyanskaya, R. Rivest, A. Sahai, and S. Wolf. Pseudonym systems. In Selected Areas in Cryptography, vol. 1758 of LNCS. Springer Verlag, 1999.
+

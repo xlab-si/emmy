@@ -256,7 +256,7 @@ func main() {
 		log.Println("is the transcript valid:")
 		valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.DLog, g1, t1, G2, T2)
 		log.Println(valid)
-	} else if *examplePtr == "nymgen" {
+	} else if *examplePtr == "pseudonymsys" {
 		orgName1 := "org1"
 		orgName2 := "org2"
 		userName := "user1"
