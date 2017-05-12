@@ -109,9 +109,6 @@ emmy -example=dlog_equality
 emmy -example=dlog_equality_blinded_transcript
 ```
 
-#### Chaum-Pedersen protocol [4] to prove discrete logarithm equality
-
-
 ### Commitments
 
 #### Pedersen commitment in multiplicative group of integers modulo p
@@ -174,6 +171,7 @@ For an example run:
 emmy -example=cspaillier -client=false
 emmy -example=cspaillier -client=true
 ```
+
 ### Signatures
 
 #### Camenisch-Lysyanskaya signature [3]
@@ -187,7 +185,6 @@ To run an example:
 ```
 emmy -example=split_secret -client=false
 ```
-
 
 ## Todo
 
