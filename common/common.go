@@ -10,17 +10,27 @@ import (
 	"log"
 )
 
-// It appends the given number (bytes of each) and computes a hash.
-func Hash(numbers ...*big.Int) (*big.Int) {
-	var toBeHashed []byte
+// It takes big.Int numbers, transform them to bytes, and concatenate the bytes.
+func ConcatenateNumbers(numbers ...*big.Int) []byte {
+	var bs []byte
 	for _, n := range numbers {
-		toBeHashed = append(toBeHashed, n.Bytes()...)
+		bs = append(bs, n.Bytes()...)
 	}
+	return bs
+}
 
+// It concatenates numbers (their bytes), computes a hash and outputs a hash as []byte.
+func HashIntoBytes(numbers ...*big.Int) []byte {
+	toBeHashed := ConcatenateNumbers(numbers...)
 	sha512 := sha512.New()
 	sha512.Write(toBeHashed)
 	hashBytes := sha512.Sum(nil)
-	
+	return hashBytes
+}
+
+// It concatenates numbers (their bytes), computes a hash and outputs a hash as *big.Int.
+func Hash(numbers ...*big.Int) (*big.Int) {
+	hashBytes := HashIntoBytes(numbers...)	
 	hashNum := new(big.Int).SetBytes(hashBytes)
 	return hashNum
 }

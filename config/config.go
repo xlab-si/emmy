@@ -72,6 +72,20 @@ func LoadPseudonymsysOrgPubKeys(org string) (*big.Int, *big.Int) {
 	return h1, h2
 }
 
+func LoadPseudonymsysCASecret(caName string) *big.Int {
+	LoadConfig("secrets", "json")
+	m := viper.GetStringMap("pseudonymsys")
+	s, _ := new(big.Int).SetString(m[caName].(map[string]interface{})["D"].(string), 10)
+	return s
+}
+
+func LoadPseudonymsysCAPubKey(caName string) (*big.Int, *big.Int) {
+	LoadConfig("pubkeys", "json")
+	m := viper.GetStringMap("pseudonymsys")
+	x, _ := new(big.Int).SetString(m[caName].(map[string]interface{})["X"].(string), 10)
+	y, _ := new(big.Int).SetString(m[caName].(map[string]interface{})["Y"].(string), 10)
+	return x, y
+}
 
 
 

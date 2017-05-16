@@ -260,9 +260,17 @@ func main() {
 		orgName1 := "org1"
 		orgName2 := "org2"
 		userName := "user1"
-		
+		caName := "ca"
 		dlog := config.LoadPseudonymsysDLog()
+		
 		userSecret := config.LoadPseudonymsysUserSecret(userName)
+		p, _ := dlog.Exponentiate(dlog.G, userSecret)
+		masterNym := pseudonymsys.Pseudonym{A: dlog.G, B: p}
+		blindedA, blindedB, r, s, err := pseudonymsys.RegisterWithCA(caName, userSecret, masterNym, dlog)
+		log.Println(blindedA)	
+		log.Println(blindedB)	
+		log.Println(r)
+		log.Println(s)		
 
 		orgPubKeys := make(map[string]*pseudonymsys.OrgPubKeys)
 		h11, h12 := config.LoadPseudonymsysOrgPubKeys(orgName1)
@@ -272,7 +280,14 @@ func main() {
 		orgPubKeys[orgName2] = &pseudonymsys.OrgPubKeys{H1: h21, H2: h22}
 
 		// register with orgName1
-		nym1 := pseudonymsys.GenerateNym(userSecret, orgName1, dlog)
+		//nym1 := pseudonymsys.GenerateNym(userSecret, orgName1, dlog)
+		nym1, err := pseudonymsys.GenerateNymVerifyMaster(userSecret, blindedA,
+			blindedB, r, s, orgName1, caName, dlog)
+		if err != nil {
+			log.Fatal(err)	
+		}
+		
+		
 		nyms := make(map[string]*pseudonymsys.Pseudonym)
 		nyms[orgName1] = nym1
 		
@@ -294,8 +309,7 @@ func main() {
 			orgName2, orgPubKeys[orgName2], dlog)
 
 		log.Println(authenticated)
-		
-		
+				
 	}
 	
     //fmt.Println("word:", *wordPtr)

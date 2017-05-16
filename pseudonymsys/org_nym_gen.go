@@ -10,16 +10,11 @@ import (
 
 type OrgNymGen struct {
 	DLog *dlog.ZpDLog
-	s1 *big.Int
-	s2 *big.Int
-
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
 	a *big.Int
 	b *big.Int
 	a_tilde *big.Int
 	b_tilde *big.Int
-
-	SchnorrVerifier *dlogproofs.SchnorrVerifier
 }
 
 func NewOrgNymGen(orgName string) (*OrgNymGen) {
