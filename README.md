@@ -143,35 +143,6 @@ For an example run:
 emmy -example=cspaillier -client=false
 ```
 
-### Commitments
-
-#### Pedersen commitment in multiplicative group of integers modulo p
-
-For an example run:
-
-```
-emmy -example=pedersen -client=false
-emmy -example=pedersen -client=true
-```
-
-#### Pedersen commitment in EC group
-
-For an example run:
-
-```
-emmy -example=pedersen_ec -client=false
-emmy -example=pedersen_ec -client=true
-```
-
-### Verifiable encryption [2]
-
-For an example run:
-
-```
-emmy -example=cspaillier -client=false
-emmy -example=cspaillier -client=true
-```
-
 ### Signatures
 
 #### Camenisch-Lysyanskaya signature [3]
