@@ -141,7 +141,7 @@ For an example run:
 
 ```
 emmy -example=cspaillier -client=false
-
+```
 
 ### Commitments
 
