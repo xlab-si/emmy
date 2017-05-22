@@ -2,6 +2,80 @@ syntax = "proto3";
 
 package comm;
 
+// Valid schema types
+enum SchemaType {
+	PEDERSEN = 0;
+	PEDERSEN_EC = 1;
+	SCHNORR = 2;
+	SCHNORR_EC = 3;
+	PAILLIER = 4;
+	PAILLIER_EC = 5;
+}
+
+// Valid schema variants
+enum SchemaVariant {
+	SIGMA = 0;	// Sigma protocol only. This is the default - if you don't specify schema variant, sigma will be used
+	ZKP = 1;	// Zero knowledge proof
+	ZKPOK = 2;	// Zero knowledge proof of knowledge
+}
+
+// A generic message
+message Message {
+	SchemaType schema = 1;
+	SchemaVariant schema_variant = 2;
+	oneof content {
+		EmptyMsg empty = 3;
+		BigInt bigint = 4;
+		ECGroupElement ec_group_element = 5;
+		Status status = 6;
+		PedersenFirst pedersen_first = 7;
+		PedersenDecommitment pedersen_decommitment = 8;
+		SchnorrProofData schnorr_proof_data = 9;
+		SchnorrProofRandomData schnorr_proof_random_data = 10;
+		SchnorrECProofRandomData schnorr_ec_proof_random_data = 11;
+		CSPaillierOpening cs_paillier_opening = 12;
+		CSPaillierProofData cs_paillier_proof_data = 13;
+		CSPaillierProofRandomData cs_paillier_proof_random_data = 14;
+	}
+	int32 clientId = 15;
+}
+
+// A generic service
+service Protocol {
+	rpc Run (stream Message) returns (stream Message) {}
+}
+
+// Generic request
+// All fields except type are optional by default
+message Request {
+	SchemaType type = 1;
+	// int sequence_number = ?
+
+	EmptyMsg empty = 2;
+	BigInt bigint = 3;
+	PedersenDecommitment pedersen_decommitment = 4;
+	ECGroupElement ec_group_element = 5;
+	PedersenFirst pedersen_first = 6;
+	SchnorrProofRandomData schnorr_proof_random_data = 7;
+	SchnorrProofData schnorr_proof_data = 8;
+	SchnorrECProofRandomData schnorr_ec_proof_random_data = 9;
+}
+
+
+// Generic response
+// All fields except type are optional by default
+message Response {
+	SchemaType type = 1;
+
+	EmptyMsg empty = 2;
+	PedersenFirst pedersen_first = 3;
+	ECGroupElement ec_group_element = 4;
+	Status status = 5;
+	PedersenDecommitment pedersen_decommitment = 6;
+	BigInt bigint = 7;
+}
+
+
 // P, OrderOfSubgroup, G could be actually fixed, or least not changed each time
 message PedersenFirst {
 	bytes H = 1;
@@ -22,10 +96,22 @@ service PedersenEC {
   rpc Decommit(PedersenDecommitment) returns (Status) {}
 }
 
+message PedersenECRequest {
+	EmptyMsg empty = 1;
+	BigInt commitVal = 2;
+	PedersenDecommitment decommitment = 3;
+	ECGroupElement ecge = 4;
+}
+
+message PedersenECResponse {
+	PedersenFirst first = 1;
+	ECGroupElement ecge = 2;
+	EmptyMsg empty = 3;
+	Status status = 4;
+}
+
 service PedersenECStream {
-  rpc GetH(EmptyMsg) returns (ECGroupElement) {}
-  rpc Commit(ECGroupElement) returns (EmptyMsg) {}
-  rpc Decommit(PedersenDecommitment) returns (Status) {}
+  rpc Commitment(stream PedersenECRequest) returns (stream PedersenECResponse) {}
 }
 
 message EmptyMsg {}

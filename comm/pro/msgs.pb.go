@@ -9,7 +9,12 @@ It is generated from these files:
 	msgs.proto
 
 It has these top-level messages:
+	Message
+	Request
+	Response
 	PedersenFirst
+	PedersenECRequest
+	PedersenECResponse
 	EmptyMsg
 	PedersenDecommitment
 	BigInt
@@ -46,6 +51,669 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Valid schema types
+type SchemaType int32
+
+const (
+	SchemaType_PEDERSEN    SchemaType = 0
+	SchemaType_PEDERSEN_EC SchemaType = 1
+	SchemaType_SCHNORR     SchemaType = 2
+	SchemaType_SCHNORR_EC  SchemaType = 3
+	SchemaType_PAILLIER    SchemaType = 4
+	SchemaType_PAILLIER_EC SchemaType = 5
+)
+
+var SchemaType_name = map[int32]string{
+	0: "PEDERSEN",
+	1: "PEDERSEN_EC",
+	2: "SCHNORR",
+	3: "SCHNORR_EC",
+	4: "PAILLIER",
+	5: "PAILLIER_EC",
+}
+var SchemaType_value = map[string]int32{
+	"PEDERSEN":    0,
+	"PEDERSEN_EC": 1,
+	"SCHNORR":     2,
+	"SCHNORR_EC":  3,
+	"PAILLIER":    4,
+	"PAILLIER_EC": 5,
+}
+
+func (x SchemaType) String() string {
+	return proto.EnumName(SchemaType_name, int32(x))
+}
+func (SchemaType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+// Valid schema variants
+type SchemaVariant int32
+
+const (
+	SchemaVariant_SIGMA SchemaVariant = 0
+	SchemaVariant_ZKP   SchemaVariant = 1
+	SchemaVariant_ZKPOK SchemaVariant = 2
+)
+
+var SchemaVariant_name = map[int32]string{
+	0: "SIGMA",
+	1: "ZKP",
+	2: "ZKPOK",
+}
+var SchemaVariant_value = map[string]int32{
+	"SIGMA": 0,
+	"ZKP":   1,
+	"ZKPOK": 2,
+}
+
+func (x SchemaVariant) String() string {
+	return proto.EnumName(SchemaVariant_name, int32(x))
+}
+func (SchemaVariant) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+// A generic message
+type Message struct {
+	Schema        SchemaType    `protobuf:"varint,1,opt,name=schema,enum=comm.SchemaType" json:"schema,omitempty"`
+	SchemaVariant SchemaVariant `protobuf:"varint,2,opt,name=schema_variant,json=schemaVariant,enum=comm.SchemaVariant" json:"schema_variant,omitempty"`
+	// Types that are valid to be assigned to Content:
+	//	*Message_Empty
+	//	*Message_Bigint
+	//	*Message_EcGroupElement
+	//	*Message_Status
+	//	*Message_PedersenFirst
+	//	*Message_PedersenDecommitment
+	//	*Message_SchnorrProofData
+	//	*Message_SchnorrProofRandomData
+	//	*Message_SchnorrEcProofRandomData
+	//	*Message_CsPaillierOpening
+	//	*Message_CsPaillierProofData
+	//	*Message_CsPaillierProofRandomData
+	Content  isMessage_Content `protobuf_oneof:"content"`
+	ClientId int32             `protobuf:"varint,15,opt,name=clientId" json:"clientId,omitempty"`
+}
+
+func (m *Message) Reset()                    { *m = Message{} }
+func (m *Message) String() string            { return proto.CompactTextString(m) }
+func (*Message) ProtoMessage()               {}
+func (*Message) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+type isMessage_Content interface {
+	isMessage_Content()
+}
+
+type Message_Empty struct {
+	Empty *EmptyMsg `protobuf:"bytes,3,opt,name=empty,oneof"`
+}
+type Message_Bigint struct {
+	Bigint *BigInt `protobuf:"bytes,4,opt,name=bigint,oneof"`
+}
+type Message_EcGroupElement struct {
+	EcGroupElement *ECGroupElement `protobuf:"bytes,5,opt,name=ec_group_element,json=ecGroupElement,oneof"`
+}
+type Message_Status struct {
+	Status *Status `protobuf:"bytes,6,opt,name=status,oneof"`
+}
+type Message_PedersenFirst struct {
+	PedersenFirst *PedersenFirst `protobuf:"bytes,7,opt,name=pedersen_first,json=pedersenFirst,oneof"`
+}
+type Message_PedersenDecommitment struct {
+	PedersenDecommitment *PedersenDecommitment `protobuf:"bytes,8,opt,name=pedersen_decommitment,json=pedersenDecommitment,oneof"`
+}
+type Message_SchnorrProofData struct {
+	SchnorrProofData *SchnorrProofData `protobuf:"bytes,9,opt,name=schnorr_proof_data,json=schnorrProofData,oneof"`
+}
+type Message_SchnorrProofRandomData struct {
+	SchnorrProofRandomData *SchnorrProofRandomData `protobuf:"bytes,10,opt,name=schnorr_proof_random_data,json=schnorrProofRandomData,oneof"`
+}
+type Message_SchnorrEcProofRandomData struct {
+	SchnorrEcProofRandomData *SchnorrECProofRandomData `protobuf:"bytes,11,opt,name=schnorr_ec_proof_random_data,json=schnorrEcProofRandomData,oneof"`
+}
+type Message_CsPaillierOpening struct {
+	CsPaillierOpening *CSPaillierOpening `protobuf:"bytes,12,opt,name=cs_paillier_opening,json=csPaillierOpening,oneof"`
+}
+type Message_CsPaillierProofData struct {
+	CsPaillierProofData *CSPaillierProofData `protobuf:"bytes,13,opt,name=cs_paillier_proof_data,json=csPaillierProofData,oneof"`
+}
+type Message_CsPaillierProofRandomData struct {
+	CsPaillierProofRandomData *CSPaillierProofRandomData `protobuf:"bytes,14,opt,name=cs_paillier_proof_random_data,json=csPaillierProofRandomData,oneof"`
+}
+
+func (*Message_Empty) isMessage_Content()                     {}
+func (*Message_Bigint) isMessage_Content()                    {}
+func (*Message_EcGroupElement) isMessage_Content()            {}
+func (*Message_Status) isMessage_Content()                    {}
+func (*Message_PedersenFirst) isMessage_Content()             {}
+func (*Message_PedersenDecommitment) isMessage_Content()      {}
+func (*Message_SchnorrProofData) isMessage_Content()          {}
+func (*Message_SchnorrProofRandomData) isMessage_Content()    {}
+func (*Message_SchnorrEcProofRandomData) isMessage_Content()  {}
+func (*Message_CsPaillierOpening) isMessage_Content()         {}
+func (*Message_CsPaillierProofData) isMessage_Content()       {}
+func (*Message_CsPaillierProofRandomData) isMessage_Content() {}
+
+func (m *Message) GetContent() isMessage_Content {
+	if m != nil {
+		return m.Content
+	}
+	return nil
+}
+
+func (m *Message) GetSchema() SchemaType {
+	if m != nil {
+		return m.Schema
+	}
+	return SchemaType_PEDERSEN
+}
+
+func (m *Message) GetSchemaVariant() SchemaVariant {
+	if m != nil {
+		return m.SchemaVariant
+	}
+	return SchemaVariant_SIGMA
+}
+
+func (m *Message) GetEmpty() *EmptyMsg {
+	if x, ok := m.GetContent().(*Message_Empty); ok {
+		return x.Empty
+	}
+	return nil
+}
+
+func (m *Message) GetBigint() *BigInt {
+	if x, ok := m.GetContent().(*Message_Bigint); ok {
+		return x.Bigint
+	}
+	return nil
+}
+
+func (m *Message) GetEcGroupElement() *ECGroupElement {
+	if x, ok := m.GetContent().(*Message_EcGroupElement); ok {
+		return x.EcGroupElement
+	}
+	return nil
+}
+
+func (m *Message) GetStatus() *Status {
+	if x, ok := m.GetContent().(*Message_Status); ok {
+		return x.Status
+	}
+	return nil
+}
+
+func (m *Message) GetPedersenFirst() *PedersenFirst {
+	if x, ok := m.GetContent().(*Message_PedersenFirst); ok {
+		return x.PedersenFirst
+	}
+	return nil
+}
+
+func (m *Message) GetPedersenDecommitment() *PedersenDecommitment {
+	if x, ok := m.GetContent().(*Message_PedersenDecommitment); ok {
+		return x.PedersenDecommitment
+	}
+	return nil
+}
+
+func (m *Message) GetSchnorrProofData() *SchnorrProofData {
+	if x, ok := m.GetContent().(*Message_SchnorrProofData); ok {
+		return x.SchnorrProofData
+	}
+	return nil
+}
+
+func (m *Message) GetSchnorrProofRandomData() *SchnorrProofRandomData {
+	if x, ok := m.GetContent().(*Message_SchnorrProofRandomData); ok {
+		return x.SchnorrProofRandomData
+	}
+	return nil
+}
+
+func (m *Message) GetSchnorrEcProofRandomData() *SchnorrECProofRandomData {
+	if x, ok := m.GetContent().(*Message_SchnorrEcProofRandomData); ok {
+		return x.SchnorrEcProofRandomData
+	}
+	return nil
+}
+
+func (m *Message) GetCsPaillierOpening() *CSPaillierOpening {
+	if x, ok := m.GetContent().(*Message_CsPaillierOpening); ok {
+		return x.CsPaillierOpening
+	}
+	return nil
+}
+
+func (m *Message) GetCsPaillierProofData() *CSPaillierProofData {
+	if x, ok := m.GetContent().(*Message_CsPaillierProofData); ok {
+		return x.CsPaillierProofData
+	}
+	return nil
+}
+
+func (m *Message) GetCsPaillierProofRandomData() *CSPaillierProofRandomData {
+	if x, ok := m.GetContent().(*Message_CsPaillierProofRandomData); ok {
+		return x.CsPaillierProofRandomData
+	}
+	return nil
+}
+
+func (m *Message) GetClientId() int32 {
+	if m != nil {
+		return m.ClientId
+	}
+	return 0
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Message) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Message_OneofMarshaler, _Message_OneofUnmarshaler, _Message_OneofSizer, []interface{}{
+		(*Message_Empty)(nil),
+		(*Message_Bigint)(nil),
+		(*Message_EcGroupElement)(nil),
+		(*Message_Status)(nil),
+		(*Message_PedersenFirst)(nil),
+		(*Message_PedersenDecommitment)(nil),
+		(*Message_SchnorrProofData)(nil),
+		(*Message_SchnorrProofRandomData)(nil),
+		(*Message_SchnorrEcProofRandomData)(nil),
+		(*Message_CsPaillierOpening)(nil),
+		(*Message_CsPaillierProofData)(nil),
+		(*Message_CsPaillierProofRandomData)(nil),
+	}
+}
+
+func _Message_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Message)
+	// content
+	switch x := m.Content.(type) {
+	case *Message_Empty:
+		b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Empty); err != nil {
+			return err
+		}
+	case *Message_Bigint:
+		b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Bigint); err != nil {
+			return err
+		}
+	case *Message_EcGroupElement:
+		b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.EcGroupElement); err != nil {
+			return err
+		}
+	case *Message_Status:
+		b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Status); err != nil {
+			return err
+		}
+	case *Message_PedersenFirst:
+		b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.PedersenFirst); err != nil {
+			return err
+		}
+	case *Message_PedersenDecommitment:
+		b.EncodeVarint(8<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.PedersenDecommitment); err != nil {
+			return err
+		}
+	case *Message_SchnorrProofData:
+		b.EncodeVarint(9<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SchnorrProofData); err != nil {
+			return err
+		}
+	case *Message_SchnorrProofRandomData:
+		b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SchnorrProofRandomData); err != nil {
+			return err
+		}
+	case *Message_SchnorrEcProofRandomData:
+		b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SchnorrEcProofRandomData); err != nil {
+			return err
+		}
+	case *Message_CsPaillierOpening:
+		b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CsPaillierOpening); err != nil {
+			return err
+		}
+	case *Message_CsPaillierProofData:
+		b.EncodeVarint(13<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CsPaillierProofData); err != nil {
+			return err
+		}
+	case *Message_CsPaillierProofRandomData:
+		b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CsPaillierProofRandomData); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Message.Content has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Message_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Message)
+	switch tag {
+	case 3: // content.empty
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(EmptyMsg)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_Empty{msg}
+		return true, err
+	case 4: // content.bigint
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BigInt)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_Bigint{msg}
+		return true, err
+	case 5: // content.ec_group_element
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ECGroupElement)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_EcGroupElement{msg}
+		return true, err
+	case 6: // content.status
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Status)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_Status{msg}
+		return true, err
+	case 7: // content.pedersen_first
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PedersenFirst)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_PedersenFirst{msg}
+		return true, err
+	case 8: // content.pedersen_decommitment
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PedersenDecommitment)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_PedersenDecommitment{msg}
+		return true, err
+	case 9: // content.schnorr_proof_data
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SchnorrProofData)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_SchnorrProofData{msg}
+		return true, err
+	case 10: // content.schnorr_proof_random_data
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SchnorrProofRandomData)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_SchnorrProofRandomData{msg}
+		return true, err
+	case 11: // content.schnorr_ec_proof_random_data
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SchnorrECProofRandomData)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_SchnorrEcProofRandomData{msg}
+		return true, err
+	case 12: // content.cs_paillier_opening
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CSPaillierOpening)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_CsPaillierOpening{msg}
+		return true, err
+	case 13: // content.cs_paillier_proof_data
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CSPaillierProofData)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_CsPaillierProofData{msg}
+		return true, err
+	case 14: // content.cs_paillier_proof_random_data
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CSPaillierProofRandomData)
+		err := b.DecodeMessage(msg)
+		m.Content = &Message_CsPaillierProofRandomData{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _Message_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Message)
+	// content
+	switch x := m.Content.(type) {
+	case *Message_Empty:
+		s := proto.Size(x.Empty)
+		n += proto.SizeVarint(3<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_Bigint:
+		s := proto.Size(x.Bigint)
+		n += proto.SizeVarint(4<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_EcGroupElement:
+		s := proto.Size(x.EcGroupElement)
+		n += proto.SizeVarint(5<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_Status:
+		s := proto.Size(x.Status)
+		n += proto.SizeVarint(6<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_PedersenFirst:
+		s := proto.Size(x.PedersenFirst)
+		n += proto.SizeVarint(7<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_PedersenDecommitment:
+		s := proto.Size(x.PedersenDecommitment)
+		n += proto.SizeVarint(8<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_SchnorrProofData:
+		s := proto.Size(x.SchnorrProofData)
+		n += proto.SizeVarint(9<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_SchnorrProofRandomData:
+		s := proto.Size(x.SchnorrProofRandomData)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_SchnorrEcProofRandomData:
+		s := proto.Size(x.SchnorrEcProofRandomData)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_CsPaillierOpening:
+		s := proto.Size(x.CsPaillierOpening)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_CsPaillierProofData:
+		s := proto.Size(x.CsPaillierProofData)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Message_CsPaillierProofRandomData:
+		s := proto.Size(x.CsPaillierProofRandomData)
+		n += proto.SizeVarint(14<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// Generic request
+// All fields except type are optional by default
+type Request struct {
+	Type                     SchemaType                `protobuf:"varint,1,opt,name=type,enum=comm.SchemaType" json:"type,omitempty"`
+	Empty                    *EmptyMsg                 `protobuf:"bytes,2,opt,name=empty" json:"empty,omitempty"`
+	Bigint                   *BigInt                   `protobuf:"bytes,3,opt,name=bigint" json:"bigint,omitempty"`
+	PedersenDecommitment     *PedersenDecommitment     `protobuf:"bytes,4,opt,name=pedersen_decommitment,json=pedersenDecommitment" json:"pedersen_decommitment,omitempty"`
+	EcGroupElement           *ECGroupElement           `protobuf:"bytes,5,opt,name=ec_group_element,json=ecGroupElement" json:"ec_group_element,omitempty"`
+	PedersenFirst            *PedersenFirst            `protobuf:"bytes,6,opt,name=pedersen_first,json=pedersenFirst" json:"pedersen_first,omitempty"`
+	SchnorrProofRandomData   *SchnorrProofRandomData   `protobuf:"bytes,7,opt,name=schnorr_proof_random_data,json=schnorrProofRandomData" json:"schnorr_proof_random_data,omitempty"`
+	SchnorrProofData         *SchnorrProofData         `protobuf:"bytes,8,opt,name=schnorr_proof_data,json=schnorrProofData" json:"schnorr_proof_data,omitempty"`
+	SchnorrEcProofRandomData *SchnorrECProofRandomData `protobuf:"bytes,9,opt,name=schnorr_ec_proof_random_data,json=schnorrEcProofRandomData" json:"schnorr_ec_proof_random_data,omitempty"`
+}
+
+func (m *Request) Reset()                    { *m = Request{} }
+func (m *Request) String() string            { return proto.CompactTextString(m) }
+func (*Request) ProtoMessage()               {}
+func (*Request) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *Request) GetType() SchemaType {
+	if m != nil {
+		return m.Type
+	}
+	return SchemaType_PEDERSEN
+}
+
+func (m *Request) GetEmpty() *EmptyMsg {
+	if m != nil {
+		return m.Empty
+	}
+	return nil
+}
+
+func (m *Request) GetBigint() *BigInt {
+	if m != nil {
+		return m.Bigint
+	}
+	return nil
+}
+
+func (m *Request) GetPedersenDecommitment() *PedersenDecommitment {
+	if m != nil {
+		return m.PedersenDecommitment
+	}
+	return nil
+}
+
+func (m *Request) GetEcGroupElement() *ECGroupElement {
+	if m != nil {
+		return m.EcGroupElement
+	}
+	return nil
+}
+
+func (m *Request) GetPedersenFirst() *PedersenFirst {
+	if m != nil {
+		return m.PedersenFirst
+	}
+	return nil
+}
+
+func (m *Request) GetSchnorrProofRandomData() *SchnorrProofRandomData {
+	if m != nil {
+		return m.SchnorrProofRandomData
+	}
+	return nil
+}
+
+func (m *Request) GetSchnorrProofData() *SchnorrProofData {
+	if m != nil {
+		return m.SchnorrProofData
+	}
+	return nil
+}
+
+func (m *Request) GetSchnorrEcProofRandomData() *SchnorrECProofRandomData {
+	if m != nil {
+		return m.SchnorrEcProofRandomData
+	}
+	return nil
+}
+
+// Generic response
+// All fields except type are optional by default
+type Response struct {
+	Type                 SchemaType            `protobuf:"varint,1,opt,name=type,enum=comm.SchemaType" json:"type,omitempty"`
+	Empty                *EmptyMsg             `protobuf:"bytes,2,opt,name=empty" json:"empty,omitempty"`
+	PedersenFirst        *PedersenFirst        `protobuf:"bytes,3,opt,name=pedersen_first,json=pedersenFirst" json:"pedersen_first,omitempty"`
+	EcGroupElement       *ECGroupElement       `protobuf:"bytes,4,opt,name=ec_group_element,json=ecGroupElement" json:"ec_group_element,omitempty"`
+	Status               *Status               `protobuf:"bytes,5,opt,name=status" json:"status,omitempty"`
+	PedersenDecommitment *PedersenDecommitment `protobuf:"bytes,6,opt,name=pedersen_decommitment,json=pedersenDecommitment" json:"pedersen_decommitment,omitempty"`
+	Bigint               *BigInt               `protobuf:"bytes,7,opt,name=bigint" json:"bigint,omitempty"`
+}
+
+func (m *Response) Reset()                    { *m = Response{} }
+func (m *Response) String() string            { return proto.CompactTextString(m) }
+func (*Response) ProtoMessage()               {}
+func (*Response) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *Response) GetType() SchemaType {
+	if m != nil {
+		return m.Type
+	}
+	return SchemaType_PEDERSEN
+}
+
+func (m *Response) GetEmpty() *EmptyMsg {
+	if m != nil {
+		return m.Empty
+	}
+	return nil
+}
+
+func (m *Response) GetPedersenFirst() *PedersenFirst {
+	if m != nil {
+		return m.PedersenFirst
+	}
+	return nil
+}
+
+func (m *Response) GetEcGroupElement() *ECGroupElement {
+	if m != nil {
+		return m.EcGroupElement
+	}
+	return nil
+}
+
+func (m *Response) GetStatus() *Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *Response) GetPedersenDecommitment() *PedersenDecommitment {
+	if m != nil {
+		return m.PedersenDecommitment
+	}
+	return nil
+}
+
+func (m *Response) GetBigint() *BigInt {
+	if m != nil {
+		return m.Bigint
+	}
+	return nil
+}
+
 // P, OrderOfSubgroup, G could be actually fixed, or least not changed each time
 type PedersenFirst struct {
 	H               []byte `protobuf:"bytes,1,opt,name=H,proto3" json:"H,omitempty"`
@@ -57,7 +725,7 @@ type PedersenFirst struct {
 func (m *PedersenFirst) Reset()                    { *m = PedersenFirst{} }
 func (m *PedersenFirst) String() string            { return proto.CompactTextString(m) }
 func (*PedersenFirst) ProtoMessage()               {}
-func (*PedersenFirst) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*PedersenFirst) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *PedersenFirst) GetH() []byte {
 	if m != nil {
@@ -87,13 +755,93 @@ func (m *PedersenFirst) GetG() []byte {
 	return nil
 }
 
+type PedersenECRequest struct {
+	Empty        *EmptyMsg             `protobuf:"bytes,1,opt,name=empty" json:"empty,omitempty"`
+	CommitVal    *BigInt               `protobuf:"bytes,2,opt,name=commitVal" json:"commitVal,omitempty"`
+	Decommitment *PedersenDecommitment `protobuf:"bytes,3,opt,name=decommitment" json:"decommitment,omitempty"`
+	Ecge         *ECGroupElement       `protobuf:"bytes,4,opt,name=ecge" json:"ecge,omitempty"`
+}
+
+func (m *PedersenECRequest) Reset()                    { *m = PedersenECRequest{} }
+func (m *PedersenECRequest) String() string            { return proto.CompactTextString(m) }
+func (*PedersenECRequest) ProtoMessage()               {}
+func (*PedersenECRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *PedersenECRequest) GetEmpty() *EmptyMsg {
+	if m != nil {
+		return m.Empty
+	}
+	return nil
+}
+
+func (m *PedersenECRequest) GetCommitVal() *BigInt {
+	if m != nil {
+		return m.CommitVal
+	}
+	return nil
+}
+
+func (m *PedersenECRequest) GetDecommitment() *PedersenDecommitment {
+	if m != nil {
+		return m.Decommitment
+	}
+	return nil
+}
+
+func (m *PedersenECRequest) GetEcge() *ECGroupElement {
+	if m != nil {
+		return m.Ecge
+	}
+	return nil
+}
+
+type PedersenECResponse struct {
+	First  *PedersenFirst  `protobuf:"bytes,1,opt,name=first" json:"first,omitempty"`
+	Ecge   *ECGroupElement `protobuf:"bytes,2,opt,name=ecge" json:"ecge,omitempty"`
+	Empty  *EmptyMsg       `protobuf:"bytes,3,opt,name=empty" json:"empty,omitempty"`
+	Status *Status         `protobuf:"bytes,4,opt,name=status" json:"status,omitempty"`
+}
+
+func (m *PedersenECResponse) Reset()                    { *m = PedersenECResponse{} }
+func (m *PedersenECResponse) String() string            { return proto.CompactTextString(m) }
+func (*PedersenECResponse) ProtoMessage()               {}
+func (*PedersenECResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *PedersenECResponse) GetFirst() *PedersenFirst {
+	if m != nil {
+		return m.First
+	}
+	return nil
+}
+
+func (m *PedersenECResponse) GetEcge() *ECGroupElement {
+	if m != nil {
+		return m.Ecge
+	}
+	return nil
+}
+
+func (m *PedersenECResponse) GetEmpty() *EmptyMsg {
+	if m != nil {
+		return m.Empty
+	}
+	return nil
+}
+
+func (m *PedersenECResponse) GetStatus() *Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
 type EmptyMsg struct {
 }
 
 func (m *EmptyMsg) Reset()                    { *m = EmptyMsg{} }
 func (m *EmptyMsg) String() string            { return proto.CompactTextString(m) }
 func (*EmptyMsg) ProtoMessage()               {}
-func (*EmptyMsg) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*EmptyMsg) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 type PedersenDecommitment struct {
 	X []byte `protobuf:"bytes,1,opt,name=X,proto3" json:"X,omitempty"`
@@ -103,7 +851,7 @@ type PedersenDecommitment struct {
 func (m *PedersenDecommitment) Reset()                    { *m = PedersenDecommitment{} }
 func (m *PedersenDecommitment) String() string            { return proto.CompactTextString(m) }
 func (*PedersenDecommitment) ProtoMessage()               {}
-func (*PedersenDecommitment) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*PedersenDecommitment) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *PedersenDecommitment) GetX() []byte {
 	if m != nil {
@@ -126,7 +874,7 @@ type BigInt struct {
 func (m *BigInt) Reset()                    { *m = BigInt{} }
 func (m *BigInt) String() string            { return proto.CompactTextString(m) }
 func (*BigInt) ProtoMessage()               {}
-func (*BigInt) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*BigInt) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 func (m *BigInt) GetX1() []byte {
 	if m != nil {
@@ -143,7 +891,7 @@ type ECGroupElement struct {
 func (m *ECGroupElement) Reset()                    { *m = ECGroupElement{} }
 func (m *ECGroupElement) String() string            { return proto.CompactTextString(m) }
 func (*ECGroupElement) ProtoMessage()               {}
-func (*ECGroupElement) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*ECGroupElement) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
 func (m *ECGroupElement) GetX() []byte {
 	if m != nil {
@@ -166,7 +914,7 @@ type Status struct {
 func (m *Status) Reset()                    { *m = Status{} }
 func (m *Status) String() string            { return proto.CompactTextString(m) }
 func (*Status) ProtoMessage()               {}
-func (*Status) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*Status) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
 func (m *Status) GetSuccess() bool {
 	if m != nil {
@@ -186,7 +934,7 @@ type SchnorrProofRandomData struct {
 func (m *SchnorrProofRandomData) Reset()                    { *m = SchnorrProofRandomData{} }
 func (m *SchnorrProofRandomData) String() string            { return proto.CompactTextString(m) }
 func (*SchnorrProofRandomData) ProtoMessage()               {}
-func (*SchnorrProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*SchnorrProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
 func (m *SchnorrProofRandomData) GetX() []byte {
 	if m != nil {
@@ -231,7 +979,7 @@ type SchnorrECProofRandomData struct {
 func (m *SchnorrECProofRandomData) Reset()                    { *m = SchnorrECProofRandomData{} }
 func (m *SchnorrECProofRandomData) String() string            { return proto.CompactTextString(m) }
 func (*SchnorrECProofRandomData) ProtoMessage()               {}
-func (*SchnorrECProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+func (*SchnorrECProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
 func (m *SchnorrECProofRandomData) GetX() *ECGroupElement {
 	if m != nil {
@@ -255,7 +1003,7 @@ type SchnorrProofData struct {
 func (m *SchnorrProofData) Reset()                    { *m = SchnorrProofData{} }
 func (m *SchnorrProofData) String() string            { return proto.CompactTextString(m) }
 func (*SchnorrProofData) ProtoMessage()               {}
-func (*SchnorrProofData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+func (*SchnorrProofData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
 
 func (m *SchnorrProofData) GetZ() []byte {
 	if m != nil {
@@ -290,7 +1038,7 @@ type CSPaillierSecretKey struct {
 func (m *CSPaillierSecretKey) Reset()                    { *m = CSPaillierSecretKey{} }
 func (m *CSPaillierSecretKey) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierSecretKey) ProtoMessage()               {}
-func (*CSPaillierSecretKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+func (*CSPaillierSecretKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
 
 func (m *CSPaillierSecretKey) GetN() []byte {
 	if m != nil {
@@ -402,7 +1150,7 @@ type CSPaillierPubKey struct {
 func (m *CSPaillierPubKey) Reset()                    { *m = CSPaillierPubKey{} }
 func (m *CSPaillierPubKey) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierPubKey) ProtoMessage()               {}
-func (*CSPaillierPubKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+func (*CSPaillierPubKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
 func (m *CSPaillierPubKey) GetN() []byte {
 	if m != nil {
@@ -507,7 +1255,7 @@ type CSPaillierOpening struct {
 func (m *CSPaillierOpening) Reset()                    { *m = CSPaillierOpening{} }
 func (m *CSPaillierOpening) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierOpening) ProtoMessage()               {}
-func (*CSPaillierOpening) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+func (*CSPaillierOpening) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
 
 func (m *CSPaillierOpening) GetU() []byte {
 	if m != nil {
@@ -562,7 +1310,7 @@ type CSPaillierProofRandomData struct {
 func (m *CSPaillierProofRandomData) Reset()                    { *m = CSPaillierProofRandomData{} }
 func (m *CSPaillierProofRandomData) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierProofRandomData) ProtoMessage()               {}
-func (*CSPaillierProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+func (*CSPaillierProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
 
 func (m *CSPaillierProofRandomData) GetU1() []byte {
 	if m != nil {
@@ -611,7 +1359,7 @@ type CSPaillierProofData struct {
 func (m *CSPaillierProofData) Reset()                    { *m = CSPaillierProofData{} }
 func (m *CSPaillierProofData) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierProofData) ProtoMessage()               {}
-func (*CSPaillierProofData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+func (*CSPaillierProofData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18} }
 
 func (m *CSPaillierProofData) GetRTilde() []byte {
 	if m != nil {
@@ -656,7 +1404,12 @@ func (m *CSPaillierProofData) GetMTildeIsNeg() bool {
 }
 
 func init() {
+	proto.RegisterType((*Message)(nil), "comm.Message")
+	proto.RegisterType((*Request)(nil), "comm.Request")
+	proto.RegisterType((*Response)(nil), "comm.Response")
 	proto.RegisterType((*PedersenFirst)(nil), "comm.PedersenFirst")
+	proto.RegisterType((*PedersenECRequest)(nil), "comm.PedersenECRequest")
+	proto.RegisterType((*PedersenECResponse)(nil), "comm.PedersenECResponse")
 	proto.RegisterType((*EmptyMsg)(nil), "comm.EmptyMsg")
 	proto.RegisterType((*PedersenDecommitment)(nil), "comm.PedersenDecommitment")
 	proto.RegisterType((*BigInt)(nil), "comm.BigInt")
@@ -670,6 +1423,8 @@ func init() {
 	proto.RegisterType((*CSPaillierOpening)(nil), "comm.CSPaillierOpening")
 	proto.RegisterType((*CSPaillierProofRandomData)(nil), "comm.CSPaillierProofRandomData")
 	proto.RegisterType((*CSPaillierProofData)(nil), "comm.CSPaillierProofData")
+	proto.RegisterEnum("comm.SchemaType", SchemaType_name, SchemaType_value)
+	proto.RegisterEnum("comm.SchemaVariant", SchemaVariant_name, SchemaVariant_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -679,6 +1434,102 @@ var _ grpc.ClientConn
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
+
+// Client API for Protocol service
+
+type ProtocolClient interface {
+	Run(ctx context.Context, opts ...grpc.CallOption) (Protocol_RunClient, error)
+}
+
+type protocolClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewProtocolClient(cc *grpc.ClientConn) ProtocolClient {
+	return &protocolClient{cc}
+}
+
+func (c *protocolClient) Run(ctx context.Context, opts ...grpc.CallOption) (Protocol_RunClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Protocol_serviceDesc.Streams[0], c.cc, "/comm.Protocol/Run", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &protocolRunClient{stream}
+	return x, nil
+}
+
+type Protocol_RunClient interface {
+	Send(*Message) error
+	Recv() (*Message, error)
+	grpc.ClientStream
+}
+
+type protocolRunClient struct {
+	grpc.ClientStream
+}
+
+func (x *protocolRunClient) Send(m *Message) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *protocolRunClient) Recv() (*Message, error) {
+	m := new(Message)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for Protocol service
+
+type ProtocolServer interface {
+	Run(Protocol_RunServer) error
+}
+
+func RegisterProtocolServer(s *grpc.Server, srv ProtocolServer) {
+	s.RegisterService(&_Protocol_serviceDesc, srv)
+}
+
+func _Protocol_Run_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ProtocolServer).Run(&protocolRunServer{stream})
+}
+
+type Protocol_RunServer interface {
+	Send(*Message) error
+	Recv() (*Message, error)
+	grpc.ServerStream
+}
+
+type protocolRunServer struct {
+	grpc.ServerStream
+}
+
+func (x *protocolRunServer) Send(m *Message) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *protocolRunServer) Recv() (*Message, error) {
+	m := new(Message)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _Protocol_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "comm.Protocol",
+	HandlerType: (*ProtocolServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Run",
+			Handler:       _Protocol_Run_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "msgs.proto",
+}
 
 // Client API for Pedersen service
 
@@ -943,9 +1794,7 @@ var _PedersenEC_serviceDesc = grpc.ServiceDesc{
 // Client API for PedersenECStream service
 
 type PedersenECStreamClient interface {
-	GetH(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*ECGroupElement, error)
-	Commit(ctx context.Context, in *ECGroupElement, opts ...grpc.CallOption) (*EmptyMsg, error)
-	Decommit(ctx context.Context, in *PedersenDecommitment, opts ...grpc.CallOption) (*Status, error)
+	Commitment(ctx context.Context, opts ...grpc.CallOption) (PedersenECStream_CommitmentClient, error)
 }
 
 type pedersenECStreamClient struct {
@@ -956,117 +1805,85 @@ func NewPedersenECStreamClient(cc *grpc.ClientConn) PedersenECStreamClient {
 	return &pedersenECStreamClient{cc}
 }
 
-func (c *pedersenECStreamClient) GetH(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*ECGroupElement, error) {
-	out := new(ECGroupElement)
-	err := grpc.Invoke(ctx, "/comm.PedersenECStream/GetH", in, out, c.cc, opts...)
+func (c *pedersenECStreamClient) Commitment(ctx context.Context, opts ...grpc.CallOption) (PedersenECStream_CommitmentClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_PedersenECStream_serviceDesc.Streams[0], c.cc, "/comm.PedersenECStream/Commitment", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &pedersenECStreamCommitmentClient{stream}
+	return x, nil
 }
 
-func (c *pedersenECStreamClient) Commit(ctx context.Context, in *ECGroupElement, opts ...grpc.CallOption) (*EmptyMsg, error) {
-	out := new(EmptyMsg)
-	err := grpc.Invoke(ctx, "/comm.PedersenECStream/Commit", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type PedersenECStream_CommitmentClient interface {
+	Send(*PedersenECRequest) error
+	Recv() (*PedersenECResponse, error)
+	grpc.ClientStream
 }
 
-func (c *pedersenECStreamClient) Decommit(ctx context.Context, in *PedersenDecommitment, opts ...grpc.CallOption) (*Status, error) {
-	out := new(Status)
-	err := grpc.Invoke(ctx, "/comm.PedersenECStream/Decommit", in, out, c.cc, opts...)
-	if err != nil {
+type pedersenECStreamCommitmentClient struct {
+	grpc.ClientStream
+}
+
+func (x *pedersenECStreamCommitmentClient) Send(m *PedersenECRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *pedersenECStreamCommitmentClient) Recv() (*PedersenECResponse, error) {
+	m := new(PedersenECResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return m, nil
 }
 
 // Server API for PedersenECStream service
 
 type PedersenECStreamServer interface {
-	GetH(context.Context, *EmptyMsg) (*ECGroupElement, error)
-	Commit(context.Context, *ECGroupElement) (*EmptyMsg, error)
-	Decommit(context.Context, *PedersenDecommitment) (*Status, error)
+	Commitment(PedersenECStream_CommitmentServer) error
 }
 
 func RegisterPedersenECStreamServer(s *grpc.Server, srv PedersenECStreamServer) {
 	s.RegisterService(&_PedersenECStream_serviceDesc, srv)
 }
 
-func _PedersenECStream_GetH_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyMsg)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PedersenECStreamServer).GetH(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/comm.PedersenECStream/GetH",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PedersenECStreamServer).GetH(ctx, req.(*EmptyMsg))
-	}
-	return interceptor(ctx, in, info, handler)
+func _PedersenECStream_Commitment_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(PedersenECStreamServer).Commitment(&pedersenECStreamCommitmentServer{stream})
 }
 
-func _PedersenECStream_Commit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ECGroupElement)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PedersenECStreamServer).Commit(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/comm.PedersenECStream/Commit",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PedersenECStreamServer).Commit(ctx, req.(*ECGroupElement))
-	}
-	return interceptor(ctx, in, info, handler)
+type PedersenECStream_CommitmentServer interface {
+	Send(*PedersenECResponse) error
+	Recv() (*PedersenECRequest, error)
+	grpc.ServerStream
 }
 
-func _PedersenECStream_Decommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PedersenDecommitment)
-	if err := dec(in); err != nil {
+type pedersenECStreamCommitmentServer struct {
+	grpc.ServerStream
+}
+
+func (x *pedersenECStreamCommitmentServer) Send(m *PedersenECResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *pedersenECStreamCommitmentServer) Recv() (*PedersenECRequest, error) {
+	m := new(PedersenECRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(PedersenECStreamServer).Decommit(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/comm.PedersenECStream/Decommit",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PedersenECStreamServer).Decommit(ctx, req.(*PedersenDecommitment))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 var _PedersenECStream_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "comm.PedersenECStream",
 	HandlerType: (*PedersenECStreamServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "GetH",
-			Handler:    _PedersenECStream_GetH_Handler,
-		},
-		{
-			MethodName: "Commit",
-			Handler:    _PedersenECStream_Commit_Handler,
-		},
-		{
-			MethodName: "Decommit",
-			Handler:    _PedersenECStream_Decommit_Handler,
+			StreamName:    "Commitment",
+			Handler:       _PedersenECStream_Commitment_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "msgs.proto",
 }
 
@@ -1477,60 +2294,103 @@ var _CSPaillierProtocol_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("msgs.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 874 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe4, 0x56, 0xcd, 0x8e, 0xdb, 0x54,
-	0x14, 0xae, 0xd3, 0x99, 0x34, 0x3d, 0x93, 0xce, 0x4c, 0xef, 0x8c, 0xca, 0x6d, 0x84, 0xa0, 0xba,
-	0xab, 0x2e, 0x20, 0xaa, 0x33, 0x52, 0x91, 0x10, 0xab, 0x66, 0x4c, 0x52, 0xe5, 0xb7, 0x76, 0x12,
-	0x8d, 0xbb, 0x73, 0x9c, 0x3b, 0xc1, 0x92, 0x13, 0x47, 0xb6, 0x23, 0x54, 0x5e, 0x85, 0x3d, 0x2b,
-	0xde, 0x82, 0x0d, 0x3c, 0x00, 0x12, 0x12, 0x2f, 0xc3, 0xfd, 0x4d, 0x6c, 0xc7, 0x33, 0x42, 0x02,
-	0x24, 0xa4, 0xee, 0xee, 0x77, 0x7c, 0xbe, 0xf3, 0xf3, 0x9d, 0xdc, 0x7b, 0x02, 0xb0, 0x4a, 0x96,
-	0x49, 0x73, 0x13, 0x47, 0x69, 0x84, 0x8e, 0xfc, 0x68, 0xb5, 0x22, 0x3e, 0x3c, 0x19, 0xd3, 0x05,
-	0x8d, 0x13, 0xba, 0xfe, 0x36, 0x88, 0x93, 0x14, 0xd5, 0xc1, 0xe8, 0x62, 0xe3, 0x85, 0xf1, 0xb2,
-	0x6e, 0x1b, 0x5d, 0x8e, 0xc6, 0xb8, 0x22, 0xd1, 0x18, 0xbd, 0x84, 0xb3, 0x51, 0xcc, 0x9c, 0x47,
-	0xb7, 0xce, 0x76, 0xbe, 0x8c, 0xa3, 0xed, 0x06, 0x3f, 0x14, 0xdf, 0x8a, 0x66, 0xce, 0xeb, 0xe0,
-	0x23, 0xc9, 0xeb, 0x10, 0x80, 0x9a, 0xb5, 0xda, 0xa4, 0x1f, 0x06, 0xc9, 0x92, 0xb4, 0xe0, 0x52,
-	0x27, 0xbc, 0xa6, 0xbc, 0x84, 0x20, 0x5d, 0xd1, 0xb5, 0xc8, 0x7b, 0xa3, 0xf3, 0xde, 0x70, 0x64,
-	0xeb, 0xbc, 0x36, 0xc1, 0x50, 0x7d, 0x13, 0x2c, 0xdf, 0x32, 0xaf, 0x53, 0xa8, 0xdc, 0x98, 0xca,
-	0x8d, 0x9d, 0xc8, 0x17, 0x70, 0x6a, 0xb5, 0x3b, 0x3c, 0xa5, 0x15, 0xd2, 0xf2, 0x38, 0xae, 0x8e,
-	0xe3, 0x12, 0x02, 0x55, 0x27, 0xf5, 0xd2, 0x6d, 0x82, 0x30, 0x3c, 0x72, 0xb6, 0xbe, 0x4f, 0x93,
-	0x44, 0xf8, 0xd6, 0x6c, 0x0d, 0xc9, 0x0f, 0xf0, 0xcc, 0xf1, 0xbf, 0x5b, 0x47, 0x71, 0x3c, 0x8e,
-	0xa3, 0xe8, 0xd6, 0xf6, 0xd6, 0x8b, 0x68, 0x75, 0xed, 0xa5, 0xde, 0x61, 0xe4, 0x7f, 0xae, 0x0c,
-	0x47, 0x13, 0x7c, 0x2c, 0xd1, 0x84, 0xcc, 0x01, 0xab, 0xdc, 0x56, 0xbb, 0x98, 0x9d, 0xe8, 0xec,
-	0x27, 0xad, 0xcb, 0x26, 0xd7, 0xad, 0x99, 0x6f, 0x9c, 0xd7, 0x44, 0x78, 0xb4, 0xca, 0x7d, 0x3e,
-	0x13, 0xf2, 0x0d, 0x9c, 0x67, 0xfb, 0xd3, 0x9d, 0xbd, 0xd7, 0x9d, 0xbd, 0x47, 0x0d, 0xa8, 0x4d,
-	0x62, 0x6f, 0xb3, 0x88, 0xa2, 0x58, 0x35, 0xb8, 0xc3, 0xe4, 0xcf, 0x0a, 0x5c, 0xb4, 0x9d, 0xb1,
-	0x17, 0x84, 0x61, 0x40, 0x63, 0x87, 0xfa, 0x31, 0x4d, 0x7b, 0xf4, 0x03, 0x8f, 0x30, 0xd4, 0x11,
-	0x86, 0xb2, 0xc7, 0x8a, 0xee, 0x51, 0xce, 0xec, 0xa1, 0x9e, 0x99, 0xc0, 0x2d, 0x25, 0x01, 0x3b,
-	0x09, 0x7c, 0xa5, 0x44, 0x60, 0x27, 0x74, 0x09, 0xc7, 0xd7, 0xfd, 0x68, 0x39, 0xc6, 0x55, 0x61,
-	0x92, 0x40, 0x5b, 0x3b, 0xf8, 0xd1, 0xde, 0xda, 0xd1, 0xd6, 0x77, 0xb8, 0xb6, 0xb7, 0xbe, 0x43,
-	0xaf, 0xe0, 0x62, 0x46, 0xe3, 0xe0, 0x36, 0xf0, 0xe6, 0x21, 0xb5, 0xd6, 0xbe, 0xd0, 0x60, 0x88,
-	0x1f, 0x0b, 0x9f, 0xb2, 0x4f, 0x88, 0xfd, 0x2a, 0x0f, 0xcd, 0x1d, 0x13, 0x83, 0xa0, 0x94, 0x7e,
-	0x2b, 0xe7, 0x74, 0x4d, 0x7c, 0x72, 0x17, 0xa7, 0x6b, 0x72, 0x65, 0x7a, 0xb8, 0xce, 0x1c, 0x8e,
-	0x6d, 0xa3, 0xc7, 0x3b, 0xef, 0x99, 0xf8, 0x89, 0x80, 0xec, 0x44, 0xfe, 0xa8, 0xc0, 0xf9, 0x5e,
-	0xdd, 0xf1, 0x76, 0xfe, 0x37, 0xa4, 0x75, 0x77, 0xd2, 0xba, 0x42, 0x5a, 0x77, 0x27, 0xad, 0x2b,
-	0xa4, 0x75, 0x77, 0xd2, 0xba, 0x1f, 0xb3, 0xb4, 0xdf, 0xc3, 0xd3, 0xbd, 0xb2, 0xa3, 0x0d, 0x5d,
-	0x07, 0xeb, 0x25, 0xa7, 0x4c, 0xb5, 0xb4, 0x53, 0x8e, 0x2c, 0x2d, 0xad, 0xc5, 0xd1, 0x4c, 0x29,
-	0x6b, 0xcc, 0x84, 0x18, 0x34, 0x4c, 0x3d, 0xa5, 0xad, 0x04, 0xdc, 0xda, 0xf7, 0xe6, 0x34, 0x54,
-	0x0a, 0x4b, 0xc0, 0x99, 0x7d, 0x25, 0xb0, 0xd1, 0x27, 0x09, 0x3c, 0xcf, 0x8c, 0xb4, 0x70, 0xa9,
-	0x59, 0x95, 0xd3, 0xdd, 0x73, 0x36, 0x15, 0xf3, 0xb3, 0x4c, 0x55, 0x03, 0x3b, 0x71, 0x3c, 0xdb,
-	0xcd, 0x77, 0x66, 0xa2, 0x67, 0x50, 0x15, 0x99, 0x4d, 0x55, 0x87, 0x42, 0xdc, 0xaf, 0x6f, 0xea,
-	0x39, 0xf7, 0x4d, 0xf2, 0x8b, 0x91, 0xbd, 0xa6, 0xfb, 0x8b, 0xce, 0xf8, 0xf6, 0x24, 0x08, 0x17,
-	0x54, 0xe5, 0x54, 0x08, 0xbd, 0x80, 0x13, 0x79, 0x7a, 0x9b, 0x0c, 0xe9, 0x52, 0x14, 0x50, 0xb3,
-	0xb3, 0x26, 0xce, 0x74, 0x24, 0x53, 0x56, 0xa3, 0x10, 0x67, 0x3a, 0x19, 0xe6, 0x91, 0x64, 0x3a,
-	0x79, 0xe6, 0x40, 0x32, 0x65, 0x7d, 0x0a, 0x71, 0xe6, 0x20, 0xc3, 0xac, 0x4a, 0x66, 0xc6, 0xd4,
-	0xfa, 0xd1, 0x80, 0x9a, 0xde, 0x15, 0xe8, 0x4b, 0x38, 0xea, 0xd0, 0xb4, 0x8b, 0x4e, 0xd5, 0xc3,
-	0xa6, 0xf6, 0x49, 0xe3, 0x42, 0xe2, 0xdc, 0x12, 0x23, 0x0f, 0xd8, 0x83, 0x5c, 0x6d, 0x8b, 0xe5,
-	0x82, 0xea, 0xd2, 0x41, 0x2e, 0x90, 0x46, 0x81, 0xce, 0x3c, 0x5f, 0x43, 0x4d, 0x2f, 0x22, 0xd4,
-	0xc8, 0x07, 0xcb, 0x2e, 0xa8, 0x86, 0x8a, 0x23, 0x17, 0x08, 0x79, 0xd0, 0xfa, 0xc9, 0x00, 0xd0,
-	0x8e, 0x56, 0x1b, 0x35, 0xef, 0xa8, 0xaf, 0xf4, 0x21, 0x66, 0x69, 0x5f, 0xed, 0x0a, 0x2c, 0xf5,
-	0xf8, 0x17, 0x0b, 0xfd, 0xd9, 0x80, 0xf3, 0x7d, 0xa1, 0x4e, 0x1a, 0x53, 0x6f, 0xf5, 0x3f, 0x2e,
-	0xf7, 0x57, 0x03, 0xce, 0xf6, 0x1b, 0x2a, 0x8d, 0xfc, 0x28, 0x44, 0x26, 0x80, 0xba, 0xb3, 0x2c,
-	0x36, 0x2a, 0x1b, 0x79, 0x23, 0x37, 0x66, 0x96, 0x7e, 0x00, 0x67, 0xc5, 0xdb, 0xf6, 0xa9, 0xca,
-	0x54, 0xba, 0xde, 0x1b, 0xf7, 0xd4, 0xc8, 0xc2, 0x5d, 0xc1, 0xe3, 0xcc, 0x35, 0x3a, 0x0c, 0x24,
-	0x42, 0x14, 0x5b, 0xf9, 0xdd, 0x80, 0xa7, 0xd9, 0x85, 0x2e, 0x9b, 0xf9, 0x3a, 0xd7, 0x4c, 0xb9,
-	0x9c, 0x77, 0x8d, 0x61, 0x74, 0xd8, 0xd5, 0x67, 0xb9, 0x62, 0x0e, 0xfe, 0x38, 0xfc, 0x17, 0x7d,
-	0xfd, 0x66, 0x00, 0xca, 0x3d, 0x2f, 0xb2, 0xb1, 0xaf, 0x72, 0x8d, 0x7d, 0x22, 0x49, 0x07, 0xaf,
-	0x6e, 0xc9, 0x4f, 0xe5, 0xcd, 0x61, 0x57, 0x9f, 0x17, 0xd9, 0xc5, 0xb6, 0x8a, 0xf3, 0x7e, 0x9d,
-	0x6d, 0xe4, 0x79, 0x29, 0xbb, 0xac, 0x97, 0x79, 0x55, 0xfc, 0x1b, 0xbe, 0xfa, 0x2b, 0x00, 0x00,
-	0xff, 0xff, 0x30, 0x30, 0x10, 0x8f, 0x1b, 0x0b, 0x00, 0x00,
+	// 1558 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe4, 0x58, 0xcb, 0x6e, 0xdb, 0x46,
+	0x17, 0x36, 0x75, 0xf7, 0xb1, 0x2c, 0x2b, 0x63, 0xff, 0x8e, 0x2c, 0xe4, 0xff, 0xff, 0x80, 0x08,
+	0x8a, 0x34, 0x68, 0x8d, 0xc8, 0x41, 0x53, 0x20, 0x08, 0x8a, 0x26, 0x32, 0x23, 0x1b, 0x96, 0x6d,
+	0x85, 0xb2, 0xdd, 0x28, 0x8b, 0xaa, 0x14, 0x35, 0x56, 0x05, 0x48, 0xa2, 0x4a, 0x52, 0x2d, 0xd2,
+	0x57, 0xe9, 0xbe, 0x6f, 0xd0, 0x27, 0xe8, 0xa2, 0xed, 0xaa, 0xab, 0x02, 0x05, 0xfa, 0x02, 0xdd,
+	0xf5, 0x15, 0x7a, 0xe6, 0x42, 0x8a, 0x14, 0x49, 0x29, 0x69, 0xd3, 0x55, 0x77, 0x73, 0x6e, 0xdf,
+	0xcc, 0xb9, 0xcd, 0x1c, 0x12, 0x60, 0xec, 0x0c, 0x9c, 0xfd, 0xa9, 0x6d, 0xb9, 0x16, 0xc9, 0x98,
+	0xd6, 0x78, 0xac, 0xfe, 0x9e, 0x87, 0xfc, 0x29, 0x75, 0x1c, 0x63, 0x40, 0xc9, 0x5d, 0xc8, 0x39,
+	0xe6, 0xe7, 0x74, 0x6c, 0x54, 0x94, 0xdb, 0xca, 0xdd, 0xd2, 0x41, 0x79, 0x9f, 0xa9, 0xec, 0xb7,
+	0x39, 0xef, 0xe2, 0xd5, 0x94, 0xea, 0x52, 0x4e, 0x1e, 0x41, 0x49, 0xac, 0xba, 0x5f, 0x1a, 0xf6,
+	0xd0, 0x98, 0xb8, 0x95, 0x14, 0xb7, 0xd8, 0x0e, 0x5a, 0x5c, 0x09, 0x91, 0xbe, 0xe9, 0x04, 0x49,
+	0xf2, 0x0e, 0x64, 0xe9, 0x78, 0xea, 0xbe, 0xaa, 0xa4, 0xd1, 0x64, 0xe3, 0xa0, 0x24, 0x4c, 0x34,
+	0xc6, 0x3a, 0x75, 0x06, 0x47, 0x6b, 0xba, 0x10, 0xa3, 0x5e, 0xae, 0x37, 0x1c, 0x0c, 0x11, 0x3b,
+	0xc3, 0x15, 0x8b, 0x42, 0xf1, 0xe9, 0x70, 0x70, 0x3c, 0x71, 0x51, 0x4d, 0x4a, 0xc9, 0xc7, 0x50,
+	0xa6, 0x66, 0x77, 0x60, 0x5b, 0xb3, 0x69, 0x97, 0x8e, 0xe8, 0x98, 0xa2, 0x45, 0x96, 0x5b, 0xec,
+	0x48, 0xe8, 0x7a, 0x83, 0x09, 0x35, 0x21, 0x43, 0xcb, 0x12, 0x35, 0x83, 0x1c, 0xb6, 0x93, 0xe3,
+	0x1a, 0xee, 0xcc, 0xa9, 0xe4, 0x82, 0x3b, 0xb5, 0x39, 0x8f, 0xed, 0x24, 0xa4, 0xe4, 0x31, 0x94,
+	0xa6, 0xb4, 0x4f, 0x6d, 0x87, 0x4e, 0xba, 0xd7, 0x43, 0xdb, 0x71, 0x2b, 0x79, 0xae, 0x2f, 0xbd,
+	0x6e, 0x49, 0xd9, 0x33, 0x26, 0x42, 0xb3, 0xcd, 0x69, 0x90, 0x41, 0x9e, 0xc3, 0x7f, 0x7c, 0xeb,
+	0x3e, 0x65, 0x16, 0x43, 0x97, 0x1f, 0xb6, 0xc0, 0x41, 0xaa, 0x61, 0x90, 0xc3, 0x80, 0x06, 0x62,
+	0xed, 0x4c, 0x63, 0xf8, 0xe4, 0x19, 0x10, 0x8c, 0xed, 0xc4, 0xb2, 0xed, 0x2e, 0xe6, 0xd4, 0xba,
+	0xee, 0xf6, 0x0d, 0xd7, 0xa8, 0xac, 0x73, 0xbc, 0x5d, 0x3f, 0x15, 0x4c, 0xde, 0x62, 0xe2, 0x43,
+	0x94, 0x22, 0x56, 0xd9, 0x59, 0xe0, 0x91, 0x0e, 0xec, 0x85, 0x71, 0x6c, 0x63, 0xd2, 0xb7, 0xc6,
+	0x02, 0x0e, 0x38, 0xdc, 0xad, 0x28, 0x9c, 0xce, 0x95, 0x24, 0xe8, 0xae, 0x13, 0x2b, 0x21, 0x9f,
+	0xc1, 0x2d, 0x0f, 0x1a, 0xb3, 0x14, 0x45, 0xdf, 0xe0, 0xe8, 0xff, 0x0b, 0xa1, 0x6b, 0xf5, 0x28,
+	0x7e, 0x45, 0xa2, 0x68, 0xe6, 0xe2, 0x0e, 0xc7, 0xb0, 0x6d, 0x3a, 0xdd, 0xa9, 0x31, 0x1c, 0x8d,
+	0x86, 0xd4, 0xee, 0x5a, 0x53, 0x3a, 0x19, 0x4e, 0x06, 0x95, 0x22, 0x07, 0xbe, 0x29, 0x80, 0xeb,
+	0xed, 0x96, 0x94, 0x9f, 0x0b, 0x31, 0x22, 0xde, 0x30, 0x9d, 0x05, 0x26, 0x69, 0xc1, 0x6e, 0x10,
+	0x2a, 0x10, 0xd3, 0x4d, 0x8e, 0xb6, 0xb7, 0x88, 0x16, 0x0c, 0xeb, 0xf6, 0x1c, 0x6f, 0x1e, 0x59,
+	0x13, 0xfe, 0x1b, 0x45, 0x0c, 0xfa, 0x5f, 0xe2, 0xc0, 0xff, 0x8f, 0x05, 0x0e, 0x05, 0x60, 0x6f,
+	0x01, 0x3e, 0x10, 0x81, 0x2a, 0x14, 0x4c, 0xe4, 0x4f, 0xdc, 0xe3, 0x7e, 0x65, 0x0b, 0xf1, 0xb2,
+	0xba, 0x4f, 0x3f, 0x5d, 0x87, 0xbc, 0x69, 0x4d, 0x5c, 0x24, 0xd4, 0x1f, 0x32, 0x90, 0xd7, 0xe9,
+	0x17, 0x33, 0x8a, 0xc5, 0x78, 0x07, 0x32, 0x2e, 0x36, 0x74, 0x62, 0xa3, 0x73, 0x29, 0x6a, 0xc9,
+	0x56, 0x4d, 0xc5, 0xb5, 0xaa, 0xd7, 0xa8, 0x77, 0xfc, 0x46, 0x4d, 0x47, 0x1b, 0xd5, 0x6f, 0xd3,
+	0xf3, 0xa4, 0xf2, 0xcf, 0xac, 0x2a, 0xff, 0x84, 0xe2, 0xff, 0xe8, 0xcd, 0xfa, 0x3e, 0xd2, 0xf5,
+	0x8f, 0x22, 0xdd, 0x9c, 0x4b, 0xec, 0xe6, 0xc5, 0x5e, 0xfe, 0x64, 0x59, 0xc3, 0xe4, 0x57, 0x37,
+	0x4c, 0x62, 0xbb, 0x1c, 0xc6, 0x76, 0x74, 0x61, 0x59, 0x47, 0xc7, 0xf4, 0xf3, 0xa7, 0x2b, 0x9a,
+	0x6e, 0xfd, 0x75, 0x9a, 0x2e, 0xb9, 0xe5, 0xd4, 0x3f, 0x52, 0x50, 0xd0, 0xa9, 0x33, 0xb5, 0x26,
+	0x0e, 0x7d, 0xab, 0xa5, 0x14, 0xcd, 0x49, 0xfa, 0xb5, 0x73, 0x12, 0x57, 0x0f, 0x99, 0x37, 0xa8,
+	0x87, 0x3b, 0xfe, 0x2b, 0x90, 0x8d, 0xbe, 0x02, 0xfe, 0x1b, 0x90, 0x58, 0xc6, 0xb9, 0xbf, 0x58,
+	0xc6, 0xf3, 0xee, 0xc9, 0x27, 0x77, 0x8f, 0x6a, 0xc2, 0x66, 0xc8, 0x79, 0x52, 0x04, 0xe5, 0x88,
+	0x87, 0xbc, 0xa8, 0x2b, 0x47, 0x8c, 0x6a, 0xf1, 0xc8, 0x22, 0xd5, 0xc2, 0x77, 0x7c, 0xeb, 0xdc,
+	0x46, 0xe5, 0xf3, 0xeb, 0xf6, 0xac, 0xc7, 0x03, 0xc2, 0xc3, 0x58, 0xd4, 0x17, 0xd9, 0xcc, 0xae,
+	0xc1, 0x83, 0x84, 0x76, 0x0d, 0xf5, 0x67, 0x05, 0x6e, 0x78, 0xbb, 0x68, 0xf5, 0xf9, 0x55, 0x21,
+	0x33, 0xa7, 0x2c, 0xcb, 0xdc, 0x3d, 0x58, 0x17, 0x4e, 0x5d, 0x19, 0x23, 0x99, 0xe3, 0xb0, 0x27,
+	0x73, 0x31, 0x66, 0xaa, 0x18, 0x0a, 0x5d, 0x7a, 0x65, 0xe8, 0x42, 0xfa, 0xe8, 0x5f, 0x86, 0x9a,
+	0x03, 0xba, 0x34, 0xbb, 0x5c, 0x43, 0xfd, 0x4e, 0x01, 0x12, 0xf4, 0x48, 0x96, 0xec, 0xbb, 0x90,
+	0x15, 0xd5, 0xa5, 0x24, 0x57, 0x97, 0xd0, 0xf0, 0xf7, 0x4a, 0xad, 0xda, 0x6b, 0x1e, 0xa7, 0xf4,
+	0x8a, 0xcb, 0x52, 0x56, 0x59, 0x26, 0xb9, 0xca, 0x54, 0x80, 0x82, 0x67, 0xa8, 0x1e, 0xc0, 0x4e,
+	0x5c, 0x4c, 0x58, 0xee, 0x5e, 0x78, 0x15, 0xf0, 0x82, 0x51, 0xba, 0x57, 0x01, 0xba, 0x5a, 0x81,
+	0x9c, 0x08, 0x3b, 0x29, 0x41, 0xea, 0x45, 0x4d, 0xaa, 0xe1, 0x4a, 0x7d, 0x0f, 0x4a, 0xe1, 0xd3,
+	0x47, 0x71, 0x3a, 0x1e, 0x4e, 0x47, 0x55, 0x21, 0x27, 0x4e, 0x46, 0x2a, 0x90, 0x6f, 0xcf, 0x4c,
+	0x13, 0x27, 0x45, 0xae, 0x5b, 0xd0, 0x3d, 0x52, 0xfd, 0x1a, 0x76, 0xe3, 0x2f, 0xb9, 0x28, 0xf2,
+	0xdf, 0xaf, 0x51, 0x46, 0x5d, 0xf0, 0x06, 0x45, 0xea, 0x42, 0xed, 0x41, 0x25, 0xe9, 0xfa, 0x22,
+	0xaa, 0xb7, 0x7b, 0x52, 0xda, 0xf0, 0x4c, 0x2a, 0x43, 0x5b, 0x96, 0x5a, 0xdc, 0xe3, 0x31, 0x94,
+	0x17, 0xaf, 0x5c, 0x76, 0x8a, 0x97, 0x9e, 0x67, 0x2f, 0xd9, 0xfb, 0x7b, 0x61, 0x1b, 0xd3, 0xbe,
+	0x65, 0xd9, 0xd2, 0x41, 0x9f, 0x56, 0x7f, 0x4b, 0xc1, 0xf6, 0xfc, 0x59, 0x6f, 0x53, 0xd3, 0xa6,
+	0xee, 0x09, 0x7d, 0xc5, 0x10, 0xce, 0x3c, 0x84, 0x33, 0xe1, 0x63, 0xca, 0xf3, 0x51, 0xe4, 0x2c,
+	0xed, 0xe5, 0x8c, 0xd3, 0x07, 0x32, 0x04, 0xb8, 0xe2, 0xf4, 0x03, 0x19, 0x04, 0x5c, 0x91, 0x1d,
+	0xc8, 0x1e, 0x36, 0xad, 0x41, 0x8b, 0xdf, 0x41, 0x45, 0x5d, 0x10, 0x1e, 0xb7, 0xc1, 0xef, 0x15,
+	0xc9, 0x6d, 0x78, 0xdc, 0xe7, 0xfc, 0x4d, 0x91, 0xdc, 0xe7, 0xe4, 0x3e, 0x6c, 0x5f, 0x51, 0x7b,
+	0x78, 0x3d, 0x34, 0x7a, 0x23, 0xaa, 0x4d, 0xc4, 0xc5, 0x78, 0xc6, 0xdf, 0x89, 0xa2, 0x1e, 0x27,
+	0x22, 0x58, 0x95, 0x51, 0x76, 0xa3, 0xc6, 0xa7, 0xc5, 0xa2, 0x1e, 0x2b, 0x8b, 0xb7, 0x39, 0xaa,
+	0xf1, 0x19, 0x30, 0xd6, 0xe6, 0xa8, 0xc6, 0x22, 0x73, 0xc2, 0x67, 0xb9, 0xac, 0xae, 0x9c, 0x30,
+	0xcf, 0x4f, 0x6a, 0x7c, 0x18, 0xcb, 0xea, 0xb8, 0x52, 0x7f, 0x4d, 0x41, 0x39, 0x30, 0x34, 0xcd,
+	0x7a, 0xaf, 0x11, 0xda, 0x8e, 0x1f, 0xda, 0x0e, 0x0f, 0x6d, 0xc7, 0x0f, 0x6d, 0x87, 0x87, 0xb6,
+	0xe3, 0x87, 0xb6, 0xf3, 0x6f, 0x0e, 0xed, 0x57, 0x70, 0x23, 0x32, 0x35, 0x33, 0x93, 0x4b, 0x2f,
+	0xb4, 0x97, 0x8c, 0xd2, 0xbc, 0xd0, 0x6a, 0x8c, 0xba, 0x92, 0x91, 0x55, 0xae, 0x78, 0x30, 0xe8,
+	0x08, 0x67, 0x8d, 0x8c, 0x0c, 0x06, 0x23, 0x18, 0xb7, 0x69, 0xf4, 0xe8, 0x48, 0x46, 0x58, 0x10,
+	0xcc, 0xb2, 0x29, 0x03, 0xac, 0x34, 0x55, 0x07, 0xf6, 0x12, 0xe7, 0x60, 0x76, 0xca, 0x4b, 0xff,
+	0x3a, 0xbb, 0xe4, 0xf9, 0xd3, 0x6a, 0xf2, 0x0c, 0xb8, 0x62, 0xf4, 0x95, 0x9f, 0xdf, 0xab, 0x1a,
+	0xd9, 0x85, 0x1c, 0xdf, 0xb9, 0x26, 0xcf, 0x21, 0x29, 0xa6, 0xd7, 0xac, 0x79, 0x79, 0x6e, 0xd6,
+	0xd4, 0xef, 0x95, 0x60, 0x9b, 0xce, 0x1b, 0x1d, 0xed, 0xf5, 0x8b, 0xe1, 0xa8, 0x4f, 0xe5, 0x9e,
+	0x92, 0x22, 0xb7, 0x61, 0x43, 0xac, 0x8e, 0x9d, 0x33, 0x3a, 0xe0, 0x07, 0x28, 0xe8, 0x41, 0x16,
+	0xb3, 0x6c, 0x0b, 0x4b, 0x71, 0x1a, 0x49, 0x31, 0xcb, 0x76, 0xc0, 0x32, 0x23, 0x2c, 0xdb, 0x61,
+	0xcb, 0x53, 0x61, 0x29, 0xce, 0x27, 0x29, 0x66, 0x79, 0x1a, 0xb0, 0xcc, 0x09, 0xcb, 0x00, 0xeb,
+	0xde, 0x00, 0x60, 0x3e, 0x78, 0x61, 0x58, 0x0b, 0x2d, 0xed, 0x50, 0xd3, 0xdb, 0xda, 0x59, 0x79,
+	0x8d, 0x6c, 0xc1, 0x86, 0x47, 0x75, 0xb5, 0x7a, 0x59, 0x21, 0x1b, 0x78, 0xa3, 0xd7, 0x8f, 0xce,
+	0xce, 0x75, 0xbd, 0x9c, 0xc2, 0x78, 0x80, 0x24, 0x98, 0x30, 0xcd, 0x6d, 0x9f, 0x1c, 0x37, 0x9b,
+	0xc7, 0x9a, 0x5e, 0xce, 0x70, 0x5b, 0x49, 0x31, 0x71, 0xf6, 0xde, 0x3e, 0x6c, 0x86, 0xbe, 0xf1,
+	0xc9, 0x3a, 0x64, 0xdb, 0xc7, 0x8d, 0xd3, 0x27, 0xb8, 0x51, 0x1e, 0xd2, 0x2f, 0x4f, 0x5a, 0xb8,
+	0x01, 0xf2, 0x70, 0x71, 0x7e, 0x52, 0x4e, 0x1d, 0x7c, 0x80, 0x70, 0xec, 0xa7, 0x83, 0x69, 0x8d,
+	0xf0, 0xf1, 0x4d, 0xeb, 0xb3, 0x09, 0xd9, 0x14, 0xf7, 0xad, 0xfc, 0xf7, 0x50, 0x0d, 0x93, 0xea,
+	0xda, 0x5d, 0xe5, 0xbe, 0x72, 0xf0, 0x8d, 0x82, 0x76, 0xf2, 0xed, 0x23, 0xef, 0x43, 0xa6, 0x41,
+	0xdd, 0x23, 0xb2, 0xf0, 0xb0, 0x56, 0xe3, 0x5e, 0x6f, 0x75, 0x8d, 0xfd, 0xcc, 0xa8, 0xf3, 0xc7,
+	0x92, 0x84, 0xe6, 0x90, 0xea, 0x82, 0x39, 0x6a, 0x3e, 0x84, 0x82, 0xf7, 0xb0, 0x92, 0x25, 0x43,
+	0x48, 0x35, 0xf4, 0x54, 0xab, 0x6b, 0x07, 0xdf, 0x2a, 0x00, 0xf3, 0xe1, 0x82, 0xec, 0x27, 0x9c,
+	0x2f, 0xf6, 0x61, 0xc1, 0x6d, 0xef, 0xfb, 0x07, 0x8c, 0xd5, 0x78, 0x8b, 0x07, 0xed, 0x40, 0x79,
+	0x7e, 0xce, 0xb6, 0x6b, 0x53, 0x63, 0x4c, 0x34, 0x80, 0xfa, 0x7c, 0x96, 0xb8, 0x19, 0x46, 0xf3,
+	0x87, 0xbf, 0x6a, 0x25, 0x2a, 0x10, 0x33, 0x94, 0xcc, 0xd0, 0x8f, 0x0a, 0x6c, 0xcd, 0x5f, 0x47,
+	0x91, 0xe0, 0x1a, 0x80, 0xbc, 0x2f, 0xf0, 0xd8, 0x24, 0x2e, 0x3d, 0xd5, 0x50, 0x4a, 0xd0, 0xb3,
+	0x53, 0xd8, 0x5a, 0xec, 0xf4, 0xa5, 0xdf, 0x4f, 0xd5, 0x25, 0xee, 0x23, 0xdc, 0x03, 0x58, 0x0f,
+	0xb4, 0x70, 0xfc, 0x67, 0x53, 0x24, 0x4a, 0xbf, 0xe0, 0xf4, 0x1b, 0x1c, 0x26, 0x84, 0x33, 0x8f,
+	0x42, 0xce, 0xc4, 0x67, 0x2a, 0x29, 0xc3, 0xe7, 0x51, 0xaf, 0x56, 0x7c, 0x73, 0xfd, 0x13, 0x7e,
+	0xfd, 0x84, 0x33, 0x70, 0xe8, 0x6a, 0x13, 0x8e, 0x7d, 0x18, 0x72, 0x2c, 0xe9, 0x3f, 0x49, 0x4c,
+	0x15, 0x3e, 0x8d, 0x7a, 0xb5, 0xea, 0xf7, 0x45, 0x24, 0xdf, 0x0f, 0x83, 0x8e, 0x24, 0xff, 0x55,
+	0x59, 0xf4, 0xa5, 0x97, 0xe3, 0xbf, 0x2e, 0x1f, 0xfc, 0x19, 0x00, 0x00, 0xff, 0xff, 0x9e, 0xd9,
+	0x82, 0x00, 0xc8, 0x14, 0x00, 0x00,
 }
