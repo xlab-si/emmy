@@ -167,3 +167,22 @@ protoc -I comm/pro/ comm/pro/msgs.proto --go_out=plugins=grpc:comm/pro
 [2] J. Camenisch and V. Shoup, Practical verifiable encryption and decryption of discrete logarithms, http://eprint.iacr.org/2002/161, 2002.
 
 [3] J. Camenisch and A. Lysyanskaya. A signature scheme with efficient protocols. In S. Cimato, C. Galdi, and G. Persiano, editors, Security in Communication Networks, Third International Conference, SCN 2002, volume 2576 of LNCS, pages 268–289. Springer Verlag, 2003.
+
+# Build and run server
+
+```
+$ go build -o serve server/*.go
+$ ./serve
+
+2017/05/24 12:59:46 12:59:46.967 main ▶ INFO 001 Registering services
+2017/05/24 12:59:46 12:59:46.967 NewProtocolServer ▶ INFO 002 Instantiating new protocol server
+2017/05/24 12:59:46 12:59:46.967 main ▶ INFO 003 GRPC server listening for connections on port 7007
+```
+
+# Build and run client
+```
+$ go build -o run client/*.go
+$ # ./run <example_name> <num_clients> [concurrent]
+$ ./run pedersen_ec 100 concurrent  # starts 100 clients concurrently
+$ ./run pedersen_ec 100             # starts 100 clients sequentially
+```

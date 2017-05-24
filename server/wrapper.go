@@ -1,0 +1,80 @@
+package main
+
+import (
+	pb "github.com/xlab-si/emmy/comm/pro"
+	"io"
+)
+
+type Server struct{}
+
+func NewProtocolServer() *Server {
+	logger.Info("Instantiating new protocol server")
+	/* At the time of instantiation, we don't yet know which handler or stream to use,
+	therefore just return a reference to the empty struct */
+	return &Server{}
+}
+
+func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
+	err := stream.Send(msg)
+
+	if err != nil {
+		logger.Error("Error sending message:", err)
+		return err
+	}
+	logger.Info("Successfully sent response:", msg)
+
+	return nil
+}
+
+func (s *Server) recieve(stream pb.Protocol_RunServer) (*pb.Message, error) {
+	resp, err := stream.Recv()
+	if err == io.EOF {
+		logger.Warning("EOF error")
+		return nil, err
+	}
+	if err != nil {
+		logger.Errorf("An error ocurred: %v", err)
+		return nil, err
+	}
+	logger.Info("Recieved request from the stream", resp)
+
+	return resp, nil
+}
+
+func (s *Server) Run(stream pb.Protocol_RunServer) error {
+	logger.Info("Starting new RPC")
+
+	for {
+		req, err := s.recieve(stream)
+		if err != nil {
+			return nil
+		}
+
+		switch req.Content.(type) {
+		case *pb.Message_Empty:
+
+			reqSchemaType := req.GetSchema()
+			reqSchemaVariant := req.GetSchemaVariant()
+			reqSchemaTypeStr := pb.SchemaType_name[int32(reqSchemaType)]
+			reqSchemaVariantStr := pb.SchemaVariant_name[int32(reqSchemaVariant)]
+			reqClientId := req.GetClientId()
+			logger.Notice("Client [", reqClientId, "] requested", reqSchemaTypeStr, "variant", reqSchemaVariantStr)
+
+			switch reqSchemaType {
+			case pb.SchemaType_PEDERSEN_EC:
+				s.PedersenEC(stream)
+			//case pb.SchemaType_PEDERSEN:
+
+			default:
+				logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
+			}
+		default:
+			logger.Info("Received intermediate request", req)
+		}
+
+	}
+
+	logger.Info("RPC done")
+
+	return nil
+}

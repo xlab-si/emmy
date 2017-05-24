@@ -1,8 +1,9 @@
-package base
+package main
 
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/commitments"
+	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/encryption"
@@ -12,13 +13,8 @@ import (
 	"log"
 	"math/big"
 	"math/rand"
-	"sync"
 	"time"
 )
-
-var mutex = &sync.Mutex{}
-var clientReadMutex = &sync.Mutex{}
-var clientWriteMutex = &sync.Mutex{}
 
 type Client struct {
 	id      int32
@@ -49,11 +45,12 @@ schemaVariants => sigma, zkp, zkpok
 type ClientParams struct {
 	SchemaType    string
 	SchemaVariant string `default:"SIGMA"`
-	Id            int
 }
 
 /* To bootstrap a protocol, client must send some value */
 type ProtocolParams map[string]big.Int
+
+var client pb.ProtocolClient
 
 func getConnection() (*grpc.ClientConn, error) {
 	log.Println("Getting the connection")
@@ -65,31 +62,11 @@ func getConnection() (*grpc.ClientConn, error) {
 	return conn, err
 }
 
-var client pb.ProtocolClient
-
-//var connInstance *grpc.ClientConn
-var once sync.Once
-
-/*func getConnection() (*grpc.ClientConn, error) {
-	once.Do(func() {
-		serverEndpoint := config.LoadServerEndpoint()
-		conn, err := grpc.Dial(serverEndpoint, grpc.WithInsecure())
-		if err != nil {
-			log.Fatalf("Could not connect to server (%v)", err)
-			return
-		}
-
-		connInstance = conn
-		log.Println("*********** CREATED A NEW CLIENT GRPC CONNECTION *********** ")
-	})
-	return connInstance, nil
-}*/
-
 func getStream(client pb.ProtocolClient) (pb.Protocol_RunClient, error) {
 	log.Println("Getting the stream")
-	mutex.Lock()
+	//	mutex.Lock()
 	stream, err := client.Run(context.Background())
-	mutex.Unlock()
+	//	mutex.Unlock()
 
 	if err != nil {
 		log.Fatalf("Error creating the stream: %v", err)
@@ -98,11 +75,9 @@ func getStream(client pb.ProtocolClient) (pb.Protocol_RunClient, error) {
 }
 
 func getClient(conn *grpc.ClientConn) *pb.ProtocolClient {
-	//once.Do(func() {
 	log.Println("Getting the client")
 	pbClient := pb.NewProtocolClient(conn)
 	client = pbClient
-	//})
 
 	return &client
 }
@@ -118,7 +93,6 @@ func NewProtocolClient(params *ClientParams) *Client {
 
 	client = *getClient(conn)
 
-	/*This locking solved all my problems...*/
 	stream, err := getStream(client)
 
 	if err != nil {
@@ -128,7 +102,7 @@ func NewProtocolClient(params *ClientParams) *Client {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	protocolClient := Client{
-		id:      rand.Int31(), //params.Id,
+		id:      rand.Int31(),
 		client:  &client,
 		conn:    conn,
 		stream:  stream,
@@ -137,17 +111,16 @@ func NewProtocolClient(params *ClientParams) *Client {
 		handler: &ClientHandler{},
 	}
 
-	log.Printf("NewProtocol client spawned")
+	log.Printf("NewProtocol client spawned (%v)", protocolClient.id)
 	return &protocolClient
 }
 
 func (c *Client) send(msg *pb.Message) error {
 	log.Printf("[Client %v] Begin send", c.id)
 	log.Printf("[SEND][Client %v] Trying to send message: %v", c.id, msg)
-	//clientWriteMutex.Lock()
+
 	err := (c.stream).Send(msg)
-	//clientWriteMutex.Unlock()
-	//mutex.Unlock()
+
 	if err != nil {
 		log.Printf("[SEND][Client %v] Error sending message: %v", c.id, err)
 		return err
@@ -159,9 +132,8 @@ func (c *Client) send(msg *pb.Message) error {
 
 func (c *Client) recieve() (*pb.Message, error) {
 	log.Printf("[Client %v] Begin receive", c.id)
-	//clientReadMutex.Lock()
 	resp, err := (c.stream).Recv() // <--- for second request, hangs here
-	//clientReadMutex.Unlock()
+
 	if err == io.EOF {
 		log.Printf("[RECIEVE][Client %v] EOF error", c.id)
 		return nil, err
@@ -175,46 +147,84 @@ func (c *Client) recieve() (*pb.Message, error) {
 	return resp, nil
 }
 
-// Pass optional parameters? some schemas need it
 func (c *Client) ExecuteProtocol(params ProtocolParams) {
-	//defer (c.conn).Close()
-
-	/*waitc := make(chan struct{})
-	go func() {*/
 	schemaType := pb.SchemaType_name[int32(c.schema)]
 	schemaVariant := pb.SchemaVariant_name[int32(c.variant)]
 	log.Printf("Started client [%v] %v (%v)", c.id, schemaType, schemaVariant)
 
-	//mutex.Lock()
+	(c.handler).pedersenECCommitter = commitments.NewPedersenECCommitter()
 
-	switch c.schema {
-	case pb.SchemaType_PEDERSEN_EC:
-		//log.Printf("Implemented")
-		//mutex.Lock()
-		c.PedersenEC(params["commitVal"])
-		//mutex.Unlock()
-	default:
-		log.Printf("Not implemented yet")
+	initMsg := &pb.Message{
+		ClientId:      c.id,
+		Schema:        c.schema,
+		SchemaVariant: c.variant,
+		Content:       &pb.Message_Empty{&pb.EmptyMsg{}},
 	}
-	//mutex.Unlock()
+	err := c.send(initMsg)
+	if err != nil {
+		log.Fatalf("[Client %v] ERROR: %v", c.id, err)
+		return
+	}
 
+	log.Printf("[Client %v] Sent request 1", c.id)
+
+	resp, err := c.recieve()
+	if err != nil {
+		log.Fatalf("[Client %v] ERROR: %v", c.id, err)
+		return
+	}
+
+	log.Printf("[Client] Received response 1")
+
+	log.Printf("[Client %v] I GOT THIS IN THE MESSAGE: %v", &c, resp.GetEcGroupElement())
+	ecge := common.ToECGroupElement(resp.GetEcGroupElement())
+	(c.handler).pedersenECCommitter.SetH(ecge)
+
+	val := params["commitVal"]
+	commitment, err := c.handler.pedersenECCommitter.GetCommitMsg(&val)
+	if err != nil {
+		log.Fatalf("could not generate committment message: %v", err)
+	}
+
+	my_ecge := common.ToPbECGroupElement(commitment)
+	commitmentMsg := &pb.Message{Content: &pb.Message_EcGroupElement{my_ecge}}
+
+	err = c.send(commitmentMsg)
+	if err != nil {
+		//return err
+		log.Fatalf("[Client] ERROR: %v", err)
+	}
+
+	log.Printf("[Client] Sent request 2")
+
+	resp, err = c.recieve()
+	if err != nil {
+		//return err
+		log.Fatalf("[Client] ERROR: %v", err)
+	}
+
+	log.Printf("[Client] Received response 2")
+
+	decommitVal, r := c.handler.pedersenECCommitter.GetDecommitMsg()
+	decommitment := &pb.PedersenDecommitment{X: decommitVal.Bytes(), R: r.Bytes()}
+	decommitMsg := &pb.Message{
+		Content: &pb.Message_PedersenDecommitment{decommitment},
+	}
+
+	err = c.send(decommitMsg)
+	if err != nil {
+		return //err
+	}
+	resp, err = c.recieve()
+	if err != nil {
+		return //err
+	}
+
+	log.Printf("[Client %v] ************ DONE ************", c.id)
 	log.Printf("[Client %v] Finished ExecuteProtocol", c.id)
 
-	/*for {
-		//log.Printf("Helo")
-	}*/
-
-	//https://groups.google.com/forum/#!searchin/grpc-io/close$20stream$20go%7Csort:relevance/grpc-io/4X2H6-YapT8/tPdUMmBTBAAJ
-	/* THIS HAPPENS EVEN WITHOUT CLOSESEND: 2017/05/21 19:40:05 transport: http2Server.HandleStreams failed to read frame:
-	ead tcp 127.0.0.1:7007->127.0.0.1:16438: wsarecv: An existing connection was forcibly closed by the remote host.
-	*/
-	//(c.stream).CloseSend() // if we have this, and concurrent clients, we get handlestreams error
-	//(*c.conn).Close()
-
-	//return
-	/*}()
-	(c.stream).CloseSend()
-	<-waitc*/
+	c.stream.CloseSend()
+	//c.conn.Close() // Problems occur with concurrent clients - some are exiting
 }
 
 // Regardless of what schema type and variant we want, the initial message
@@ -225,9 +235,4 @@ func (c *Client) getInitialMsg() *pb.Message {
 		Schema:        c.schema,
 		SchemaVariant: c.variant,
 	}
-}
-
-func (c *Client) Finish() {
-	(*c.conn).Close()
-	log.Println("Closing connection to gRPC server")
 }
