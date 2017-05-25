@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"github.com/xlab-si/emmy/dlog"
+	"math/big"
 )
 
 func init() {
@@ -40,4 +42,18 @@ func LoadTestKeyDirFromConfig() string {
 	LoadConfig("test")
 	key_path := viper.GetString("key_folder")
 	return key_path
+}
+
+func LoadPseudonymsysDLog() *dlog.ZpDLog {
+	dlogMap := viper.GetStringMap("pseudonymsys")
+	p, _ := new(big.Int).SetString(dlogMap["P"].(string), 10)
+	g, _ := new(big.Int).SetString(dlogMap["G"].(string), 10)
+	q, _ := new(big.Int).SetString(dlogMap["Q"].(string), 10)
+	dlog := dlog.ZpDLog{
+		P:               p,
+		G:               g,
+		OrderOfSubgroup: q,
+	}
+
+	return &dlog
 }
