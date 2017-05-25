@@ -22,6 +22,18 @@ func LoadConfig(configName string, ctype string) {
 	}
 }
 
+func LoadServerPort() int {
+	LoadConfig("server", "yml")
+	return viper.GetInt("port")
+}
+
+func LoadServerEndpoint() string {
+	LoadConfig("client", "yml")
+	ip := viper.GetString("ip")
+	port := LoadServerPort()
+	return fmt.Sprintf("%v:%v", ip, port)
+}
+
 func LoadKeyDirFromConfig() string {
 	LoadConfig("cli", "yml")
 	key_path := viper.GetString("key_folder")
@@ -37,9 +49,10 @@ func LoadTestKeyDirFromConfig() string {
 func LoadPseudonymsysDLog() *dlog.ZpDLog {
 	LoadConfig("dlogs", "json")
 	dlogMap := viper.GetStringMap("pseudonymsys")
-	p, _ := new(big.Int).SetString(dlogMap["P"].(string), 10)
-	g, _ := new(big.Int).SetString(dlogMap["G"].(string), 10)
-	q, _ := new(big.Int).SetString(dlogMap["Q"].(string), 10)
+	fmt.Printf("dlogmap: %v", dlogMap)
+	p, _ := new(big.Int).SetString(dlogMap["p"].(string), 10)
+	g, _ := new(big.Int).SetString(dlogMap["g"].(string), 10)
+	q, _ := new(big.Int).SetString(dlogMap["q"].(string), 10)
 	dlog := dlog.ZpDLog{
 		P:               p,
 		G:               g,
