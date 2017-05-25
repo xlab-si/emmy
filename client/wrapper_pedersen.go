@@ -3,23 +3,18 @@ package main
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/commitments"
+	"github.com/xlab-si/emmy/dlog"
 	"math/big"
 )
 
-func (c *Client) Pedersen(val big.Int) {
-
-	(c.handler).pedersenCommitter = commitments.NewPedersenCommitter()
+func (c *Client) Pedersen(dlog *dlog.ZpDLog, val big.Int) {
+	(c.handler).pedersenCommitter = commitments.NewPedersenCommitter(dlog)
 
 	initMsg := c.getInitialMsg()
 
 	pf := getH(c, initMsg)
-
-	p := new(big.Int).SetBytes(pf.P)
-	q := new(big.Int).SetBytes(pf.OrderOfSubgroup)
-	g := new(big.Int).SetBytes(pf.G)
 	el := new(big.Int).SetBytes(pf.H)
 
-	(c.handler).pedersenCommitter.SetGroup(p, q, g)
 	(c.handler).pedersenCommitter.SetH(el)
 
 	commitment, err := (c.handler).pedersenCommitter.GetCommitMsg(&val)

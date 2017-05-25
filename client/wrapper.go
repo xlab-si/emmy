@@ -146,7 +146,8 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	case pb.SchemaType_PEDERSEN_EC:
 		c.PedersenEC(params["commitVal"])
 	case pb.SchemaType_PEDERSEN:
-		c.Pedersen(params["commitVal"])
+		dlog := config.LoadPseudonymsysDLog()
+		c.Pedersen(dlog, params["commitVal"])
 	//case pb.SchemaType_SCHNORR:
 	//	c.Schnorr(params["secret"])
 	default:

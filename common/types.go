@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"math/big"
 )

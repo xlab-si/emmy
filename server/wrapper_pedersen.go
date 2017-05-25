@@ -3,20 +3,18 @@ package main
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/commitments"
+	"github.com/xlab-si/emmy/dlog"
 	"math/big"
 )
 
-func (s *Server) Pedersen(stream pb.Protocol_RunServer) error {
+func (s *Server) Pedersen(dlog *dlog.ZpDLog, stream pb.Protocol_RunServer) error {
 
-	pedersenReciever := commitments.NewPedersenReceiver()
+	pedersenReciever := commitments.NewPedersenReceiver(dlog)
 
 	h := pedersenReciever.GetH()
-	group := pedersenReciever.GetGroup()
+
 	pedersenFirst := pb.PedersenFirst{
-		H:               h.Bytes(),
-		P:               group.P.Bytes(),
-		OrderOfSubgroup: group.OrderOfSubgroup.Bytes(),
-		G:               group.G.Bytes(),
+		H: h.Bytes(),
 	}
 	resp := &pb.Message{Content: &pb.Message_PedersenFirst{&pedersenFirst}}
 

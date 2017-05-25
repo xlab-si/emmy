@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
-	"log"
 	"math/big"
 )
 
@@ -110,12 +109,8 @@ func (s *PedersenECReceiver) CheckDecommitment(r, val *big.Int) bool {
 
 	var success bool
 	if c1.Cmp(s.commitment.X) == 0 && c2.Cmp(s.commitment.Y) == 0 {
-		log.Printf("DECOMMIT SUCCESS:\n [c1=%v, X=%v]\n [c2=%v, Y=%v]",
-			c1, s.commitment.X, c2, s.commitment.Y)
 		success = true
 	} else {
-		log.Printf("DECOMMIT FAILED:\n [c1=%v, X=%v]\n [c2=%v, Y=%v]",
-			c1, s.commitment.X, c2, s.commitment.Y)
 		success = false
 	}
 

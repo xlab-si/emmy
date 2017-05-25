@@ -3,6 +3,7 @@ package main
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
 	"io"
 )
 
@@ -67,7 +68,8 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			case pb.SchemaType_PEDERSEN_EC:
 				s.PedersenEC(stream)
 			case pb.SchemaType_PEDERSEN:
-				s.Pedersen(stream)
+				dlog := config.LoadPseudonymsysDLog()
+				s.Pedersen(dlog, stream)
 			//case pb.SchemaType_SCHNORR:
 			//	s.Schnorr(stream, protocolType)
 			default:

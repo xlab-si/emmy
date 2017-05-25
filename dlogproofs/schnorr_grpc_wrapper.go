@@ -2,7 +2,6 @@ package dlogproofs
 
 import (
 	"errors"
-	"fmt"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
