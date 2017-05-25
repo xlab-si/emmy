@@ -3,6 +3,7 @@ package main
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/commitments"
+	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/encryption"
@@ -146,6 +147,8 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 		c.PedersenEC(params["commitVal"])
 	case pb.SchemaType_PEDERSEN:
 		c.Pedersen(params["commitVal"])
+	//case pb.SchemaType_SCHNORR:
+	//	c.Schnorr(params["secret"])
 	default:
 		logger.Warning("Not implemented yet")
 	}
@@ -163,5 +166,16 @@ func (c *Client) getInitialMsg() *pb.Message {
 		ClientId:      c.id,
 		Schema:        c.schema,
 		SchemaVariant: c.variant,
+	}
+}
+
+func (c *Client) getProtocolType() common.ProtocolType {
+	switch c.variant {
+	case pb.SchemaVariant_ZKP:
+		return common.ZKP
+	case pb.SchemaVariant_ZKPOK:
+		return common.ZKPOK
+	default:
+		return common.Sigma
 	}
 }

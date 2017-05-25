@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/op/go-logging"
-	"github.com/xlab-si/emmy/common"
 	"math/big"
 	"os"
 	"strconv"
@@ -85,8 +84,12 @@ func runExample(example string, i int, n int) {
 	case "pedersen_ec", "pedersen_ec-zkp", "pedersen_ec-zkpok":
 		protocolParams["commitVal"] = *big.NewInt(121212121)
 	//case "schnorr", "schnorr-zkp", "schnorr-zkpok":
+	//	protocolParams["secret"] = *big.NewInt(345345345334)
+	//protocolParams["dlog"] = config.LoadPseudonymsysDLog()
+
 	//protocolType := getProtocolType(example)
 	//Schnorr(protocolType)
+
 	//case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
 	//protocolType := getProtocolType(example)
 	//SchnorrEC(protocolType)
@@ -113,13 +116,4 @@ func getGenericClient(schema string) *Client {
 	}
 	client := NewProtocolClient(clientParams)
 	return client
-}
-
-func getProtocolType(name string) common.ProtocolType {
-	if strings.Contains(name, "zkpok") {
-		return common.ZKPOK
-	} else if strings.Contains(name, "zkp") {
-		return common.ZKP
-	}
-	return common.Sigma
 }

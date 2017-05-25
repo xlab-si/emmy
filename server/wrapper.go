@@ -2,6 +2,7 @@ package main
 
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
+	"github.com/xlab-si/emmy/common"
 	"io"
 )
 
@@ -60,11 +61,15 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			reqClientId := req.GetClientId()
 			logger.Notice("Client [", reqClientId, "] requested", reqSchemaTypeStr, "variant", reqSchemaVariantStr)
 
+			//protocolType := getProtocolType(reqSchemaVariant)
+
 			switch reqSchemaType {
 			case pb.SchemaType_PEDERSEN_EC:
 				s.PedersenEC(stream)
 			case pb.SchemaType_PEDERSEN:
 				s.Pedersen(stream)
+			//case pb.SchemaType_SCHNORR:
+			//	s.Schnorr(stream, protocolType)
 			default:
 				logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 			}
@@ -77,4 +82,15 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	logger.Info("RPC done")
 
 	return nil
+}
+
+func getProtocolType(variant pb.SchemaVariant) common.ProtocolType {
+	switch variant {
+	case pb.SchemaVariant_ZKP:
+		return common.ZKP
+	case pb.SchemaVariant_ZKPOK:
+		return common.ZKPOK
+	default:
+		return common.Sigma
+	}
 }

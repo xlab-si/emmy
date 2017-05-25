@@ -1,16 +1,17 @@
 package common
 
 import (
-	"math/big"
+	"fmt"
 	pb "github.com/xlab-si/emmy/comm/pro"
+	"math/big"
 )
 
 type ProtocolType uint8
 
 const (
 	Sigma ProtocolType = iota + 1 // SigmaProtocol
-	ZKP //ZeroKnowledgeProof
-	ZKPOK //ZeroKnowledgeProofOfKnowledge
+	ZKP                           //ZeroKnowledgeProof
+	ZKPOK                         //ZeroKnowledgeProofOfKnowledge
 )
 
 type ECGroupElement struct {

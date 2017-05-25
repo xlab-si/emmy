@@ -10,11 +10,7 @@ func (c *Client) Pedersen(val big.Int) {
 
 	(c.handler).pedersenCommitter = commitments.NewPedersenCommitter()
 
-	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        c.schema,
-		SchemaVariant: c.variant,
-	}
+	initMsg := c.getInitialMsg()
 
 	pf := getH(c, initMsg)
 
