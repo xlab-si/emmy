@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"math/big"
+	"net"
 )
 
 type SchnorrProtocolClient struct {
@@ -127,6 +128,19 @@ func NewSchnorrProtocolServer(dlog *dlog.ZpDLog,
 		protocolType: protocolType,
 	}
 	return &protocolServer
+}
+
+func (server *SchnorrProtocolServer) Listen() {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+
+	pb.RegisterSchnorrProtocolServer(s, server)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
 
 func (s *SchnorrProtocolServer) OpeningMsg(ctx context.Context,

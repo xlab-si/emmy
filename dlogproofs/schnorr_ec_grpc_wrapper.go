@@ -2,14 +2,13 @@ package dlogproofs
 
 import (
 	"errors"
-	"fmt"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/config"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
 	"math/big"
+	"net"
 )
 
 type SchnorrECProtocolClient struct {
@@ -20,8 +19,7 @@ type SchnorrECProtocolClient struct {
 }
 
 func NewSchnorrECProtocolClient(protocolType common.ProtocolType) (*SchnorrECProtocolClient, error) {
-	port := config.LoadServerPort()
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.New("could not connect")
 	}
@@ -130,6 +128,19 @@ func NewSchnorrECProtocolServer(protocolType common.ProtocolType) *SchnorrECProt
 	}
 
 	return &protocolServer
+}
+
+func (server *SchnorrECProtocolServer) Listen() {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+
+	pb.RegisterSchnorrECProtocolServer(s, server)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
 
 func (s *SchnorrECProtocolServer) OpeningMsg(ctx context.Context,
