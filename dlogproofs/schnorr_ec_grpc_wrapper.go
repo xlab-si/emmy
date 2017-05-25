@@ -57,10 +57,14 @@ func (client *SchnorrECProtocolClient) OpeningMsg() (*common.ECGroupElement, err
 }
 
 // Sends first message of sigma protocol and receives challenge decommitment.
-func (client *SchnorrECProtocolClient) ProofRandomData(secret *big.Int) (*big.Int, *big.Int, error) {
-	x, t := client.prover.GetProofRandomData(secret) // x = g^r, t = g^secret is "public key"
+func (client *SchnorrECProtocolClient) ProofRandomData(a *common.ECGroupElement,
+	secret *big.Int) (*big.Int, *big.Int, error) {
+	x := client.prover.GetProofRandomData(secret, a) // x = a^r, b = a^secret is "public key"
 
-	msg := &pb.SchnorrECProofRandomData{X: common.ToPbECGroupElement(x), T: common.ToPbECGroupElement(t)}
+	b1, b2 := client.prover.DLog.Exponentiate(a.X, a.Y, secret)
+	b := &common.ECGroupElement{X: b1, Y: b2}
+	msg := &pb.SchnorrECProofRandomData{X: common.ToPbECGroupElement(x),
+		A: common.ToPbECGroupElement(a), B: common.ToPbECGroupElement(b)}
 
 	reply, err := (*client.client).ProofRandomData(context.Background(), msg) // contains (challenge, r2)
 	if err != nil {
@@ -86,13 +90,13 @@ func (client *SchnorrECProtocolClient) ProofData(challenge *big.Int) (bool, erro
 	return status.Success, nil
 }
 
-func (client *SchnorrECProtocolClient) Run(secret *big.Int) (bool, error) {
+func (client *SchnorrECProtocolClient) Run(a *common.ECGroupElement, secret *big.Int) (bool, error) {
 	if client.protocolType != common.Sigma {
 		commitment, _ := client.OpeningMsg() // sends pedersen's h=g^trapdoor
 		client.prover.pedersenReceiver.SetCommitment(commitment)
 	}
 
-	challenge, r, err := client.ProofRandomData(secret) // we are proving that we know secret
+	challenge, r, err := client.ProofRandomData(a, secret) // we are proving that we know secret
 	if err != nil {
 		return false, err
 	}
@@ -139,8 +143,9 @@ func (s *SchnorrECProtocolServer) OpeningMsg(ctx context.Context,
 func (s *SchnorrECProtocolServer) ProofRandomData(ctx context.Context,
 	in *pb.SchnorrECProofRandomData) (*pb.PedersenDecommitment, error) {
 	x := common.ToECGroupElement(in.X)
-	t := common.ToECGroupElement(in.T)
-	s.verifier.SetProofRandomData(x, t)
+	a := common.ToECGroupElement(in.A)
+	b := common.ToECGroupElement(in.B)
+	s.verifier.SetProofRandomData(x, a, b)
 	challenge, r2 := s.verifier.GetChallenge() // r2 is nil in sigma protocol
 	if r2 == nil {
 		r2 = new(big.Int)

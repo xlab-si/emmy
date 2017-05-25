@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
-	"log"
 	"math/big"
 )
 
@@ -18,17 +17,11 @@ type PedersenCommitter struct {
 	r              *big.Int
 }
 
-func NewPedersenCommitter() *PedersenCommitter {
-	committer := PedersenCommitter{}
-	return &committer
-}
-
-func (committer *PedersenCommitter) SetGroup(p, q, g *big.Int) {
-	committer.dLog = &dlog.ZpDLog{
-		P:               p,
-		OrderOfSubgroup: q,
-		G:               g,
+func NewPedersenCommitter(dlog *dlog.ZpDLog) *PedersenCommitter {
+	committer := PedersenCommitter{
+		dLog: dlog,
 	}
+	return &committer
 }
 
 // Value h needs to be obtained from a receiver and then set in a committer.
@@ -78,12 +71,7 @@ type PedersenReceiver struct {
 	commitment *big.Int
 }
 
-func NewPedersenReceiver() *PedersenReceiver {
-	dLog, err := dlog.NewZpSchnorr(256)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func NewPedersenReceiver(dLog *dlog.ZpDLog) *PedersenReceiver {
 	a := common.GetRandomInt(dLog.OrderOfSubgroup)
 	h, _ := dLog.ExponentiateBaseG(a)
 
@@ -105,10 +93,6 @@ func NewPedersenReceiverFromExistingDLog(dLog *dlog.ZpDLog) *PedersenReceiver {
 	receiver.h = h
 
 	return receiver
-}
-
-func (s *PedersenReceiver) GetGroup() *dlog.ZpDLog {
-	return s.dLog
 }
 
 func (s *PedersenReceiver) GetH() *big.Int {

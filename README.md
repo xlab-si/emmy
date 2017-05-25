@@ -1,4 +1,4 @@
-# emmy
+# emmy (after Emmy Noether)
 
 Library for zero-knowledge proofs. 
 
@@ -97,6 +97,18 @@ emmy -example=schnorr_ec_zkpok -client=false
 emmy -example=schnorr_ec_zkpok -client=true
 ```
 
+#### Chaum-Pedersen protocol [4] to prove discrete logarithm equality
+
+```
+emmy -example=dlog_equality
+```
+
+#### Protocol to prove discrete logarithm equality that produces a blinded transcript [5]
+
+```
+emmy -example=dlog_equality_blinded_transcript
+```
+
 ### Commitments
 
 #### Pedersen commitment in multiplicative group of integers modulo p
@@ -117,14 +129,20 @@ emmy -example=pedersen_ec -client=false
 emmy -example=pedersen_ec -client=true
 ```
 
+### Pseudonym system [5]
+
+```
+emmy -example=pseudonymsys
+```
+
 ### Verifiable encryption [2]
 
 For an example run:
 
 ```
 emmy -example=cspaillier -client=false
-emmy -example=cspaillier -client=true
 ```
+
 ### Signatures
 
 #### Camenisch-Lysyanskaya signature [3]
@@ -138,7 +156,6 @@ To run an example:
 ```
 emmy -example=split_secret -client=false
 ```
-
 
 ## Todo
 
@@ -186,3 +203,7 @@ $ # ./run <example_name> <num_clients> [concurrent]
 $ ./run pedersen_ec 100 concurrent  # starts 100 clients concurrently
 $ ./run pedersen_ec 100             # starts 100 clients sequentially
 ```
+
+[4] D. Chaum and T. P. Pedersen, Wallet databases with observers, Advances in Cryptology — CRYPTO ’92 (E. F. Brickell, ed.), LNCS, vol. 740, Springer-Verlag, 1993, pp. 89– 105.
+
+[5] A. Lysyanskaya, R. Rivest, A. Sahai, and S. Wolf. Pseudonym systems. In Selected Areas in Cryptography, vol. 1758 of LNCS. Springer Verlag, 1999.

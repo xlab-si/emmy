@@ -1,13 +1,13 @@
 package commitments
 
 import (
-	"fmt"
 	pb "github.com/xlab-si/emmy/comm/pro"
-	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
 	"math/big"
+	"net"
 )
 
 type PedersenProtocolClient struct {
@@ -16,15 +16,14 @@ type PedersenProtocolClient struct {
 	committer *PedersenCommitter
 }
 
-func NewPedersenProtocolClient() *PedersenProtocolClient {
-	port := config.LoadServerPort()
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
+func NewPedersenProtocolClient(dlog *dlog.ZpDLog) *PedersenProtocolClient {
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 
 	client := pb.NewPedersenClient(conn)
-	committer := NewPedersenCommitter()
+	committer := NewPedersenCommitter(dlog)
 
 	protocolClient := PedersenProtocolClient{
 		client:    &client,
@@ -40,11 +39,6 @@ func (client *PedersenProtocolClient) ObtainH() error {
 	if err != nil {
 		log.Fatalf("could not get h: %v", err)
 	}
-
-	p := new(big.Int).SetBytes(reply.P)
-	q := new(big.Int).SetBytes(reply.OrderOfSubgroup)
-	g := new(big.Int).SetBytes(reply.G)
-	(*client.committer).SetGroup(p, q, g)
 
 	el := new(big.Int).SetBytes(reply.H)
 	(*client.committer).SetH(el)
@@ -79,32 +73,12 @@ func (client *PedersenProtocolClient) Decommit() (bool, error) {
 	return reply.Success, err
 }
 
-func (client *PedersenProtocolClient) Run(val *big.Int) (bool, error) {
-	err := client.ObtainH()
-
-	if err != nil {
-		log.Fatalf("Getting H not successful: %v", err)
-	}
-
-	success, err := client.Commit(val) // TODO: this should return only err
-	if err != nil {
-		log.Fatalf("Commit not successful: %v", err)
-	}
-
-	success, err = client.Decommit()
-	if err != nil {
-		log.Fatalf("Decommit not successful: %v", err)
-	}
-
-	return success, err
-}
-
 type PedersenProtocolServer struct {
 	receiver *PedersenReceiver
 }
 
-func NewPedersenProtocolServer() *PedersenProtocolServer {
-	receiver := NewPedersenReceiver()
+func NewPedersenProtocolServer(dlog *dlog.ZpDLog) *PedersenProtocolServer {
+	receiver := NewPedersenReceiver(dlog)
 	protocolServer := PedersenProtocolServer{
 		receiver: receiver,
 	}
@@ -112,13 +86,24 @@ func NewPedersenProtocolServer() *PedersenProtocolServer {
 	return &protocolServer
 }
 
+func (server *PedersenProtocolServer) Listen() {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+
+	pb.RegisterPedersenServer(s, server)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+}
+
 func (s *PedersenProtocolServer) GetH(ctx context.Context,
 	in *pb.EmptyMsg) (*pb.PedersenFirst, error) {
 	h := s.receiver.GetH() // we could as well use s.receiver.h as h is defined in the same package and thus accessible from here
-	group := s.receiver.GetGroup()
 
-	return &pb.PedersenFirst{H: h.Bytes(), P: group.P.Bytes(),
-		OrderOfSubgroup: group.OrderOfSubgroup.Bytes(), G: group.G.Bytes()}, nil
+	return &pb.PedersenFirst{H: h.Bytes()}, nil
 }
 
 func (s *PedersenProtocolServer) Commit(ctx context.Context,
