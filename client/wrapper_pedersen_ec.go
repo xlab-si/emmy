@@ -3,42 +3,38 @@ package main
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/commitments"
-	//"github.com/xlab-si/emmy/common"
-	"log"
+	"github.com/xlab-si/emmy/common"
 	"math/big"
 )
 
-func (c *Client) PedersenEC(val big.Int) { // error
+func (c *Client) PedersenEC(val big.Int) {
 
 	(c.handler).pedersenECCommitter = commitments.NewPedersenECCommitter()
 
-	initMsg := c.getInitialMsg()
-	initMsg.Content = &pb.Message_Empty{&pb.EmptyMsg{}}
+	initMsg := &pb.Message{
+		ClientId:      c.id,
+		Schema:        c.schema,
+		SchemaVariant: c.variant,
+		Content:       &pb.Message_Empty{&pb.EmptyMsg{}},
+	}
 
 	err := c.send(initMsg)
 	if err != nil {
-		//return err
-		log.Fatalf("[Client %v] ERROR: %v", c.id, err)
+		return
 	}
 
-	log.Printf("[Client %v] Sent request 1", c.id)
-
-	_, err = c.recieve()
+	resp, err := c.recieve()
 	if err != nil {
-		//return err
-		log.Fatalf("[Client %v] ERROR: %v", c.id, err)
+		return
 	}
 
-	/*log.Printf("[Client] Received response 1")
-	//return //nil
-
-	log.Printf("[Client %v] I GOT THIS IN THE MESSAGE: %v", &c, resp.GetEcGroupElement())
 	ecge := common.ToECGroupElement(resp.GetEcGroupElement())
 	(c.handler).pedersenECCommitter.SetH(ecge)
 
 	commitment, err := c.handler.pedersenECCommitter.GetCommitMsg(&val)
 	if err != nil {
-		log.Fatalf("could not generate committment message: %v", err)
+		logger.Criticalf("could not generate committment message: %v", err)
+		return
 	}
 
 	my_ecge := common.ToPbECGroupElement(commitment)
@@ -46,21 +42,15 @@ func (c *Client) PedersenEC(val big.Int) { // error
 
 	err = c.send(commitmentMsg)
 	if err != nil {
-		//return err
-		log.Fatalf("[Client] ERROR: %v", err)
+		return
 	}
-
-	log.Printf("[Client] Sent request 2")
 
 	resp, err = c.recieve()
 	if err != nil {
-		//return err
-		log.Fatalf("[Client] ERROR: %v", err)
+		return
 	}
 
-	log.Printf("[Client] Received response 2")
-
-	/*decommitVal, r := c.handler.pedersenECCommitter.GetDecommitMsg()
+	decommitVal, r := c.handler.pedersenECCommitter.GetDecommitMsg()
 	decommitment := &pb.PedersenDecommitment{X: decommitVal.Bytes(), R: r.Bytes()}
 	decommitMsg := &pb.Message{
 		Content: &pb.Message_PedersenDecommitment{decommitment},
@@ -68,17 +58,10 @@ func (c *Client) PedersenEC(val big.Int) { // error
 
 	err = c.send(decommitMsg)
 	if err != nil {
-		return //err
+		return
 	}
 	resp, err = c.recieve()
 	if err != nil {
-		return //err
+		return
 	}
-
-	//(*c.stream).CloseSend()
-	//(*c.conn).Close()
-	*/
-	log.Printf("[Client %v] ************ DONE ************", c.id)
-
-	//return nil
 }

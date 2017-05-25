@@ -63,8 +63,8 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			switch reqSchemaType {
 			case pb.SchemaType_PEDERSEN_EC:
 				s.PedersenEC(stream)
-			//case pb.SchemaType_PEDERSEN:
-
+			case pb.SchemaType_PEDERSEN:
+				s.Pedersen(stream)
 			default:
 				logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 			}

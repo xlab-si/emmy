@@ -72,39 +72,37 @@ func main() {
 }
 
 func runExample(example string, i int, n int) {
-	//defer wg.Done()
+
+	client := getGenericClient(example)
+
+	/* Placeholder for values used to bootstrap chosen protocol
+	The actual (example) values will be filled in depending on which protocol we are starting */
+	protocolParams := ProtocolParams{}
 
 	switch example {
 	case "pedersen", "pedersen-zkp", "pedersen-zkpok":
-		GenericClient(i, example, n)
-		//Pedersen()
+		protocolParams["commitVal"] = *big.NewInt(121212121)
 	case "pedersen_ec", "pedersen_ec-zkp", "pedersen_ec-zkpok":
-		GenericClient(i, example, n)
-		//PedersenEC()
-	case "pedersen_ec_stream":
-		//PedersenECStream()
-		GenericClient(i, example, n)
-	case "schnorr", "schnorr-zkp", "schnorr-zkpok":
-		//protocolType := getProtocolType(example)
-		//Schnorr(protocolType)
-		GenericClient(i, example, n)
-	case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
-		//protocolType := getProtocolType(example)
-		//SchnorrEC(protocolType)
-		GenericClient(i, example, n)
-	case "cspaillier", "cspaillier-zkp", "cspaillier-zkpok":
-		//dir := config.LoadKeyDirFromConfig()
-		//pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
-		//Paillier(pubKeyPath)
-		GenericClient(i, example, n)
+		protocolParams["commitVal"] = *big.NewInt(121212121)
+	//case "schnorr", "schnorr-zkp", "schnorr-zkpok":
+	//protocolType := getProtocolType(example)
+	//Schnorr(protocolType)
+	//case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
+	//protocolType := getProtocolType(example)
+	//SchnorrEC(protocolType)
+	//case "cspaillier", "cspaillier-zkp", "cspaillier-zkpok":
+	//dir := config.LoadKeyDirFromConfig()
+	//pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
+	//Paillier(pubKeyPath)
 	default:
 		logger.Criticalf("ERROR: Invalid example: %s", example)
+		return
 	}
 
-	//fmt.Printf("[%d] done\n", i)
+	client.ExecuteProtocol(protocolParams)
 }
 
-func GenericClient(id int, schema string, n int) {
+func getGenericClient(schema string) *Client {
 	schemaTypeVariant := strings.Split(strings.ToUpper(schema), "-")
 
 	// Spawn the client that will execute the protocol of choice
@@ -114,30 +112,7 @@ func GenericClient(id int, schema string, n int) {
 		clientParams.SchemaVariant = schemaTypeVariant[1]
 	}
 	client := NewProtocolClient(clientParams)
-
-	/* ***********************************************************************************
-	//TODO Try to actually just call the same client stub from several goroutines here....
-	//	... dont just create new clients
-	************************************************************************************* */
-
-	// Set the actual values that are to be used to bootstrap the protocol
-	protocolParams := ProtocolParams{}
-	protocolParams["commitVal"] = *big.NewInt(121212121)
-
-	/*var wg sync.WaitGroup
-	wg.Add(n)
-
-	for i := 0; i < n; i++ {
-		go func() {
-			defer wg.Done()
-			client.ExecuteProtocol(protocolParams)
-		}()
-	}
-	wg.Wait()*/
-
-	client.ExecuteProtocol(protocolParams)
-
-	return
+	return client
 }
 
 func getProtocolType(name string) common.ProtocolType {
