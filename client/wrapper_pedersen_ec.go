@@ -11,57 +11,20 @@ func (c *Client) PedersenEC(val big.Int) {
 
 	(c.handler).pedersenECCommitter = commitments.NewPedersenECCommitter()
 
-	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        c.schema,
-		SchemaVariant: c.variant,
-		Content:       &pb.Message_Empty{&pb.EmptyMsg{}},
-	}
+	initMsg := c.getInitialMsg()
+	ecge_i := getH(c, initMsg)
+	ecge := ecge_i.(*pb.ECGroupElement)
+	my_ecge := common.ToECGroupElement(ecge)
 
-	err := c.send(initMsg)
-	if err != nil {
-		return
-	}
-
-	resp, err := c.recieve()
-	if err != nil {
-		return
-	}
-
-	ecge := common.ToECGroupElement(resp.GetEcGroupElement())
-	(c.handler).pedersenECCommitter.SetH(ecge)
+	(c.handler).pedersenECCommitter.SetH(my_ecge)
 
 	commitment, err := c.handler.pedersenECCommitter.GetCommitMsg(&val)
 	if err != nil {
 		logger.Criticalf("could not generate committment message: %v", err)
 		return
 	}
-
-	my_ecge := common.ToPbECGroupElement(commitment)
-	commitmentMsg := &pb.Message{Content: &pb.Message_EcGroupElement{my_ecge}}
-
-	err = c.send(commitmentMsg)
-	if err != nil {
-		return
-	}
-
-	resp, err = c.recieve()
-	if err != nil {
-		return
-	}
+	commit(c, commitment)
 
 	decommitVal, r := c.handler.pedersenECCommitter.GetDecommitMsg()
-	decommitment := &pb.PedersenDecommitment{X: decommitVal.Bytes(), R: r.Bytes()}
-	decommitMsg := &pb.Message{
-		Content: &pb.Message_PedersenDecommitment{decommitment},
-	}
-
-	err = c.send(decommitMsg)
-	if err != nil {
-		return
-	}
-	resp, err = c.recieve()
-	if err != nil {
-		return
-	}
+	decommit(c, decommitVal, r)
 }

@@ -10,8 +10,12 @@ import (
 func (s *Server) PedersenEC(stream pb.Protocol_RunServer) error {
 
 	pedersenECReciever := commitments.NewPedersenECReceiver()
+
 	h := pedersenECReciever.GetH()
-	ecge := pb.ECGroupElement{X: h.X.Bytes(), Y: h.Y.Bytes()}
+	ecge := pb.ECGroupElement{
+		X: h.X.Bytes(),
+		Y: h.Y.Bytes(),
+	}
 	resp := &pb.Message{Content: &pb.Message_EcGroupElement{&ecge}}
 
 	err := s.send(resp, stream)
