@@ -47,9 +47,8 @@ type ProtocolParams map[string]big.Int
 
 var client pb.ProtocolClient
 
-func getConnection() (*grpc.ClientConn, error) {
+func getConnection(serverEndpoint string) (*grpc.ClientConn, error) {
 	logger.Debug("Getting the connection")
-	serverEndpoint := config.LoadServerEndpoint()
 	conn, err := grpc.Dial(serverEndpoint, grpc.WithInsecure())
 	if err != nil {
 		logger.Criticalf("Could not connect to server %v (%v)", serverEndpoint, err)
@@ -77,11 +76,11 @@ func getClient(conn *grpc.ClientConn) *pb.ProtocolClient {
 	return &client
 }
 
-func NewProtocolClient(params *ClientParams) *Client {
+func NewProtocolClient(endpoint string, params *ClientParams) *Client {
 	schema := pb.SchemaType(pb.SchemaType_value[params.SchemaType])
 	variant := pb.SchemaVariant(pb.SchemaVariant_value[params.SchemaVariant])
 
-	conn, err := getConnection()
+	conn, err := getConnection(endpoint)
 	if err != nil {
 		return nil
 	}
@@ -106,7 +105,7 @@ func NewProtocolClient(params *ClientParams) *Client {
 		handler: &ClientHandler{},
 	}
 
-	logger.Info("NewProtocol client spawned (%v)", protocolClient.id)
+	logger.Infof("NewProtocol client spawned (%v)", protocolClient.id)
 	return &protocolClient
 }
 
@@ -142,14 +141,15 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	schemaVariant := pb.SchemaVariant_name[int32(c.variant)]
 	logger.Infof("Starting client [%v] %v (%v)", c.id, schemaType, schemaVariant)
 
+	dlog := config.LoadPseudonymsysDLog()
+
 	switch c.schema {
 	case pb.SchemaType_PEDERSEN_EC:
 		c.PedersenEC(params["commitVal"])
 	case pb.SchemaType_PEDERSEN:
-		dlog := config.LoadPseudonymsysDLog()
 		c.Pedersen(dlog, params["commitVal"])
-	//case pb.SchemaType_SCHNORR:
-	//	c.Schnorr(params["secret"])
+	case pb.SchemaType_SCHNORR:
+		c.Schnorr(dlog, params["secret"])
 	default:
 		logger.Warning("Not implemented yet")
 	}

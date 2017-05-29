@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/op/go-logging"
+	"github.com/xlab-si/emmy/config"
 	"math/big"
 	"os"
 	"strconv"
@@ -45,6 +46,8 @@ func main() {
 		}
 	}
 
+	endpoint := config.LoadServerEndpoint()
+
 	var wg sync.WaitGroup
 
 	start := time.Now()
@@ -55,10 +58,10 @@ func main() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				runExample(example, i, n)
+				runExample(endpoint, example, i, n)
 			}()
 		} else {
-			runExample(example, i, n)
+			runExample(endpoint, example, i, n)
 		}
 	}
 
@@ -70,9 +73,9 @@ func main() {
 	return
 }
 
-func runExample(example string, i int, n int) {
+func runExample(endpoint, example string, i, n int) {
 
-	client := getGenericClient(example)
+	client := getGenericClient(endpoint, example)
 
 	/* Placeholder for values used to bootstrap chosen protocol
 	The actual (example) values will be filled in depending on which protocol we are starting */
@@ -83,12 +86,10 @@ func runExample(example string, i int, n int) {
 		protocolParams["commitVal"] = *big.NewInt(121212121)
 	case "pedersen_ec", "pedersen_ec-zkp", "pedersen_ec-zkpok":
 		protocolParams["commitVal"] = *big.NewInt(121212121)
-	//case "schnorr", "schnorr-zkp", "schnorr-zkpok":
-	//	protocolParams["secret"] = *big.NewInt(345345345334)
-	//protocolParams["dlog"] = config.LoadPseudonymsysDLog()
+	case "schnorr", "schnorr-zkp", "schnorr-zkpok":
+		protocolParams["secret"] = *big.NewInt(345345345334)
 
 	//protocolType := getProtocolType(example)
-	//Schnorr(protocolType)
 
 	//case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
 	//protocolType := getProtocolType(example)
@@ -105,7 +106,7 @@ func runExample(example string, i int, n int) {
 	client.ExecuteProtocol(protocolParams)
 }
 
-func getGenericClient(schema string) *Client {
+func getGenericClient(endpoint, schema string) *Client {
 	schemaTypeVariant := strings.Split(strings.ToUpper(schema), "-")
 
 	// Spawn the client that will execute the protocol of choice
@@ -114,6 +115,7 @@ func getGenericClient(schema string) *Client {
 	if len(schemaTypeVariant) > 1 {
 		clientParams.SchemaVariant = schemaTypeVariant[1]
 	}
-	client := NewProtocolClient(clientParams)
+
+	client := NewProtocolClient(endpoint, clientParams)
 	return client
 }

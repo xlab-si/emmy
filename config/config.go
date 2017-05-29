@@ -11,10 +11,10 @@ func init() {
 	viper.AddConfigPath("$GOPATH/src/github.com/xlab-si/emmy/config")
 }
 
-// Type can be "yml", "json" ...
-func LoadConfig(configName string, ctype string) {
+// configType can be "yml", "json" ...
+func LoadConfig(configName string, configType string) {
 	viper.SetConfigName(configName)
-	viper.SetConfigType(ctype)
+	viper.SetConfigType(configType)
 
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -49,7 +49,6 @@ func LoadTestKeyDirFromConfig() string {
 func LoadPseudonymsysDLog() *dlog.ZpDLog {
 	LoadConfig("dlogs", "json")
 	dlogMap := viper.GetStringMap("pseudonymsys")
-	fmt.Printf("dlogmap: %v", dlogMap)
 	p, _ := new(big.Int).SetString(dlogMap["p"].(string), 10)
 	g, _ := new(big.Int).SetString(dlogMap["g"].(string), 10)
 	q, _ := new(big.Int).SetString(dlogMap["q"].(string), 10)

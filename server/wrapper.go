@@ -52,32 +52,35 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			return nil
 		}
 
-		switch req.Content.(type) {
-		case *pb.Message_Empty:
+		reqSchemaType := req.GetSchema()
+		reqSchemaVariant := req.GetSchemaVariant()
+		reqSchemaTypeStr := pb.SchemaType_name[int32(reqSchemaType)]
+		reqSchemaVariantStr := pb.SchemaVariant_name[int32(reqSchemaVariant)]
+		reqClientId := req.GetClientId()
+		logger.Notice("Client [", reqClientId, "] requested", reqSchemaTypeStr, "variant", reqSchemaVariantStr)
 
-			reqSchemaType := req.GetSchema()
-			reqSchemaVariant := req.GetSchemaVariant()
-			reqSchemaTypeStr := pb.SchemaType_name[int32(reqSchemaType)]
-			reqSchemaVariantStr := pb.SchemaVariant_name[int32(reqSchemaVariant)]
-			reqClientId := req.GetClientId()
-			logger.Notice("Client [", reqClientId, "] requested", reqSchemaTypeStr, "variant", reqSchemaVariantStr)
+		// Convert Sigma, ZKP or ZKPOK protocol type to a common type
+		protocolType := getProtocolType(reqSchemaVariant)
 
-			//protocolType := getProtocolType(reqSchemaVariant)
+		dlog := config.LoadPseudonymsysDLog()
 
-			switch reqSchemaType {
-			case pb.SchemaType_PEDERSEN_EC:
-				s.PedersenEC(stream)
-			case pb.SchemaType_PEDERSEN:
-				dlog := config.LoadPseudonymsysDLog()
-				s.Pedersen(dlog, stream)
-			//case pb.SchemaType_SCHNORR:
-			//	s.Schnorr(stream, protocolType)
-			default:
-				logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
-			}
+		switch reqSchemaType {
+		case pb.SchemaType_PEDERSEN_EC:
+			s.PedersenEC(stream)
+		case pb.SchemaType_PEDERSEN:
+			s.Pedersen(dlog, stream)
+		case pb.SchemaType_SCHNORR:
+			s.Schnorr(req, dlog, protocolType, stream)
 		default:
-			logger.Info("Received intermediate request", req)
+			logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 		}
+		//case *pb.PedersenFirst:
+		// Schnorr ZKP/ZKPOK
+		//case pb.SchemaType_SCHNORR:
+		//	s.Schnorr(stream, protocolType)
+		/*default:
+			logger.Info("Received intermediate request", req)
+		}*/
 
 	}
 

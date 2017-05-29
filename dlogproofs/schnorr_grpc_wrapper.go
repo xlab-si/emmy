@@ -88,7 +88,7 @@ func (client *SchnorrProtocolClient) ProofData(challenge *big.Int) (bool, error)
 func (client *SchnorrProtocolClient) Run(a, secret *big.Int) (bool, error) {
 	if client.protocolType != common.Sigma {
 		commitment, _ := client.OpeningMsg() // sends pedersen's h=g^trapdoor
-		client.prover.pedersenReceiver.SetCommitment(commitment)
+		client.prover.PedersenReceiver.SetCommitment(commitment)
 	}
 
 	challenge, r, err := client.ProofRandomData(a, secret)
@@ -98,7 +98,7 @@ func (client *SchnorrProtocolClient) Run(a, secret *big.Int) (bool, error) {
 
 	success := true
 	if client.protocolType != common.Sigma {
-		success = client.prover.pedersenReceiver.CheckDecommitment(r, challenge)
+		success = client.prover.PedersenReceiver.CheckDecommitment(r, challenge)
 	}
 
 	if success {
