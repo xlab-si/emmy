@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"github.com/pkg/profile" // go tool pprof -text emmy /tmp/profile102918543/cpu.pprof
-	"github.com/xlab-si/emmy/commitments"
+	//"github.com/pkg/profile" // go tool pprof -text emmy /tmp/profile102918543/cpu.pprof
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
@@ -33,115 +31,7 @@ func main() {
 
 	flag.Parse()
 
-	if *examplePtr == "pedersen" {
-		if *clientPtr == true {
-			dlog := config.LoadPseudonymsysDLog()
-			pedersenProtocolClient := commitments.NewPedersenProtocolClient(dlog)
-
-			err := pedersenProtocolClient.ObtainH()
-			if err != nil {
-				fmt.Println("getting h not successful")
-				fmt.Println(err)
-			}
-
-			valToBeCommitted := big.NewInt(121212121)
-			success, err := pedersenProtocolClient.Commit(valToBeCommitted) // TODO: this should return only err
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				//fmt.Println("ok")
-			}
-
-			success, err = pedersenProtocolClient.Decommit()
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				fmt.Println("ok")
-			} else {
-				fmt.Println("not ok")
-			}
-
-		} else {
-			defer profile.Start().Stop()
-
-			dlog := config.LoadPseudonymsysDLog()
-			receiver := commitments.NewPedersenProtocolServer(dlog)
-			receiver.Listen()
-		}
-	} else if *examplePtr == "pedersen_ec" {
-		if *clientPtr == true {
-			pedersenProtocolClient := commitments.NewPedersenECProtocolClient()
-
-			err := pedersenProtocolClient.ObtainH()
-			if err != nil {
-				fmt.Println("getting h not successful")
-				fmt.Println(err)
-			}
-
-			valToBeCommitted := big.NewInt(121212121)
-			success, err := pedersenProtocolClient.Commit(valToBeCommitted) // TODO: this should return only err
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				//fmt.Println("ok")
-			}
-
-			success, err = pedersenProtocolClient.Decommit()
-			if err != nil {
-				fmt.Println("commit not successful")
-				fmt.Println(err)
-			}
-			if success == true {
-				fmt.Println("ok")
-			} else {
-				fmt.Println("not ok")
-			}
-
-		} else {
-			receiver := commitments.NewPedersenECProtocolServer()
-			receiver.Listen()
-		}
-	} else if strings.Contains(*examplePtr, "schnorr") && !strings.Contains(*examplePtr, "schnorr_ec") {
-		var protocolType common.ProtocolType
-		if *examplePtr == "schnorr" {
-			protocolType = common.Sigma
-		} else if *examplePtr == "schnorr_zkp" {
-			protocolType = common.ZKP
-		} else if *examplePtr == "schnorr_zkpok" {
-			protocolType = common.ZKPOK
-		}
-		if *clientPtr == true {
-			log.Println(protocolType)
-			dlog := config.LoadPseudonymsysDLog()
-
-			schnorrProtocolClient, err := dlogproofs.NewSchnorrProtocolClient(dlog, protocolType)
-			if err != nil {
-				log.Fatalf("error when creating Schnorr protocol client: %v", err)
-			}
-
-			secret := big.NewInt(345345345334)
-			isProved, err := schnorrProtocolClient.Run(dlog.G, secret)
-
-			if isProved == true {
-				log.Println("knowledge proved")
-			} else {
-				log.Println("knowledge NOT proved")
-			}
-
-		} else {
-			log.Println(protocolType)
-			dlog := config.LoadPseudonymsysDLog()
-			schnorrServer := dlogproofs.NewSchnorrProtocolServer(dlog, protocolType)
-			schnorrServer.Listen()
-
-		}
-	} else if strings.Contains(*examplePtr, "schnorr_ec") {
+	if strings.Contains(*examplePtr, "schnorr_ec") {
 		var protocolType common.ProtocolType
 		if *examplePtr == "schnorr_ec" {
 			protocolType = common.Sigma
