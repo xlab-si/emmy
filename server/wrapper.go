@@ -71,13 +71,13 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			s.Pedersen(dlog, stream)
 		case pb.SchemaType_SCHNORR:
 			s.Schnorr(req, dlog, protocolType, stream)
+		case pb.SchemaType_SCHNORR_EC:
+			s.SchnorrEC(req, protocolType, stream)
 		default:
 			logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 		}
 		//case *pb.PedersenFirst:
-		// Schnorr ZKP/ZKPOK
-		//case pb.SchemaType_SCHNORR:
-		//	s.Schnorr(stream, protocolType)
+		// Schnorr ZKP/ZKP
 		/*default:
 			logger.Info("Received intermediate request", req)
 		}*/

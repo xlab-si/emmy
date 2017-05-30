@@ -91,7 +91,7 @@ func (client *SchnorrECProtocolClient) ProofData(challenge *big.Int) (bool, erro
 func (client *SchnorrECProtocolClient) Run(a *common.ECGroupElement, secret *big.Int) (bool, error) {
 	if client.protocolType != common.Sigma {
 		commitment, _ := client.OpeningMsg() // sends pedersen's h=g^trapdoor
-		client.prover.pedersenReceiver.SetCommitment(commitment)
+		client.prover.PedersenReceiver.SetCommitment(commitment)
 	}
 
 	challenge, r, err := client.ProofRandomData(a, secret) // we are proving that we know secret
@@ -101,7 +101,7 @@ func (client *SchnorrECProtocolClient) Run(a *common.ECGroupElement, secret *big
 
 	success := true
 	if client.protocolType != common.Sigma {
-		success = client.prover.pedersenReceiver.CheckDecommitment(r, challenge)
+		success = client.prover.PedersenReceiver.CheckDecommitment(r, challenge)
 	}
 
 	if success {

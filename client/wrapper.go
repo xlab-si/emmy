@@ -5,6 +5,7 @@ import (
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/encryption"
 	"golang.org/x/net/context"
@@ -141,15 +142,18 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	schemaVariant := pb.SchemaVariant_name[int32(c.variant)]
 	logger.Infof("Starting client [%v] %v (%v)", c.id, schemaType, schemaVariant)
 
-	dlog := config.LoadPseudonymsysDLog()
+	ps_dlog := config.LoadPseudonymsysDLog()
 
 	switch c.schema {
+	case pb.SchemaType_PEDERSEN:
+		c.Pedersen(ps_dlog, params["commitVal"])
 	case pb.SchemaType_PEDERSEN_EC:
 		c.PedersenEC(params["commitVal"])
-	case pb.SchemaType_PEDERSEN:
-		c.Pedersen(dlog, params["commitVal"])
 	case pb.SchemaType_SCHNORR:
-		c.Schnorr(dlog, params["secret"])
+		c.Schnorr(ps_dlog, params["secret"])
+	case pb.SchemaType_SCHNORR_EC:
+		ec_dlog := dlog.NewECDLog()
+		c.SchnorrEC(ec_dlog, params["secret"])
 	default:
 		logger.Warning("Not implemented yet")
 	}

@@ -88,12 +88,8 @@ func runExample(endpoint, example string, i, n int) {
 		protocolParams["commitVal"] = *big.NewInt(121212121)
 	case "schnorr", "schnorr-zkp", "schnorr-zkpok":
 		protocolParams["secret"] = *big.NewInt(345345345334)
-
-	//protocolType := getProtocolType(example)
-
-	//case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
-	//protocolType := getProtocolType(example)
-	//SchnorrEC(protocolType)
+	case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
+		protocolParams["secret"] = *big.NewInt(345345345334)
 	//case "cspaillier", "cspaillier-zkp", "cspaillier-zkpok":
 	//dir := config.LoadKeyDirFromConfig()
 	//pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")

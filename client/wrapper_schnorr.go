@@ -44,7 +44,9 @@ func (c *Client) Schnorr(dlog *dlog.ZpDLog, secret big.Int) {
 func open(c *Client, openMsg *pb.Message) *big.Int {
 	h := (c.handler).schnorrProver.GetOpeningMsg()
 
-	openMsg.Content = &pb.Message_PedersenFirst{&pb.PedersenFirst{H: h.Bytes()}}
+	openMsg.Content = &pb.Message_PedersenFirst{
+		&pb.PedersenFirst{H: h.Bytes()},
+	}
 
 	err := c.send(openMsg)
 	if err != nil {
