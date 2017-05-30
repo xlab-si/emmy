@@ -45,90 +45,28 @@ service Protocol {
 	rpc Run (stream Message) returns (stream Message) {}
 }
 
-// Generic request
-// All fields except type are optional by default
-message Request {
-	SchemaType type = 1;
-	// int sequence_number = ?
-
-	EmptyMsg empty = 2;
-	BigInt bigint = 3;
-	PedersenDecommitment pedersen_decommitment = 4;
-	ECGroupElement ec_group_element = 5;
-	PedersenFirst pedersen_first = 6;
-	SchnorrProofRandomData schnorr_proof_random_data = 7;
-	SchnorrProofData schnorr_proof_data = 8;
-	SchnorrECProofRandomData schnorr_ec_proof_random_data = 9;
-}
-
-
-// Generic response
-// All fields except type are optional by default
-message Response {
-	SchemaType type = 1;
-
-	EmptyMsg empty = 2;
-	PedersenFirst pedersen_first = 3;
-	ECGroupElement ec_group_element = 4;
-	Status status = 5;
-	PedersenDecommitment pedersen_decommitment = 6;
-	BigInt bigint = 7;
-}
-
-
-// P, OrderOfSubgroup, G could be actually fixed, or least not changed each time
-message PedersenFirst {
-	bytes H = 1;
-}
-
-service Pedersen {
-  rpc GetH(EmptyMsg) returns (PedersenFirst) {}
-  rpc Commit(BigInt) returns (EmptyMsg) {}
-  rpc Decommit(PedersenDecommitment) returns (Status) {}
-}
-
-service PedersenEC {
-  rpc GetH(EmptyMsg) returns (ECGroupElement) {}
-  rpc Commit(ECGroupElement) returns (EmptyMsg) {}
-  rpc Decommit(PedersenDecommitment) returns (Status) {}
-}
-
-message PedersenECRequest {
-	EmptyMsg empty = 1;
-	BigInt commitVal = 2;
-	PedersenDecommitment decommitment = 3;
-	ECGroupElement ecge = 4;
-}
-
-message PedersenECResponse {
-	PedersenFirst first = 1;
-	ECGroupElement ecge = 2;
-	EmptyMsg empty = 3;
-	Status status = 4;
-}
-
-service PedersenECStream {
-  rpc Commitment(stream PedersenECRequest) returns (stream PedersenECResponse) {}
-}
-
 message EmptyMsg {}
 
-message PedersenDecommitment {
-	bytes X = 1;
- 	bytes R = 2;
+message Status {
+	bool Success = 1;
 }
 
 message BigInt {
 	bytes X1 = 1;
 }
 
+message PedersenFirst {
+	bytes H = 1;
+}
+
+message PedersenDecommitment {
+	bytes X = 1;
+ 	bytes R = 2;
+}
+
 message ECGroupElement {
 	bytes X = 1;
  	bytes Y = 2;
-}
-
-message Status {
-	bool Success = 1;
 }
 
 message SchnorrProofRandomData {
@@ -137,26 +75,10 @@ message SchnorrProofRandomData {
 	bytes B = 3;
 }
 
-service SchnorrProtocol {
-  // OpeningMsg is called in ZKP and ZKPOK, input is Pedersen's h = g^a, output is challenge commitment
-  rpc OpeningMsg(PedersenFirst) returns (BigInt) {}
-  // PedersenDecommitment is used even it is not ZKP or ZKPOK (trapdoor is empty for SigmaProtocol)
-  rpc ProofRandomData(SchnorrProofRandomData) returns (PedersenDecommitment) {}
-  rpc ProofData(SchnorrProofData) returns (Status) {}
-}
-
 message SchnorrECProofRandomData {
 	ECGroupElement X = 1;
 	ECGroupElement A = 2;
 	ECGroupElement B = 3;
-}
-
-service SchnorrECProtocol {
-  // OpeningMsg is called in ZKP and ZKPOK, input is Pedersen's h = g^a, output is challenge commitment
-  rpc OpeningMsg(ECGroupElement) returns (ECGroupElement) {} 
-  // PedersenDecommitment is used even it is not ZKP or ZKPOK (trapdoor is empty for SigmaProtocol)
-  rpc ProofRandomData(SchnorrECProofRandomData) returns (PedersenDecommitment) {}
-  rpc ProofData(SchnorrProofData) returns (Status) {}
 }
 
 message SchnorrProofData {
@@ -227,12 +149,3 @@ service CSPaillierProtocol {
   rpc ProofRandomData(CSPaillierProofRandomData) returns (BigInt) {}
   rpc ProofData(CSPaillierProofData) returns (Status) {}
 }
-
-
-
-
-
-
-
-
-
