@@ -7,13 +7,18 @@ import (
 	"math/big"
 )
 
-func (c *Client) PedersenEC(val big.Int) {
+func (c *Client) PedersenEC(val big.Int) error {
 
 	(c.handler).pedersenECCommitter = commitments.NewPedersenECCommitter()
 
 	initMsg := c.getInitialMsg()
-	ecge_i := getH(c, initMsg)
-	ecge := ecge_i.(*pb.ECGroupElement)
+	resInterface := getH(c, initMsg)
+
+	ecge, success := resInterface.(*pb.ECGroupElement)
+	if !success {
+		return resInterface.(error)
+	}
+
 	my_ecge := common.ToECGroupElement(ecge)
 
 	(c.handler).pedersenECCommitter.SetH(my_ecge)
@@ -21,10 +26,18 @@ func (c *Client) PedersenEC(val big.Int) {
 	commitment, err := c.handler.pedersenECCommitter.GetCommitMsg(&val)
 	if err != nil {
 		logger.Criticalf("could not generate committment message: %v", err)
-		return
+		return nil
 	}
-	commit(c, commitment)
+	err = commit(c, commitment)
+	if err != nil {
+		return err
+	}
 
 	decommitVal, r := c.handler.pedersenECCommitter.GetDecommitMsg()
-	decommit(c, decommitVal, r)
+	err = decommit(c, decommitVal, r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

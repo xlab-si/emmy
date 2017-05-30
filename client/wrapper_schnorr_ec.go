@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
@@ -8,11 +9,11 @@ import (
 	"math/big"
 )
 
-func (c *Client) SchnorrEC(protocolType common.ProtocolType, dlog *dlog.ECDLog, secret big.Int) {
+func (c *Client) SchnorrEC(protocolType common.ProtocolType, dlog *dlog.ECDLog, secret big.Int) error {
 	prover, err := dlogproofs.NewSchnorrECProver(protocolType)
 	if err != nil {
 		logger.Criticalf("Could not create schnorr EC prover: %v", err)
-		return
+		return err
 	}
 
 	(c.handler).schnorrECProver = prover
@@ -25,31 +26,48 @@ func (c *Client) SchnorrEC(protocolType common.ProtocolType, dlog *dlog.ECDLog, 
 	}
 
 	if protocolType != common.Sigma { // ZKP or ZKPOK
-		commitment := openEC(c, initMsg)
+		commitment, err := openEC(c, initMsg)
+		if err != nil {
+			return err
+		}
+
 		(c.handler).schnorrECProver.PedersenReceiver.SetCommitment(commitment)
-		pedersenDecommitment := proofRandomDataEC(c, false, &a, &secret)
+		pedersenDecommitment, err := proofRandomDataEC(c, false, &a, &secret)
+		if err != nil {
+			return err
+		}
 
 		challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
 		r := new(big.Int).SetBytes(pedersenDecommitment.R)
 
 		success := (c.handler).schnorrECProver.PedersenReceiver.CheckDecommitment(r, challenge)
 		if success {
-			proved := proofDataEC(c, challenge)
+			proved, err := proofDataEC(c, challenge)
+			if err != nil {
+				return err
+			}
 			logger.Noticef("Decommit successful, proved: %v", proved)
 		} else {
 			logger.Notice("Decommitment failed")
-			return
+			return errors.New("Decommitment failed")
 		}
 	} else {
-		pedersenDecommitment := proofRandomDataEC(c, true, &a, &secret)
+		pedersenDecommitment, err := proofRandomDataEC(c, true, &a, &secret)
+		if err != nil {
+			return err
+		}
 		challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
-		proved := proofDataEC(c, challenge)
+		proved, err := proofDataEC(c, challenge)
+		if err != nil {
+			return err
+		}
 		logger.Noticef("Decommit successful, proved: %v", proved)
 	}
 
+	return nil
 }
 
-func openEC(c *Client, openMsg *pb.Message) *common.ECGroupElement {
+func openEC(c *Client, openMsg *pb.Message) (*common.ECGroupElement, error) {
 	h := (c.handler).schnorrECProver.GetOpeningMsg()
 	ecge := common.ToPbECGroupElement(h)
 
@@ -57,20 +75,20 @@ func openEC(c *Client, openMsg *pb.Message) *common.ECGroupElement {
 
 	err := c.send(openMsg)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	ecge = resp.GetEcGroupElement()
 	commitment := common.ToECGroupElement(ecge)
-	return commitment
+	return commitment, nil
 }
 
-func proofRandomDataEC(c *Client, isFirstMsg bool, a *common.ECGroupElement, secret *big.Int) *pb.PedersenDecommitment {
+func proofRandomDataEC(c *Client, isFirstMsg bool, a *common.ECGroupElement, secret *big.Int) (*pb.PedersenDecommitment, error) {
 	x := (c.handler).schnorrECProver.GetProofRandomData(secret, a) // x = a^r, b = a^secret is "public key"
 
 	b1, b2 := (c.handler).schnorrECProver.DLog.Exponentiate(a.X, a.Y, secret)
@@ -91,19 +109,19 @@ func proofRandomDataEC(c *Client, isFirstMsg bool, a *common.ECGroupElement, sec
 
 	err := c.send(req)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	pedersenDecommitment := resp.GetPedersenDecommitment()
-	return pedersenDecommitment
+	return pedersenDecommitment, nil
 }
 
-func proofDataEC(c *Client, challenge *big.Int) bool {
+func proofDataEC(c *Client, challenge *big.Int) (bool, error) {
 	z, trapdoor := (c.handler).schnorrECProver.GetProofData(challenge)
 	if trapdoor == nil { // sigma protocol and ZKP
 		trapdoor = new(big.Int)
@@ -122,13 +140,13 @@ func proofDataEC(c *Client, challenge *big.Int) bool {
 
 	err := c.send(msg)
 	if err != nil {
-		return false
+		return false, err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	return resp.GetStatus().Success
+	return resp.GetStatus().Success, nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
@@ -8,7 +9,7 @@ import (
 	"math/big"
 )
 
-func (c *Client) Schnorr(protocolType common.ProtocolType, dlog *dlog.ZpDLog, secret big.Int) {
+func (c *Client) Schnorr(protocolType common.ProtocolType, dlog *dlog.ZpDLog, secret big.Int) error {
 
 	prover := dlogproofs.NewSchnorrProver(dlog, protocolType)
 	(c.handler).schnorrProver = prover
@@ -16,31 +17,48 @@ func (c *Client) Schnorr(protocolType common.ProtocolType, dlog *dlog.ZpDLog, se
 	initMsg := c.getInitialMsg()
 
 	if protocolType != common.Sigma {
-		commitment := open(c, initMsg) // sends pedersen's h=g^trapdoor
+		commitment, err := open(c, initMsg) // sends pedersen's h=g^trapdoor
+		if err != nil {
+			return err
+		}
+
 		(c.handler).schnorrProver.PedersenReceiver.SetCommitment(commitment)
-		pedersenDecommitment := proofRandomData(c, false, dlog.G, &secret)
+		pedersenDecommitment, err := proofRandomData(c, false, dlog.G, &secret)
+		if err != nil {
+			return err
+		}
 
 		challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
 		r := new(big.Int).SetBytes(pedersenDecommitment.R)
 
 		success := (c.handler).schnorrProver.PedersenReceiver.CheckDecommitment(r, challenge)
 		if success {
-			proved := proofData(c, challenge)
+			proved, err := proofData(c, challenge)
 			logger.Noticef("Decommit successful, proved: %v", proved)
+			if err != nil {
+				return err
+			}
 		} else {
 			logger.Notice("Decommitment failed")
-			return
+			return errors.New("Decommitment failed")
 		}
 	} else {
-		pedersenDecommitment := proofRandomData(c, true, dlog.G, &secret)
+		pedersenDecommitment, err := proofRandomData(c, true, dlog.G, &secret)
+		if err != nil {
+			return err
+		}
 		challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
-		proved := proofData(c, challenge)
+		proved, err := proofData(c, challenge)
+		if err != nil {
+			return err
+		}
 		logger.Noticef("Decommit successful, proved: %v", proved)
 	}
 
+	return nil
 }
 
-func open(c *Client, openMsg *pb.Message) *big.Int {
+func open(c *Client, openMsg *pb.Message) (*big.Int, error) {
 	h := (c.handler).schnorrProver.GetOpeningMsg()
 
 	openMsg.Content = &pb.Message_PedersenFirst{
@@ -49,20 +67,20 @@ func open(c *Client, openMsg *pb.Message) *big.Int {
 
 	err := c.send(openMsg)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	bigint := resp.GetBigint()
 	commitment := new(big.Int).SetBytes(bigint.X1)
-	return commitment
+	return commitment, nil
 }
 
-func proofRandomData(c *Client, isFirstMsg bool, a, secret *big.Int) *pb.PedersenDecommitment {
+func proofRandomData(c *Client, isFirstMsg bool, a, secret *big.Int) (*pb.PedersenDecommitment, error) {
 
 	x := (c.handler).schnorrProver.GetProofRandomData(secret, a)
 	b, _ := (c.handler).schnorrProver.DLog.Exponentiate(a, secret)
@@ -84,19 +102,19 @@ func proofRandomData(c *Client, isFirstMsg bool, a, secret *big.Int) *pb.Pederse
 
 	err := c.send(msg)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	pedersenDecommitment := resp.GetPedersenDecommitment()
-	return pedersenDecommitment
+	return pedersenDecommitment, nil
 }
 
-func proofData(c *Client, challenge *big.Int) bool {
+func proofData(c *Client, challenge *big.Int) (bool, error) {
 	z, trapdoor := (c.handler).schnorrProver.GetProofData(challenge)
 	if trapdoor == nil { // sigma protocol and ZKP
 		trapdoor = new(big.Int)
@@ -115,13 +133,13 @@ func proofData(c *Client, challenge *big.Int) bool {
 
 	err := c.send(msg)
 	if err != nil {
-		return false
+		return false, err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	return resp.GetStatus().Success
+	return resp.GetStatus().Success, nil
 }

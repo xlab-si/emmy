@@ -7,13 +7,18 @@ import (
 	"math/big"
 )
 
-func (c *Client) Pedersen(dlog *dlog.ZpDLog, val big.Int) {
+func (c *Client) Pedersen(dlog *dlog.ZpDLog, val big.Int) error {
 	(c.handler).pedersenCommitter = commitments.NewPedersenCommitter(dlog)
 
 	initMsg := c.getInitialMsg()
 
-	pf_i := getH(c, initMsg)
-	pf := pf_i.(*pb.PedersenFirst)
+	resInterface := getH(c, initMsg)
+
+	pf, success := resInterface.(*pb.PedersenFirst)
+	if !success {
+		return resInterface.(error)
+	}
+
 	el := new(big.Int).SetBytes(pf.H)
 
 	(c.handler).pedersenCommitter.SetH(el)
@@ -21,10 +26,18 @@ func (c *Client) Pedersen(dlog *dlog.ZpDLog, val big.Int) {
 	commitment, err := (c.handler).pedersenCommitter.GetCommitMsg(&val)
 	if err != nil {
 		logger.Criticalf("could not generate committment message: %v", err)
-		return
+		return err
 	}
-	commit(c, commitment)
+	err = commit(c, commitment)
+	if err != nil {
+		return err
+	}
 
 	decommitVal, r := c.handler.pedersenCommitter.GetDecommitMsg()
-	decommit(c, decommitVal, r)
+	err = decommit(c, decommitVal, r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

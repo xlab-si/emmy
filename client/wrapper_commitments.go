@@ -6,17 +6,23 @@ import (
 	"math/big"
 )
 
+/*type responseInterface interface {
+	Error error
+	//pedersenFirst() *pb.PedersenFirst
+	//ecGroupElement() *pb.ECGroupElement
+}*/
+
 func getH(c *Client, initMsg *pb.Message) interface{} {
 	initMsg.Content = &pb.Message_Empty{&pb.EmptyMsg{}}
 
 	err := c.send(initMsg)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	resp, err := c.recieve()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if c.schema == pb.SchemaType_PEDERSEN {
@@ -25,7 +31,7 @@ func getH(c *Client, initMsg *pb.Message) interface{} {
 	return resp.GetEcGroupElement()
 }
 
-func commit(c *Client, commitment interface{}) {
+func commit(c *Client, commitment interface{}) error {
 	commitmentMsg := &pb.Message{}
 
 	if c.schema == pb.SchemaType_PEDERSEN {
@@ -42,16 +48,18 @@ func commit(c *Client, commitment interface{}) {
 
 	err := c.send(commitmentMsg)
 	if err != nil {
-		return
+		return err
 	}
 
 	_, err = c.recieve()
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
-func decommit(c *Client, decommitVal, r *big.Int) {
+func decommit(c *Client, decommitVal, r *big.Int) error {
 	decommitment := &pb.PedersenDecommitment{
 		X: decommitVal.Bytes(),
 		R: r.Bytes(),
@@ -62,10 +70,12 @@ func decommit(c *Client, decommitVal, r *big.Int) {
 
 	err := c.send(decommitMsg)
 	if err != nil {
-		return
+		return err
 	}
 	_, err = c.recieve()
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
