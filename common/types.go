@@ -27,3 +27,14 @@ func ToPbECGroupElement(el *ECGroupElement) *pb.ECGroupElement {
 	x := pb.ECGroupElement{X: el.X.Bytes(), Y: el.Y.Bytes()}
 	return &x
 }
+
+func ToProtocolType(variant pb.SchemaVariant) ProtocolType {
+	switch variant {
+	case pb.SchemaVariant_ZKP:
+		return ZKP
+	case pb.SchemaVariant_ZKPOK:
+		return ZKPOK
+	default:
+		return Sigma
+	}
+}

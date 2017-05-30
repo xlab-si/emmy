@@ -8,8 +8,7 @@ import (
 	"math/big"
 )
 
-func (c *Client) Schnorr(dlog *dlog.ZpDLog, secret big.Int) {
-	protocolType := c.getProtocolType()
+func (c *Client) Schnorr(protocolType common.ProtocolType, dlog *dlog.ZpDLog, secret big.Int) {
 
 	prover := dlogproofs.NewSchnorrProver(dlog, protocolType)
 	(c.handler).schnorrProver = prover

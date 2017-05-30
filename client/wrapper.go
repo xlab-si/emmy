@@ -140,6 +140,8 @@ func (c *Client) recieve() (*pb.Message, error) {
 func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	schemaType := pb.SchemaType_name[int32(c.schema)]
 	schemaVariant := pb.SchemaVariant_name[int32(c.variant)]
+	variant := common.ToProtocolType(c.variant)
+
 	logger.Infof("Starting client [%v] %v (%v)", c.id, schemaType, schemaVariant)
 
 	ps_dlog := config.LoadPseudonymsysDLog()
@@ -150,10 +152,10 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	case pb.SchemaType_PEDERSEN_EC:
 		c.PedersenEC(params["commitVal"])
 	case pb.SchemaType_SCHNORR:
-		c.Schnorr(ps_dlog, params["secret"])
+		c.Schnorr(variant, ps_dlog, params["secret"])
 	case pb.SchemaType_SCHNORR_EC:
 		ec_dlog := dlog.NewECDLog()
-		c.SchnorrEC(ec_dlog, params["secret"])
+		c.SchnorrEC(variant, ec_dlog, params["secret"])
 	default:
 		logger.Warning("Not implemented yet")
 	}
@@ -171,16 +173,5 @@ func (c *Client) getInitialMsg() *pb.Message {
 		ClientId:      c.id,
 		Schema:        c.schema,
 		SchemaVariant: c.variant,
-	}
-}
-
-func (c *Client) getProtocolType() common.ProtocolType {
-	switch c.variant {
-	case pb.SchemaVariant_ZKP:
-		return common.ZKP
-	case pb.SchemaVariant_ZKPOK:
-		return common.ZKPOK
-	default:
-		return common.Sigma
 	}
 }

@@ -31,7 +31,6 @@ func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
 func (s *Server) recieve(stream pb.Protocol_RunServer) (*pb.Message, error) {
 	resp, err := stream.Recv()
 	if err == io.EOF {
-		logger.Warning("EOF error")
 		return nil, err
 	}
 	if err != nil {
@@ -60,7 +59,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		logger.Notice("Client [", reqClientId, "] requested", reqSchemaTypeStr, "variant", reqSchemaVariantStr)
 
 		// Convert Sigma, ZKP or ZKPOK protocol type to a common type
-		protocolType := getProtocolType(reqSchemaVariant)
+		protocolType := common.ToProtocolType(reqSchemaVariant)
 
 		dlog := config.LoadPseudonymsysDLog()
 
@@ -74,28 +73,9 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		case pb.SchemaType_SCHNORR_EC:
 			s.SchnorrEC(req, protocolType, stream)
 		default:
-			logger.Errorf("The requested protocol (%v %v) is currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
+			logger.Errorf("The requested protocol (%v %v) is unknown or currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 		}
-		//case *pb.PedersenFirst:
-		// Schnorr ZKP/ZKP
-		/*default:
-			logger.Info("Received intermediate request", req)
-		}*/
-
 	}
-
-	logger.Info("RPC done")
 
 	return nil
-}
-
-func getProtocolType(variant pb.SchemaVariant) common.ProtocolType {
-	switch variant {
-	case pb.SchemaVariant_ZKP:
-		return common.ZKP
-	case pb.SchemaVariant_ZKPOK:
-		return common.ZKPOK
-	default:
-		return common.Sigma
-	}
 }

@@ -8,9 +8,7 @@ import (
 	"math/big"
 )
 
-func (c *Client) SchnorrEC(dlog *dlog.ECDLog, secret big.Int) {
-	protocolType := c.getProtocolType()
-
+func (c *Client) SchnorrEC(protocolType common.ProtocolType, dlog *dlog.ECDLog, secret big.Int) {
 	prover, err := dlogproofs.NewSchnorrECProver(protocolType)
 	if err != nil {
 		logger.Criticalf("Could not create schnorr EC prover: %v", err)
