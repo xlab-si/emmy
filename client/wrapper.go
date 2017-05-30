@@ -146,21 +146,27 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 
 	ps_dlog := config.LoadPseudonymsysDLog()
 
+	var err error
+
 	switch c.schema {
 	case pb.SchemaType_PEDERSEN:
-		c.Pedersen(ps_dlog, params["commitVal"])
+		err = c.Pedersen(ps_dlog, params["commitVal"])
 	case pb.SchemaType_PEDERSEN_EC:
-		c.PedersenEC(params["commitVal"])
+		err = c.PedersenEC(params["commitVal"])
 	case pb.SchemaType_SCHNORR:
-		c.Schnorr(variant, ps_dlog, params["secret"])
+		err = c.Schnorr(variant, ps_dlog, params["secret"])
 	case pb.SchemaType_SCHNORR_EC:
 		ec_dlog := dlog.NewECDLog()
-		c.SchnorrEC(variant, ec_dlog, params["secret"])
+		err = c.SchnorrEC(variant, ec_dlog, params["secret"])
 	default:
 		logger.Warning("Not implemented yet")
 	}
 
-	logger.Noticef("[Client %v] Done, closing stream", c.id)
+	if err != nil {
+		logger.Errorf("[Client %v] FAIL", c.id)
+	} else {
+		logger.Noticef("[Client %v] SUCCESS, closing stream", c.id)
+	}
 
 	c.stream.CloseSend()
 	//c.conn.Close() // Problems occur with concurrent clients - some are exiting

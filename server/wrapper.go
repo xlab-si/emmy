@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
@@ -8,6 +9,12 @@ import (
 )
 
 type Server struct{}
+
+// Custom errors for handling invalid initial messages
+var (
+	ErrInvalidSchema  = errors.New("Message contains an invalid SchemaType field")
+	ErrInvalidVariant = errors.New("Message contains an invalid SchemaVariant field")
+)
 
 func NewProtocolServer() *Server {
 	logger.Info("Instantiating new protocol server")
@@ -51,12 +58,25 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			return nil
 		}
 
+		reqClientId := req.GetClientId()
 		reqSchemaType := req.GetSchema()
 		reqSchemaVariant := req.GetSchemaVariant()
-		reqSchemaTypeStr := pb.SchemaType_name[int32(reqSchemaType)]
-		reqSchemaVariantStr := pb.SchemaVariant_name[int32(reqSchemaVariant)]
-		reqClientId := req.GetClientId()
-		logger.Notice("Client [", reqClientId, "] requested", reqSchemaTypeStr, "variant", reqSchemaVariantStr)
+
+		// Check whether the client requested a valid schema
+		reqSchemaTypeStr, schemaValid := pb.SchemaType_name[int32(reqSchemaType)]
+		if !schemaValid {
+			logger.Errorf("Client [", reqClientId, "] requested invalid schema: %v", reqSchemaType)
+			return ErrInvalidSchema
+		}
+
+		// Check whether the client requested a valid schema variant
+		reqSchemaVariantStr, variantValid := pb.SchemaVariant_name[int32(reqSchemaVariant)]
+		if !variantValid {
+			logger.Errorf("Client [ %v ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
+			return ErrInvalidVariant
+		}
+
+		logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
 
 		// Convert Sigma, ZKP or ZKPOK protocol type to a common type
 		protocolType := common.ToProtocolType(reqSchemaVariant)
@@ -74,6 +94,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			s.SchnorrEC(req, protocolType, stream)
 		default:
 			logger.Errorf("The requested protocol (%v %v) is unknown or currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
+			return ErrInvalidSchema
 		}
 	}
 
