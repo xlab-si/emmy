@@ -31,34 +31,7 @@ func main() {
 
 	flag.Parse()
 
-	if strings.Contains(*examplePtr, "schnorr_ec") {
-		var protocolType common.ProtocolType
-		if *examplePtr == "schnorr_ec" {
-			protocolType = common.Sigma
-		} else if *examplePtr == "schnorr_ec_zkp" {
-			protocolType = common.ZKP
-		} else if *examplePtr == "schnorr_ec_zkpok" {
-			protocolType = common.ZKPOK
-		}
-		if *clientPtr == true {
-			schnorrECProtocolClient, _ :=
-				dlogproofs.NewSchnorrECProtocolClient(protocolType)
-			secret := big.NewInt(345345345334)
-			dlog := dlog.NewECDLog()
-			a := common.ECGroupElement{X: dlog.Curve.Params().Gx, Y: dlog.Curve.Params().Gy}
-			proved, _ := schnorrECProtocolClient.Run(&a, secret)
-
-			if proved {
-				log.Println("proved")
-			} else {
-				log.Println("NOT proved")
-			}
-
-		} else {
-			schnorrZKPECProtocolServer := dlogproofs.NewSchnorrECProtocolServer(protocolType)
-			schnorrZKPECProtocolServer.Listen()
-		}
-	} else if *examplePtr == "split_secret" {
+	if *examplePtr == "split_secret" {
 		if *clientPtr == true {
 
 		} else {
