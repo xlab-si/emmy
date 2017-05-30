@@ -5,7 +5,6 @@ import (
 	//"github.com/pkg/profile" // go tool pprof -text emmy /tmp/profile102918543/cpu.pprof
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/encryption"
 	"github.com/xlab-si/emmy/pseudonymsys"
@@ -13,7 +12,6 @@ import (
 	"log"
 	"math/big"
 	"path/filepath"
-	"strings"
 )
 
 // Run server (verifier) in one terminal, for example for SchnorrEC:
