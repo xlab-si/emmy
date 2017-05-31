@@ -1,21 +1,15 @@
 package server
 
 import (
-	"errors"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/errors"
 	"github.com/xlab-si/emmy/log"
 	"io"
 )
 
 type Server struct{}
-
-// Custom errors for handling invalid initial messages
-var (
-	ErrInvalidSchema  = errors.New("Message contains an invalid SchemaType field")
-	ErrInvalidVariant = errors.New("Message contains an invalid SchemaVariant field")
-)
 
 var logger = log.ServerLogger
 
@@ -69,14 +63,14 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		reqSchemaTypeStr, schemaValid := pb.SchemaType_name[int32(reqSchemaType)]
 		if !schemaValid {
 			logger.Errorf("Client [", reqClientId, "] requested invalid schema: %v", reqSchemaType)
-			return ErrInvalidSchema
+			return errors.ErrInvalidSchema
 		}
 
 		// Check whether the client requested a valid schema variant
 		reqSchemaVariantStr, variantValid := pb.SchemaVariant_name[int32(reqSchemaVariant)]
 		if !variantValid {
 			logger.Errorf("Client [ %v ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
-			return ErrInvalidVariant
+			return errors.ErrInvalidVariant
 		}
 
 		logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
@@ -97,7 +91,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			s.SchnorrEC(req, protocolType, stream)
 		default:
 			logger.Errorf("The requested protocol (%v %v) is unknown or currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
-			return ErrInvalidSchema
+			return errors.ErrInvalidSchema
 		}
 	}
 

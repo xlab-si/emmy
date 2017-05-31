@@ -8,6 +8,7 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/encryption"
+	"github.com/xlab-si/emmy/errors"
 	"github.com/xlab-si/emmy/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -43,7 +44,7 @@ schemaVariants => sigma, zkp, zkpok
 */
 type ClientParams struct {
 	SchemaType    string
-	SchemaVariant string `default:"SIGMA"` // if ZKP or ZKPOK are not explicitly requested, run a sigma protocol
+	SchemaVariant string
 }
 
 /* To bootstrap a protocol, client must send some value */
@@ -80,13 +81,24 @@ func getClient(conn *grpc.ClientConn) *pb.ProtocolClient {
 	return &client
 }
 
-func NewProtocolClient(endpoint string, params *ClientParams) *Client {
-	schema := pb.SchemaType(pb.SchemaType_value[params.SchemaType])
-	variant := pb.SchemaVariant(pb.SchemaVariant_value[params.SchemaVariant])
+func NewProtocolClient(endpoint string, params *ClientParams) (*Client, error) {
+	logger.Debugf(" Trying to create client with [SchemaType = %v][SchemaVariant = %v]", params.SchemaType, params.SchemaVariant)
+
+	schema, success := pb.SchemaType_value[params.SchemaType]
+	if !success {
+		return nil, errors.ErrInvalidSchema
+	}
+
+	variant, success := pb.SchemaVariant_value[params.SchemaVariant]
+	if !success && params.SchemaVariant != "" {
+		return nil, errors.ErrInvalidVariant
+	} else {
+		variant = pb.SchemaVariant_value["SIGMA"]
+	}
 
 	conn, err := getConnection(endpoint)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	client = *getClient(conn)
@@ -94,7 +106,7 @@ func NewProtocolClient(endpoint string, params *ClientParams) *Client {
 	stream, err := getStream(client)
 
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -104,13 +116,13 @@ func NewProtocolClient(endpoint string, params *ClientParams) *Client {
 		client:  &client,
 		conn:    conn,
 		stream:  stream,
-		schema:  schema,
-		variant: variant,
+		schema:  pb.SchemaType(schema),
+		variant: pb.SchemaVariant(variant),
 		handler: &ClientHandler{},
 	}
 
 	logger.Infof("NewProtocol client spawned (%v)", protocolClient.id)
-	return &protocolClient
+	return &protocolClient, nil
 }
 
 func (c *Client) send(msg *pb.Message) error {

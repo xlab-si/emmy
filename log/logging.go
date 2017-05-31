@@ -13,7 +13,7 @@ var shortFormat = logging.MustStringFormatter(
 var ClientLogger, ServerLogger *logging.Logger
 
 func init() {
-	ClientLogger = logging.MustGetLogger("server")
-	ServerLogger = logging.MustGetLogger("client")
+	ClientLogger = logging.MustGetLogger("client")
+	ServerLogger = logging.MustGetLogger("server")
 	logging.SetFormatter(longFormat)
 }

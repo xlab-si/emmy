@@ -124,7 +124,11 @@ func getGenericClient(endpoint, schema string) *client.Client {
 		clientParams.SchemaVariant = schemaTypeVariant[1]
 	}
 
-	c := client.NewProtocolClient(endpoint, clientParams)
+	c, err := client.NewProtocolClient(endpoint, clientParams)
+	if err != nil {
+		return nil
+	}
+
 	return c
 }
 
