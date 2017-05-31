@@ -41,40 +41,43 @@ To convert sigma protocol into zero-knowledge proof or zero-knowledge proof of k
 go install github.com/xlab-si/emmy
 ```
 
-### Build and run server
-```
-$ go build -o serve server/*.go
-$ ./serve
+### Running examples
+If you want to see any of the protocols supported by emmy in action, take a look at _examples.go_. There, we first spin up a GRPC server and afterwards run the desired number of clients (either sequentially or concurrently) for the chosen protocol. You can specify:
 
-2017/05/24 12:59:46 12:59:46.967 main ▶ INFO 001 Registering services
-2017/05/24 12:59:46 12:59:46.967 NewProtocolServer ▶ INFO 002 Instantiating new protocol server
-2017/05/24 12:59:46 12:59:46.967 main ▶ INFO 003 GRPC server listening for connections on port 7007
-```
+1. Which protocol to run,
+2. How many clients to start,
+3. How to run the clients (sequentially or concurrently).
 
-### Build and run client
+This is the expected format:
 ```
-$ go build -o run client/*.go
-$ # ./run <example_name> <num_clients> [concurrent]
-$ ./run pedersen_ec 100 concurrent  # starts 100 clients concurrently
-$ ./run pedersen_ec 100             # starts 100 clients sequentially
+$ emmy <example_name> <num_clients> [concurrent]
 ```
 
-Supported example names are listed in the tables.
+If you want to run the clients sequentially (e.g. for benchmarking purposes), just omit the "concurrent" option.
+
+Here's an example: 
+
+```
+$ emmy pedersen_ec 100 concurrent  # starts 100 clients concurrently
+$ emmy pedersen_ec 100             # starts 100 clients sequentially
+```
+
+Currently supported examples with fully implemented communication layer (e.g. client-server communication via RPCs) are listed the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.
 
 | Sigma protocol | Zero knowledge proof  | Zero knowledge proof of knowledge |
 |----------------|-----------------------|-----------------------------------|
-| pedersen | pedersen-zkp | pedersen-zkpok |  
-| pedersen_ec | pedersen_ec-zkp | pedersen_ec-zkpok |   
-| schnorr | schnorr-zkp | schnorr-zkpok |   
-| schnorr_ec | schnorr-zkp_ec | schnorr-zkpok_ec | 
+| [✓] pedersen | [✗] pedersen-zkp | [✗] pedersen-zkpok |  
+| [✓] pedersen_ec | [✗] pedersen_ec-zkp | [✗] pedersen_ec-zkpok |   
+| [✓] schnorr | [✓] schnorr-zkp | [✓] schnorr-zkpok |   
+| [✓] schnorr_ec | [✓] schnorr-zkp_ec | [✓] schnorr-zkpok_ec | 
 
 | Other |
 | ----- |
-| dlog_equality |
-| dlog_equality_blinded_transcript | 
-| pseudonymsys |
-| cspaillier |
-| split_secret |
+| [✗] dlog_equality |
+| [✗] dlog_equality_blinded_transcript | 
+| [✗] pseudonymsys |
+| [✗] cspaillier |
+| [✗] split_secret |
 
 For explanations please refer to documentation below.
 
@@ -99,12 +102,11 @@ For explanations please refer to documentation below.
 * **Shamir's secret sharing scheme**
 
 ## Roadmap
-
- * Enable ZKP and ZKPOK for CSPailier 
- * Provide server which will be able to start many verifiers in parallel
- * Support other proofs
- ...
-
+* Enable ZKP & ZKPOK for CSPailier and Pedersen 
+* Implement communication layer for latest protocols
+* Reorganize library - divide client, server, core (to be decided)
+* Benchmarks
+* ...
 
 ## To compile .proto files
 
