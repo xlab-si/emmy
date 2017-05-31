@@ -23,7 +23,7 @@ import (
 // emmy -example=cspaillier -client=false
 // emmy -example=cspaillier -client=true
 
-func main() {
+func cli() {
 	examplePtr := flag.String("example", "pedersen", "which example to run")
 	clientPtr := flag.Bool("client", false, "whether this is a client or server")
 

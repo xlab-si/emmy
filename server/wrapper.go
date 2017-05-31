@@ -1,10 +1,11 @@
-package main
+package server
 
 import (
 	"errors"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/log"
 	"io"
 )
 
@@ -15,6 +16,8 @@ var (
 	ErrInvalidSchema  = errors.New("Message contains an invalid SchemaType field")
 	ErrInvalidVariant = errors.New("Message contains an invalid SchemaVariant field")
 )
+
+var logger = log.ServerLogger
 
 func NewProtocolServer() *Server {
 	logger.Info("Instantiating new protocol server")

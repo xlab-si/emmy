@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
@@ -8,6 +8,7 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/encryption"
+	"github.com/xlab-si/emmy/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"io"
@@ -15,6 +16,8 @@ import (
 	"math/rand"
 	"time"
 )
+
+var logger = log.ClientLogger
 
 type Client struct {
 	id      int32
@@ -40,7 +43,7 @@ schemaVariants => sigma, zkp, zkpok
 */
 type ClientParams struct {
 	SchemaType    string
-	SchemaVariant string `default:"SIGMA"`
+	SchemaVariant string `default:"SIGMA"` // if ZKP or ZKPOK are not explicitly requested, run a sigma protocol
 }
 
 /* To bootstrap a protocol, client must send some value */
@@ -117,7 +120,7 @@ func (c *Client) send(msg *pb.Message) error {
 		logger.Error("[Client %v] Error sending message: %v", c.id, err)
 		return err
 	}
-	logger.Info("[Client %v] Successfully sent request:", c.id, msg)
+	logger.Infof("[Client %v] Successfully sent request:", c.id, msg)
 
 	return nil
 }

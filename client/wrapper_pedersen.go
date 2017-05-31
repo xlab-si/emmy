@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	pb "github.com/xlab-si/emmy/comm/pro"
