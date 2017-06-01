@@ -6,12 +6,10 @@ import (
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlogproofs"
-	"github.com/xlab-si/emmy/encryption"
 	"github.com/xlab-si/emmy/pseudonymsys"
 	"github.com/xlab-si/emmy/secretsharing"
 	"log"
 	"math/big"
-	"path/filepath"
 )
 
 // Run server (verifier) in one terminal, for example for SchnorrEC:
@@ -23,7 +21,7 @@ import (
 // emmy -example=cspaillier -client=false
 // emmy -example=cspaillier -client=true
 
-func main() {
+func cli() {
 	examplePtr := flag.String("example", "pedersen", "which example to run")
 	clientPtr := flag.Bool("client", false, "whether this is a client or server")
 
