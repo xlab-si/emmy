@@ -1,38 +1,36 @@
-# emmy - Library for zero-knowledge proofs
-Emmy is named after Emmy Noether.
+# emmy - Library for zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
-[![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
-
+#### What is a Zero-Knowlede proof (ZKP)?
 A zero-knowledge proof is protocol by which one party (prover) proves to another party (verifier) that a given statement is true, without conveying any information apart from the fact that the statement is indeed true.
 
 The required properties for zero knowledge proofs are:
 
- * completeness: if the statement is true, the honest verifier (the verifier that follows the protocol properly) will be convinced of this fact with overwhelming probability
- * soundness: no one who does not know the secret can convince the verifier with non-negligible probability
- * zero knowledge: the proof does not leak any information
+ * _completeness_ - if the statement is true, the honest verifier (the verifier that follows the protocol properly) will be convinced of this fact with overwhelming probability,
+ * _soundness_ - no one who does not know the secret can convince the verifier with non-negligible probability,
+ * _zero knowledge_ - the proof does not leak any information.
  
 A good resource on zero-knowledge proofs is [1].
 
-Zero-knowledge proofs can be built upon sigma protocols. Sigma protocols are three-move protocols (commitment, challenge and response) which have the following properties: completeness, special soundness, and special honest zero knowledge verifier (not going into definitions here, see [1]). An example sigma protocol is Schnorr protocol:
+#### How can we build Zero-Knowledge proofs?
+Zero-knowledge proofs can be built upon **sigma protocols**. Sigma protocols are three-move protocols (commitment, challenge and response) which have the following properties: _completeness_, _special soundness_, and _special honest zero knowledge verifier_ (not going into definitions here, please refer to [1]). An example of a 
+sigma protocol is Schnorr protocol, where the prover proves that he knows *w* such that *g^w = h mod p* (proof of knowledge of a discrete logarithm):
 
 ![schnorr protocol](https://raw.github.com/xlab-si/emmy/master/img/schnorr_protocol.png)
 
-Here the prover proves that it knows w such that g^w = h mod p (proof of knowledge of a discrete logarithm).
+In the first step of the sigma protocol, a pair of messages for proving the knowledge of random data (e.g. based on a large random number) is exchanged. In the second step of the protocol, the prover and the verifier exchange a pair of messages proving the knowledge of the actual data.
 
-How to make sigma protocols like Schnorr protocol zero-knowledge proofs?
-
-The key is to enforce the verifier to behave honestly. It can be achieved using commitment schemes as depicted below (verifier commits to a challenge and reveals the commited value when sending the challenge to the verifier):
-
+We can turn sigma protocols like Schnorr protocol into **zero-knowledge proofs (ZKP)** or **zero-knowledge proof of knowledge (ZKPOK)**. The key is to enforce the verifier to behave honestly. This can be achieved using **commitment schemes**, where the verifier commits to a challenge and reveals the commited value when sending the challenge to the prover, for instance, like depicted below:
 ![zero knowledge from sigma](https://raw.github.com/xlab-si/emmy/master/img/zk_from_sigma_protocol.png)
 
-This library aims to provide various proofs (currently supported are listed below) which can be used in scenarios like anonymous digital credentials. Each proof is implemented as sigma protocol which can be turned into zero-knowledge proof and zero-knowledge proof of knowledge using commitments.
+We can see that the prover asks for a commitment to a challenge (therefore an additional message exchanged is at the beginning). We now have a zero-knowledge proof. Furthermore, if the prover sends a trapdoor to the verifier in the last message of the protocol, and the verifier is able to validate it, then we have zero-knowledge proof of knowledge.
 
-For communication between the prover and the verifier gRPC is used. Each sigma protocol contains two message types:
+#### What does emmy offer?
+Emmy is a library that provides various proofs which can be used in scenarios like *anonymous digital credentials*. Each proof is implemented as a sigma protocol which can be turned into a zero-knowledge proof (ZKP) or a zero-knowledge proof of knowledge (ZKPOK) using commitment schemes.
 
- * ProofRandomData: exchanged in the first step of sigma protocol (based on some randomly generated numbers)
- * ProofData: exchanged in the second step of sigma protocol
+For communication between the prover and the verifier *emmy* uses [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). In terms of communication, the prover takes on the role of client, and the verifier takes on the role of server. Emmy offers a server capable of serving (verifying) several clients (provers) concurrently. 
 
-To convert sigma protocol into zero-knowledge proof or zero-knowledge proof of knowledge, additional message (OpeningMsg) is exchanged at the beginning. Prover asks for a commitment to a challenge - this makes sigma protocol a zero-knowledge proof. If trapdoor is sent in the last message to the verifier and validated, then we have zero-knowledge proof of knowledge.
+#### What does emmy stand for?
+Emmy is named after [Emmy Noether](https://sl.wikipedia.org/wiki/Emmy_Noether).
 
 # Using emmy
 
@@ -109,7 +107,7 @@ For explanations please refer to documentation below.
 * Benchmarks
 * ...
 
-## To compile .proto files
+### To compile .proto files
 
 Go into the root project folder and execute:
 
