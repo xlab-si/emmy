@@ -9,7 +9,6 @@ enum SchemaType {
 	SCHNORR = 2;
 	SCHNORR_EC = 3;
 	CSPAILLIER = 4;
-	CSPAILLIER_EC = 5;
 }
 
 // Valid schema variants
