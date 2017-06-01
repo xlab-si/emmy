@@ -8,8 +8,8 @@ enum SchemaType {
 	PEDERSEN_EC = 1;
 	SCHNORR = 2;
 	SCHNORR_EC = 3;
-	PAILLIER = 4;
-	PAILLIER_EC = 5;
+	CSPAILLIER = 4;
+	CSPAILLIER_EC = 5;
 }
 
 // Valid schema variants
@@ -142,10 +142,4 @@ message CSPaillierProofData {
 	bool STildeIsNeg = 4;
 	bytes MTilde = 5;
 	bool MTildeIsNeg = 6;
-}
-
-service CSPaillierProtocol {
-  rpc OpeningMsg(CSPaillierOpening) returns (EmptyMsg) {}
-  rpc ProofRandomData(CSPaillierProofRandomData) returns (BigInt) {}
-  rpc ProofData(CSPaillierProofData) returns (Status) {}
 }
