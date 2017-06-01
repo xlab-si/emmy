@@ -15,6 +15,7 @@ import (
 	"io"
 	"math/big"
 	"math/rand"
+	"path/filepath"
 	"time"
 )
 
@@ -162,6 +163,7 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	ps_dlog := config.LoadPseudonymsysDLog()
 
 	var err error
+	//var proved bool
 
 	switch c.schema {
 	case pb.SchemaType_PEDERSEN:
@@ -173,12 +175,16 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	case pb.SchemaType_SCHNORR_EC:
 		ec_dlog := dlog.NewECDLog()
 		err = c.SchnorrEC(variant, ec_dlog, params["secret"])
+	case pb.SchemaType_CSPAILLIER:
+		keyDir := config.LoadKeyDirFromConfig()
+		pubKeyPath := filepath.Join(keyDir, "cspaillierpubkey.txt")
+		_, err = c.Paillier(pubKeyPath, params["m"], params["label"])
 	default:
 		logger.Warning("Not implemented yet")
 	}
 
 	if err != nil {
-		logger.Errorf("[Client %v] FAIL", c.id)
+		logger.Errorf("[Client %v] FAIL: %v", c.id, err)
 	} else {
 		logger.Noticef("[Client %v] SUCCESS, closing stream", c.id)
 	}

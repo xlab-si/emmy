@@ -7,6 +7,7 @@ import (
 	"github.com/xlab-si/emmy/errors"
 	"github.com/xlab-si/emmy/log"
 	"io"
+	"path/filepath"
 )
 
 type Server struct{}
@@ -89,6 +90,10 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 			s.Schnorr(req, dlog, protocolType, stream)
 		case pb.SchemaType_SCHNORR_EC:
 			s.SchnorrEC(req, protocolType, stream)
+		case pb.SchemaType_CSPAILLIER:
+			keyDir := config.LoadKeyDirFromConfig()
+			secKeyPath := filepath.Join(keyDir, "cspaillierseckey.txt")
+			s.CSPaillier(req, secKeyPath, stream)
 		default:
 			logger.Errorf("The requested protocol (%v %v) is unknown or currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 			return errors.ErrInvalidSchema

@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/client"
 	pb "github.com/xlab-si/emmy/comm/pro"
+	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
@@ -88,6 +89,10 @@ func main() {
 func runExample(endpoint, example string, i, n int) {
 
 	genClient := getGenericClient(endpoint, example)
+	if genClient == nil {
+		cLogger.Critical("Error ocurred when creating client")
+		return
+	}
 
 	/* Placeholder for values used to bootstrap chosen protocol
 	The actual (example) values will be filled in depending on which protocol we are starting */
@@ -102,10 +107,9 @@ func runExample(endpoint, example string, i, n int) {
 		protocolParams["secret"] = *big.NewInt(345345345334)
 	case "schnorr_ec", "schnorr_ec-zkp", "schnorr_ec-zkpok":
 		protocolParams["secret"] = *big.NewInt(345345345334)
-	//case "cspaillier", "cspaillier-zkp", "cspaillier-zkpok":
-	//dir := config.LoadKeyDirFromConfig()
-	//pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
-	//Paillier(pubKeyPath)
+	case "cspaillier", "cspaillier-zkp", "cspaillier-zkpok":
+		protocolParams["m"] = *common.GetRandomInt(big.NewInt(8685849))
+		protocolParams["label"] = *common.GetRandomInt(big.NewInt(340002223232))
 	default:
 		cLogger.Criticalf("ERROR: Invalid example: %s", example)
 		return
@@ -126,6 +130,7 @@ func getGenericClient(endpoint, schema string) *client.Client {
 
 	c, err := client.NewProtocolClient(endpoint, clientParams)
 	if err != nil {
+		cLogger.Critical(err)
 		return nil
 	}
 
