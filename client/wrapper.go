@@ -130,7 +130,7 @@ func (c *Client) send(msg *pb.Message) error {
 	err := (c.stream).Send(msg)
 
 	if err != nil {
-		logger.Error("[Client %v] Error sending message: %v", c.id, err)
+		logger.Errorf("[Client %v] Error sending message: %v", c.id, err)
 		return err
 	}
 	logger.Infof("[Client %v] Successfully sent request:", c.id, msg)
@@ -142,7 +142,7 @@ func (c *Client) recieve() (*pb.Message, error) {
 	resp, err := (c.stream).Recv() // <--- for second request, hangs here
 
 	if err == io.EOF {
-		logger.Warning("[Client %v] EOF error", c.id)
+		logger.Warningf("[Client %v] EOF error", c.id)
 		return nil, err
 	}
 	if err != nil {
@@ -178,7 +178,7 @@ func (c *Client) ExecuteProtocol(params ProtocolParams) {
 	case pb.SchemaType_CSPAILLIER:
 		keyDir := config.LoadKeyDirFromConfig()
 		pubKeyPath := filepath.Join(keyDir, "cspaillierpubkey.txt")
-		_, err = c.Paillier(pubKeyPath, params["m"], params["label"])
+		_, err = c.CSPaillier(pubKeyPath, params["m"], params["label"])
 	default:
 		logger.Warning("Not implemented yet")
 	}

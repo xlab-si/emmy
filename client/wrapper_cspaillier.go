@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-func (c *Client) Paillier(pubKeyPath string, m, label big.Int) (bool, error) {
+func (c *Client) CSPaillier(pubKeyPath string, m, label big.Int) (bool, error) {
 
 	encryptor, err := encryption.NewCSPaillierFromPubKeyFile(pubKeyPath)
 	if err != nil {

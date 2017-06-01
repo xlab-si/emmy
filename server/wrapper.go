@@ -83,20 +83,26 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 
 		switch reqSchemaType {
 		case pb.SchemaType_PEDERSEN_EC:
-			s.PedersenEC(stream)
+			err = s.PedersenEC(stream)
 		case pb.SchemaType_PEDERSEN:
-			s.Pedersen(dlog, stream)
+			err = s.Pedersen(dlog, stream)
 		case pb.SchemaType_SCHNORR:
-			s.Schnorr(req, dlog, protocolType, stream)
+			err = s.Schnorr(req, dlog, protocolType, stream)
 		case pb.SchemaType_SCHNORR_EC:
-			s.SchnorrEC(req, protocolType, stream)
+			err = s.SchnorrEC(req, protocolType, stream)
 		case pb.SchemaType_CSPAILLIER:
 			keyDir := config.LoadKeyDirFromConfig()
 			secKeyPath := filepath.Join(keyDir, "cspaillierseckey.txt")
-			s.CSPaillier(req, secKeyPath, stream)
+			err = s.CSPaillier(req, secKeyPath, stream)
 		default:
 			logger.Errorf("The requested protocol (%v %v) is unknown or currently unsupported.", reqSchemaTypeStr, reqSchemaVariantStr)
 			return errors.ErrInvalidSchema
+		}
+
+		if err != nil {
+			logger.Criticalf("FAIL: %v", err)
+			logger.Notice("Closing RPC due to previous errors")
+			break
 		}
 	}
 
