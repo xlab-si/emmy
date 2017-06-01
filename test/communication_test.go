@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	pb "github.com/xlab-si/emmy/comm/pro"
+	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/errors"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
@@ -110,5 +111,14 @@ func TestGRPC_Commitments(t *testing.T) {
 		assert.Nil(t, err, "should finish without errors")
 		//assert.Equal(t, true, "should finish with status = sucess, but failed")
 	}
+}
 
+func TestGRPC_Encryption(t *testing.T) {
+	pp := client.ProtocolParams{
+		"m":     *common.GetRandomInt(big.NewInt(8685849)),
+		"label": *common.GetRandomInt(big.NewInt(340002223232)),
+	}
+	cp := &client.ClientParams{SchemaType: "CSPAILLIER"}
+	err := runTestGrpcClient(cp, pp)
+	assert.Nil(t, err, "should finish without errors")
 }
