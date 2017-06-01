@@ -23,7 +23,7 @@ import (
 // emmy -example=cspaillier -client=false
 // emmy -example=cspaillier -client=true
 
-func cli() {
+func main() {
 	examplePtr := flag.String("example", "pedersen", "which example to run")
 	clientPtr := flag.Bool("client", false, "whether this is a client or server")
 
@@ -52,31 +52,6 @@ func cli() {
 
 			recoveredSecret := dealer.RecoverSecret(shares, prime)
 			log.Println(recoveredSecret)
-		}
-	} else if *examplePtr == "cspaillier" {
-		// generate file keys with encryption_test
-		dir := config.LoadKeyDirFromConfig()
-
-		if *clientPtr == true {
-			pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
-			cspaillierProtocolClient, _ := encryption.NewCSPaillierProtocolClient(pubKeyPath)
-
-			m := common.GetRandomInt(big.NewInt(8685849))
-			label := common.GetRandomInt(big.NewInt(340002223232))
-
-			proved, _ := cspaillierProtocolClient.Run(m, label)
-			if proved {
-				log.Println("proved")
-			} else {
-				log.Println("NOT proved")
-			}
-
-		} else {
-			secKeyPath := filepath.Join(dir, "cspaillierseckey.txt")
-
-			cspaillierProtocolServer, err := encryption.NewCSPaillierProtocolServer(secKeyPath)
-			log.Println(err)
-			cspaillierProtocolServer.Listen()
 		}
 	} else if *examplePtr == "dlog_equality" {
 		dlog := config.LoadPseudonymsysDLog()
