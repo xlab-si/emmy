@@ -62,7 +62,7 @@ $ emmy pedersen_ec 100 concurrent  # starts 100 clients concurrently
 $ emmy pedersen_ec 100             # starts 100 clients sequentially
 ```
 
-Currently supported examples with fully implemented communication layer (e.g. client-server communication via RPCs) are listed the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.
+Currently supported examples with fully implemented communication layer (e.g. client-server communication via RPCs) are listed in the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.
 
 | Sigma protocol | Zero knowledge proof  | Zero knowledge proof of knowledge |
 |----------------|-----------------------|-----------------------------------|
@@ -77,6 +77,7 @@ Currently supported examples with fully implemented communication layer (e.g. cl
 | [✗] dlog_equality_blinded_transcript | 
 | [✗] pseudonymsys |
 | [✗] cspaillier |
+| [✗] cspaillier_ec |
 | [✗] split_secret |
 
 For explanations please refer to documentation below.
@@ -101,7 +102,7 @@ For explanations please refer to documentation below.
 * **Camenisch-Lysyanskaya signature** - [3]. See test/signatures_test.go.
 * **Shamir's secret sharing scheme**
 
-## Roadmap
+# Roadmap
 * Enable ZKP & ZKPOK for CSPailier and Pedersen 
 * Implement communication layer for latest protocols
 * Reorganize library - divide client, server, core (to be decided)
