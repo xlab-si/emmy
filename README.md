@@ -39,6 +39,11 @@ Emmy is named after [Emmy Noether](https://sl.wikipedia.org/wiki/Emmy_Noether).
 go install github.com/xlab-si/emmy
 ```
 
+### Running tests
+```
+go test -v test/*.go
+```
+
 ### Running examples
 If you want to see any of the protocols supported by emmy in action, take a look at _examples.go_. There, we first spin up a GRPC server and afterwards run the desired number of clients (either sequentially or concurrently) for the chosen protocol. You can specify:
 
@@ -71,11 +76,10 @@ Currently supported examples with fully implemented communication layer (e.g. cl
 
 | Other |
 | ----- |
+| [✓] cspaillier |
 | [✗] dlog_equality |
 | [✗] dlog_equality_blinded_transcript | 
 | [✗] pseudonymsys |
-| [✗] cspaillier |
-| [✗] cspaillier_ec |
 | [✗] split_secret |
 
 For explanations please refer to documentation below.
