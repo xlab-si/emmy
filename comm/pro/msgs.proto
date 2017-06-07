@@ -2,41 +2,70 @@ syntax = "proto3";
 
 package comm;
 
-// P, OrderOfSubgroup, G could be actually fixed, or least not changed each time
-message PedersenFirst {
-	bytes H = 1;
+// Valid schema types
+enum SchemaType {
+	PEDERSEN = 0;
+	PEDERSEN_EC = 1;
+	SCHNORR = 2;
+	SCHNORR_EC = 3;
+	CSPAILLIER = 4;
 }
 
-service Pedersen {
-  rpc GetH(EmptyMsg) returns (PedersenFirst) {}
-  rpc Commit(BigInt) returns (EmptyMsg) {}
-  rpc Decommit(PedersenDecommitment) returns (Status) {}
+// Valid schema variants
+enum SchemaVariant {
+	SIGMA = 0;	// Sigma protocol only. This is the default - if you don't specify schema variant, sigma will be used
+	ZKP = 1;	// Zero knowledge proof
+	ZKPOK = 2;	// Zero knowledge proof of knowledge
 }
 
-service PedersenEC {
-  rpc GetH(EmptyMsg) returns (ECGroupElement) {}
-  rpc Commit(ECGroupElement) returns (EmptyMsg) {}
-  rpc Decommit(PedersenDecommitment) returns (Status) {}
+// A generic message
+message Message {
+	SchemaType schema = 1;
+	SchemaVariant schema_variant = 2;
+	oneof content {
+		EmptyMsg empty = 3;
+		BigInt bigint = 4;
+		ECGroupElement ec_group_element = 5;
+		Status status = 6;
+		PedersenFirst pedersen_first = 7;
+		PedersenDecommitment pedersen_decommitment = 8;
+		SchnorrProofData schnorr_proof_data = 9;
+		SchnorrProofRandomData schnorr_proof_random_data = 10;
+		SchnorrECProofRandomData schnorr_ec_proof_random_data = 11;
+		CSPaillierOpening cs_paillier_opening = 12;
+		CSPaillierProofData cs_paillier_proof_data = 13;
+		CSPaillierProofRandomData cs_paillier_proof_random_data = 14;
+	}
+	int32 clientId = 15;
+}
+
+// A generic service
+service Protocol {
+	rpc Run (stream Message) returns (stream Message) {}
 }
 
 message EmptyMsg {}
 
-message PedersenDecommitment {
-	bytes X = 1;
- 	bytes R = 2;
+message Status {
+	bool Success = 1;
 }
 
 message BigInt {
 	bytes X1 = 1;
 }
 
+message PedersenFirst {
+	bytes H = 1;
+}
+
+message PedersenDecommitment {
+	bytes X = 1;
+ 	bytes R = 2;
+}
+
 message ECGroupElement {
 	bytes X = 1;
  	bytes Y = 2;
-}
-
-message Status {
-	bool Success = 1;
 }
 
 message SchnorrProofRandomData {
@@ -45,26 +74,10 @@ message SchnorrProofRandomData {
 	bytes B = 3;
 }
 
-service SchnorrProtocol {
-  // OpeningMsg is called in ZKP and ZKPOK, input is Pedersen's h = g^a, output is challenge commitment
-  rpc OpeningMsg(PedersenFirst) returns (BigInt) {}
-  // PedersenDecommitment is used even it is not ZKP or ZKPOK (trapdoor is empty for SigmaProtocol)
-  rpc ProofRandomData(SchnorrProofRandomData) returns (PedersenDecommitment) {}
-  rpc ProofData(SchnorrProofData) returns (Status) {}
-}
-
 message SchnorrECProofRandomData {
 	ECGroupElement X = 1;
 	ECGroupElement A = 2;
 	ECGroupElement B = 3;
-}
-
-service SchnorrECProtocol {
-  // OpeningMsg is called in ZKP and ZKPOK, input is Pedersen's h = g^a, output is challenge commitment
-  rpc OpeningMsg(ECGroupElement) returns (ECGroupElement) {} 
-  // PedersenDecommitment is used even it is not ZKP or ZKPOK (trapdoor is empty for SigmaProtocol)
-  rpc ProofRandomData(SchnorrECProofRandomData) returns (PedersenDecommitment) {}
-  rpc ProofData(SchnorrProofData) returns (Status) {}
 }
 
 message SchnorrProofData {
@@ -129,18 +142,3 @@ message CSPaillierProofData {
 	bytes MTilde = 5;
 	bool MTildeIsNeg = 6;
 }
-
-service CSPaillierProtocol {
-  rpc OpeningMsg(CSPaillierOpening) returns (EmptyMsg) {}
-  rpc ProofRandomData(CSPaillierProofRandomData) returns (BigInt) {}
-  rpc ProofData(CSPaillierProofData) returns (Status) {}
-}
-
-
-
-
-
-
-
-
-
