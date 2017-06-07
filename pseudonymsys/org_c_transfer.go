@@ -18,7 +18,7 @@ type OrgCredentialVerifier struct {
 }
 
 func NewOrgCredentialVerifier(orgName string) (*OrgCredentialVerifier) {
-	dlog := config.LoadPseudonymsysDLog()
+	dlog := config.LoadDLog("pseudonymsys")
 	s1, s2 := config.LoadPseudonymsysOrgSecrets(orgName)
 
 	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(dlog)

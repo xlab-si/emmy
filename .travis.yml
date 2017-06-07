@@ -10,7 +10,7 @@ go_import_path: github.com/xlab-si/emmy
   
 install:
   - go get github.com/stretchr/testify/assert
-  - go get -u -t github.com/xlab-si/emmy
+  - go get -u -t github.com/$TRAVIS_REPO_SLUG
   
 script: 
   - go test -v test/*

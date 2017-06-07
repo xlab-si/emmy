@@ -17,7 +17,7 @@ type OrgNymGenMasterVerifier struct {
 }
 
 func NewOrgNymGenMasterVerifier(orgName string) (*OrgNymGenMasterVerifier) {
-	dlog := config.LoadPseudonymsysDLog()
+	dlog := config.LoadDLog("pseudonymsys")
 	verifier := dlogproofs.NewDLogEqualityVerifier(dlog)
 	org := OrgNymGenMasterVerifier {
 		DLog: dlog,	

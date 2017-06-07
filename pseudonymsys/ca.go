@@ -22,7 +22,7 @@ type CA struct {
 }
 
 func NewCA(caName string) (*CA) {
-	dlog := config.LoadPseudonymsysDLog()
+	dlog := config.LoadDLog("pseudonymsys")
 	x, y := config.LoadPseudonymsysCAPubKey(caName)
 	d := config.LoadPseudonymsysCASecret(caName)
 

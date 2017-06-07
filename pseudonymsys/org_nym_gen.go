@@ -18,7 +18,7 @@ type OrgNymGen struct {
 }
 
 func NewOrgNymGen(orgName string) (*OrgNymGen) {
-	dlog := config.LoadPseudonymsysDLog()
+	dlog := config.LoadDLog("pseudonymsys")
 
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b

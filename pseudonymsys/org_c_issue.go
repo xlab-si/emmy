@@ -23,7 +23,7 @@ type OrgCredentialIssuer struct {
 }
 
 func NewOrgCredentialIssuer(orgName string) (*OrgCredentialIssuer) {
-	dlog := config.LoadPseudonymsysDLog()
+	dlog := config.LoadDLog("pseudonymsys")
 	s1, s2 := config.LoadPseudonymsysOrgSecrets(orgName)
 
 	// g1 = a_tilde, t1 = b_tilde,
