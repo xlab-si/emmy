@@ -1,34 +1,34 @@
 package pseudonymsys
 
 import (
-	"math/big"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
+	"math/big"
 )
 
 type OrgCredentialVerifier struct {
 	DLog *dlog.ZpDLog
-	s1 *big.Int
-	s2 *big.Int
-	
+	s1   *big.Int
+	s2   *big.Int
+
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
-	a *big.Int
-	b *big.Int
+	a                *big.Int
+	b                *big.Int
 }
 
-func NewOrgCredentialVerifier(orgName string) (*OrgCredentialVerifier) {
+func NewOrgCredentialVerifier(orgName string) *OrgCredentialVerifier {
 	dlog := config.LoadDLog("pseudonymsys")
 	s1, s2 := config.LoadPseudonymsysOrgSecrets(orgName)
 
 	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(dlog)
-	org := OrgCredentialVerifier {
-		DLog: dlog,	
-		s1: s1,
-		s2: s2,
+	org := OrgCredentialVerifier{
+		DLog:             dlog,
+		s1:               s1,
+		s2:               s2,
 		EqualityVerifier: equalityVerifier,
 	}
-	
+
 	return &org
 }
 
@@ -42,29 +42,25 @@ func (org *OrgCredentialVerifier) GetAuthenticationChallenge(a, b, a1, b1, x1, x
 }
 
 func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
-		credential *PseudonymCredential, orgPubKeys *OrgPubKeys) bool {
+	credential *PseudonymCredential, orgPubKeys *OrgPubKeys) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if !verified {
 		// TODO: close the session
 	}
-	
-	valid1 := dlogproofs.VerifyBlindedTranscript(credential.T1, org.DLog, org.DLog.G, orgPubKeys.H2, 
+
+	valid1 := dlogproofs.VerifyBlindedTranscript(credential.T1, org.DLog, org.DLog.G, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
-	
+
 	aAToGamma, _ := org.DLog.Multiply(credential.SmallAToGamma, credential.AToGamma)
-	valid2 := dlogproofs.VerifyBlindedTranscript(credential.T2, org.DLog, org.DLog.G, orgPubKeys.H1, 
+	valid2 := dlogproofs.VerifyBlindedTranscript(credential.T2, org.DLog, org.DLog.G, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
 	if valid1 && valid2 {
-		return true	
+		return true
 	} else {
-		// TODO: close the session	
+		// TODO: close the session
 
 		return false
 	}
-	
+
 }
-	
-
-
-

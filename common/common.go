@@ -1,13 +1,13 @@
 package common
 
 import (
-	"math/big"
-	"crypto/rand"
 	"crypto/dsa"
+	"crypto/rand"
 	"crypto/sha512"
 	"errors"
 	"io"
 	"log"
+	"math/big"
 )
 
 // It takes big.Int numbers, transform them to bytes, and concatenate the bytes.
@@ -29,8 +29,8 @@ func HashIntoBytes(numbers ...*big.Int) []byte {
 }
 
 // It concatenates numbers (their bytes), computes a hash and outputs a hash as *big.Int.
-func Hash(numbers ...*big.Int) (*big.Int) {
-	hashBytes := HashIntoBytes(numbers...)	
+func Hash(numbers ...*big.Int) *big.Int {
+	hashBytes := HashIntoBytes(numbers...)
 	hashNum := new(big.Int).SetBytes(hashBytes)
 	return hashNum
 }
@@ -39,12 +39,12 @@ func Hash(numbers ...*big.Int) (*big.Int) {
 func Exponentiate(x, y, m *big.Int) *big.Int {
 	var r *big.Int
 	if y.Cmp(big.NewInt(0)) >= 0 {
-    	r = new(big.Int).Exp(x, y, m) 
-    } else {
-    	r = new(big.Int).Exp(x, new(big.Int).Abs(y), m) 
-    	r.ModInverse(r, m)
-    }
-    return r
+		r = new(big.Int).Exp(x, y, m)
+	} else {
+		r = new(big.Int).Exp(x, new(big.Int).Abs(y), m)
+		r.ModInverse(r, m)
+	}
+	return r
 }
 
 // Computes least common multiple.
@@ -70,7 +70,7 @@ func GetRandomInt(max *big.Int) *big.Int {
 // Returns random integer from [min, max).
 func GetRandomIntFromRange(min, max *big.Int) (*big.Int, error) {
 	if min.Cmp(max) >= 0 {
-		err := errors.New("GetRandomIntFromRange: max has to be bigger than min")	
+		err := errors.New("GetRandomIntFromRange: max has to be bigger than min")
 		return nil, err
 	}
 	if min.Cmp(big.NewInt(0)) < 0 && max.Cmp(big.NewInt(0)) < 0 {
@@ -101,13 +101,13 @@ func GetRandomIntOfLength(bitLength int) *big.Int {
 	max := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(bitLength-1)), nil)
 	o := GetRandomInt(max)
 	r := new(big.Int).Add(max, o)
-	
+
 	b1 := r.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(bitLength-1)), nil))
 	b2 := r.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(bitLength)), nil))
 	if (b1 != 1) || (b2 != -1) {
 		log.Panic("parameter not properly chosen")
 	}
-	
+
 	return r
 }
 
@@ -115,7 +115,7 @@ func GetRandomIntOfLength(bitLength int) *big.Int {
 // It works only when p is prime.
 func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 	if !p.ProbablyPrime(20) {
-		err := errors.New("p is not prime")	
+		err := errors.New("p is not prime")
 		return false, err
 	}
 
@@ -123,13 +123,13 @@ func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 	p1 := new(big.Int).Sub(p, big.NewInt(1))
 	p1 = new(big.Int).Div(p1, big.NewInt(2))
 	cr := new(big.Int).Exp(a, p1, p)
-	
+
 	if cr.Cmp(big.NewInt(1)) == 0 {
 		return true, nil
 	} else if cr.Cmp(new(big.Int).Sub(p, big.NewInt(1))) == 0 {
 		return false, nil
 	} else {
-		err := errors.New("seems that p is not prime")	
+		err := errors.New("seems that p is not prime")
 		return false, err
 	}
 }
@@ -137,8 +137,8 @@ func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 // GetGeneratorOfZnSubgroup returns a generator of a subgroup of a specified order in Z_n.
 // Parameter groupOrder is order of Z_n (if n is prime, order is n-1).
 func GetGeneratorOfZnSubgroup(n, groupOrder, subgroupOrder *big.Int) (*big.Int, error) {
-	if big.NewInt(0).Mod(groupOrder, subgroupOrder).Cmp(big.NewInt(0)) != 0 { 
-		err := errors.New("subgroupOrder does not divide groupOrder")	
+	if big.NewInt(0).Mod(groupOrder, subgroupOrder).Cmp(big.NewInt(0)) != 0 {
+		err := errors.New("subgroupOrder does not divide groupOrder")
 		return nil, err
 	}
 	r := new(big.Int).Div(groupOrder, subgroupOrder)
@@ -159,7 +159,7 @@ func GetGeneratorOfCompositeQR(p, q *big.Int) (g *big.Int, err error) {
 	one := big.NewInt(1)
 	two := big.NewInt(2)
 	tmp := new(big.Int)
-	
+
 	// check if p and q are safe primes:
 	p1 := new(big.Int)
 	p1.Sub(p, one)
@@ -167,14 +167,14 @@ func GetGeneratorOfCompositeQR(p, q *big.Int) (g *big.Int, err error) {
 	q1 := new(big.Int)
 	q1.Sub(q, one)
 	q1.Div(q1, two)
-	
+
 	if p.ProbablyPrime(20) && q.ProbablyPrime(20) && p1.ProbablyPrime(20) && q1.ProbablyPrime(20) {
 	} else {
-		err := errors.New("p and q need to be safe primes")	
+		err := errors.New("p and q need to be safe primes")
 		return nil, err
 	}
-	
-	// The possible orders are 2, p1, q1, 2 * p1, 2 * q1, and 2 * p1 * q1. 
+
+	// The possible orders are 2, p1, q1, 2 * p1, 2 * q1, and 2 * p1 * q1.
 	// We need to make sure that all elements of orders smaller than 2 * p1 * q1 are ruled out.
 
 	for {
@@ -194,7 +194,7 @@ func GetGeneratorOfCompositeQR(p, q *big.Int) (g *big.Int, err error) {
 		if tmp.Cmp(one) != 0 {
 			continue
 		}
-		
+
 		// q
 		tmp.GCD(nil, nil, a, q)
 		if tmp.Cmp(one) != 0 {
@@ -208,8 +208,8 @@ func GetGeneratorOfCompositeQR(p, q *big.Int) (g *big.Int, err error) {
 		if tmp.Cmp(one) != 0 {
 			continue
 		}
-		
-		g := a.Mul(a, big.NewInt(2))	
+
+		g := a.Mul(a, big.NewInt(2))
 		return g, nil
 	}
 }
@@ -217,22 +217,22 @@ func GetGeneratorOfCompositeQR(p, q *big.Int) (g *big.Int, err error) {
 // It returns primes p and q where p = r * q + 1 for some integer r.
 func GetSchnorrGroup(qBitLength int) (*big.Int, *big.Int, *big.Int, error) {
 	// Using DSA GenerateParameters:
-	
+
 	sizes := dsa.L1024N160
-	
+
 	if qBitLength == 160 {
 		sizes = dsa.L1024N160
 	} else if qBitLength == 224 {
 		sizes = dsa.L2048N224
 	} else if qBitLength == 256 {
 		sizes = dsa.L2048N256
-	//} else if qBitLength == 256 {
-	//	sizes = dsa.L3072N256
+		//} else if qBitLength == 256 {
+		//	sizes = dsa.L3072N256
 	} else {
 		err := errors.New("generating Schnorr primes for these bitlengths is not supported")
 		return nil, nil, nil, err
 	}
-	
+
 	params := dsa.Parameters{}
 	err := dsa.GenerateParameters(&params, rand.Reader, sizes)
 	log.Println(err)
@@ -249,11 +249,11 @@ func GetSafePrime(bits int) (p *big.Int, err error) {
 	p = big.NewInt(0)
 	p.Mul(p1, big.NewInt(2))
 	p.Add(p, big.NewInt(1))
-	
+
 	if p.BitLen() == bits {
 		return p, nil
 	} else {
-		err := errors.New("bit length not correct")	
+		err := errors.New("bit length not correct")
 		return nil, err
 	}
 }
@@ -261,16 +261,16 @@ func GetSafePrime(bits int) (p *big.Int, err error) {
 // GetGermainPrime returns a prime number p for which 2*p + 1 is also prime. Note that conversely p
 // is called safe prime.
 func GetGermainPrime(bits int) (p *big.Int) {
-	// multiple germainPrime goroutines are called and we assume at least one will compute a 
+	// multiple germainPrime goroutines are called and we assume at least one will compute a
 	// safe prime and send it to the channel, thus we do not handle errors in germainPrime
 	var c chan *big.Int = make(chan *big.Int)
-	var quit chan int = make(chan int)	
+	var quit chan int = make(chan int)
 	for j := int(0); j < 8; j++ {
 		go germainPrime(bits, c, quit)
 	}
-	msg := <- c
+	msg := <-c
 	close(c)
-	close(quit)	
+	close(quit)
 	return msg
 }
 
@@ -310,12 +310,12 @@ func germainPrime(bits int, c chan *big.Int, quit chan int) (p *big.Int, err err
 
 	for {
 		select {
-	    case <- quit:
-	   		return
-	   	default:
-	   		// this is to make it non-blocking
-	    }	
-		
+		case <-quit:
+			return
+		default:
+			// this is to make it non-blocking
+		}
+
 		_, err = io.ReadFull(rand, bytes)
 		if err != nil {
 			return nil, err
@@ -355,10 +355,10 @@ func germainPrime(bits int, c chan *big.Int, quit chan int) (p *big.Int, err err
 				if m%uint64(prime) == 0 && (bits > 6 || m != uint64(prime)) {
 					continue NextDelta
 				}
-				
+
 				// 2*mod + 2*delta + 1	should not be divisible by smallPrimes as well
 				m1 := (2*m + 1) % smallPrimesProduct.Uint64()
-				
+
 				if m1%uint64(prime) == 0 && (bits > 6 || m1 != uint64(prime)) {
 					continue NextDelta
 				}
@@ -366,9 +366,9 @@ func germainPrime(bits int, c chan *big.Int, quit chan int) (p *big.Int, err err
 
 			if delta > 0 {
 				bigMod.SetUint64(delta)
-				p.Add(p, bigMod)				
+				p.Add(p, bigMod)
 			}
-			
+
 			p1.Add(p, p)
 			p1.Add(p1, big.NewInt(1))
 			break
@@ -385,16 +385,15 @@ func germainPrime(bits int, c chan *big.Int, quit chan int) (p *big.Int, err err
 				// otherwise it this goroutine might be searching for a germain
 				// prime for some time after one was found by another goroutine
 				select {
-				case <- quit:
-			   		return
-			   	default:
-			   		// this is to make it non-blocking
-			    }
-				
+				case <-quit:
+					return
+				default:
+					// this is to make it non-blocking
+				}
+
 				c <- p
 				return
 			}
 		}
 	}
 }
-

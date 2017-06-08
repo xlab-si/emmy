@@ -9,7 +9,7 @@ import (
 )
 
 func RegisterWithCA(caName string, userSecret *big.Int, nym Pseudonym, dlog *dlog.ZpDLog) (*big.Int,
-		*big.Int, *big.Int, *big.Int, error) {
+	*big.Int, *big.Int, *big.Int, error) {
 	schnorrProver := dlogproofs.NewSchnorrProver(dlog, common.Sigma)
 	x := schnorrProver.GetProofRandomData(userSecret, nym.A)
 
@@ -24,6 +24,3 @@ func RegisterWithCA(caName string, userSecret *big.Int, nym Pseudonym, dlog *dlo
 		return nil, nil, nil, nil, err
 	}
 }
-
-		
-	

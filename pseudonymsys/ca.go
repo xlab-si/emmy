@@ -1,7 +1,6 @@
 package pseudonymsys
 
 import (
-	"math/big"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -10,18 +9,19 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
+	"math/big"
 )
 
 type CA struct {
-	DLog *dlog.ZpDLog
+	DLog            *dlog.ZpDLog
 	SchnorrVerifier *dlogproofs.SchnorrVerifier
-	caName string
-	a *big.Int
-	b *big.Int
-	privateKey *ecdsa.PrivateKey
+	caName          string
+	a               *big.Int
+	b               *big.Int
+	privateKey      *ecdsa.PrivateKey
 }
 
-func NewCA(caName string) (*CA) {
+func NewCA(caName string) *CA {
 	dlog := config.LoadDLog("pseudonymsys")
 	x, y := config.LoadPseudonymsysCAPubKey(caName)
 	d := config.LoadPseudonymsysCASecret(caName)
@@ -31,13 +31,13 @@ func NewCA(caName string) (*CA) {
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
 	schnorrVerifier := dlogproofs.NewSchnorrVerifier(dlog, common.Sigma)
-	ca := CA {
-		DLog: dlog,	
+	ca := CA{
+		DLog:            dlog,
 		SchnorrVerifier: schnorrVerifier,
-		caName: caName,
-		privateKey: &privateKey,
+		caName:          caName,
+		privateKey:      &privateKey,
 	}
-	
+
 	return &ca
 }
 
@@ -57,22 +57,20 @@ func (ca *CA) Verify(z *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, error)
 		r := common.GetRandomInt(ca.DLog.OrderOfSubgroup)
 		blindedA, _ := ca.DLog.Exponentiate(ca.a, r)
 		blindedB, _ := ca.DLog.Exponentiate(ca.b, r)
-		// blindedA, blindedB must be used only once (never use the same pair for two 
+		// blindedA, blindedB must be used only once (never use the same pair for two
 		// different organizations)
-			
+
 		hashed := common.HashIntoBytes(blindedA, blindedB)
 		r, s, err := ecdsa.Sign(rand.Reader, ca.privateKey, hashed)
-		
+
 		if err != nil {
-			return nil, nil, nil, nil, err	
+			return nil, nil, nil, nil, err
 		} else {
-			return blindedA, blindedB, r, s, nil	
+			return blindedA, blindedB, r, s, nil
 		}
 	} else {
-	
-		err := errors.New("The knowledge of secret was not verified.")	
+
+		err := errors.New("The knowledge of secret was not verified.")
 		return nil, nil, nil, nil, err
 	}
 }
-
-
