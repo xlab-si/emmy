@@ -1,33 +1,33 @@
 package pseudonymsys
 
 import (
-	"math/big"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
+	"math/big"
 )
 
 type OrgNymGen struct {
-	DLog *dlog.ZpDLog
+	DLog             *dlog.ZpDLog
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
-	a *big.Int
-	b *big.Int
-	a_tilde *big.Int
-	b_tilde *big.Int
+	a                *big.Int
+	b                *big.Int
+	a_tilde          *big.Int
+	b_tilde          *big.Int
 }
 
-func NewOrgNymGen(orgName string) (*OrgNymGen) {
+func NewOrgNymGen(orgName string) *OrgNymGen {
 	dlog := config.LoadDLog("pseudonymsys")
 
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
 	verifier := dlogproofs.NewDLogEqualityVerifier(dlog)
-	org := OrgNymGen {
-		DLog: dlog,	
+	org := OrgNymGen{
+		DLog:             dlog,
 		EqualityVerifier: verifier,
 	}
-	
+
 	return &org
 }
 
@@ -43,7 +43,7 @@ func (org *OrgNymGen) GetFirstReply(a_tilde, b_tilde *big.Int) *big.Int {
 }
 
 func (org *OrgNymGen) GetChallenge(x1, x2 *big.Int) *big.Int {
-	challenge := org.EqualityVerifier.GetChallenge(org.a_tilde, org.a, 
+	challenge := org.EqualityVerifier.GetChallenge(org.a_tilde, org.a,
 		org.b_tilde, org.b, x1, x2)
 	return challenge
 }
@@ -51,11 +51,7 @@ func (org *OrgNymGen) GetChallenge(x1, x2 *big.Int) *big.Int {
 func (org *OrgNymGen) Verify(z *big.Int) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if verified {
-		// TODO: store (a, b) into a database	
+		// TODO: store (a, b) into a database
 	}
 	return verified
 }
-
-
-
-	

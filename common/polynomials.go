@@ -8,8 +8,8 @@ import (
 // polynomial is p(x) = a_0 + a_1 * x + ... + a_degree * x^degree
 type Polynomial struct {
 	coefficients []*big.Int
-	degree int
-	prime *big.Int // coefficients are in Z_prime
+	degree       int
+	prime        *big.Int // coefficients are in Z_prime
 }
 
 func NewRandomPolynomial(degree int, prime *big.Int) (*Polynomial, error) {
@@ -18,12 +18,12 @@ func NewRandomPolynomial(degree int, prime *big.Int) (*Polynomial, error) {
 		coef := GetRandomInt(prime) // coeff has to be < prime
 		coefficients = append(coefficients, coef)
 	}
-	polynomial := Polynomial {
+	polynomial := Polynomial{
 		coefficients: coefficients,
-		degree: degree,
-		prime: prime,
+		degree:       degree,
+		prime:        prime,
 	}
-	
+
 	return &polynomial, nil
 }
 
@@ -32,7 +32,7 @@ func (polynomial *Polynomial) SetCoefficient(coeff_ind int, coefficient *big.Int
 }
 
 // Computes polynomial values at given points.
-func (polynomial *Polynomial) GetValues(points []*big.Int) (map[*big.Int]*big.Int) {
+func (polynomial *Polynomial) GetValues(points []*big.Int) map[*big.Int]*big.Int {
 	m := make(map[*big.Int]*big.Int)
 	for _, value := range points {
 		m[value] = polynomial.GetValue(value)
@@ -41,7 +41,7 @@ func (polynomial *Polynomial) GetValues(points []*big.Int) (map[*big.Int]*big.In
 }
 
 // Computes polynomial values at given point.
-func (polynomial *Polynomial) GetValue(point *big.Int) (*big.Int) {
+func (polynomial *Polynomial) GetValue(point *big.Int) *big.Int {
 	value := big.NewInt(0)
 	for i, coeff := range polynomial.coefficients {
 		// a_i * point^i
@@ -54,21 +54,21 @@ func (polynomial *Polynomial) GetValue(point *big.Int) (*big.Int) {
 }
 
 // Given degree+1 points which are on the polynomial, LagrangeInterpolation computes p(a).
-func LagrangeInterpolation(a *big.Int, points map[*big.Int]*big.Int, prime *big.Int) (*big.Int) {
+func LagrangeInterpolation(a *big.Int, points map[*big.Int]*big.Int, prime *big.Int) *big.Int {
 	value := big.NewInt(0)
 	for key, val := range points {
 		numerator := big.NewInt(1)
 		denominator := big.NewInt(1)
 		t := new(big.Int)
-		for key1, _ := range points {
+		for key1 := range points {
 			if key == key1 {
 				continue
 			}
-			
+
 			t.Sub(a, key1)
 			numerator.Mul(numerator, t)
 			numerator.Mod(numerator, prime)
-			
+
 			t.Sub(key, key1)
 			denominator.Mul(denominator, t)
 			denominator.Mod(denominator, prime)
@@ -78,23 +78,16 @@ func LagrangeInterpolation(a *big.Int, points map[*big.Int]*big.Int, prime *big.
 		denominator_inv.ModInverse(denominator, prime)
 		t1.Mul(numerator, denominator_inv)
 		t1.Mod(t1, prime)
-		
+
 		t2 := new(big.Int)
 		// (prime + value + t1 * val) % prime
 		t2.Mul(val, t1)
 		t2.Add(t2, prime)
 		t2.Add(t2, prime)
-		
+
 		value.Add(value, t2)
 		value.Add(value, prime)
 	}
 	value.Mod(value, prime)
 	return value
 }
-
-
-
-
-
-
-

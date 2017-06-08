@@ -1,11 +1,11 @@
 package pseudonymsys
 
 import (
-	"math/big"
 	"errors"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
+	"math/big"
 )
 
 type Pseudonym struct {
@@ -37,12 +37,12 @@ func GenerateNym(userSecret *big.Int, orgName string, dlog *dlog.ZpDLog) *Pseudo
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return &Pseudonym{A: a, B: b}
 	} else {
-		return nil	
+		return nil
 	}
 }
 
-func GenerateNymVerifyMaster(userSecret, blindedA, blindedB, r, s *big.Int, 
-		orgName, caName string, dlog *dlog.ZpDLog) (*Pseudonym, error) {
+func GenerateNymVerifyMaster(userSecret, blindedA, blindedB, r, s *big.Int,
+	orgName, caName string, dlog *dlog.ZpDLog) (*Pseudonym, error) {
 	prover := dlogproofs.NewDLogEqualityProver(dlog)
 	org := NewOrgNymGenMasterVerifier(orgName)
 
@@ -54,7 +54,7 @@ func GenerateNymVerifyMaster(userSecret, blindedA, blindedB, r, s *big.Int,
 	x1, x2 := prover.GetProofRandomData(userSecret, nymA, blindedA)
 	challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, r, s, caName)
 	if err != nil {
-		return nil, err	
+		return nil, err
 	}
 
 	z := prover.GetProofData(challenge)
@@ -64,11 +64,7 @@ func GenerateNymVerifyMaster(userSecret, blindedA, blindedB, r, s *big.Int,
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return &Pseudonym{A: nymA, B: nymB}, nil
 	} else {
-		err := errors.New("The proof for nym registration failed.")	
+		err := errors.New("The proof for nym registration failed.")
 		return nil, err
 	}
 }
-
-
-
-
