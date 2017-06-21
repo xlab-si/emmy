@@ -5,6 +5,8 @@ import (
 	"github.com/xlab-si/emmy/client"
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
 	"log"
@@ -41,71 +43,71 @@ func TestMain(m *testing.M) {
 	os.Exit(returnCode)
 }
 
-func runTestGrpcClient(schemaType pb.SchemaType, schemaVariant pb.SchemaVariant,
-	protocolParams client.ProtocolParams) error {
-	c, err := client.NewProtocolClient(testGrpcServerEndpont, schemaType, schemaVariant)
+func testPedersen(n *big.Int) error {
+	dlog := config.LoadDLog("pedersen")
+	c, err := client.NewPedersenClient(testGrpcServerEndpont, pb.SchemaVariant_SIGMA, dlog, n)
 	if err != nil {
 		return err
 	}
-	c.ExecuteProtocol(protocolParams)
-	return nil
+	return c.Run()
 }
 
-func TestClient_WithInvalidSchemaType(t *testing.T) {
-	err := runTestGrpcClient(pb.SchemaType_PEDERSEN, 999, nil)
-	assert.NotNil(t, err, "invalid schema type should return an error")
+func testPedersenEC(n *big.Int) error {
+	c, err := client.NewPedersenECClient(testGrpcServerEndpont, n)
+	if err != nil {
+		return err
+	}
+	return c.Run()
 }
 
-func TestClient_WithInvalidSchemaVariant(t *testing.T) {
-	err := runTestGrpcClient(999, pb.SchemaVariant_SIGMA, nil)
-	assert.NotNil(t, err, "invalid schema variant should return an error")
+func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
+	dlog := config.LoadDLog("schnorr")
+	c, err := client.NewSchnorrClient(testGrpcServerEndpont, variant, dlog, n)
+	if err != nil {
+		return err
+	}
+	return c.Run()
 }
 
-func TestGRPC_Dlogproofs(t *testing.T) {
-	pp := client.ProtocolParams{"secret": big.NewInt(345345345334)}
+func testSchnorrEC(n *big.Int, variant pb.SchemaVariant) error {
+	ec_dlog := dlog.NewECDLog()
+	c, err := client.NewSchnorrECClient(testGrpcServerEndpont, variant, ec_dlog, n)
+	if err != nil {
+		return err
+	}
+	return c.Run()
+}
 
-	schemaTypes := []pb.SchemaType{
-		pb.SchemaType_SCHNORR,
-		pb.SchemaType_SCHNORR,
-		pb.SchemaType_SCHNORR,
-		pb.SchemaType_SCHNORR_EC,
-		pb.SchemaType_SCHNORR_EC,
-		pb.SchemaType_SCHNORR_EC,
+func testCSPaillier(m, l *big.Int, pubKeyPath string) error {
+	c, err := client.NewCSPaillierClient(testGrpcServerEndpont, pubKeyPath, m, l)
+	if err != nil {
+		return err
 	}
-	schemaVariants := []pb.SchemaVariant{
-		pb.SchemaVariant_SIGMA,
-		pb.SchemaVariant_ZKP,
-		pb.SchemaVariant_ZKPOK,
-		pb.SchemaVariant_SIGMA,
-		pb.SchemaVariant_ZKP,
-		pb.SchemaVariant_ZKPOK,
-	}
-
-	for i := range schemaTypes {
-		err := runTestGrpcClient(schemaTypes[i], schemaVariants[i], pp)
-		assert.Nil(t, err, "should finish without errors")
-	}
+	return c.Run()
 }
 
 func TestGRPC_Commitments(t *testing.T) {
-	pp := client.ProtocolParams{"commitVal": big.NewInt(121212121)}
+	commitVal := big.NewInt(121212121)
 
-	schemaTypes := []pb.SchemaType{
-		pb.SchemaType_PEDERSEN,
-		pb.SchemaType_PEDERSEN_EC,
-	}
+	assert.Nil(t, testPedersen(commitVal), "should finish without errors")
+	assert.Nil(t, testPedersenEC(commitVal), "should finish without errors")
+}
 
-	for _, schemaType := range schemaTypes {
-		err := runTestGrpcClient(schemaType, pb.SchemaVariant_SIGMA, pp)
-		assert.Nil(t, err, "should finish without errors")
-	}
+func TestGRPC_Dlogproofs(t *testing.T) {
+	n := big.NewInt(345345345334)
+	desc := "should finish without errors"
+
+	assert.Nil(t, testSchnorr(n, pb.SchemaVariant_SIGMA), desc)
+	assert.Nil(t, testSchnorr(n, pb.SchemaVariant_ZKP), desc)
+	assert.Nil(t, testSchnorr(n, pb.SchemaVariant_ZKPOK), desc)
+	assert.Nil(t, testSchnorrEC(n, pb.SchemaVariant_SIGMA), desc)
+	assert.Nil(t, testSchnorrEC(n, pb.SchemaVariant_ZKP), desc)
+	assert.Nil(t, testSchnorrEC(n, pb.SchemaVariant_ZKPOK), desc)
 }
 
 func TestGRPC_Encryption(t *testing.T) {
-	pp := client.ProtocolParams{
-		"m":     common.GetRandomInt(big.NewInt(8685849)),
-		"label": common.GetRandomInt(big.NewInt(340002223232)),
-	}
-	err := runTestGrpcClient(pb.SchemaType_CSPAILLIER, pb.SchemaVariant_SIGMA, pp)
-	assert.Nil(t, err, "should finish without errors")
+	m := common.GetRandomInt(big.NewInt(8685849))
+	l := common.GetRandomInt(big.NewInt(340002223232))
+
+	assert.NotNil(t, testCSPaillier(m, l, "testdata/cspaillierpubkey.txt"), "should finish with error")
 }

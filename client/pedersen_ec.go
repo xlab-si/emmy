@@ -7,22 +7,36 @@ import (
 	"math/big"
 )
 
-func (c *Client) PedersenEC(val *big.Int) error {
-	c.handler.pedersenECCommitter = commitments.NewPedersenECCommitter()
+type PedersenECClient struct {
+	pedersenCommonClient
+	committer *commitments.PedersenECCommitter
+	val       *big.Int
+}
 
-	initMsg := c.getInitialMsg()
-	resInterface := c.getH(initMsg)
-
-	ecge, success := resInterface.(*pb.ECGroupElement)
-	if !success {
-		return resInterface.(error)
+// NewPedersenECClient returns an initialized struct of type PedersenECClient.
+func NewPedersenECClient(endpoint string, v *big.Int) (*PedersenECClient, error) {
+	genericClient, err := newGenericClient(endpoint)
+	if err != nil {
+		return nil, err
 	}
 
+	return &PedersenECClient{
+		pedersenCommonClient: pedersenCommonClient{genericClient: *genericClient},
+		committer:            commitments.NewPedersenECCommitter(),
+		val:                  v,
+	}, nil
+}
+
+// Run runs Pedersen commitment protocol in the eliptic curve group.
+func (c *PedersenECClient) Run() error {
+	ecge, err := c.getH()
+	if err != nil {
+		return err
+	}
 	my_ecge := common.ToECGroupElement(ecge)
+	c.committer.SetH(my_ecge)
 
-	c.handler.pedersenECCommitter.SetH(my_ecge)
-
-	commitment, err := c.handler.pedersenECCommitter.GetCommitMsg(val)
+	commitment, err := c.committer.GetCommitMsg(c.val)
 	if err != nil {
 		logger.Criticalf("could not generate committment message: %v", err)
 		return nil
@@ -32,10 +46,40 @@ func (c *Client) PedersenEC(val *big.Int) error {
 		return err
 	}
 
-	decommitVal, r := c.handler.pedersenECCommitter.GetDecommitMsg()
+	decommitVal, r := c.committer.GetDecommitMsg()
 	if err = c.decommit(decommitVal, r); err != nil {
 		return err
 	}
 
+	if err := c.close(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *PedersenECClient) getH() (*pb.ECGroupElement, error) {
+	initMsg := &pb.Message{
+		ClientId: c.id,
+		Schema:   pb.SchemaType_PEDERSEN_EC,
+		Content:  &pb.Message_Empty{&pb.EmptyMsg{}},
+	}
+
+	resp, err := c.getResponseTo(initMsg)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetEcGroupElement(), nil
+}
+
+func (c *PedersenECClient) commit(commitVal *common.ECGroupElement) error {
+	commitmentMsg := &pb.Message{
+		Content: &pb.Message_EcGroupElement{
+			common.ToPbECGroupElement(commitVal),
+		},
+	}
+
+	if _, err := c.getResponseTo(commitmentMsg); err != nil {
+		return err
+	}
 	return nil
 }

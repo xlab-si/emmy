@@ -9,6 +9,7 @@ import (
 	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
@@ -17,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -133,52 +135,69 @@ func runClients(n int, concurrently bool, protocolType, protocolVariant, endpoin
 // Parameters passed to the client in client.ProtocolParams struct have fixed
 // values for demonstration purposes.
 func runClient(protocolType, protocolVariant, endpoint string) {
-	genClient := getProtocolClient(protocolType, protocolVariant, endpoint)
-	if genClient == nil {
-		cLogger.Critical("Error ocurred when creating client")
+	_, pbVariant, err := parseSchema(protocolType, protocolVariant)
+	if err != nil {
+		cLogger.Criticalf("%v", err)
 		return
 	}
 
-	// Placeholder for values used to bootstrap the chosen protocol
-	// The actual (example-specific) values will be filled in
-	// depending on which protocol we are starting
-	protocolParams := client.ProtocolParams{}
-
 	switch protocolType {
 	case "pedersen":
-		protocolParams["commitVal"] = big.NewInt(121212121)
+		commitVal := big.NewInt(121212121)
+		dlog := config.LoadDLog("pedersen")
+		client, err := client.NewPedersenClient(endpoint, pbVariant, dlog, commitVal)
+		if err != nil {
+			cLogger.Errorf("Error creating client: %v", err)
+		} else {
+			err = client.Run()
+		}
 	case "pedersen_ec":
-		protocolParams["commitVal"] = big.NewInt(121212121)
+		commitVal := big.NewInt(121212121)
+		client, err := client.NewPedersenECClient(endpoint, commitVal)
+		if err != nil {
+			cLogger.Errorf("Error creating client: %v", err)
+		} else {
+			err = client.Run()
+		}
 	case "schnorr":
-		protocolParams["secret"] = big.NewInt(345345345334)
+		dlog := config.LoadDLog("schnorr")
+		secret := big.NewInt(345345345334)
+		client, err := client.NewSchnorrClient(endpoint, pbVariant, dlog, secret)
+		if err != nil {
+			cLogger.Errorf("Error creating client: %v", err)
+		} else {
+			err = client.Run()
+		}
 	case "schnorr_ec":
-		protocolParams["secret"] = big.NewInt(345345345334)
+		ec_dlog := dlog.NewECDLog()
+		secret := big.NewInt(345345345334)
+		client, err := client.NewSchnorrECClient(endpoint, pbVariant, ec_dlog, secret)
+		if err != nil {
+			cLogger.Errorf("Error creating client: %v", err)
+		} else {
+			err = client.Run()
+		}
 	case "cspaillier":
-		protocolParams["m"] = common.GetRandomInt(big.NewInt(8685849))
-		protocolParams["label"] = common.GetRandomInt(big.NewInt(340002223232))
+		keyDir := config.LoadKeyDirFromConfig()
+		pubKeyPath := filepath.Join(keyDir, "cspaillierpubkey.txt")
+		m := common.GetRandomInt(big.NewInt(8685849))
+		label := common.GetRandomInt(big.NewInt(340002223232))
+		client, err := client.NewCSPaillierClient(endpoint, pubKeyPath, m, label)
+		if err != nil {
+			cLogger.Errorf("Error creating client: %v", err)
+		} else {
+			err = client.Run()
+		}
 	default:
 		cLogger.Criticalf("ERROR: Invalid protocol type: %s", protocolType)
 		return
 	}
 
-	genClient.ExecuteProtocol(protocolParams)
-}
-
-// getProtocolClient returns a pointer to client.Client struct that communicates with
-// emmy server in order to execute a chosen protocol via gRPC.
-func getProtocolClient(protocolType, protocolVariant, endpoint string) *client.Client {
-	pbType, pbVariant, err := parseSchema(protocolType, protocolVariant)
 	if err != nil {
-		cLogger.Critical(err)
-		return nil
+		cLogger.Errorf("FAIL: %v", err)
+	} else {
+		cLogger.Notice("Protocol successfully finished")
 	}
-
-	c, err := client.NewProtocolClient(endpoint, pbType, pbVariant)
-	if err != nil {
-		cLogger.Critical(err)
-		return nil
-	}
-	return c
 }
 
 // parseSchema parses string equivalents of protocol's type and variant and returns

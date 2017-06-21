@@ -9,74 +9,113 @@ import (
 	"math/big"
 )
 
-func (c *Client) SchnorrEC(protocolType common.ProtocolType, dlog *dlog.ECDLog, secret *big.Int) error {
-	prover, err := dlogproofs.NewSchnorrECProver(protocolType)
+type SchnorrECClient struct {
+	genericClient
+	prover  *dlogproofs.SchnorrECProver
+	secret  *big.Int
+	a       *common.ECGroupElement
+	variant pb.SchemaVariant
+}
+
+// NewSchnorrECClient returns an initialized struct of type SchnorrECClient.
+func NewSchnorrECClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.ECDLog,
+	s *big.Int) (*SchnorrECClient, error) {
+	genericClient, err := newGenericClient(endpoint)
 	if err != nil {
-		return fmt.Errorf("Could not create schnorr EC prover: %v", err)
+		return nil, err
 	}
 
-	c.handler.schnorrECProver = prover
-
-	initMsg := c.getInitialMsg()
-
-	a := &common.ECGroupElement{
-		X: dlog.Curve.Params().Gx,
-		Y: dlog.Curve.Params().Gy,
+	prover, err := dlogproofs.NewSchnorrECProver(common.ToProtocolType(variant))
+	if err != nil {
+		return nil, fmt.Errorf("Could not create schnorr EC prover: %v", err)
 	}
 
-	if protocolType != common.Sigma { // ZKP or ZKPOK
-		commitment, err := c.openEC(initMsg)
-		if err != nil {
-			return err
-		}
+	return &SchnorrECClient{
+		genericClient: *genericClient,
+		prover:        prover,
+		variant:       variant,
+		secret:        s,
+		a: &common.ECGroupElement{
+			X: dlog.Curve.Params().Gx,
+			Y: dlog.Curve.Params().Gy,
+		},
+	}, nil
+}
 
-		c.handler.schnorrECProver.PedersenReceiver.SetCommitment(commitment)
-		pedersenDecommitment, err := c.proofRandomDataEC(false, a, secret)
-		if err != nil {
-			return err
-		}
+// Run starts the Schnorr protocol for proving knowledge of a discrete logarithm in elliptic curve
+// group. It executes either sigma protocol or Zero Knowledge Proof (of knowledge)
+func (c *SchnorrECClient) Run() error {
+	if c.variant == pb.SchemaVariant_SIGMA {
+		return c.runSigma()
+	}
+	return c.runZeroKnowledge()
+}
 
-		challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
-		r := new(big.Int).SetBytes(pedersenDecommitment.R)
+// RunSigma runs the sigma version of the Schnorr protocol in the elliptic curve group
+func (c *SchnorrECClient) runSigma() error {
+	pedersenDecommitment, err := c.getProofRandomData(true)
+	if err != nil {
+		return err
+	}
+	challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
+	proved, err := c.getProofData(challenge)
+	if err != nil {
+		return err
+	}
+	logger.Noticef("Decommitment successful, proved: %v", proved)
 
-		success := c.handler.schnorrECProver.PedersenReceiver.CheckDecommitment(r, challenge)
-		if success {
-			proved, err := c.proofDataEC(challenge)
-			logger.Noticef("Decommitment successful, proved: %v", proved)
-			if err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("Decommitment failed")
-		}
-	} else {
-		pedersenDecommitment, err := c.proofRandomDataEC(true, a, secret)
-		if err != nil {
-			return err
-		}
-		challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
-		proved, err := c.proofDataEC(challenge)
-		if err != nil {
-			return err
-		}
-		logger.Noticef("Decommitment successful, proved: %v", proved)
+	if err := c.close(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (c *Client) openEC(openMsg *pb.Message) (*common.ECGroupElement, error) {
-	h := c.handler.schnorrECProver.GetOpeningMsg()
-	ecge := common.ToPbECGroupElement(h)
-
-	openMsg.Content = &pb.Message_EcGroupElement{ecge}
-
-	err := c.send(openMsg)
+// runZeroKnowledge runs the ZKP or ZKPOK version of Schnorr protocol in the elliptic curve group,
+// depending on the value of SchnorrClient's variant field.
+func (c *SchnorrECClient) runZeroKnowledge() error {
+	commitment, err := c.open()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	resp, err := c.receive()
+	c.prover.PedersenReceiver.SetCommitment(commitment)
+	pedersenDecommitment, err := c.getProofRandomData(false)
+	if err != nil {
+		return err
+	}
+
+	challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
+	r := new(big.Int).SetBytes(pedersenDecommitment.R)
+
+	success := c.prover.PedersenReceiver.CheckDecommitment(r, challenge)
+	if success {
+		proved, err := c.getProofData(challenge)
+		logger.Noticef("Decommitment successful, proved: %v", proved)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("Decommitment failed")
+	}
+
+	if err := c.close(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *SchnorrECClient) open() (*common.ECGroupElement, error) {
+	h := c.prover.GetOpeningMsg()
+	ecge := common.ToPbECGroupElement(h)
+	openMsg := &pb.Message{
+		ClientId:      c.id,
+		Schema:        pb.SchemaType_SCHNORR_EC,
+		SchemaVariant: c.variant,
+		Content:       &pb.Message_EcGroupElement{ecge},
+	}
+
+	resp, err := c.getResponseTo(openMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -85,31 +124,30 @@ func (c *Client) openEC(openMsg *pb.Message) (*common.ECGroupElement, error) {
 	return common.ToECGroupElement(ecge), nil
 }
 
-func (c *Client) proofRandomDataEC(isFirstMsg bool, a *common.ECGroupElement, secret *big.Int) (*pb.PedersenDecommitment, error) {
-	x := c.handler.schnorrECProver.GetProofRandomData(secret, a) // x = a^r, b = a^secret is "public key"
-
-	b1, b2 := c.handler.schnorrECProver.DLog.Exponentiate(a.X, a.Y, secret)
+func (c *SchnorrECClient) getProofRandomData(isFirstMsg bool) (*pb.PedersenDecommitment, error) {
+	x := c.prover.GetProofRandomData(c.secret, c.a) // x = a^r, b = a^secret is "public key"
+	b1, b2 := c.prover.DLog.Exponentiate(c.a.X, c.a.Y, c.secret)
 	b := &common.ECGroupElement{X: b1, Y: b2}
+
+	pRandomData := pb.SchnorrECProofRandomData{
+		X: common.ToPbECGroupElement(x),
+		A: common.ToPbECGroupElement(c.a),
+		B: common.ToPbECGroupElement(b),
+	}
 
 	req := &pb.Message{}
 	if isFirstMsg {
-		req = c.getInitialMsg()
+		req = &pb.Message{
+			ClientId:      c.id,
+			Schema:        pb.SchemaType_SCHNORR_EC,
+			SchemaVariant: c.variant,
+		}
 	}
-
 	req.Content = &pb.Message_SchnorrEcProofRandomData{
-		&pb.SchnorrECProofRandomData{
-			X: common.ToPbECGroupElement(x),
-			A: common.ToPbECGroupElement(a),
-			B: common.ToPbECGroupElement(b),
-		},
+		&pRandomData,
 	}
 
-	err := c.send(req)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.receive()
+	resp, err := c.getResponseTo(req)
 	if err != nil {
 		return nil, err
 	}
@@ -117,32 +155,23 @@ func (c *Client) proofRandomDataEC(isFirstMsg bool, a *common.ECGroupElement, se
 	return resp.GetPedersenDecommitment(), nil
 }
 
-func (c *Client) proofDataEC(challenge *big.Int) (bool, error) {
-	z, trapdoor := c.handler.schnorrECProver.GetProofData(challenge)
+func (c *SchnorrECClient) getProofData(challenge *big.Int) (bool, error) {
+	z, trapdoor := c.prover.GetProofData(challenge)
 	if trapdoor == nil { // sigma protocol and ZKP
 		trapdoor = new(big.Int)
 	}
-
-	pData := pb.SchnorrProofData{
-		Z:        z.Bytes(),
-		Trapdoor: trapdoor.Bytes(),
-	}
-
 	msg := &pb.Message{
 		Content: &pb.Message_SchnorrProofData{
-			&pData,
+			&pb.SchnorrProofData{
+				Z:        z.Bytes(),
+				Trapdoor: trapdoor.Bytes(),
+			},
 		},
 	}
 
-	err := c.send(msg)
+	resp, err := c.getResponseTo(msg)
 	if err != nil {
 		return false, err
 	}
-
-	resp, err := c.receive()
-	if err != nil {
-		return false, err
-	}
-
 	return resp.GetStatus().Success, nil
 }
