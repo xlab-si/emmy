@@ -6,60 +6,83 @@ import (
 	"math/big"
 )
 
-func (c *Client) CSPaillier(pubKeyPath string, m, label *big.Int) (bool, error) {
-	encryptor, err := encryption.NewCSPaillierFromPubKeyFile(pubKeyPath)
-	if err != nil {
-		return false, err
-	}
-
-	c.handler.paillierEncryptor = encryptor
-	u, e, v, _ := c.handler.paillierEncryptor.Encrypt(m, label)
-
-	if err = c.openCSPaillier(m, u, e, v, label); err != nil {
-		return false, err
-	}
-
-	challenge, err := c.cspaillierProveRandomData(u, e, label)
-	if err != nil {
-		return false, err
-	}
-
-	proved, err := c.cspaillierProveData(challenge)
-	if err != nil {
-		return false, err
-	}
-
-	return proved, nil
+type CSPaillierClient struct {
+	genericClient
+	encryptor *encryption.CSPaillier
+	label, m  *big.Int
 }
 
-func (c *Client) openCSPaillier(m, u, e, v, label *big.Int) error {
-	l, delta := c.handler.paillierEncryptor.GetOpeningMsg(m)
-
-	opening := pb.CSPaillierOpening{
-		U:     u.Bytes(),
-		E:     e.Bytes(),
-		V:     v.Bytes(),
-		Delta: delta.Bytes(),
-		Label: label.Bytes(),
-		L:     l.Bytes(),
+// NewCSPaillierClient returns an initialized struct of type CSPaillierClient.
+func NewCSPaillierClient(endpoint string, pubKeyPath string, m, l *big.Int) (*CSPaillierClient, error) {
+	genericClient, err := newGenericClient(endpoint)
+	if err != nil {
+		return nil, err
 	}
 
-	openMsg := c.getInitialMsg()
-	openMsg.Content = &pb.Message_CsPaillierOpening{&opening}
+	encryptor, err := encryption.NewCSPaillierFromPubKeyFile(pubKeyPath)
+	if err != nil {
+		return nil, err
+	}
 
-	if err := c.send(openMsg); err != nil {
+	return &CSPaillierClient{
+		genericClient: *genericClient,
+		encryptor:     encryptor,
+		m:             m,
+		label:         l,
+	}, nil
+}
+
+// Run runs the Camenisch-Shoup sigma protocol for verifiable encryption and decryption
+// of discrete logatirhms.
+func (c *CSPaillierClient) Run() error {
+	u, e, v, _ := c.encryptor.Encrypt(c.m, c.label)
+	if err := c.open(u, e, v); err != nil {
 		return err
 	}
 
-	if _, err := c.receive(); err != nil {
+	challenge, err := c.getProofRandomData(u, e)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.getProofData(challenge)
+	if err != nil {
+		return err
+	}
+
+	if err := c.close(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Client) cspaillierProveRandomData(u, e, label *big.Int) (*big.Int, error) {
-	u1, e1, v1, delta1, l1, err := c.handler.paillierEncryptor.GetProofRandomData(u, e, label)
+func (c *CSPaillierClient) open(u, e, v *big.Int) error {
+	l, delta := c.encryptor.GetOpeningMsg(c.m)
+
+	opening := pb.CSPaillierOpening{
+		U:     u.Bytes(),
+		E:     e.Bytes(),
+		V:     v.Bytes(),
+		Delta: delta.Bytes(),
+		Label: c.label.Bytes(),
+		L:     l.Bytes(),
+	}
+	openMsg := &pb.Message{
+		ClientId: c.id,
+		Schema:   pb.SchemaType_CSPAILLIER,
+		Content:  &pb.Message_CsPaillierOpening{&opening},
+	}
+
+	if _, err := c.getResponseTo(openMsg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *CSPaillierClient) getProofRandomData(u, e *big.Int) (*big.Int, error) {
+	u1, e1, v1, delta1, l1, err := c.encryptor.GetProofRandomData(u, e, c.label)
 	if err != nil {
 		return nil, err
 	}
@@ -75,11 +98,7 @@ func (c *Client) cspaillierProveRandomData(u, e, label *big.Int) (*big.Int, erro
 		Content: &pb.Message_CsPaillierProofRandomData{&data},
 	}
 
-	if err = c.send(msg); err != nil {
-		return nil, err
-	}
-
-	resp, err := c.receive()
+	resp, err := c.getResponseTo(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +107,8 @@ func (c *Client) cspaillierProveRandomData(u, e, label *big.Int) (*big.Int, erro
 	return new(big.Int).SetBytes(bigint.X1), nil
 }
 
-func (c *Client) cspaillierProveData(challenge *big.Int) (bool, error) {
-	rTilde, sTilde, mTilde := c.handler.paillierEncryptor.GetProofData(challenge)
+func (c *CSPaillierClient) getProofData(challenge *big.Int) (bool, error) {
+	rTilde, sTilde, mTilde := c.encryptor.GetProofData(challenge)
 
 	data := pb.CSPaillierProofData{
 		RTilde:      rTilde.Bytes(),
@@ -103,11 +122,7 @@ func (c *Client) cspaillierProveData(challenge *big.Int) (bool, error) {
 		Content: &pb.Message_CsPaillierProofData{&data},
 	}
 
-	if err := c.send(msg); err != nil {
-		return false, err
-	}
-
-	resp, err := c.receive()
+	resp, err := c.getResponseTo(msg)
 	if err != nil {
 		return false, err
 	}

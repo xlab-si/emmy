@@ -13,4 +13,4 @@ install:
   - go get -u -t github.com/$TRAVIS_REPO_SLUG
   
 script: 
-  - go test -v test/*
+  - go test -v test/*.go
