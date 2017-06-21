@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package comm;
+package protobuf;
 
 // Valid schema types
 enum SchemaType {

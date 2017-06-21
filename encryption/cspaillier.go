@@ -3,9 +3,9 @@ package encryption
 import (
 	"errors"
 	"github.com/golang/protobuf/proto"
-	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
+	pb "github.com/xlab-si/emmy/protobuf"
 	"log"
 	"math/big"
 )

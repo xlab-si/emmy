@@ -2,9 +2,9 @@ package client
 
 import (
 	"fmt"
-	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
+	pb "github.com/xlab-si/emmy/protobuf"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"io"

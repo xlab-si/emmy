@@ -2,10 +2,10 @@ package client
 
 import (
 	"fmt"
-	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
+	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
 

@@ -5,5 +5,5 @@
 Go into the root project folder and execute:
 
 ```
-protoc -I comm/pro/ comm/pro/msgs.proto --go_out=plugins=grpc:comm/pro
+protoc -I protobuf/ protobuf/msgs.proto --go_out=plugins=grpc:protobuf
 ```
