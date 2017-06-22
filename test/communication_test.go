@@ -3,10 +3,10 @@ package tests
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
-	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
+	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
 	"log"

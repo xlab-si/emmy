@@ -1,9 +1,9 @@
 package client
 
 import (
-	pb "github.com/xlab-si/emmy/comm/pro"
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
+	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
 
