@@ -4,7 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
@@ -15,16 +15,31 @@ import (
 type CA struct {
 	DLog            *dlog.ZpDLog
 	SchnorrVerifier *dlogproofs.SchnorrVerifier
-	caName          string
 	a               *big.Int
 	b               *big.Int
 	privateKey      *ecdsa.PrivateKey
 }
 
-func NewCA(caName string) *CA {
+type CACertificate struct {
+	BlindedA *big.Int
+	BlindedB *big.Int
+	R        *big.Int
+	S        *big.Int
+}
+
+func NewCACertificate(blindedA, blindedB, r, s *big.Int) *CACertificate {
+	return &CACertificate{
+		BlindedA: blindedA,	
+		BlindedB: blindedB,	
+		R: r,
+		S: s,
+	}
+}
+
+func NewCA() *CA {
 	dlog := config.LoadDLog("pseudonymsys")
-	x, y := config.LoadPseudonymsysCAPubKey(caName)
-	d := config.LoadPseudonymsysCASecret(caName)
+	x, y := config.LoadPseudonymsysCAPubKey()
+	d := config.LoadPseudonymsysCASecret()
 
 	c := elliptic.P256()
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
@@ -34,7 +49,6 @@ func NewCA(caName string) *CA {
 	ca := CA{
 		DLog:            dlog,
 		SchnorrVerifier: schnorrVerifier,
-		caName:          caName,
 		privateKey:      &privateKey,
 	}
 
@@ -51,7 +65,7 @@ func (ca *CA) GetChallenge(a, b, x *big.Int) *big.Int {
 	return challenge
 }
 
-func (ca *CA) Verify(z *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
+func (ca *CA) Verify(z *big.Int) (*CACertificate, error) {
 	verified := ca.SchnorrVerifier.Verify(z, nil)
 	if verified {
 		r := common.GetRandomInt(ca.DLog.OrderOfSubgroup)
@@ -62,15 +76,12 @@ func (ca *CA) Verify(z *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, error)
 
 		hashed := common.HashIntoBytes(blindedA, blindedB)
 		r, s, err := ecdsa.Sign(rand.Reader, ca.privateKey, hashed)
-
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, err
 		} else {
-			return blindedA, blindedB, r, s, nil
+			return NewCACertificate(blindedA, blindedB, r, s), nil
 		}
 	} else {
-
-		err := errors.New("The knowledge of secret was not verified.")
-		return nil, nil, nil, nil, err
+		return nil, fmt.Errorf("The knowledge of secret was not verified.")
 	}
 }

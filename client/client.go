@@ -61,6 +61,9 @@ func (c *genericClient) receive() (*pb.Message, error) {
 	} else if err != nil {
 		return nil, fmt.Errorf("[Client %v] An error ocurred: %v", c.id, err)
 	}
+	if resp.ProtocolError != "" {
+		return nil, fmt.Errorf(resp.ProtocolError)
+	}
 	logger.Infof("[Client %v] Received response from the stream: %v", c.id, resp)
 	return resp, nil
 }

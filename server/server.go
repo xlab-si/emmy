@@ -51,9 +51,9 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		return err
 	}
 
-	reqClientId := req.GetClientId()
-	reqSchemaType := req.GetSchema()
-	reqSchemaVariant := req.GetSchemaVariant()
+	reqClientId := req.ClientId
+	reqSchemaType := req.Schema
+	reqSchemaVariant := req.SchemaVariant
 
 	// Check whether the client requested a valid schema
 	reqSchemaTypeStr, schemaValid := pb.SchemaType_name[int32(reqSchemaType)]
@@ -87,6 +87,14 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		keyDir := config.LoadKeyDirFromConfig()
 		secKeyPath := filepath.Join(keyDir, "cspaillierseckey.txt")
 		err = s.CSPaillier(req, secKeyPath, stream)
+	case pb.SchemaType_PSEUDONYMSYS_CA:
+		err = s.PseudonymsysCA(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_NYM_GEN:
+		err = s.PseudonymsysGenerateNym(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL:
+		err = s.PseudonymsysIssueCredential(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL:
+		err = s.PseudonymsysTransferCredential(req, stream)
 	}
 
 	if err != nil {

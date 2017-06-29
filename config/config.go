@@ -73,29 +73,29 @@ func LoadPseudonymsysUserSecret(user string) *big.Int {
 	return s
 }
 
-func LoadPseudonymsysOrgSecrets(org string) (*big.Int, *big.Int) {
-	m := viper.GetStringMap("pseudonymsys")
-	s1, _ := new(big.Int).SetString(m[org].(map[string]interface{})["s1"].(string), 10)
-	s2, _ := new(big.Int).SetString(m[org].(map[string]interface{})["s2"].(string), 10)
+func LoadPseudonymsysOrgSecrets(orgName string) (*big.Int, *big.Int) {
+	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s", orgName))
+	s1, _ := new(big.Int).SetString(org["s1"].(string), 10)
+	s2, _ := new(big.Int).SetString(org["s2"].(string), 10)
 	return s1, s2
 }
 
-func LoadPseudonymsysOrgPubKeys(org string) (*big.Int, *big.Int) {
-	m := viper.GetStringMap("pseudonymsys")
-	h1, _ := new(big.Int).SetString(m[org].(map[string]interface{})["h1"].(string), 10)
-	h2, _ := new(big.Int).SetString(m[org].(map[string]interface{})["h2"].(string), 10)
+func LoadPseudonymsysOrgPubKeys(orgName string) (*big.Int, *big.Int) {
+	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s", orgName))
+	h1, _ := new(big.Int).SetString(org["h1"].(string), 10)
+	h2, _ := new(big.Int).SetString(org["h2"].(string), 10)
 	return h1, h2
 }
 
-func LoadPseudonymsysCASecret(caName string) *big.Int {
-	m := viper.GetStringMap("pseudonymsys")
-	s, _ := new(big.Int).SetString(m[caName].(map[string]interface{})["D"].(string), 10)
+func LoadPseudonymsysCASecret() *big.Int {
+	ca := viper.GetStringMap("pseudonymsys.ca")
+	s, _ := new(big.Int).SetString(ca["d"].(string), 10)
 	return s
 }
 
-func LoadPseudonymsysCAPubKey(caName string) (*big.Int, *big.Int) {
-	m := viper.GetStringMap("pseudonymsys")
-	x, _ := new(big.Int).SetString(m[caName].(map[string]interface{})["X"].(string), 10)
-	y, _ := new(big.Int).SetString(m[caName].(map[string]interface{})["Y"].(string), 10)
+func LoadPseudonymsysCAPubKey() (*big.Int, *big.Int) {
+	ca := viper.GetStringMap("pseudonymsys.ca")
+	x, _ := new(big.Int).SetString(ca["x"].(string), 10)
+	y, _ := new(big.Int).SetString(ca["y1"].(string), 10)
 	return x, y
 }

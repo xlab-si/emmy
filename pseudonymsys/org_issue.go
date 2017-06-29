@@ -9,6 +9,40 @@ import (
 	"math/big"
 )
 
+type Credential struct {
+	SmallAToGamma *big.Int
+	SmallBToGamma *big.Int
+	AToGamma      *big.Int
+	BToGamma      *big.Int
+	T1            []*big.Int
+	T2            []*big.Int
+}
+
+func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int, 
+		t1, t2 []*big.Int) *Credential {
+	credential := &Credential {
+		SmallAToGamma: aToGamma,	
+		SmallBToGamma: bToGamma,	
+		AToGamma: AToGamma,	
+		BToGamma: BToGamma,	
+		T1: t1,
+		T2: t2,
+	}
+	return credential
+}
+
+type OrgPubKeys struct {
+	H1 *big.Int
+	H2 *big.Int
+}
+
+func NewOrgPubKeys(h1, h2 *big.Int) *OrgPubKeys {
+	return &OrgPubKeys{
+		H1: h1,	
+		H2: h2,	
+	}
+}
+
 type OrgCredentialIssuer struct {
 	DLog *dlog.ZpDLog
 	s1   *big.Int
@@ -22,9 +56,10 @@ type OrgCredentialIssuer struct {
 	b               *big.Int
 }
 
-func NewOrgCredentialIssuer(orgName string) *OrgCredentialIssuer {
+func NewOrgCredentialIssuer() *OrgCredentialIssuer {
 	dlog := config.LoadDLog("pseudonymsys")
-	s1, s2 := config.LoadPseudonymsysOrgSecrets(orgName)
+	// this presumes that organization's own keys are stored under "org1"
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1")
 
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
@@ -67,8 +102,6 @@ func (org *OrgCredentialIssuer) VerifyAuthentication(z *big.Int) (
 
 		return x11, x12, x21, x22, A, B, nil
 	} else {
-		// TODO: close the session
-
 		err := errors.New("Authentication with organization failed")
 		return nil, nil, nil, nil, nil, nil, err
 	}

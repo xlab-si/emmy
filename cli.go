@@ -6,7 +6,6 @@ import (
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlogproofs"
-	"github.com/xlab-si/emmy/pseudonymsys"
 	"github.com/xlab-si/emmy/secretsharing"
 	"log"
 	"math/big"
@@ -90,59 +89,6 @@ func oldCli() {
 		log.Println("is the transcript valid:")
 		valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.DLog, g1, t1, G2, T2)
 		log.Println(valid)
-	} else if *examplePtr == "pseudonymsys" {
-		orgName1 := "org1"
-		orgName2 := "org2"
-		userName := "user1"
-		caName := "ca"
-		dlog := config.LoadDLog("pseudonymsys")
-
-		userSecret := config.LoadPseudonymsysUserSecret(userName)
-		p, _ := dlog.Exponentiate(dlog.G, userSecret)
-		masterNym := pseudonymsys.Pseudonym{A: dlog.G, B: p}
-		blindedA, blindedB, r, s, err := pseudonymsys.RegisterWithCA(caName, userSecret, masterNym, dlog)
-		log.Println(blindedA)
-		log.Println(blindedB)
-		log.Println(r)
-		log.Println(s)
-
-		orgPubKeys := make(map[string]*pseudonymsys.OrgPubKeys)
-		h11, h12 := config.LoadPseudonymsysOrgPubKeys(orgName1)
-		orgPubKeys[orgName1] = &pseudonymsys.OrgPubKeys{H1: h11, H2: h12}
-
-		h21, h22 := config.LoadPseudonymsysOrgPubKeys(orgName1)
-		orgPubKeys[orgName2] = &pseudonymsys.OrgPubKeys{H1: h21, H2: h22}
-
-		// register with orgName1
-		//nym1 := pseudonymsys.GenerateNym(userSecret, orgName1, dlog)
-		nym1, err := pseudonymsys.GenerateNymVerifyMaster(userSecret, blindedA,
-			blindedB, r, s, orgName1, caName, dlog)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		nyms := make(map[string]*pseudonymsys.Pseudonym)
-		nyms[orgName1] = nym1
-
-		// authenticate to the orgName1 and obtain a credential:
-		credential, err := pseudonymsys.IssueCredential(userSecret, nym1,
-			orgName1, orgPubKeys[orgName1], dlog)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		//credentials := make(map[string]*pseudonymsys.PseudonymCredential)
-		//credentials[orgName1] = credential
-
-		// register with orgName2
-		nym2 := pseudonymsys.GenerateNym(userSecret, orgName2, dlog)
-		nyms[orgName2] = nym2
-
-		authenticated, _ := pseudonymsys.TransferCredential(userSecret, credential, nym2,
-			orgName2, orgPubKeys[orgName2], dlog)
-
-		log.Println(authenticated)
-
 	}
 
 	//fmt.Println("word:", *wordPtr)

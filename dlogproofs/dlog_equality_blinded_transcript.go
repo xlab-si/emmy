@@ -11,6 +11,13 @@ import (
 // by verifier.
 func VerifyBlindedTranscript(transcript []*big.Int, dlog *dlog.ZpDLog, g1, t1, G2, T2 *big.Int) bool {
 	// Transcript should be in the following form: [alpha1, beta1, hash(alpha1, beta1), z+alpha]
+
+	// check hash:
+	hashNum := common.Hash(transcript[0], transcript[1])
+	if hashNum.Cmp(transcript[2]) != 0 {
+		return false
+	}
+
 	// We need to verify (note that c-beta = hash(alpha1, beta1))
 	// g1^(z+alpha) = alpha1 * t1^(c-beta)
 	// G2^(z+alpha) = beta1 * T2^(c-beta)
