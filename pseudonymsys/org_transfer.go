@@ -17,9 +17,10 @@ type OrgCredentialVerifier struct {
 	b                *big.Int
 }
 
-func NewOrgCredentialVerifier(orgName string) *OrgCredentialVerifier {
+func NewOrgCredentialVerifier() *OrgCredentialVerifier {
 	dlog := config.LoadDLog("pseudonymsys")
-	s1, s2 := config.LoadPseudonymsysOrgSecrets(orgName)
+	// this presumes that organization's own keys are stored under "org1"
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1")
 
 	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(dlog)
 	org := OrgCredentialVerifier{
@@ -42,7 +43,7 @@ func (org *OrgCredentialVerifier) GetAuthenticationChallenge(a, b, a1, b1, x1, x
 }
 
 func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
-	credential *PseudonymCredential, orgPubKeys *OrgPubKeys) bool {
+	credential *Credential, orgPubKeys *OrgPubKeys) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if !verified {
 		// TODO: close the session

@@ -1,4 +1,4 @@
-# emmy - Library for zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
+# emmy - Library for sigma protocols and zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
 Emmy is a library that offers a **crypto-backend** with primitives for implementation of various cryptographic proofs and **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on the role of the client, and the verifier takes on the role of the server). It can be used in scenarios like *anonymous digital credentials*. Each proof is implemented as a sigma protocol which can be turned into a zero-knowledge proof (ZKP) or a zero-knowledge proof of knowledge (ZKPOK) using commitment schemes. Emmy also implements a communication layer supporting the execution of these protocols. 
 
@@ -140,8 +140,8 @@ Currently supported examples with fully implemented communication layer (e.g. cl
 | [✓] Pedersen commitments (pedersen) |
 | [✓] Pedersen commitments EC (pedersen_ex) |
 | [✗] Chaum-Pedersen to prove discrete logarithm equality [3] |
-| [✗] DLog Equality Blinded Transcript [3] | 
-| [✗] Pseudonym system [4] |
+| [✗] DLog Equality Blinded Transcript [4] | 
+| [✓] Pseudonym system [4] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
 | [✗] Shamir's secret sharing scheme |
 

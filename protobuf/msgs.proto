@@ -9,6 +9,10 @@ enum SchemaType {
 	SCHNORR = 2;
 	SCHNORR_EC = 3;
 	CSPAILLIER = 4;
+	PSEUDONYMSYS_CA = 5;
+	PSEUDONYMSYS_NYM_GEN = 6;
+	PSEUDONYMSYS_ISSUE_CREDENTIAL = 7;
+	PSEUDONYMSYS_TRANSFER_CREDENTIAL = 8;
 }
 
 // Valid schema variants
@@ -35,8 +39,14 @@ message Message {
 		CSPaillierOpening cs_paillier_opening = 12;
 		CSPaillierProofData cs_paillier_proof_data = 13;
 		CSPaillierProofRandomData cs_paillier_proof_random_data = 14;
+		PseudonymsysCACertificate pseudonymsys_ca_certificate = 15;
+		PseudonymsysNymGenProofRandomData pseudonymsys_nym_gen_proof_random_data = 16;
+		PseudonymsysIssueProofRandomData pseudonymsys_issue_proof_random_data = 17;
+		DoubleBigInt double_bigint = 18;
+		PseudonymsysTransferCredentialData pseudonymsys_transfer_credential_data = 19;
 	}
-	int32 clientId = 15;
+	int32 clientId = 20;
+	string ProtocolError = 21;
 }
 
 // A generic service
@@ -52,6 +62,11 @@ message Status {
 
 message BigInt {
 	bytes X1 = 1;
+}
+
+message DoubleBigInt {
+	bytes X1 = 1;
+	bytes X2 = 2;
 }
 
 message PedersenFirst {
@@ -83,6 +98,58 @@ message SchnorrECProofRandomData {
 message SchnorrProofData {
 	bytes Z = 1;
  	bytes Trapdoor = 2; // needed only in zero-knowledge proof of knowledge
+}
+
+message PseudonymsysNymGenProofRandomData {
+	bytes X1 = 1;
+	bytes A1 = 2;
+	bytes B1 = 3;
+	bytes X2 = 4;
+	bytes A2 = 5;
+	bytes B2 = 6;
+	bytes R = 7;
+	bytes S = 8;
+}
+
+message PseudonymsysCACertificate {
+	bytes BlindedA = 1;
+	bytes BlindedB = 2;
+	bytes R = 3;
+	bytes S = 4;
+}
+
+message PseudonymsysIssueProofRandomData {
+	bytes X11 = 1;
+	bytes X12 = 2;
+	bytes X21 = 3;
+	bytes X22 = 4;
+	bytes A = 5;
+	bytes B = 6;
+}
+
+message PseudonymsysTranscript {
+	bytes A = 1;
+	bytes B = 2;
+	bytes Hash = 3;
+	bytes ZAlpha = 4;
+}
+
+message PseudonymsysCredential {
+	bytes SmallAToGamma = 1;
+	bytes SmallBToGamma = 2;
+	bytes AToGamma = 3;
+	bytes BToGamma = 4;
+    PseudonymsysTranscript T1 = 5;
+	PseudonymsysTranscript T2 = 6;
+}
+
+message PseudonymsysTransferCredentialData {
+	string OrgName = 1;
+	bytes X1 = 2;
+	bytes X2 = 3;
+	bytes NymA = 4;
+	bytes NymB = 5;
+	PseudonymsysCredential Credential = 6;	
 }
 
 message CSPaillierSecretKey {

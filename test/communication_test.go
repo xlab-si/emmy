@@ -78,14 +78,6 @@ func testSchnorrEC(n *big.Int, variant pb.SchemaVariant) error {
 	return c.Run()
 }
 
-func testCSPaillier(m, l *big.Int, pubKeyPath string) error {
-	c, err := client.NewCSPaillierClient(testGrpcServerEndpont, pubKeyPath, m, l)
-	if err != nil {
-		return err
-	}
-	return c.Run()
-}
-
 func TestGRPC_Commitments(t *testing.T) {
 	commitVal := big.NewInt(121212121)
 
@@ -103,6 +95,14 @@ func TestGRPC_Dlogproofs(t *testing.T) {
 	assert.Nil(t, testSchnorrEC(n, pb.SchemaVariant_SIGMA), desc)
 	assert.Nil(t, testSchnorrEC(n, pb.SchemaVariant_ZKP), desc)
 	assert.Nil(t, testSchnorrEC(n, pb.SchemaVariant_ZKPOK), desc)
+}
+
+func testCSPaillier(m, l *big.Int, pubKeyPath string) error {
+	c, err := client.NewCSPaillierClient(testGrpcServerEndpont, pubKeyPath, m, l)
+	if err != nil {
+		return err
+	}
+	return c.Run()
 }
 
 func TestGRPC_Encryption(t *testing.T) {
