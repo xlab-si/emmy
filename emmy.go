@@ -169,9 +169,8 @@ func runClient(protocolType, protocolVariant, endpoint string) {
 			err = client.Run()
 		}
 	case "schnorr_ec":
-		ec_dlog := dlog.NewECDLog()
 		secret := big.NewInt(345345345334)
-		client, err := client.NewSchnorrECClient(endpoint, pbVariant, ec_dlog, secret)
+		client, err := client.NewSchnorrECClient(endpoint, pbVariant, dlog.P256, secret)
 		if err != nil {
 			cLogger.Errorf("Error creating client: %v", err)
 		} else {

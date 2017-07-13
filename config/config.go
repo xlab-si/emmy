@@ -67,24 +67,33 @@ func LoadDLog(scheme string) *dlog.ZpDLog {
 	return &dlog
 }
 
-func LoadPseudonymsysUserSecret(user string) *big.Int {
-	m := viper.GetStringMap("pseudonymsys")
-	s, _ := new(big.Int).SetString(m[user].(string), 10)
+func LoadPseudonymsysUserSecret(user, dlogType string) *big.Int {
+	m := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", user, dlogType))
+	s, _ := new(big.Int).SetString(m["secret"].(string), 10)
 	return s
 }
 
-func LoadPseudonymsysOrgSecrets(orgName string) (*big.Int, *big.Int) {
-	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s", orgName))
+func LoadPseudonymsysOrgSecrets(orgName, dlogType string) (*big.Int, *big.Int) {
+	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, dlogType))
 	s1, _ := new(big.Int).SetString(org["s1"].(string), 10)
 	s2, _ := new(big.Int).SetString(org["s2"].(string), 10)
 	return s1, s2
 }
 
 func LoadPseudonymsysOrgPubKeys(orgName string) (*big.Int, *big.Int) {
-	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s", orgName))
+	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, "dlog"))
 	h1, _ := new(big.Int).SetString(org["h1"].(string), 10)
 	h2, _ := new(big.Int).SetString(org["h2"].(string), 10)
 	return h1, h2
+}
+
+func LoadPseudonymsysOrgPubKeysEC(orgName string) (*big.Int, *big.Int, *big.Int, *big.Int) {
+	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, "ecdlog"))
+	h1X, _ := new(big.Int).SetString(org["h1x"].(string), 10)
+	h1Y, _ := new(big.Int).SetString(org["h1y"].(string), 10)
+	h2X, _ := new(big.Int).SetString(org["h2x"].(string), 10)
+	h2Y, _ := new(big.Int).SetString(org["h2y"].(string), 10)
+	return h1X, h1Y, h2X, h2Y
 }
 
 func LoadPseudonymsysCASecret() *big.Int {

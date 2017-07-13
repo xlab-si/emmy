@@ -20,7 +20,7 @@ type OrgCredentialVerifier struct {
 func NewOrgCredentialVerifier() *OrgCredentialVerifier {
 	dlog := config.LoadDLog("pseudonymsys")
 	// this presumes that organization's own keys are stored under "org1"
-	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1")
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
 
 	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(dlog)
 	org := OrgCredentialVerifier{
@@ -46,7 +46,7 @@ func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
 	credential *Credential, orgPubKeys *OrgPubKeys) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if !verified {
-		// TODO: close the session
+		return false
 	}
 
 	valid1 := dlogproofs.VerifyBlindedTranscript(credential.T1, org.DLog, org.DLog.G, orgPubKeys.H2,
@@ -59,8 +59,6 @@ func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
 	if valid1 && valid2 {
 		return true
 	} else {
-		// TODO: close the session
-
 		return false
 	}
 

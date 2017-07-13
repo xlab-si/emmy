@@ -2,49 +2,53 @@ package client
 
 import (
 	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/config"
+	//"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
 	"math/big"
 )
 
-type PseudonymsysCAClient struct {
+type PseudonymsysCAClientEC struct {
 	genericClient
-	prover *dlogproofs.SchnorrProver
+	prover *dlogproofs.SchnorrECProver
 }
 
-func NewPseudonymsysCAClient(endpoint string) (*PseudonymsysCAClient, error) {
-	dlog := config.LoadDLog("pseudonymsys")
+func NewPseudonymsysCAClientEC(endpoint string) (*PseudonymsysCAClientEC, error) {
 	genericClient, err := newGenericClient(endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	return &PseudonymsysCAClient{
+	prover, err := dlogproofs.NewSchnorrECProver(dlog.P256, common.Sigma)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PseudonymsysCAClientEC{
 		genericClient: *genericClient,
-		prover:        dlogproofs.NewSchnorrProver(dlog, common.Sigma),
+		prover:        prover,
 	}, nil
 }
 
 // ObtainCertificate provides a certificate from trusted CA to the user. Note that CA
 // needs to know the user. The certificate is then used for registering pseudonym (nym).
 // The certificate contains blinded user's master key pair and a signature of it.
-func (c *PseudonymsysCAClient) ObtainCertificate(userSecret *big.Int, nym *pseudonymsys.Pseudonym) (
-	*pseudonymsys.CACertificate, error) {
+func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pseudonymsys.PseudonymEC) (
+	*pseudonymsys.CACertificateEC, error) {
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
-	b, _ := c.prover.DLog.Exponentiate(nym.A, userSecret)
-	pRandomData := pb.SchnorrProofRandomData{
-		X: x.Bytes(),
-		A: nym.A.Bytes(),
-		B: b.Bytes(),
+	pRandomData := pb.SchnorrECProofRandomData{
+		X: common.ToPbECGroupElement(x),
+		A: common.ToPbECGroupElement(nym.A),
+		B: common.ToPbECGroupElement(nym.B),
 	}
 
 	initMsg := &pb.Message{
 		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_CA,
+		Schema:        pb.SchemaType_PSEUDONYMSYS_CA_EC,
 		SchemaVariant: pb.SchemaVariant_SIGMA,
-		Content: &pb.Message_SchnorrProofRandomData{
+		Content: &pb.Message_SchnorrEcProofRandomData{
 			&pRandomData,
 		},
 	}
@@ -71,9 +75,11 @@ func (c *PseudonymsysCAClient) ObtainCertificate(userSecret *big.Int, nym *pseud
 	if err != nil {
 		return nil, err
 	}
-	cert := resp.GetPseudonymsysCaCertificate()
-	certificate := pseudonymsys.NewCACertificate(
-		new(big.Int).SetBytes(cert.BlindedA), new(big.Int).SetBytes(cert.BlindedB),
+
+	cert := resp.GetPseudonymsysCaCertificateEc()
+	certificate := pseudonymsys.NewCACertificateEC(
+		common.ToECGroupElement(cert.BlindedA),
+		common.ToECGroupElement(cert.BlindedB),
 		new(big.Int).SetBytes(cert.R), new(big.Int).SetBytes(cert.S))
 
 	return certificate, nil

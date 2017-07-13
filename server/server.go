@@ -95,6 +95,14 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		err = s.PseudonymsysIssueCredential(req, stream)
 	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL:
 		err = s.PseudonymsysTransferCredential(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_CA_EC:
+		err = s.PseudonymsysCAEC(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_NYM_GEN_EC:
+		err = s.PseudonymsysGenerateNymEC(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL_EC:
+		err = s.PseudonymsysIssueCredentialEC(req, stream)
+	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC:
+		err = s.PseudonymsysTransferCredentialEC(req, stream)
 	}
 
 	if err != nil {

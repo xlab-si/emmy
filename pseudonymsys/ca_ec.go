@@ -7,26 +7,28 @@ import (
 	"fmt"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"math/big"
 )
 
-type CA struct {
-	SchnorrVerifier *dlogproofs.SchnorrVerifier
-	a               *big.Int
-	b               *big.Int
+type CAEC struct {
+	DLog            *dlog.ECDLog
+	SchnorrVerifier *dlogproofs.SchnorrECVerifier
+	a               *common.ECGroupElement
+	b               *common.ECGroupElement
 	privateKey      *ecdsa.PrivateKey
 }
 
-type CACertificate struct {
-	BlindedA *big.Int
-	BlindedB *big.Int
+type CACertificateEC struct {
+	BlindedA *common.ECGroupElement
+	BlindedB *common.ECGroupElement
 	R        *big.Int
 	S        *big.Int
 }
 
-func NewCACertificate(blindedA, blindedB, r, s *big.Int) *CACertificate {
-	return &CACertificate{
+func NewCACertificateEC(blindedA, blindedB *common.ECGroupElement, r, s *big.Int) *CACertificateEC {
+	return &CACertificateEC{
 		BlindedA: blindedA,
 		BlindedB: blindedB,
 		R:        r,
@@ -34,8 +36,7 @@ func NewCACertificate(blindedA, blindedB, r, s *big.Int) *CACertificate {
 	}
 }
 
-func NewCA() *CA {
-	dlog := config.LoadDLog("pseudonymsys")
+func NewCAEC() *CAEC {
 	x, y := config.LoadPseudonymsysCAPubKey()
 	d := config.LoadPseudonymsysCASecret()
 
@@ -43,8 +44,8 @@ func NewCA() *CA {
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(dlog, common.Sigma)
-	ca := CA{
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(dlog.P256, common.Sigma)
+	ca := CAEC{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,
 	}
@@ -52,7 +53,7 @@ func NewCA() *CA {
 	return &ca
 }
 
-func (ca *CA) GetChallenge(a, b, x *big.Int) *big.Int {
+func (ca *CAEC) GetChallenge(a, b, x *common.ECGroupElement) *big.Int {
 	// TODO: check if b is really a valuable external user's public master key; if not, close the session
 
 	ca.a = a
@@ -62,21 +63,23 @@ func (ca *CA) GetChallenge(a, b, x *big.Int) *big.Int {
 	return challenge
 }
 
-func (ca *CA) Verify(z *big.Int) (*CACertificate, error) {
+func (ca *CAEC) Verify(z *big.Int) (*CACertificateEC, error) {
 	verified := ca.SchnorrVerifier.Verify(z, nil)
 	if verified {
 		r := common.GetRandomInt(ca.SchnorrVerifier.DLog.OrderOfSubgroup)
-		blindedA, _ := ca.SchnorrVerifier.DLog.Exponentiate(ca.a, r)
-		blindedB, _ := ca.SchnorrVerifier.DLog.Exponentiate(ca.b, r)
+		blindedA1, blindedA2 := ca.SchnorrVerifier.DLog.Exponentiate(ca.a.X, ca.a.Y, r)
+		blindedB1, blindedB2 := ca.SchnorrVerifier.DLog.Exponentiate(ca.b.X, ca.b.Y, r)
 		// blindedA, blindedB must be used only once (never use the same pair for two
 		// different organizations)
 
-		hashed := common.HashIntoBytes(blindedA, blindedB)
+		hashed := common.HashIntoBytes(blindedA1, blindedA2, blindedB1, blindedB2)
 		r, s, err := ecdsa.Sign(rand.Reader, ca.privateKey, hashed)
 		if err != nil {
 			return nil, err
 		} else {
-			return NewCACertificate(blindedA, blindedB, r, s), nil
+			blindedA := common.NewECGroupElement(blindedA1, blindedA2)
+			blindedB := common.NewECGroupElement(blindedB1, blindedB2)
+			return NewCACertificateEC(blindedA, blindedB, r, s), nil
 		}
 	} else {
 		return nil, fmt.Errorf("The knowledge of secret was not verified.")

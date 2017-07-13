@@ -5,16 +5,35 @@ import (
 	"math/big"
 )
 
+type Curve int
+
+const (
+	P224 Curve = 1 + iota
+	P256
+	P384
+	P521
+)
+
 type ECDLog struct {
 	Curve           elliptic.Curve
 	OrderOfSubgroup *big.Int
 }
 
-func NewECDLog() *ECDLog {
-	p224 := elliptic.P224()
+func NewECDLog(curve Curve) *ECDLog {
+	var c elliptic.Curve
+	if curve == 1 {
+		c = elliptic.P224()
+	} else if curve == 2 {
+		c = elliptic.P256()
+	} else if curve == 3 {
+		c = elliptic.P384()
+	} else if curve == 4 {
+		c = elliptic.P521()
+	}
+
 	ecdlog := ECDLog{
-		Curve:           p224,
-		OrderOfSubgroup: p224.Params().N, // order of G
+		Curve:           c,
+		OrderOfSubgroup: c.Params().N, // order of G
 	}
 	return &ecdlog
 }

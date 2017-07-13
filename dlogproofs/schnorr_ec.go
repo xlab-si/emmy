@@ -33,8 +33,8 @@ type SchnorrECProver struct {
 	protocolType     common.ProtocolType
 }
 
-func NewSchnorrECProver(protocolType common.ProtocolType) (*SchnorrECProver, error) {
-	dLog := dlog.NewECDLog()
+func NewSchnorrECProver(curve dlog.Curve, protocolType common.ProtocolType) (*SchnorrECProver, error) {
+	dLog := dlog.NewECDLog(curve)
 	prover := SchnorrECProver{
 		DLog:         dLog,
 		protocolType: protocolType,
@@ -61,7 +61,7 @@ func (prover *SchnorrECProver) GetProofRandomData(secret *big.Int,
 	prover.secret = secret
 	x1, x2 := prover.DLog.Exponentiate(a.X, a.Y, r)
 
-	return &common.ECGroupElement{X: x1, Y: x2}
+	return common.NewECGroupElement(x1, x2)
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w
@@ -91,8 +91,8 @@ type SchnorrECVerifier struct {
 	protocolType      common.ProtocolType
 }
 
-func NewSchnorrECVerifier(protocolType common.ProtocolType) *SchnorrECVerifier {
-	dLog := dlog.NewECDLog()
+func NewSchnorrECVerifier(curve dlog.Curve, protocolType common.ProtocolType) *SchnorrECVerifier {
+	dLog := dlog.NewECDLog(curve)
 	verifier := SchnorrECVerifier{
 		DLog:         dLog,
 		protocolType: protocolType,
