@@ -70,8 +70,7 @@ func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
 }
 
 func testSchnorrEC(n *big.Int, variant pb.SchemaVariant) error {
-	ec_dlog := dlog.NewECDLog()
-	c, err := client.NewSchnorrECClient(testGrpcServerEndpont, variant, ec_dlog, n)
+	c, err := client.NewSchnorrECClient(testGrpcServerEndpont, variant, dlog.P256, n)
 	if err != nil {
 		return err
 	}

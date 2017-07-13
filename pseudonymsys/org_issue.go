@@ -18,15 +18,15 @@ type Credential struct {
 	T2            []*big.Int
 }
 
-func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int, 
-		t1, t2 []*big.Int) *Credential {
-	credential := &Credential {
-		SmallAToGamma: aToGamma,	
-		SmallBToGamma: bToGamma,	
-		AToGamma: AToGamma,	
-		BToGamma: BToGamma,	
-		T1: t1,
-		T2: t2,
+func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int,
+	t1, t2 []*big.Int) *Credential {
+	credential := &Credential{
+		SmallAToGamma: aToGamma,
+		SmallBToGamma: bToGamma,
+		AToGamma:      AToGamma,
+		BToGamma:      BToGamma,
+		T1:            t1,
+		T2:            t2,
 	}
 	return credential
 }
@@ -38,8 +38,8 @@ type OrgPubKeys struct {
 
 func NewOrgPubKeys(h1, h2 *big.Int) *OrgPubKeys {
 	return &OrgPubKeys{
-		H1: h1,	
-		H2: h2,	
+		H1: h1,
+		H2: h2,
 	}
 }
 
@@ -59,7 +59,7 @@ type OrgCredentialIssuer struct {
 func NewOrgCredentialIssuer() *OrgCredentialIssuer {
 	dlog := config.LoadDLog("pseudonymsys")
 	// this presumes that organization's own keys are stored under "org1"
-	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1")
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
 
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b

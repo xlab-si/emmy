@@ -6,42 +6,42 @@ import (
 	"fmt"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	"math/big"
 )
 
-type Pseudonym struct {
-	A *big.Int
-	B *big.Int
+type PseudonymEC struct {
+	A *common.ECGroupElement
+	B *common.ECGroupElement
 }
 
-func NewPseudonym(a, b *big.Int) *Pseudonym {
-	return &Pseudonym{
+func NewPseudonymEC(a, b *common.ECGroupElement) *PseudonymEC {
+	return &PseudonymEC{
 		A: a,
 		B: b,
 	}
 }
 
-type OrgNymGen struct {
-	EqualityVerifier *dlogproofs.DLogEqualityVerifier
+type OrgNymGenEC struct {
+	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
 }
 
-func NewOrgNymGen() *OrgNymGen {
-	dlog := config.LoadDLog("pseudonymsys")
-	verifier := dlogproofs.NewDLogEqualityVerifier(dlog)
-	org := OrgNymGen{
+func NewOrgNymGenEC() *OrgNymGenEC {
+	verifier := dlogproofs.NewECDLogEqualityVerifier(dlog.P256)
+	org := OrgNymGenEC{
 		EqualityVerifier: verifier,
 	}
 	return &org
 }
 
-func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB,
-	x1, x2, r, s *big.Int) (*big.Int, error) {
+func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
+	x1, x2 *common.ECGroupElement, r, s *big.Int) (*big.Int, error) {
 	x, y := config.LoadPseudonymsysCAPubKey()
 	c := elliptic.P256()
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 
-	hashed := common.HashIntoBytes(blindedA, blindedB)
+	hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)
 	verified := ecdsa.Verify(&pubKey, hashed, r, s)
 	if verified {
 		challenge := org.EqualityVerifier.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2)
@@ -51,7 +51,7 @@ func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB,
 	}
 }
 
-func (org *OrgNymGen) Verify(z *big.Int) bool {
+func (org *OrgNymGenEC) Verify(z *big.Int) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if verified {
 		// TODO: store (a, b) into a database

@@ -2,13 +2,14 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
 
 func (s *Server) SchnorrEC(req *pb.Message, protocolType common.ProtocolType, stream pb.Protocol_RunServer) error {
-	verifier := dlogproofs.NewSchnorrECVerifier(protocolType)
+	verifier := dlogproofs.NewSchnorrECVerifier(dlog.P256, protocolType)
 	var err error
 
 	if protocolType != common.Sigma {

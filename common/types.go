@@ -18,6 +18,10 @@ type ECGroupElement struct {
 	Y *big.Int
 }
 
+func NewECGroupElement(x, y *big.Int) *ECGroupElement {
+	return &ECGroupElement{X: x, Y: y}
+}
+
 func ToECGroupElement(el *pb.ECGroupElement) *ECGroupElement {
 	x := ECGroupElement{X: new(big.Int).SetBytes(el.X), Y: new(big.Int).SetBytes(el.Y)}
 	return &x

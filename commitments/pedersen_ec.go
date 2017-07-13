@@ -18,7 +18,7 @@ type PedersenECCommitter struct {
 }
 
 func NewPedersenECCommitter() *PedersenECCommitter {
-	dLog := dlog.NewECDLog()
+	dLog := dlog.NewECDLog(dlog.P256)
 	committer := PedersenECCommitter{
 		dLog: dLog,
 	}
@@ -74,7 +74,7 @@ type PedersenECReceiver struct {
 }
 
 func NewPedersenECReceiver() *PedersenECReceiver {
-	dLog := dlog.NewECDLog()
+	dLog := dlog.NewECDLog(dlog.P256)
 
 	a := common.GetRandomInt(dLog.OrderOfSubgroup)
 	x, y := dLog.ExponentiateBaseG(a)

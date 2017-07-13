@@ -18,14 +18,14 @@ type SchnorrECClient struct {
 }
 
 // NewSchnorrECClient returns an initialized struct of type SchnorrECClient.
-func NewSchnorrECClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.ECDLog,
+func NewSchnorrECClient(endpoint string, variant pb.SchemaVariant, curve dlog.Curve,
 	s *big.Int) (*SchnorrECClient, error) {
 	genericClient, err := newGenericClient(endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	prover, err := dlogproofs.NewSchnorrECProver(common.ToProtocolType(variant))
+	prover, err := dlogproofs.NewSchnorrECProver(curve, common.ToProtocolType(variant))
 	if err != nil {
 		return nil, fmt.Errorf("Could not create schnorr EC prover: %v", err)
 	}
@@ -36,8 +36,8 @@ func NewSchnorrECClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.EC
 		variant:       variant,
 		secret:        s,
 		a: &common.ECGroupElement{
-			X: dlog.Curve.Params().Gx,
-			Y: dlog.Curve.Params().Gy,
+			X: prover.DLog.Curve.Params().Gx,
+			Y: prover.DLog.Curve.Params().Gy,
 		},
 	}, nil
 }

@@ -13,6 +13,10 @@ enum SchemaType {
 	PSEUDONYMSYS_NYM_GEN = 6;
 	PSEUDONYMSYS_ISSUE_CREDENTIAL = 7;
 	PSEUDONYMSYS_TRANSFER_CREDENTIAL = 8;
+	PSEUDONYMSYS_CA_EC = 9;
+	PSEUDONYMSYS_NYM_GEN_EC = 10;
+	PSEUDONYMSYS_ISSUE_CREDENTIAL_EC = 11;
+	PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC = 12;
 }
 
 // Valid schema variants
@@ -44,9 +48,13 @@ message Message {
 		PseudonymsysIssueProofRandomData pseudonymsys_issue_proof_random_data = 17;
 		DoubleBigInt double_bigint = 18;
 		PseudonymsysTransferCredentialData pseudonymsys_transfer_credential_data = 19;
+		PseudonymsysCACertificateEC pseudonymsys_ca_certificate_ec = 20;
+		PseudonymsysNymGenProofRandomDataEC pseudonymsys_nym_gen_proof_random_data_ec = 21;
+		PseudonymsysIssueProofRandomDataEC pseudonymsys_issue_proof_random_data_ec = 22;
+		PseudonymsysTransferCredentialDataEC pseudonymsys_transfer_credential_data_ec = 23;
 	}
-	int32 clientId = 20;
-	string ProtocolError = 21;
+	int32 clientId = 24;
+	string ProtocolError = 25;
 }
 
 // A generic service
@@ -111,9 +119,27 @@ message PseudonymsysNymGenProofRandomData {
 	bytes S = 8;
 }
 
+message PseudonymsysNymGenProofRandomDataEC {
+	ECGroupElement X1 = 1;
+	ECGroupElement A1 = 2;
+	ECGroupElement B1 = 3;
+	ECGroupElement X2 = 4;
+	ECGroupElement A2 = 5;
+	ECGroupElement B2 = 6;
+	bytes R = 7;
+	bytes S = 8;
+}
+
 message PseudonymsysCACertificate {
 	bytes BlindedA = 1;
 	bytes BlindedB = 2;
+	bytes R = 3;
+	bytes S = 4;
+}
+
+message PseudonymsysCACertificateEC {
+	ECGroupElement BlindedA = 1;
+	ECGroupElement BlindedB = 2;
 	bytes R = 3;
 	bytes S = 4;
 }
@@ -127,9 +153,25 @@ message PseudonymsysIssueProofRandomData {
 	bytes B = 6;
 }
 
+message PseudonymsysIssueProofRandomDataEC {
+	ECGroupElement X11 = 1;
+	ECGroupElement X12 = 2;
+	ECGroupElement X21 = 3;
+	ECGroupElement X22 = 4;
+	ECGroupElement A = 5;
+	ECGroupElement B = 6;
+}
+
 message PseudonymsysTranscript {
 	bytes A = 1;
 	bytes B = 2;
+	bytes Hash = 3;
+	bytes ZAlpha = 4;
+}
+
+message PseudonymsysTranscriptEC {
+	ECGroupElement A = 1;
+	ECGroupElement B = 2;
 	bytes Hash = 3;
 	bytes ZAlpha = 4;
 }
@@ -143,6 +185,15 @@ message PseudonymsysCredential {
 	PseudonymsysTranscript T2 = 6;
 }
 
+message PseudonymsysCredentialEC {
+	ECGroupElement SmallAToGamma = 1;
+	ECGroupElement SmallBToGamma = 2;
+	ECGroupElement AToGamma = 3;
+	ECGroupElement BToGamma = 4;
+    PseudonymsysTranscriptEC T1 = 5;
+	PseudonymsysTranscriptEC T2 = 6;
+}
+
 message PseudonymsysTransferCredentialData {
 	string OrgName = 1;
 	bytes X1 = 2;
@@ -150,6 +201,15 @@ message PseudonymsysTransferCredentialData {
 	bytes NymA = 4;
 	bytes NymB = 5;
 	PseudonymsysCredential Credential = 6;	
+}
+
+message PseudonymsysTransferCredentialDataEC {
+	string OrgName = 1;
+	ECGroupElement X1 = 2;
+	ECGroupElement X2 = 3;
+	ECGroupElement NymA = 4;
+	ECGroupElement NymB = 5;
+	PseudonymsysCredentialEC Credential = 6;	
 }
 
 message CSPaillierSecretKey {

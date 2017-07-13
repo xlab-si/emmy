@@ -3,38 +3,45 @@ package tests
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
+	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/dlog"
+	//"github.com/xlab-si/emmy/dlogproofs"
 	"github.com/xlab-si/emmy/pseudonymsys"
 	"testing"
 )
 
-// TestPseudonymsys requires a running server (it is started in communication_test.go).
-func TestPseudonymsys(t *testing.T) {
-	dlog := config.LoadDLog("pseudonymsys")
-	caClient, err := client.NewPseudonymsysCAClient(testGrpcServerEndpont)
+func TestPseudonymsysEC(t *testing.T) {
+	dlog := dlog.NewECDLog(dlog.P256)
+	caClient, err := client.NewPseudonymsysCAClientEC(testGrpcServerEndpont)
 	if err != nil {
-		t.Errorf("Error when initializing NewPseudonymsysCAClient")
+		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")
 	}
 
-	userSecret := config.LoadPseudonymsysUserSecret("user1", "dlog")
+	userSecret := config.LoadPseudonymsysUserSecret("user1", "ecdlog")
 
-	p, _ := dlog.Exponentiate(dlog.G, userSecret) // this is user's public key
-	masterNym := pseudonymsys.NewPseudonym(dlog.G, p)
+	nymA := common.NewECGroupElement(dlog.Curve.Params().Gx, dlog.Curve.Params().Gy)
+	nymB1, nymB2 := dlog.Exponentiate(nymA.X, nymA.Y, userSecret) // this is user's public key
+	nymB := common.NewECGroupElement(nymB1, nymB2)
+
+	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
 	caCertificate, err := caClient.ObtainCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
 	}
 
 	// usually the endpoint is different from the one used for CA:
-	c1, err := client.NewPseudonymsysClient(testGrpcServerEndpont)
+	c1, err := client.NewPseudonymsysClientEC(testGrpcServerEndpont)
 	nym1, err := c1.GenerateNym(userSecret, caCertificate)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	orgName := "org1"
-	h1, h2 := config.LoadPseudonymsysOrgPubKeys(orgName)
-	orgPubKeys := pseudonymsys.NewOrgPubKeys(h1, h2)
+	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
+	h1 := common.NewECGroupElement(h1X, h1Y)
+	h2 := common.NewECGroupElement(h2X, h2Y)
+	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
 	credential, err := c1.ObtainCredential(userSecret, nym1, orgPubKeys)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -42,13 +49,13 @@ func TestPseudonymsys(t *testing.T) {
 
 	// register with org2
 	// create a client to communicate with org2
-	caClient1, err := client.NewPseudonymsysCAClient(testGrpcServerEndpont)
+	caClient1, err := client.NewPseudonymsysCAClientEC(testGrpcServerEndpont)
 	caCertificate1, err := caClient1.ObtainCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
 	}
 
-	c2, err := client.NewPseudonymsysClient(testGrpcServerEndpont)
+	c2, err := client.NewPseudonymsysClientEC(testGrpcServerEndpont)
 	nym2, err := c2.GenerateNym(userSecret, caCertificate1)
 	if err != nil {
 		t.Errorf(err.Error())

@@ -1,19 +1,20 @@
 package server
 
 import (
+	"github.com/xlab-si/emmy/common"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
 	"math/big"
 )
 
-func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) error {
-	ca := pseudonymsys.NewCA()
+func (s *Server) PseudonymsysCAEC(req *pb.Message, stream pb.Protocol_RunServer) error {
+	ca := pseudonymsys.NewCAEC()
 	var err error
 
-	sProofRandData := req.GetSchnorrProofRandomData()
-	x := new(big.Int).SetBytes(sProofRandData.X)
-	a := new(big.Int).SetBytes(sProofRandData.A)
-	b := new(big.Int).SetBytes(sProofRandData.B)
+	sProofRandData := req.GetSchnorrEcProofRandomData()
+	x := common.ToECGroupElement(sProofRandData.X)
+	a := common.ToECGroupElement(sProofRandData.A)
+	b := common.ToECGroupElement(sProofRandData.B)
 
 	challenge := ca.GetChallenge(a, b, x)
 	resp := &pb.Message{
@@ -39,10 +40,10 @@ func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) e
 
 	if err == nil {
 		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysCaCertificate{
-				&pb.PseudonymsysCACertificate{
-					BlindedA: cert.BlindedA.Bytes(),
-					BlindedB: cert.BlindedB.Bytes(),
+			Content: &pb.Message_PseudonymsysCaCertificateEc{
+				&pb.PseudonymsysCACertificateEC{
+					BlindedA: common.ToPbECGroupElement(cert.BlindedA),
+					BlindedB: common.ToPbECGroupElement(cert.BlindedB),
 					R:        cert.R.Bytes(),
 					S:        cert.S.Bytes(),
 				},
@@ -50,8 +51,8 @@ func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) e
 		}
 	} else {
 		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysCaCertificate{
-				&pb.PseudonymsysCACertificate{},
+			Content: &pb.Message_PseudonymsysCaCertificateEc{
+				&pb.PseudonymsysCACertificateEC{},
 			},
 			ProtocolError: err.Error(),
 		}
