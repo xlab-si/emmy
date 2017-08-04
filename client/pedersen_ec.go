@@ -4,6 +4,7 @@ import (
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/common"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -14,8 +15,8 @@ type PedersenECClient struct {
 }
 
 // NewPedersenECClient returns an initialized struct of type PedersenECClient.
-func NewPedersenECClient(endpoint string, v *big.Int) (*PedersenECClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+func NewPedersenECClient(conn *grpc.ClientConn, v *big.Int) (*PedersenECClient, error) {
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (c *PedersenECClient) Run() error {
 		return err
 	}
 
-	if err := c.close(); err != nil {
+	if err := c.stream.CloseSend(); err != nil {
 		return err
 	}
 	return nil

@@ -2,25 +2,71 @@ package server
 
 import (
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"io"
+	"math"
+	"net"
+	"net/http"
 	"path/filepath"
 )
 
 var _ pb.ProtocolServer = (*Server)(nil)
 
-type Server struct{}
+type Server struct {
+	grpcServer *grpc.Server
+}
 
 var logger = log.ServerLogger
 
+// NewProtocolServer initializes an instance of the Server struct and returns a poitner.
+// It performs some default configuration (tracing of gRPC communication and interceptors)
+// and registers RPC protocol server with gRPC server.
 func NewProtocolServer() *Server {
 	logger.Info("Instantiating new protocol server")
-	// At the time of instantiation, we don't yet know which handler or stream to use,
-	// therefore just return a reference to the empty struct
-	return &Server{}
+
+	// Start new gRPC server and register services, while allowing
+	// as much concurrent streams as possible
+	grpc.EnableTracing = true
+
+	// Register our generic service
+	logger.Info("Registering services")
+
+	server := &Server{
+		grpcServer: grpc.NewServer(
+			grpc.MaxConcurrentStreams(math.MaxUint32),
+			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		),
+	}
+	pb.RegisterProtocolServer(server.grpcServer, server)
+	grpc_prometheus.Register(server.grpcServer) // Enable debugging
+
+	return server
+}
+
+// Start configures and starts the protocol server at the requested port.
+func (s *Server) Start(port int) {
+	connStr := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", connStr)
+	if err != nil {
+		logger.Criticalf("Could not connect: %v", err)
+	}
+
+	http.Handle("/metrics", prometheus.Handler())
+	go http.ListenAndServe(":8881", nil)
+
+	// From here on, gRPC server will accept connections
+	logger.Infof("Emmy server listening for connections on port %d", port)
+	s.grpcServer.Serve(listener)
+}
+
+func (s *Server) Teardown() {
+	s.grpcServer.GracefulStop()
 }
 
 func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {

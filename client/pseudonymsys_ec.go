@@ -7,18 +7,19 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
 type PseudonymsysClientEC struct {
 	genericClient
-	endpoint string
-	dlog     *dlog.ECDLog
+	conn *grpc.ClientConn
+	dlog *dlog.ECDLog
 }
 
-func NewPseudonymsysClientEC(endpoint string) (*PseudonymsysClientEC, error) {
+func NewPseudonymsysClientEC(conn *grpc.ClientConn) (*PseudonymsysClientEC, error) {
 	return &PseudonymsysClientEC{
-		endpoint: endpoint,
+		conn: conn,
 	}, nil
 }
 
@@ -28,7 +29,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	caCertificate *pseudonymsys.CACertificateEC) (
 	*pseudonymsys.PseudonymEC, error) {
 	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
+	genericClient, err := newGenericClient(c.conn)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +106,10 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	}
 	verified := resp.GetStatus().Success
 
+	if err := c.stream.CloseSend(); err != nil {
+		return nil, err
+	}
+
 	if verified {
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return pseudonymsys.NewPseudonymEC(nymA, nymB), nil
@@ -119,7 +124,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	nym *pseudonymsys.PseudonymEC, orgPubKeys *pseudonymsys.OrgPubKeysEC) (
 	*pseudonymsys.CredentialEC, error) {
 	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
+	genericClient, err := newGenericClient(c.conn)
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +234,10 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 		}
 	}
 
+	if err := c.stream.CloseSend(); err != nil {
+		return nil, err
+	}
+
 	err = errors.New("Organization failed to prove that a credential is valid.")
 	return nil, err
 }
@@ -238,7 +247,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 // another organization).
 func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *big.Int,
 	nym *pseudonymsys.PseudonymEC, credential *pseudonymsys.CredentialEC) (bool, error) {
-	genericClient, err := newGenericClient(c.endpoint)
+	genericClient, err := newGenericClient(c.conn)
 	if err != nil {
 		return false, err
 	}
@@ -313,5 +322,10 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	}
 
 	status := resp.GetStatus()
+
+	if err := c.stream.CloseSend(); err != nil {
+		return false, err
+	}
+
 	return status.Success, nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -18,9 +19,9 @@ type SchnorrClient struct {
 }
 
 // NewSchnorrClient returns an initialized struct of type SchnorrClient.
-func NewSchnorrClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
+func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
 	s *big.Int) (*SchnorrClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (c *SchnorrClient) runSigma() error {
 	}
 	logger.Noticef("Decommitment successful, proved: %v", proved)
 
-	if err := c.close(); err != nil {
+	if err := c.stream.CloseSend(); err != nil {
 		return err
 	}
 
@@ -97,7 +98,7 @@ func (c *SchnorrClient) runZeroKnowledge() error {
 		return fmt.Errorf("Decommitment failed")
 	}
 
-	if err := c.close(); err != nil {
+	if err := c.stream.CloseSend(); err != nil {
 		return err
 	}
 	return nil
