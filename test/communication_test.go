@@ -8,38 +8,21 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
-	"google.golang.org/grpc"
-	"log"
-	"math"
 	"math/big"
-	"net"
 	"os"
 	"testing"
 )
 
 var testGrpcServerEndpont = "localhost:7008"
 
-func setupTestGrpcServer() *grpc.Server {
-	lis, err := net.Listen("tcp", ":7008")
-	if err != nil {
-		log.Fatalf("Could not connect: %v", err)
-	}
-	testGrpcServer := grpc.NewServer(
-		grpc.MaxConcurrentStreams(math.MaxUint32),
-	)
-	pb.RegisterProtocolServer(testGrpcServer, server.NewProtocolServer())
-	go testGrpcServer.Serve(lis)
-	return testGrpcServer
-}
-
-func teardownTestGrpcServer(server *grpc.Server) {
-	server.GracefulStop()
-}
-
+// TestMain is run implicitly and only once, before any of the tests defined in this file run.
+// It fires up a test gRPC server in a goroutine, runs all the tests in this file, then stops
+// the server.
 func TestMain(m *testing.M) {
-	server := setupTestGrpcServer()
+	server := server.NewProtocolServer()
+	go server.Start(7008)
 	returnCode := m.Run()
-	teardownTestGrpcServer(server)
+	server.Teardown()
 	os.Exit(returnCode)
 }
 

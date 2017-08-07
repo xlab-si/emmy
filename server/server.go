@@ -2,25 +2,93 @@ package server
 
 import (
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"io"
+	"math"
+	"net"
+	"net/http"
 	"path/filepath"
 )
 
 var _ pb.ProtocolServer = (*Server)(nil)
 
-type Server struct{}
+type Server struct {
+	grpcServer *grpc.Server
+}
 
 var logger = log.ServerLogger
 
+// NewProtocolServer initializes an instance of the Server struct and returns a pointer.
+// It performs some default configuration (tracing of gRPC communication and interceptors)
+// and registers RPC protocol server with gRPC server.
 func NewProtocolServer() *Server {
 	logger.Info("Instantiating new protocol server")
-	// At the time of instantiation, we don't yet know which handler or stream to use,
-	// therefore just return a reference to the empty struct
-	return &Server{}
+
+	// Register our generic service
+	logger.Info("Registering services")
+
+	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
+	// for logging and monitoring purposes.
+	server := &Server{
+		grpcServer: grpc.NewServer(
+			grpc.MaxConcurrentStreams(math.MaxUint32),
+			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		),
+	}
+
+	// Disable tracing by default, as is used for debugging purposes.
+	// The user will be able to turn it on via Server's EnableTracing function.
+	grpc.EnableTracing = false
+
+	// Register our protocol server with the supporting gRPC server
+	pb.RegisterProtocolServer(server.grpcServer, server)
+
+	// Initialize gRPC metrics offered by Prometheus package
+	grpc_prometheus.Register(server.grpcServer)
+
+	return server
+}
+
+// Start configures and starts the protocol server at the requested port.
+func (s *Server) Start(port int) {
+	connStr := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", connStr)
+	if err != nil {
+		logger.Criticalf("Could not connect: %v", err)
+	}
+
+	// Register Prometheus metrics handler and serve metrics page on the desired endpoint.
+	// Metrics are handled via HTTP in a separate goroutine as gRPC requests,
+	// as grpc server's performance over HTTP (grpcServer.ServeHTTP) is much worse.
+	http.Handle("/metrics", prometheus.Handler())
+
+	// After this, /metrics will be available, along with /debug/requests, /debug/events in
+	// case server's EnableTracing function is called.
+	go http.ListenAndServe(":8881", nil)
+
+	// From here on, gRPC server will accept connections
+	logger.Infof("Emmy server listening for connections on port %d", port)
+	s.grpcServer.Serve(listener)
+}
+
+// Teardown stops the protocol server by gracefully stopping enclosed gRPC server.
+func (s *Server) Teardown() {
+	s.grpcServer.GracefulStop()
+}
+
+// EnableTracing instructs the gRPC framework to enable its tracing capability, which
+// is mainly used for debugging purposes.
+// Although this function does not explicitly affect the Server struct, it is wired to Server
+// in order to provide a nicer API when setting up the server.
+func (s *Server) EnableTracing() {
+	grpc.EnableTracing = true
+	logger.Infof("Enabled gRPC tracing")
 }
 
 func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
