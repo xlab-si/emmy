@@ -8,21 +8,22 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
 type PseudonymsysClient struct {
 	genericClient
-	endpoint string
-	dlog     *dlog.ZpDLog
+	conn *grpc.ClientConn
+	dlog *dlog.ZpDLog
 }
 
-func NewPseudonymsysClient(endpoint string) (*PseudonymsysClient, error) {
+func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
 	dlog := config.LoadDLog("pseudonymsys")
 
 	return &PseudonymsysClient{
-		endpoint: endpoint,
-		dlog:     dlog,
+		conn: conn,
+		dlog: dlog,
 	}, nil
 }
 
@@ -32,7 +33,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	caCertificate *pseudonymsys.CACertificate) (
 	*pseudonymsys.Pseudonym, error) {
 	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
+	genericClient, err := newGenericClient(c.conn)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,6 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 		return nil, err
 	}
 	verified := resp.GetStatus().Success
-
 	if verified {
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return pseudonymsys.NewPseudonym(nymA, nymB), nil
@@ -114,7 +114,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	nym *pseudonymsys.Pseudonym, orgPubKeys *pseudonymsys.OrgPubKeys) (
 	*pseudonymsys.Credential, error) {
 	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
+	genericClient, err := newGenericClient(c.conn)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 // another organization).
 func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.Int,
 	nym *pseudonymsys.Pseudonym, credential *pseudonymsys.Credential) (bool, error) {
-	genericClient, err := newGenericClient(c.endpoint)
+	genericClient, err := newGenericClient(c.conn)
 	if err != nil {
 		return false, err
 	}

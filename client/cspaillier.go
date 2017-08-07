@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/xlab-si/emmy/encryption"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -13,8 +14,8 @@ type CSPaillierClient struct {
 }
 
 // NewCSPaillierClient returns an initialized struct of type CSPaillierClient.
-func NewCSPaillierClient(endpoint string, pubKeyPath string, m, l *big.Int) (*CSPaillierClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+func NewCSPaillierClient(conn *grpc.ClientConn, pubKeyPath string, m, l *big.Int) (*CSPaillierClient, error) {
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (c *CSPaillierClient) Run() error {
 		return err
 	}
 
-	if err := c.close(); err != nil {
+	if err := c.stream.CloseSend(); err != nil {
 		return err
 	}
 

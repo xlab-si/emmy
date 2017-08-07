@@ -14,18 +14,31 @@ import (
 
 var logger = log.ClientLogger
 
+// GetConnection attempts to return a connection to a gRPC server at a given endpoint.
+// Note that several clients can be passed the same connection object, as the gRPC framework
+// is able to multiplex several RPCs on the same connection, thus reducing the overhead
+func GetConnection(serverEndpoint string) (*grpc.ClientConn, error) {
+	logger.Debug("Getting the connection")
+	timeoutSec := config.LoadTimeout()
+	dialOptions := []grpc.DialOption{
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
+	}
+	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("Could not connect to server %v (%v)", serverEndpoint, err)
+	}
+	return conn, nil
+}
+
 type genericClient struct {
 	id     int32
 	conn   *grpc.ClientConn
 	stream pb.Protocol_RunClient
 }
 
-func newGenericClient(endpoint string) (*genericClient, error) {
-	conn, err := getConnection(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
+func newGenericClient(conn *grpc.ClientConn) (*genericClient, error) {
 	logger.Debug("Creating the client")
 	client := pb.NewProtocolClient(conn)
 	stream, err := getStream(client)
@@ -85,21 +98,6 @@ func (c *genericClient) close() error {
 		return fmt.Errorf("[Client %v] Error closing connection: %v", c.id, err)
 	}
 	return nil
-}
-
-func getConnection(serverEndpoint string) (*grpc.ClientConn, error) {
-	logger.Debug("Getting the connection")
-	timeoutSec := config.LoadTimeout()
-	dialOptions := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
-	}
-	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("Could not connect to server %v (%v)", serverEndpoint, err)
-	}
-	return conn, nil
 }
 
 func getStream(client pb.ProtocolClient) (pb.Protocol_RunClient, error) {

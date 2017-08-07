@@ -6,6 +6,7 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -14,9 +15,9 @@ type PseudonymsysCAClient struct {
 	prover *dlogproofs.SchnorrProver
 }
 
-func NewPseudonymsysCAClient(endpoint string) (*PseudonymsysCAClient, error) {
+func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, error) {
 	dlog := config.LoadDLog("pseudonymsys")
-	genericClient, err := newGenericClient(endpoint)
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
