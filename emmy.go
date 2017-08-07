@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/common"
@@ -12,11 +10,7 @@ import (
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
-	"google.golang.org/grpc"
-	"math"
 	"math/big"
-	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -222,31 +216,9 @@ func parseSchema(schemaType, schemaVariant string) (pb.SchemaType, pb.SchemaVari
 func startEmmyServer() {
 	// Listen on the port specified in the config
 	port := config.LoadServerPort()
-	connStr := fmt.Sprintf(":%d", port)
 
-	listener, err := net.Listen("tcp", connStr)
-	if err != nil {
-		sLogger.Criticalf("Could not connect: %v", err)
-	}
-
-	// Start new gRPC server and register services, while allowing
-	// as much concurrent streams as possible
-	grpc.EnableTracing = true
-	emmyServer := grpc.NewServer(
-		grpc.MaxConcurrentStreams(math.MaxUint32),
-		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
-	)
-
-	// Register our generic service
-	sLogger.Info("Registering services")
-	pb.RegisterProtocolServer(emmyServer, server.NewProtocolServer())
-
-	// Enable debugging
-	grpc_prometheus.Register(emmyServer)
-	http.Handle("/metrics", prometheus.Handler())
-	go http.ListenAndServe(":8881", nil)
-
-	// From here on, gRPC server will accept connections
-	sLogger.Infof("Emmy server listening for connections on port %d", port)
-	emmyServer.Serve(listener)
+	// Create and start new instance of emmy server
+	server := server.NewProtocolServer()
+	server.EnableTracing()
+	server.Start(port)
 }
