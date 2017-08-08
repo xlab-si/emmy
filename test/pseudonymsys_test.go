@@ -1,4 +1,4 @@
-package tests
+package test
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -11,7 +11,7 @@ import (
 // TestPseudonymsys requires a running server (it is started in communication_test.go).
 func TestPseudonymsys(t *testing.T) {
 	dlog := config.LoadDLog("pseudonymsys")
-	caClient, err := client.NewPseudonymsysCAClient(testGrpcServerEndpont)
+	caClient, err := client.NewPseudonymsysCAClient(testGrpcServerEndpoint)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClient")
 	}
@@ -26,7 +26,7 @@ func TestPseudonymsys(t *testing.T) {
 	}
 
 	// usually the endpoint is different from the one used for CA:
-	c1, err := client.NewPseudonymsysClient(testGrpcServerEndpont)
+	c1, err := client.NewPseudonymsysClient(testGrpcServerEndpoint)
 	nym1, err := c1.GenerateNym(userSecret, caCertificate)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -42,13 +42,13 @@ func TestPseudonymsys(t *testing.T) {
 
 	// register with org2
 	// create a client to communicate with org2
-	caClient1, err := client.NewPseudonymsysCAClient(testGrpcServerEndpont)
+	caClient1, err := client.NewPseudonymsysCAClient(testGrpcServerEndpoint)
 	caCertificate1, err := caClient1.ObtainCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
 	}
 
-	c2, err := client.NewPseudonymsysClient(testGrpcServerEndpont)
+	c2, err := client.NewPseudonymsysClient(testGrpcServerEndpoint)
 	nym2, err := c2.GenerateNym(userSecret, caCertificate1)
 	if err != nil {
 		t.Errorf(err.Error())

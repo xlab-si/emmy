@@ -1,4 +1,4 @@
-package tests
+package test
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-var testGrpcServerEndpont = "localhost:7008"
+var testGrpcServerEndpoint = "localhost:7008"
 
 // TestMain is run implicitly and only once, before any of the tests defined in this file run.
 // It fires up a test gRPC server in a goroutine, runs all the tests in this file, then stops
@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 
 func testPedersen(n *big.Int) error {
 	dlog := config.LoadDLog("pedersen")
-	c, err := client.NewPedersenClient(testGrpcServerEndpont, pb.SchemaVariant_SIGMA, dlog, n)
+	c, err := client.NewPedersenClient(testGrpcServerEndpoint, pb.SchemaVariant_SIGMA, dlog, n)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func testPedersen(n *big.Int) error {
 }
 
 func testPedersenEC(n *big.Int) error {
-	c, err := client.NewPedersenECClient(testGrpcServerEndpont, n)
+	c, err := client.NewPedersenECClient(testGrpcServerEndpoint, n)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func testPedersenEC(n *big.Int) error {
 
 func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
 	dlog := config.LoadDLog("schnorr")
-	c, err := client.NewSchnorrClient(testGrpcServerEndpont, variant, dlog, n)
+	c, err := client.NewSchnorrClient(testGrpcServerEndpoint, variant, dlog, n)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
 }
 
 func testSchnorrEC(n *big.Int, variant pb.SchemaVariant) error {
-	c, err := client.NewSchnorrECClient(testGrpcServerEndpont, variant, dlog.P256, n)
+	c, err := client.NewSchnorrECClient(testGrpcServerEndpoint, variant, dlog.P256, n)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func TestGRPC_Dlogproofs(t *testing.T) {
 }
 
 func testCSPaillier(m, l *big.Int, pubKeyPath string) error {
-	c, err := client.NewCSPaillierClient(testGrpcServerEndpont, pubKeyPath, m, l)
+	c, err := client.NewCSPaillierClient(testGrpcServerEndpoint, pubKeyPath, m, l)
 	if err != nil {
 		return err
 	}
