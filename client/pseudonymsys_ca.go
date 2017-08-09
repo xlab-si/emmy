@@ -6,6 +6,7 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -14,9 +15,9 @@ type PseudonymsysCAClient struct {
 	prover *dlogproofs.SchnorrProver
 }
 
-func NewPseudonymsysCAClient(endpoint string) (*PseudonymsysCAClient, error) {
+func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, error) {
 	dlog := config.LoadDLog("pseudonymsys")
-	genericClient, err := newGenericClient(endpoint)
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -32,6 +33,9 @@ func NewPseudonymsysCAClient(endpoint string) (*PseudonymsysCAClient, error) {
 // The certificate contains blinded user's master key pair and a signature of it.
 func (c *PseudonymsysCAClient) ObtainCertificate(userSecret *big.Int, nym *pseudonymsys.Pseudonym) (
 	*pseudonymsys.CACertificate, error) {
+	c.openStream()
+	defer c.closeStream()
+
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
 	b, _ := c.prover.DLog.Exponentiate(nym.A, userSecret)
 	pRandomData := pb.SchnorrProofRandomData{

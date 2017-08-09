@@ -7,18 +7,22 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
 type PseudonymsysClientEC struct {
 	genericClient
-	endpoint string
-	dlog     *dlog.ECDLog
+	dlog *dlog.ECDLog
 }
 
-func NewPseudonymsysClientEC(endpoint string) (*PseudonymsysClientEC, error) {
+func NewPseudonymsysClientEC(conn *grpc.ClientConn) (*PseudonymsysClientEC, error) {
+	genericClient, err := newGenericClient(conn)
+	if err != nil {
+		return nil, err
+	}
 	return &PseudonymsysClientEC{
-		endpoint: endpoint,
+		genericClient: *genericClient,
 	}, nil
 }
 
@@ -27,12 +31,8 @@ func NewPseudonymsysClientEC(endpoint string) (*PseudonymsysClientEC, error) {
 func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	caCertificate *pseudonymsys.CACertificateEC) (
 	*pseudonymsys.PseudonymEC, error) {
-	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
-	if err != nil {
-		return nil, err
-	}
-	c.genericClient = *genericClient
+	c.openStream()
+	defer c.closeStream()
 
 	prover := dlogproofs.NewECDLogEqualityProver(dlog.P256)
 
@@ -105,6 +105,10 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	}
 	verified := resp.GetStatus().Success
 
+	if err := c.stream.CloseSend(); err != nil {
+		return nil, err
+	}
+
 	if verified {
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return pseudonymsys.NewPseudonymEC(nymA, nymB), nil
@@ -118,12 +122,8 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	nym *pseudonymsys.PseudonymEC, orgPubKeys *pseudonymsys.OrgPubKeysEC) (
 	*pseudonymsys.CredentialEC, error) {
-	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
-	if err != nil {
-		return nil, err
-	}
-	c.genericClient = *genericClient
+	c.openStream()
+	defer c.closeStream()
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
@@ -229,6 +229,10 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 		}
 	}
 
+	if err := c.stream.CloseSend(); err != nil {
+		return nil, err
+	}
+
 	err = errors.New("Organization failed to prove that a credential is valid.")
 	return nil, err
 }
@@ -238,11 +242,8 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 // another organization).
 func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *big.Int,
 	nym *pseudonymsys.PseudonymEC, credential *pseudonymsys.CredentialEC) (bool, error) {
-	genericClient, err := newGenericClient(c.endpoint)
-	if err != nil {
-		return false, err
-	}
-	c.genericClient = *genericClient
+	c.openStream()
+	defer c.closeStream()
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. But we need also to prove that dlog_a(b) = dlog_a2(b2), where
@@ -313,5 +314,10 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	}
 
 	status := resp.GetStatus()
+
+	if err := c.stream.CloseSend(); err != nil {
+		return false, err
+	}
+
 	return status.Success, nil
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/xlab-si/emmy/commitments"
 	"github.com/xlab-si/emmy/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -14,9 +15,9 @@ type PedersenClient struct {
 }
 
 // NewPedersenClient returns an initialized struct of type PedersenClient.
-func NewPedersenClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
+func NewPedersenClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
 	val *big.Int) (*PedersenClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -32,6 +33,9 @@ func NewPedersenClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.ZpD
 
 // Run runs Pedersen commitment protocol in multiplicative group of integers modulo p.
 func (c *PedersenClient) Run() error {
+	c.openStream()
+	defer c.closeStream()
+
 	pf, err := c.getH()
 	if err != nil {
 		return err
@@ -55,9 +59,6 @@ func (c *PedersenClient) Run() error {
 		return err
 	}
 
-	if err := c.close(); err != nil {
-		return err
-	}
 	return nil
 }
 

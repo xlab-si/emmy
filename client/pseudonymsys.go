@@ -8,21 +8,25 @@ import (
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
 type PseudonymsysClient struct {
 	genericClient
-	endpoint string
-	dlog     *dlog.ZpDLog
+	dlog *dlog.ZpDLog
 }
 
-func NewPseudonymsysClient(endpoint string) (*PseudonymsysClient, error) {
+func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
+	genericClient, err := newGenericClient(conn)
+	if err != nil {
+		return nil, err
+	}
 	dlog := config.LoadDLog("pseudonymsys")
 
 	return &PseudonymsysClient{
-		endpoint: endpoint,
-		dlog:     dlog,
+		dlog:          dlog,
+		genericClient: *genericClient,
 	}, nil
 }
 
@@ -31,12 +35,8 @@ func NewPseudonymsysClient(endpoint string) (*PseudonymsysClient, error) {
 func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	caCertificate *pseudonymsys.CACertificate) (
 	*pseudonymsys.Pseudonym, error) {
-	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
-	if err != nil {
-		return nil, err
-	}
-	c.genericClient = *genericClient
+	c.openStream()
+	defer c.closeStream()
 
 	prover := dlogproofs.NewDLogEqualityProver(c.dlog)
 
@@ -99,7 +99,6 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 		return nil, err
 	}
 	verified := resp.GetStatus().Success
-
 	if verified {
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return pseudonymsys.NewPseudonym(nymA, nymB), nil
@@ -113,12 +112,8 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	nym *pseudonymsys.Pseudonym, orgPubKeys *pseudonymsys.OrgPubKeys) (
 	*pseudonymsys.Credential, error) {
-	// new client needs to be created in each method to implicitly call server Run method:
-	genericClient, err := newGenericClient(c.endpoint)
-	if err != nil {
-		return nil, err
-	}
-	c.genericClient = *genericClient
+	c.openStream()
+	defer c.closeStream()
 
 	gamma := common.GetRandomInt(c.dlog.GetOrderOfSubgroup())
 	equalityVerifier1 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.dlog, gamma)
@@ -224,11 +219,8 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 // another organization).
 func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.Int,
 	nym *pseudonymsys.Pseudonym, credential *pseudonymsys.Credential) (bool, error) {
-	genericClient, err := newGenericClient(c.endpoint)
-	if err != nil {
-		return false, err
-	}
-	c.genericClient = *genericClient
+	c.openStream()
+	defer c.closeStream()
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. But we need also to prove that dlog_a(b) = dlog_a2(b2), where

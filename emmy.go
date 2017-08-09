@@ -10,6 +10,7 @@ import (
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
+	"google.golang.org/grpc"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -105,7 +106,16 @@ func main() {
 
 // runClients runs emmy clients for the chosen protocol either concurrently or
 // sequentially and times the execution.
+// It passes a single gRPC client connection to multiple clients as gRPC is capable of
+// multiplexing several RPCs on a single connection
 func runClients(n int, concurrently bool, protocolType, protocolVariant, endpoint string) {
+	conn, err := client.GetConnection(endpoint)
+	if err != nil {
+		cLogger.Criticalf("Cannot connect to gRPC server: %v", err)
+		return
+	}
+	defer conn.Close()
+
 	var wg sync.WaitGroup
 	start := time.Now()
 	for i := 0; i < n; i++ {
@@ -114,10 +124,10 @@ func runClients(n int, concurrently bool, protocolType, protocolVariant, endpoin
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				runClient(protocolType, protocolVariant, endpoint)
+				runClient(protocolType, protocolVariant, conn)
 			}()
 		} else {
-			runClient(protocolType, protocolVariant, endpoint)
+			runClient(protocolType, protocolVariant, conn)
 		}
 	}
 	wg.Wait()
@@ -128,7 +138,7 @@ func runClients(n int, concurrently bool, protocolType, protocolVariant, endpoin
 // runClient creates a client for the chosen protocol and executes it.
 // Parameters passed to the client in client.ProtocolParams struct have fixed
 // values for demonstration purposes.
-func runClient(protocolType, protocolVariant, endpoint string) {
+func runClient(protocolType, protocolVariant string, conn *grpc.ClientConn) {
 	_, pbVariant, err := parseSchema(protocolType, protocolVariant)
 	if err != nil {
 		cLogger.Criticalf("%v", err)
@@ -139,7 +149,7 @@ func runClient(protocolType, protocolVariant, endpoint string) {
 	case "pedersen":
 		commitVal := big.NewInt(121212121)
 		dlog := config.LoadDLog("pedersen")
-		client, err := client.NewPedersenClient(endpoint, pbVariant, dlog, commitVal)
+		client, err := client.NewPedersenClient(conn, pbVariant, dlog, commitVal)
 		if err != nil {
 			cLogger.Errorf("Error creating client: %v", err)
 		} else {
@@ -147,7 +157,7 @@ func runClient(protocolType, protocolVariant, endpoint string) {
 		}
 	case "pedersen_ec":
 		commitVal := big.NewInt(121212121)
-		client, err := client.NewPedersenECClient(endpoint, commitVal)
+		client, err := client.NewPedersenECClient(conn, commitVal)
 		if err != nil {
 			cLogger.Errorf("Error creating client: %v", err)
 		} else {
@@ -156,7 +166,7 @@ func runClient(protocolType, protocolVariant, endpoint string) {
 	case "schnorr":
 		dlog := config.LoadDLog("schnorr")
 		secret := big.NewInt(345345345334)
-		client, err := client.NewSchnorrClient(endpoint, pbVariant, dlog, secret)
+		client, err := client.NewSchnorrClient(conn, pbVariant, dlog, secret)
 		if err != nil {
 			cLogger.Errorf("Error creating client: %v", err)
 		} else {
@@ -164,7 +174,7 @@ func runClient(protocolType, protocolVariant, endpoint string) {
 		}
 	case "schnorr_ec":
 		secret := big.NewInt(345345345334)
-		client, err := client.NewSchnorrECClient(endpoint, pbVariant, dlog.P256, secret)
+		client, err := client.NewSchnorrECClient(conn, pbVariant, dlog.P256, secret)
 		if err != nil {
 			cLogger.Errorf("Error creating client: %v", err)
 		} else {
@@ -175,7 +185,7 @@ func runClient(protocolType, protocolVariant, endpoint string) {
 		pubKeyPath := filepath.Join(keyDir, "cspaillierpubkey.txt")
 		m := common.GetRandomInt(big.NewInt(8685849))
 		label := common.GetRandomInt(big.NewInt(340002223232))
-		client, err := client.NewCSPaillierClient(endpoint, pubKeyPath, m, label)
+		client, err := client.NewCSPaillierClient(conn, pubKeyPath, m, label)
 		if err != nil {
 			cLogger.Errorf("Error creating client: %v", err)
 		} else {

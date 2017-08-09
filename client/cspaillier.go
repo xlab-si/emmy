@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/xlab-si/emmy/encryption"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -13,8 +14,8 @@ type CSPaillierClient struct {
 }
 
 // NewCSPaillierClient returns an initialized struct of type CSPaillierClient.
-func NewCSPaillierClient(endpoint string, pubKeyPath string, m, l *big.Int) (*CSPaillierClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+func NewCSPaillierClient(conn *grpc.ClientConn, pubKeyPath string, m, l *big.Int) (*CSPaillierClient, error) {
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -35,6 +36,9 @@ func NewCSPaillierClient(endpoint string, pubKeyPath string, m, l *big.Int) (*CS
 // Run runs the Camenisch-Shoup sigma protocol for verifiable encryption and decryption
 // of discrete logatirhms.
 func (c *CSPaillierClient) Run() error {
+	c.openStream()
+	defer c.closeStream()
+
 	u, e, v, _ := c.encryptor.Encrypt(c.m, c.label)
 	if err := c.open(u, e, v); err != nil {
 		return err
@@ -47,10 +51,6 @@ func (c *CSPaillierClient) Run() error {
 
 	_, err = c.getProofData(challenge)
 	if err != nil {
-		return err
-	}
-
-	if err := c.close(); err != nil {
 		return err
 	}
 
