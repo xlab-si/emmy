@@ -6,6 +6,7 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -18,9 +19,9 @@ type SchnorrClient struct {
 }
 
 // NewSchnorrClient returns an initialized struct of type SchnorrClient.
-func NewSchnorrClient(endpoint string, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
+func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
 	s *big.Int) (*SchnorrClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +47,9 @@ func (c *SchnorrClient) Run() error {
 
 // runSigma runs the sigma version of the Schnorr protocol
 func (c *SchnorrClient) runSigma() error {
+	c.openStream()
+	defer c.closeStream()
+
 	initMsg := &pb.Message{
 		ClientId:      c.id,
 		Schema:        pb.SchemaType_SCHNORR,
@@ -63,16 +67,15 @@ func (c *SchnorrClient) runSigma() error {
 	}
 	logger.Noticef("Decommitment successful, proved: %v", proved)
 
-	if err := c.close(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 // runZeroKnowledge runs the ZKP or ZKPOK version of Schnorr protocol, depending on the value
 // of SchnorrClient's variant field.
 func (c *SchnorrClient) runZeroKnowledge() error {
+	c.openStream()
+	defer c.closeStream()
+
 	commitment, err := c.open() // sends pedersen's h=g^trapdoor
 	if err != nil {
 		return err
@@ -97,9 +100,6 @@ func (c *SchnorrClient) runZeroKnowledge() error {
 		return fmt.Errorf("Decommitment failed")
 	}
 
-	if err := c.close(); err != nil {
-		return err
-	}
 	return nil
 }
 

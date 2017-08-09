@@ -6,6 +6,7 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -18,9 +19,9 @@ type SchnorrECClient struct {
 }
 
 // NewSchnorrECClient returns an initialized struct of type SchnorrECClient.
-func NewSchnorrECClient(endpoint string, variant pb.SchemaVariant, curve dlog.Curve,
+func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve dlog.Curve,
 	s *big.Int) (*SchnorrECClient, error) {
-	genericClient, err := newGenericClient(endpoint)
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +54,9 @@ func (c *SchnorrECClient) Run() error {
 
 // RunSigma runs the sigma version of the Schnorr protocol in the elliptic curve group
 func (c *SchnorrECClient) runSigma() error {
+	c.openStream()
+	defer c.closeStream()
+
 	pedersenDecommitment, err := c.getProofRandomData(true)
 	if err != nil {
 		return err
@@ -64,16 +68,15 @@ func (c *SchnorrECClient) runSigma() error {
 	}
 	logger.Noticef("Decommitment successful, proved: %v", proved)
 
-	if err := c.close(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 // runZeroKnowledge runs the ZKP or ZKPOK version of Schnorr protocol in the elliptic curve group,
 // depending on the value of SchnorrClient's variant field.
 func (c *SchnorrECClient) runZeroKnowledge() error {
+	c.openStream()
+	defer c.closeStream()
+
 	commitment, err := c.open()
 	if err != nil {
 		return err
@@ -99,9 +102,6 @@ func (c *SchnorrECClient) runZeroKnowledge() error {
 		return fmt.Errorf("Decommitment failed")
 	}
 
-	if err := c.close(); err != nil {
-		return err
-	}
 	return nil
 }
 

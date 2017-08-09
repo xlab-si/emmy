@@ -14,31 +14,40 @@ import (
 
 var logger = log.ClientLogger
 
-type genericClient struct {
-	id     int32
-	conn   *grpc.ClientConn
-	stream pb.Protocol_RunClient
+// GetConnection attempts to return a connection to a gRPC server at a given endpoint.
+// Note that several clients can be passed the same connection object, as the gRPC framework
+// is able to multiplex several RPCs on the same connection, thus reducing the overhead
+func GetConnection(serverEndpoint string) (*grpc.ClientConn, error) {
+	logger.Debug("Getting the connection")
+	timeoutSec := config.LoadTimeout()
+	dialOptions := []grpc.DialOption{
+		// TODO enable secure connection to gRPC server
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
+	}
+	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("Could not connect to server %v (%v)", serverEndpoint, err)
+	}
+	return conn, nil
 }
 
-func newGenericClient(endpoint string) (*genericClient, error) {
-	conn, err := getConnection(endpoint)
-	if err != nil {
-		return nil, err
-	}
+type genericClient struct {
+	id             int32
+	protocolClient pb.ProtocolClient
+	stream         pb.Protocol_RunClient
+}
 
+func newGenericClient(conn *grpc.ClientConn) (*genericClient, error) {
 	logger.Debug("Creating the client")
 	client := pb.NewProtocolClient(conn)
-	stream, err := getStream(client)
-	if err != nil {
-		return nil, err
-	}
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	genClient := genericClient{
-		id:     rand.Int31(),
-		conn:   conn,
-		stream: stream,
+		id:             rand.Int31(),
+		protocolClient: client,
 	}
 
 	logger.Infof("New GenericClient spawned (%v)", genClient.id)
@@ -76,37 +85,27 @@ func (c *genericClient) getResponseTo(msg *pb.Message) (*pb.Message, error) {
 	return c.receive()
 }
 
-// close closes the communication stream and connection to the server.
-func (c *genericClient) close() error {
-	if err := c.stream.CloseSend(); err != nil {
-		return fmt.Errorf("[Client %v] Error closing stream: %v", c.id, err)
+// openStream opens the gRPC communication stream with the server prior to actual execution of
+// the protocol client.
+// This function has to be called explicitly at the beginning of the protocol execution function.
+func (c *genericClient) openStream() error {
+	stream, err := c.protocolClient.Run(context.Background())
+	if err != nil {
+		return fmt.Errorf("[Client %v] Error opening stream: %v", c.id, err)
 	}
-	if err := c.conn.Close(); err != nil {
-		return fmt.Errorf("[Client %v] Error closing connection: %v", c.id, err)
-	}
+
+	c.stream = stream
 	return nil
 }
 
-func getConnection(serverEndpoint string) (*grpc.ClientConn, error) {
-	logger.Debug("Getting the connection")
-	timeoutSec := config.LoadTimeout()
-	dialOptions := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
+// closeStream closes the gRPC communication stream with the server, indicating the end of
+// a protocol execution.
+// This function has to be called explicitly at the end of protocol execution function.
+// Note that closing the stream does not close the corresponding connection to the server,
+// as it should be done externally.
+func (c *genericClient) closeStream() error {
+	if err := c.stream.CloseSend(); err != nil {
+		return fmt.Errorf("[Client %v] Error closing stream: %v", c.id, err)
 	}
-	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("Could not connect to server %v (%v)", serverEndpoint, err)
-	}
-	return conn, nil
-}
-
-func getStream(client pb.ProtocolClient) (pb.Protocol_RunClient, error) {
-	logger.Debug("Getting the stream")
-	stream, err := client.Run(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("Error creating the stream: %v", err)
-	}
-	return stream, nil
+	return nil
 }

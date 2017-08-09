@@ -2,11 +2,11 @@ package client
 
 import (
 	"github.com/xlab-si/emmy/common"
-	//"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/dlog"
 	"github.com/xlab-si/emmy/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/pseudonymsys"
+	"google.golang.org/grpc"
 	"math/big"
 )
 
@@ -15,8 +15,8 @@ type PseudonymsysCAClientEC struct {
 	prover *dlogproofs.SchnorrECProver
 }
 
-func NewPseudonymsysCAClientEC(endpoint string) (*PseudonymsysCAClientEC, error) {
-	genericClient, err := newGenericClient(endpoint)
+func NewPseudonymsysCAClientEC(conn *grpc.ClientConn) (*PseudonymsysCAClientEC, error) {
+	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +37,9 @@ func NewPseudonymsysCAClientEC(endpoint string) (*PseudonymsysCAClientEC, error)
 // The certificate contains blinded user's master key pair and a signature of it.
 func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pseudonymsys.PseudonymEC) (
 	*pseudonymsys.CACertificateEC, error) {
+	c.openStream()
+	defer c.closeStream()
+
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
 	pRandomData := pb.SchnorrECProofRandomData{
 		X: common.ToPbECGroupElement(x),
@@ -81,6 +84,10 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 		common.ToECGroupElement(cert.BlindedA),
 		common.ToECGroupElement(cert.BlindedB),
 		new(big.Int).SetBytes(cert.R), new(big.Int).SetBytes(cert.S))
+
+	if err := c.stream.CloseSend(); err != nil {
+		return nil, err
+	}
 
 	return certificate, nil
 }

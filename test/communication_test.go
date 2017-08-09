@@ -8,6 +8,7 @@ import (
 	"github.com/xlab-si/emmy/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
+	"google.golang.org/grpc"
 	"math/big"
 	"os"
 	"testing"
@@ -15,20 +16,32 @@ import (
 
 var testGrpcServerEndpoint = "localhost:7008"
 
+// testGrpcClientConn is re-used for all the test clients
+var testGrpcClientConn *grpc.ClientConn
+
 // TestMain is run implicitly and only once, before any of the tests defined in this file run.
-// It fires up a test gRPC server in a goroutine, runs all the tests in this file, then stops
-// the server.
+// It sets up a test gRPC server and establishes connection to the server. This gRPC client
+// connection is then re-used in all the tests to reduce overhead.
+// Once all the tests run, we close the connection to the server and stop the server.
 func TestMain(m *testing.M) {
 	server := server.NewProtocolServer()
 	go server.Start(7008)
+
+	// Establish a connection to previously started server
+	testGrpcClientConn, _ = client.GetConnection(testGrpcServerEndpoint)
+
+	// At this point all the tests will actually run
 	returnCode := m.Run()
+
+	// Cleanup - close connection, stop the server and exit
 	server.Teardown()
+	testGrpcClientConn.Close()
 	os.Exit(returnCode)
 }
 
 func testPedersen(n *big.Int) error {
 	dlog := config.LoadDLog("pedersen")
-	c, err := client.NewPedersenClient(testGrpcServerEndpoint, pb.SchemaVariant_SIGMA, dlog, n)
+	c, err := client.NewPedersenClient(testGrpcClientConn, pb.SchemaVariant_SIGMA, dlog, n)
 	if err != nil {
 		return err
 	}
@@ -36,7 +49,7 @@ func testPedersen(n *big.Int) error {
 }
 
 func testPedersenEC(n *big.Int) error {
-	c, err := client.NewPedersenECClient(testGrpcServerEndpoint, n)
+	c, err := client.NewPedersenECClient(testGrpcClientConn, n)
 	if err != nil {
 		return err
 	}
@@ -45,7 +58,7 @@ func testPedersenEC(n *big.Int) error {
 
 func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
 	dlog := config.LoadDLog("schnorr")
-	c, err := client.NewSchnorrClient(testGrpcServerEndpoint, variant, dlog, n)
+	c, err := client.NewSchnorrClient(testGrpcClientConn, variant, dlog, n)
 	if err != nil {
 		return err
 	}
@@ -53,7 +66,7 @@ func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
 }
 
 func testSchnorrEC(n *big.Int, variant pb.SchemaVariant) error {
-	c, err := client.NewSchnorrECClient(testGrpcServerEndpoint, variant, dlog.P256, n)
+	c, err := client.NewSchnorrECClient(testGrpcClientConn, variant, dlog.P256, n)
 	if err != nil {
 		return err
 	}
@@ -80,7 +93,7 @@ func TestGRPC_Dlogproofs(t *testing.T) {
 }
 
 func testCSPaillier(m, l *big.Int, pubKeyPath string) error {
-	c, err := client.NewCSPaillierClient(testGrpcServerEndpoint, pubKeyPath, m, l)
+	c, err := client.NewCSPaillierClient(testGrpcClientConn, pubKeyPath, m, l)
 	if err != nil {
 		return err
 	}
