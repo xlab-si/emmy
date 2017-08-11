@@ -17,6 +17,8 @@ enum SchemaType {
 	PSEUDONYMSYS_NYM_GEN_EC = 10;
 	PSEUDONYMSYS_ISSUE_CREDENTIAL_EC = 11;
 	PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC = 12;
+	QR = 13;
+	QNR = 14;
 }
 
 // Valid schema variants
@@ -52,9 +54,13 @@ message Message {
 		PseudonymsysNymGenProofRandomDataEC pseudonymsys_nym_gen_proof_random_data_ec = 21;
 		PseudonymsysIssueProofRandomDataEC pseudonymsys_issue_proof_random_data_ec = 22;
 		PseudonymsysTransferCredentialDataEC pseudonymsys_transfer_credential_data_ec = 23;
+		QNRVerifierChallenge qnr_verifier_challenge = 24;
+		RepeatedInt repeated_int = 25;
+		RepeatedPair repeated_pair = 26;
+		int32 Eint = 27;
 	}
-	int32 clientId = 24;
-	string ProtocolError = 25;
+	int32 clientId = 28;
+	string ProtocolError = 29;
 }
 
 // A generic service
@@ -89,6 +95,11 @@ message PedersenDecommitment {
 message ECGroupElement {
 	bytes X = 1;
  	bytes Y = 2;
+}
+
+message Pair {
+	bytes A = 1;
+ 	bytes B = 2;
 }
 
 message SchnorrProofRandomData {
@@ -210,6 +221,19 @@ message PseudonymsysTransferCredentialDataEC {
 	ECGroupElement NymA = 4;
 	ECGroupElement NymB = 5;
 	PseudonymsysCredentialEC Credential = 6;	
+}
+
+message QNRVerifierChallenge {
+	bytes W = 1;
+	repeated Pair Pairs = 2; 
+}
+
+message RepeatedInt {
+	repeated int32 Ints = 1; 
+}
+
+message RepeatedPair {
+	repeated Pair Pairs = 1; 
 }
 
 message CSPaillierSecretKey {

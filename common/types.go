@@ -32,6 +32,28 @@ func ToPbECGroupElement(el *ECGroupElement) *pb.ECGroupElement {
 	return &x
 }
 
+// Pair is the same as ECGroupElement, but to be used in non EC schemes when a pair of
+// *big.Int is needed.
+type Pair struct {
+	A *big.Int
+	B *big.Int
+}
+
+func ToPair(el *pb.Pair) *Pair {
+	x := Pair{A: new(big.Int).SetBytes(el.A), B: new(big.Int).SetBytes(el.B)}
+	return &x
+}
+
+func ToPbPair(el *Pair) *pb.Pair {
+	x := pb.Pair{A: el.A.Bytes(), B: el.B.Bytes()}
+	return &x
+}
+
+func NewPair(a, b *big.Int) *Pair {
+	pair := Pair{A: a, B: b}
+	return &pair
+}
+
 func ToProtocolType(variant pb.SchemaVariant) ProtocolType {
 	switch variant {
 	case pb.SchemaVariant_ZKP:

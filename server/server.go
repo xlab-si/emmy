@@ -171,6 +171,12 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		err = s.PseudonymsysIssueCredentialEC(req, stream)
 	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC:
 		err = s.PseudonymsysTransferCredentialEC(req, stream)
+	case pb.SchemaType_QR:
+		dlog := config.LoadDLog("pseudonymsys")
+		err = s.QR(req, dlog, stream)
+	case pb.SchemaType_QNR:
+		qr := config.LoadQR("qrsmall") // only for testing
+		err = s.QNR(req, qr, stream)
 	}
 
 	if err != nil {

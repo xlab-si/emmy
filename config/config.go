@@ -67,6 +67,14 @@ func LoadDLog(scheme string) *dlog.ZpDLog {
 	return &dlog
 }
 
+func LoadQR(name string) *dlog.QR {
+	x := viper.GetStringMap(name)
+	p, _ := new(big.Int).SetString(x["p"].(string), 10)
+	q, _ := new(big.Int).SetString(x["q"].(string), 10)
+	factors := []*big.Int{p, q}
+	return dlog.NewQR(factors)
+}
+
 func LoadPseudonymsysUserSecret(user, dlogType string) *big.Int {
 	m := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", user, dlogType))
 	s, _ := new(big.Int).SetString(m["secret"].(string), 10)

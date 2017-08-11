@@ -1,6 +1,6 @@
 # emmy - Library for sigma protocols and zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
-Emmy is a library that offers a **crypto-backend** with primitives for implementation of various cryptographic proofs and **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on the role of the client, and the verifier takes on the role of the server). It can be used in scenarios like *anonymous digital credentials*. Each proof is implemented as a sigma protocol which can be turned into a zero-knowledge proof (ZKP) or a zero-knowledge proof of knowledge (ZKPOK) using commitment schemes. Emmy also implements a communication layer supporting the execution of these protocols. 
+Emmy is a library that offers a **crypto-backend** with primitives for implementation of various cryptographic proofs and **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on the role of the client, and the verifier takes on the role of the server). It can be used in scenarios like *anonymous digital credentials*. Emmy also implements a communication layer supporting the execution of these protocols. 
 
 Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. 
 
@@ -123,25 +123,24 @@ $ emmy example -protocol schnorr -n 2 --concurrent
 ...
 ```
 
-# Currently supported protocols
+# Currently supported crypto primitives
 
-Currently supported examples with fully implemented communication layer (e.g. client-server communication via gRPC) are listed in the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.
+Currently supported crypto primitives with fully implemented communication layer (e.g. client-server communication via gRPC) are listed in the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.
 
 >**Note**: EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
 
-| Sigma protocol | Zero knowledge proof  | Zero knowledge proof of knowledge |
-|----------------|-----------------------|-----------------------------------|
-| [✓] Schnorr | [✓] Schnor ZKP | [✓] Schnorr ZKPOK |   
-| [✓] Schnorr EC | [✓] Schnorr ZKP EC | [✓] Schnorr ZKPOK EC) | 
-
-| Other |
+| Primitives |
 | ----- |
-| [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
-| [✓] Pedersen commitments (pedersen) |
-| [✓] Pedersen commitments EC (pedersen_ex) |
-| [✗] Chaum-Pedersen to prove discrete logarithm equality [3] |
-| [✗] DLog Equality Blinded Transcript [4] | 
+| [✓] Schnorr protocol [5] (sigma protocol can be turned into ZKP and ZKPOK) |
+| [✓] Schnorr protocol EC (sigma protocol can be turned into ZKP and ZKPOK) |
+| [✓] Pedersen commitments |
+| [✓] Pedersen commitments EC |
+| [✓] ZKP of quadratic residuosity [6] |
+| [✓] ZKP of quadratic nonresiduosity [6] |
+| [✓] Chaump-Pedersen for proving dlog equality [7] | 
+| [✓] DLog Equality Blinded Transcript [4] | 
 | [✓] Pseudonym system [4] |
+| [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
 | [✗] Shamir's secret sharing scheme |
 
@@ -166,3 +165,9 @@ Currently supported examples with fully implemented communication layer (e.g. cl
 [3] D. Chaum and T. P. Pedersen, Wallet databases with observers, Advances in Cryptology — CRYPTO ’92 (E. F. Brickell, ed.), LNCS, vol. 740, Springer-Verlag, 1993, pp. 89– 105.
 
 [4] A. Lysyanskaya, R. Rivest, A. Sahai, and S. Wolf. Pseudonym systems. In Selected Areas in Cryptography, vol. 1758 of LNCS. Springer Verlag, 1999.
+
+[5] C. P. Schnorr. Efficient Identification and Signatures for Smart Cards. In Crypto ’89, LNCS 435, pages 235–251. Springer-Verlag, Berlin, 1990. [2] P. Paillier, Public-key cryptosystems based on composite residuosity classes, Advances in Cryptology — EUROCRYPT ’99, LNCS, vol. 1592, Springer Verlag, 1999, pp. 223–239. [3] K. IRELAND AND M. ROSEN, A Classical Introduction to Modern Number Theory, Springer-Verlag, New York, 2nd edition, 1990.
+
+[6] Goldwasser, Shafi, Silvio Micali, and Charles Rackoff. "The knowledge complexity of interactive proof systems." SIAM Journal on computing 18.1 (1989): 186-208.
+
+[7] D. Chaum and T. P. Pedersen, Wallet databases with observers, Advances in Cryptology — CRYPTO ’92 (E. F. Brickell, ed.), LNCS, vol. 740, Springer-Verlag, 1993, pp. 89– 105.
