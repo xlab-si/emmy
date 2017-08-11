@@ -1,10 +1,10 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/pseudonymsys"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -12,12 +12,12 @@ func (s *Server) PseudonymsysGenerateNymEC(req *pb.Message, stream pb.Protocol_R
 	org := pseudonymsys.NewOrgNymGenEC()
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
-	x1 := common.ToECGroupElement(proofRandData.X1)
-	nymA := common.ToECGroupElement(proofRandData.A1)
-	nymB := common.ToECGroupElement(proofRandData.B1)
-	x2 := common.ToECGroupElement(proofRandData.X2)
-	blindedA := common.ToECGroupElement(proofRandData.A2)
-	blindedB := common.ToECGroupElement(proofRandData.B2)
+	x1 := types.ToECGroupElement(proofRandData.X1)
+	nymA := types.ToECGroupElement(proofRandData.A1)
+	nymB := types.ToECGroupElement(proofRandData.B1)
+	x2 := types.ToECGroupElement(proofRandData.X2)
+	blindedA := types.ToECGroupElement(proofRandData.A2)
+	blindedB := types.ToECGroupElement(proofRandData.B2)
 	signatureR := new(big.Int).SetBytes(proofRandData.R)
 	signatureS := new(big.Int).SetBytes(proofRandData.S)
 
@@ -66,9 +66,9 @@ func (s *Server) PseudonymsysGenerateNymEC(req *pb.Message, stream pb.Protocol_R
 
 func (s *Server) PseudonymsysIssueCredentialEC(req *pb.Message, stream pb.Protocol_RunServer) error {
 	proofRandData := req.GetSchnorrEcProofRandomData()
-	x := common.ToECGroupElement(proofRandData.X)
-	a := common.ToECGroupElement(proofRandData.A)
-	b := common.ToECGroupElement(proofRandData.B)
+	x := types.ToECGroupElement(proofRandData.X)
+	a := types.ToECGroupElement(proofRandData.A)
+	b := types.ToECGroupElement(proofRandData.B)
 
 	org := pseudonymsys.NewOrgCredentialIssuerEC()
 	challenge := org.GetAuthenticationChallenge(a, b, x)
@@ -106,12 +106,12 @@ func (s *Server) PseudonymsysIssueCredentialEC(req *pb.Message, stream pb.Protoc
 		resp = &pb.Message{
 			Content: &pb.Message_PseudonymsysIssueProofRandomDataEc{
 				&pb.PseudonymsysIssueProofRandomDataEC{
-					X11: common.ToPbECGroupElement(x11),
-					X12: common.ToPbECGroupElement(x12),
-					X21: common.ToPbECGroupElement(x21),
-					X22: common.ToPbECGroupElement(x22),
-					A:   common.ToPbECGroupElement(A),
-					B:   common.ToPbECGroupElement(B),
+					X11: types.ToPbECGroupElement(x11),
+					X12: types.ToPbECGroupElement(x12),
+					X21: types.ToPbECGroupElement(x21),
+					X22: types.ToPbECGroupElement(x22),
+					A:   types.ToPbECGroupElement(A),
+					B:   types.ToPbECGroupElement(B),
 				},
 			},
 		}
@@ -151,10 +151,10 @@ func (s *Server) PseudonymsysTransferCredentialEC(req *pb.Message, stream pb.Pro
 	org := pseudonymsys.NewOrgCredentialVerifierEC()
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
-	x1 := common.ToECGroupElement(data.X1)
-	x2 := common.ToECGroupElement(data.X2)
-	nymA := common.ToECGroupElement(data.NymA)
-	nymB := common.ToECGroupElement(data.NymB)
+	x1 := types.ToECGroupElement(data.X1)
+	x2 := types.ToECGroupElement(data.X2)
+	nymA := types.ToECGroupElement(data.NymA)
+	nymB := types.ToECGroupElement(data.NymB)
 
 	t1 := make([]*big.Int, 6)
 	t1[0] = new(big.Int).SetBytes(data.Credential.T1.A.X)
@@ -173,10 +173,10 @@ func (s *Server) PseudonymsysTransferCredentialEC(req *pb.Message, stream pb.Pro
 	t2[5] = new(big.Int).SetBytes(data.Credential.T2.ZAlpha)
 
 	credential := pseudonymsys.NewCredentialEC(
-		common.ToECGroupElement(data.Credential.SmallAToGamma),
-		common.ToECGroupElement(data.Credential.SmallBToGamma),
-		common.ToECGroupElement(data.Credential.AToGamma),
-		common.ToECGroupElement(data.Credential.BToGamma),
+		types.ToECGroupElement(data.Credential.SmallAToGamma),
+		types.ToECGroupElement(data.Credential.SmallBToGamma),
+		types.ToECGroupElement(data.Credential.AToGamma),
+		types.ToECGroupElement(data.Credential.BToGamma),
 		t1, t2,
 	)
 
@@ -202,8 +202,8 @@ func (s *Server) PseudonymsysTransferCredentialEC(req *pb.Message, stream pb.Pro
 
 	// PubKeys of the organization that issue a credential:
 	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
-	h1 := common.NewECGroupElement(h1X, h1Y)
-	h2 := common.NewECGroupElement(h2X, h2Y)
+	h1 := types.NewECGroupElement(h1X, h1Y)
+	h2 := types.NewECGroupElement(h2X, h2Y)
 	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
 
 	proofData := req.GetBigint()

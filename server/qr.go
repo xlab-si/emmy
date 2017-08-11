@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/dlog"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/qrproofs"
 	"math/big"
 )
 

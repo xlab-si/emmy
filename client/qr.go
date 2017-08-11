@@ -1,9 +1,9 @@
 package client
 
 import (
-	"github.com/xlab-si/emmy/dlog"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/qrproofs"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -32,7 +32,7 @@ func (c *QRClient) Run() (bool, error) {
 	c.openStream()
 	defer c.closeStream()
 
-	// proof requires as many rounds as is the bit length of modulo N 
+	// proof requires as many rounds as is the bit length of modulo N
 	m := c.prover.DLog.P.BitLen()
 
 	// message where y is sent to the verifier - this message could be as well skipped and
@@ -53,16 +53,16 @@ func (c *QRClient) Run() (bool, error) {
 	proved := false
 	// the client has to prove for all i - if in one iteration the knowledge
 	// is not proved, the protocol is stopped
-	for i := 0; i < m; i++ {	
+	for i := 0; i < m; i++ {
 		c.sendProofRandomData()
 		challenge, err := c.getChallenge()
 		if err != nil {
-			return false, err	
+			return false, err
 		}
 
 		proved, err = c.sendProofData(challenge)
 		if err != nil {
-			return false, err	
+			return false, err
 		}
 		if !proved {
 			break
@@ -86,7 +86,7 @@ func (c *QRClient) sendProofRandomData() error {
 func (c *QRClient) getChallenge() (*big.Int, error) {
 	resp, err := c.receive()
 	if err != nil {
-		return nil, err	
+		return nil, err
 	}
 	challenge := new(big.Int).SetBytes(resp.GetBigint().X1)
 	return challenge, nil

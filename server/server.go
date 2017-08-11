@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"io"
 	"math"
@@ -137,8 +137,8 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 
 	logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
 
-	// Convert Sigma, ZKP or ZKPOK protocol type to a common type
-	protocolType := common.ToProtocolType(reqSchemaVariant)
+	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
+	protocolType := types.ToProtocolType(reqSchemaVariant)
 
 	switch reqSchemaType {
 	case pb.SchemaType_PEDERSEN_EC:

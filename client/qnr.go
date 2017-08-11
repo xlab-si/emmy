@@ -3,10 +3,10 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/qrproofs"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -34,7 +34,7 @@ func (c *QNRClient) Run() (bool, error) {
 	c.openStream()
 	defer c.closeStream()
 
-	// proof requires as many rounds as is the bit length of modulo N 
+	// proof requires as many rounds as is the bit length of modulo N
 	m := c.prover.QR.N.BitLen()
 
 	// message where y is sent to the verifier
@@ -58,8 +58,8 @@ func (c *QNRClient) Run() (bool, error) {
 	proved := false
 	// the client has to prove for all i - if in one iteration the knowledge
 	// is not proved, the protocol is stopped
-	for i := 0; i < m; i++ {	
-		w, pairs, err := c.getVerifierChallenge()	
+	for i := 0; i < m; i++ {
+		w, pairs, err := c.getVerifierChallenge()
 		if err != nil {
 			return false, err
 		}
@@ -69,8 +69,8 @@ func (c *QNRClient) Run() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		
-		verProofPairs, err := c.getVerifierProof()	
+
+		verProofPairs, err := c.getVerifierProof()
 		if err != nil {
 			return false, err
 		}
@@ -99,7 +99,7 @@ func (c *QNRClient) Run() (bool, error) {
 	return proved, nil
 }
 
-func (c *QNRClient) getVerifierChallenge() (*big.Int, []*common.Pair, error) {
+func (c *QNRClient) getVerifierChallenge() (*big.Int, []*types.Pair, error) {
 	msg := &pb.Message{
 		Content: &pb.Message_Empty{&pb.EmptyMsg{}},
 	}
@@ -110,9 +110,9 @@ func (c *QNRClient) getVerifierChallenge() (*big.Int, []*common.Pair, error) {
 
 	ch := resp.GetQnrVerifierChallenge()
 	w := new(big.Int).SetBytes(ch.W)
-	var pairs []*common.Pair
+	var pairs []*types.Pair
 	for _, p := range ch.Pairs {
-		pair := common.ToPair(p)
+		pair := types.ToPair(p)
 		pairs = append(pairs, pair)
 	}
 	return w, pairs, nil
@@ -137,16 +137,16 @@ func (c *QNRClient) sendProverChallenge() error {
 	return nil
 }
 
-func (c *QNRClient) getVerifierProof() ([]*common.Pair, error) {
+func (c *QNRClient) getVerifierProof() ([]*types.Pair, error) {
 	resp, err := c.receive()
 	if err != nil {
 		return nil, err
 	}
 
 	verProof := resp.GetRepeatedPair()
-	var verProofPairs []*common.Pair
+	var verProofPairs []*types.Pair
 	for _, p := range verProof.Pairs {
-		pair := common.ToPair(p)
+		pair := types.ToPair(p)
 		verProofPairs = append(verProofPairs, pair)
 	}
 	return verProofPairs, nil

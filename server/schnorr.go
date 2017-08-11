@@ -1,19 +1,19 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
 func (s *Server) Schnorr(req *pb.Message, dlog *dlog.ZpDLog,
-	protocolType common.ProtocolType, stream pb.Protocol_RunServer) error {
+	protocolType types.ProtocolType, stream pb.Protocol_RunServer) error {
 	verifier := dlogproofs.NewSchnorrVerifier(dlog, protocolType)
 	var err error
 
-	if protocolType != common.Sigma {
+	if protocolType != types.Sigma {
 		// ZKP, ZKPOK
 		pedersenFirst := req.GetPedersenFirst()
 		h := new(big.Int).SetBytes(pedersenFirst.H)

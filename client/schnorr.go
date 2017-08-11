@@ -2,10 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -29,7 +29,7 @@ func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlo
 	return &SchnorrClient{
 		genericClient: *genericClient,
 		variant:       variant,
-		prover:        dlogproofs.NewSchnorrProver(dlog, common.ToProtocolType(variant)),
+		prover:        dlogproofs.NewSchnorrProver(dlog, types.ToProtocolType(variant)),
 		secret:        s,
 		a:             dlog.G,
 	}, nil

@@ -2,10 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -14,7 +14,7 @@ type SchnorrECClient struct {
 	genericClient
 	prover  *dlogproofs.SchnorrECProver
 	secret  *big.Int
-	a       *common.ECGroupElement
+	a       *types.ECGroupElement
 	variant pb.SchemaVariant
 }
 
@@ -26,7 +26,7 @@ func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve d
 		return nil, err
 	}
 
-	prover, err := dlogproofs.NewSchnorrECProver(curve, common.ToProtocolType(variant))
+	prover, err := dlogproofs.NewSchnorrECProver(curve, types.ToProtocolType(variant))
 	if err != nil {
 		return nil, fmt.Errorf("Could not create schnorr EC prover: %v", err)
 	}
@@ -36,7 +36,7 @@ func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve d
 		prover:        prover,
 		variant:       variant,
 		secret:        s,
-		a: &common.ECGroupElement{
+		a: &types.ECGroupElement{
 			X: prover.DLog.Curve.Params().Gx,
 			Y: prover.DLog.Curve.Params().Gy,
 		},
@@ -105,9 +105,9 @@ func (c *SchnorrECClient) runZeroKnowledge() error {
 	return nil
 }
 
-func (c *SchnorrECClient) open() (*common.ECGroupElement, error) {
+func (c *SchnorrECClient) open() (*types.ECGroupElement, error) {
 	h := c.prover.GetOpeningMsg()
-	ecge := common.ToPbECGroupElement(h)
+	ecge := types.ToPbECGroupElement(h)
 	openMsg := &pb.Message{
 		ClientId:      c.id,
 		Schema:        pb.SchemaType_SCHNORR_EC,
@@ -121,18 +121,18 @@ func (c *SchnorrECClient) open() (*common.ECGroupElement, error) {
 	}
 
 	ecge = resp.GetEcGroupElement()
-	return common.ToECGroupElement(ecge), nil
+	return types.ToECGroupElement(ecge), nil
 }
 
 func (c *SchnorrECClient) getProofRandomData(isFirstMsg bool) (*pb.PedersenDecommitment, error) {
 	x := c.prover.GetProofRandomData(c.secret, c.a) // x = a^r, b = a^secret is "public key"
 	b1, b2 := c.prover.DLog.Exponentiate(c.a.X, c.a.Y, c.secret)
-	b := &common.ECGroupElement{X: b1, Y: b2}
+	b := &types.ECGroupElement{X: b1, Y: b2}
 
 	pRandomData := pb.SchnorrECProofRandomData{
-		X: common.ToPbECGroupElement(x),
-		A: common.ToPbECGroupElement(c.a),
-		B: common.ToPbECGroupElement(b),
+		X: types.ToPbECGroupElement(x),
+		A: types.ToPbECGroupElement(c.a),
+		B: types.ToPbECGroupElement(b),
 	}
 
 	req := &pb.Message{}

@@ -1,11 +1,11 @@
 package client
 
 import (
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/pseudonymsys"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -21,7 +21,7 @@ func NewPseudonymsysCAClientEC(conn *grpc.ClientConn) (*PseudonymsysCAClientEC, 
 		return nil, err
 	}
 
-	prover, err := dlogproofs.NewSchnorrECProver(dlog.P256, common.Sigma)
+	prover, err := dlogproofs.NewSchnorrECProver(dlog.P256, types.Sigma)
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +42,9 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
 	pRandomData := pb.SchnorrECProofRandomData{
-		X: common.ToPbECGroupElement(x),
-		A: common.ToPbECGroupElement(nym.A),
-		B: common.ToPbECGroupElement(nym.B),
+		X: types.ToPbECGroupElement(x),
+		A: types.ToPbECGroupElement(nym.A),
+		B: types.ToPbECGroupElement(nym.B),
 	}
 
 	initMsg := &pb.Message{
@@ -81,8 +81,8 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 
 	cert := resp.GetPseudonymsysCaCertificateEc()
 	certificate := pseudonymsys.NewCACertificateEC(
-		common.ToECGroupElement(cert.BlindedA),
-		common.ToECGroupElement(cert.BlindedB),
+		types.ToECGroupElement(cert.BlindedA),
+		types.ToECGroupElement(cert.BlindedB),
 		new(big.Int).SetBytes(cert.R), new(big.Int).SetBytes(cert.S))
 
 	if err := c.stream.CloseSend(); err != nil {

@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/commitments"
-	"github.com/xlab-si/emmy/dlog"
+	"github.com/xlab-si/emmy/crypto/commitments"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )

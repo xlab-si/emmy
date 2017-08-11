@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"github.com/xlab-si/emmy/dlog"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	"math/big"
 )
 

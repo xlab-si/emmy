@@ -1,23 +1,23 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func (s *Server) SchnorrEC(req *pb.Message, protocolType common.ProtocolType, stream pb.Protocol_RunServer) error {
+func (s *Server) SchnorrEC(req *pb.Message, protocolType types.ProtocolType, stream pb.Protocol_RunServer) error {
 	verifier := dlogproofs.NewSchnorrECVerifier(dlog.P256, protocolType)
 	var err error
 
-	if protocolType != common.Sigma {
+	if protocolType != types.Sigma {
 		// ZKP, ZKPOK
 		ecge := req.GetEcGroupElement()
-		h := common.ToECGroupElement(ecge)
+		h := types.ToECGroupElement(ecge)
 		commitment := verifier.GetOpeningMsgReply(h)
-		pb_ecge := common.ToPbECGroupElement(commitment)
+		pb_ecge := types.ToPbECGroupElement(commitment)
 
 		resp := &pb.Message{
 			Content: &pb.Message_EcGroupElement{
@@ -37,9 +37,9 @@ func (s *Server) SchnorrEC(req *pb.Message, protocolType common.ProtocolType, st
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
 
-	x := common.ToECGroupElement(sProofRandData.X)
-	a := common.ToECGroupElement(sProofRandData.A)
-	b := common.ToECGroupElement(sProofRandData.B)
+	x := types.ToECGroupElement(sProofRandData.X)
+	a := types.ToECGroupElement(sProofRandData.A)
+	b := types.ToECGroupElement(sProofRandData.B)
 	verifier.SetProofRandomData(x, a, b)
 
 	challenge, r2 := verifier.GetChallenge() // r2 is nil in sigma protocol

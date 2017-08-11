@@ -3,11 +3,10 @@ package test
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/dlog"
-	//"github.com/xlab-si/emmy/dlogproofs"
-	"github.com/xlab-si/emmy/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
+	"github.com/xlab-si/emmy/types"
 	"testing"
 )
 
@@ -20,9 +19,9 @@ func TestPseudonymsysEC(t *testing.T) {
 
 	userSecret := config.LoadPseudonymsysUserSecret("user1", "ecdlog")
 
-	nymA := common.NewECGroupElement(dlog.Curve.Params().Gx, dlog.Curve.Params().Gy)
+	nymA := types.NewECGroupElement(dlog.Curve.Params().Gx, dlog.Curve.Params().Gy)
 	nymB1, nymB2 := dlog.Exponentiate(nymA.X, nymA.Y, userSecret) // this is user's public key
-	nymB := common.NewECGroupElement(nymB1, nymB2)
+	nymB := types.NewECGroupElement(nymB1, nymB2)
 
 	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
 	caCertificate, err := caClient.ObtainCertificate(userSecret, masterNym)
@@ -39,8 +38,8 @@ func TestPseudonymsysEC(t *testing.T) {
 
 	orgName := "org1"
 	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
-	h1 := common.NewECGroupElement(h1X, h1Y)
-	h2 := common.NewECGroupElement(h2X, h2Y)
+	h1 := types.NewECGroupElement(h1X, h1Y)
+	h2 := types.NewECGroupElement(h2X, h2Y)
 	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
 	credential, err := c1.ObtainCredential(userSecret, nym1, orgPubKeys)
 	if err != nil {

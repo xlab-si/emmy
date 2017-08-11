@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/commitments"
-	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/crypto/commitments"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -32,7 +32,7 @@ func (s *Server) PedersenEC(stream pb.Protocol_RunServer) error {
 		return err
 	}
 
-	el := common.ToECGroupElement(ecgrop)
+	el := types.ToECGroupElement(ecgrop)
 	pedersenECReceiver.SetCommitment(el)
 	resp = &pb.Message{Content: &pb.Message_Empty{&pb.EmptyMsg{}}}
 	if err = s.send(resp, stream); err != nil {

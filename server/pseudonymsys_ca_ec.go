@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/pseudonymsys"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -12,9 +12,9 @@ func (s *Server) PseudonymsysCAEC(req *pb.Message, stream pb.Protocol_RunServer)
 	var err error
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
-	x := common.ToECGroupElement(sProofRandData.X)
-	a := common.ToECGroupElement(sProofRandData.A)
-	b := common.ToECGroupElement(sProofRandData.B)
+	x := types.ToECGroupElement(sProofRandData.X)
+	a := types.ToECGroupElement(sProofRandData.A)
+	b := types.ToECGroupElement(sProofRandData.B)
 
 	challenge := ca.GetChallenge(a, b, x)
 	resp := &pb.Message{
@@ -42,8 +42,8 @@ func (s *Server) PseudonymsysCAEC(req *pb.Message, stream pb.Protocol_RunServer)
 		resp = &pb.Message{
 			Content: &pb.Message_PseudonymsysCaCertificateEc{
 				&pb.PseudonymsysCACertificateEC{
-					BlindedA: common.ToPbECGroupElement(cert.BlindedA),
-					BlindedB: common.ToPbECGroupElement(cert.BlindedB),
+					BlindedA: types.ToPbECGroupElement(cert.BlindedA),
+					BlindedB: types.ToPbECGroupElement(cert.BlindedB),
 					R:        cert.R.Bytes(),
 					S:        cert.S.Bytes(),
 				},

@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	"testing"
 )
 

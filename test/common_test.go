@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/crypto/common"
 	"log"
 	"math/big"
 	"testing"
