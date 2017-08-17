@@ -1,9 +1,9 @@
 package client
 
 import (
-	"github.com/xlab-si/emmy/commitments"
-	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/crypto/commitments"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -37,7 +37,7 @@ func (c *PedersenECClient) Run() error {
 	if err != nil {
 		return err
 	}
-	my_ecge := common.ToECGroupElement(ecge)
+	my_ecge := types.ToECGroupElement(ecge)
 	c.committer.SetH(my_ecge)
 
 	commitment, err := c.committer.GetCommitMsg(c.val)
@@ -72,10 +72,10 @@ func (c *PedersenECClient) getH() (*pb.ECGroupElement, error) {
 	return resp.GetEcGroupElement(), nil
 }
 
-func (c *PedersenECClient) commit(commitVal *common.ECGroupElement) error {
+func (c *PedersenECClient) commit(commitVal *types.ECGroupElement) error {
 	commitmentMsg := &pb.Message{
 		Content: &pb.Message_EcGroupElement{
-			common.ToPbECGroupElement(commitVal),
+			types.ToPbECGroupElement(commitVal),
 		},
 	}
 

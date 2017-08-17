@@ -2,12 +2,13 @@ package client
 
 import (
 	"errors"
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/pseudonymsys"
+	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"math/big"
 )
@@ -121,7 +122,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver := dlogproofs.NewSchnorrProver(c.dlog, common.Sigma)
+	schnorrProver := dlogproofs.NewSchnorrProver(c.dlog, types.Sigma)
 	x := schnorrProver.GetProofRandomData(userSecret, nym.A)
 
 	pRandomData := pb.SchnorrProofRandomData{

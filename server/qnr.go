@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/dlog"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/qrproofs"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -41,7 +41,7 @@ func (s *Server) QNR(req *pb.Message, qr *dlog.QR,
 		pbPairs := []*pb.Pair{}
 
 		for j := 0; j < m; j++ {
-			pbPairs = append(pbPairs, common.ToPbPair(pairs[j]))
+			pbPairs = append(pbPairs, types.ToPbPair(pairs[j]))
 		}
 
 		resp := &pb.Message{
@@ -71,7 +71,7 @@ func (s *Server) QNR(req *pb.Message, qr *dlog.QR,
 		verProofPairs := verifier.GetProofData(randVector)
 		var verProofPbPairs []*pb.Pair
 		for _, p := range verProofPairs {
-			pbPair := common.ToPbPair(p)
+			pbPair := types.ToPbPair(p)
 			verProofPbPairs = append(verProofPbPairs, pbPair)
 		}
 

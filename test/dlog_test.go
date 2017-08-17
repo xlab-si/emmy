@@ -2,10 +2,11 @@ package test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/dlog"
-	"github.com/xlab-si/emmy/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/dlogproofs"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 	"testing"
 )
@@ -62,11 +63,11 @@ func TestDLogEqualityEC(t *testing.T) {
 	t11, t12 := dLog.Exponentiate(g11, g12, secret)
 	t21, t22 := dLog.Exponentiate(g21, g22, secret)
 
-	g1 := common.NewECGroupElement(g11, g12)
-	g2 := common.NewECGroupElement(g21, g22)
+	g1 := types.NewECGroupElement(g11, g12)
+	g2 := types.NewECGroupElement(g21, g22)
 
-	t1 := common.NewECGroupElement(t11, t12)
-	t2 := common.NewECGroupElement(t21, t22)
+	t1 := types.NewECGroupElement(t11, t12)
+	t2 := types.NewECGroupElement(t21, t22)
 
 	proved := dlogproofs.RunECDLogEquality(secret, g1, g2, t1, t2, dlog.P256)
 	assert.Equal(t, proved, true, "DLogEqualityEC does not work correctly")

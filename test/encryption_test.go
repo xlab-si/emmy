@@ -2,9 +2,9 @@ package test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/encryption"
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/encryption"
 	"math/big"
 	"path/filepath"
 	"testing"

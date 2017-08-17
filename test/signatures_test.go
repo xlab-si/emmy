@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/xlab-si/emmy/common"
-	"github.com/xlab-si/emmy/signatures"
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/signatures"
 	"log"
 	"math/big"
 	"testing"

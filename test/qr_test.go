@@ -3,8 +3,8 @@ package test
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
-	"github.com/xlab-si/emmy/common"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/log"
 	"math/big"
 	"testing"

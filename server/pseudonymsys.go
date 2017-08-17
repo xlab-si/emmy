@@ -2,8 +2,8 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/pseudonymsys"
 	"math/big"
 )
 
