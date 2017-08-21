@@ -14,11 +14,15 @@ import (
 
 var logger = log.ClientLogger
 
+func SetLogLevel(level string) error {
+	return logger.SetLevel(level)
+}
+
 // GetConnection attempts to return a connection to a gRPC server at a given endpoint.
 // Note that several clients can be passed the same connection object, as the gRPC framework
 // is able to multiplex several RPCs on the same connection, thus reducing the overhead
 func GetConnection(serverEndpoint string) (*grpc.ClientConn, error) {
-	logger.Debug("Getting the connection")
+	logger.Info("Getting the connection")
 	timeoutSec := config.LoadTimeout()
 	dialOptions := []grpc.DialOption{
 		// TODO enable secure connection to gRPC server
@@ -30,6 +34,7 @@ func GetConnection(serverEndpoint string) (*grpc.ClientConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect to server %v (%v)", serverEndpoint, err)
 	}
+	logger.Notice("Established connection to gRPC server")
 	return conn, nil
 }
 
@@ -50,7 +55,7 @@ func newGenericClient(conn *grpc.ClientConn) (*genericClient, error) {
 		protocolClient: client,
 	}
 
-	logger.Infof("New GenericClient spawned (%v)", genClient.id)
+	logger.Debugf("New GenericClient spawned (%v)", genClient.id)
 	return &genClient, nil
 }
 
@@ -58,7 +63,8 @@ func (c *genericClient) send(msg *pb.Message) error {
 	if err := c.stream.Send(msg); err != nil {
 		return fmt.Errorf("[Client %v] Error sending message: %v", c.id, err)
 	}
-	logger.Infof("[Client %v] Successfully sent request:", c.id, msg)
+	logger.Infof("[Client %v] Successfully sent request of type %T", c.id, msg.Content)
+	logger.Debugf("%+v", msg)
 
 	return nil
 }
@@ -73,7 +79,9 @@ func (c *genericClient) receive() (*pb.Message, error) {
 	if resp.ProtocolError != "" {
 		return nil, fmt.Errorf(resp.ProtocolError)
 	}
-	logger.Infof("[Client %v] Received response from the stream: %v", c.id, resp)
+	logger.Infof("[Client %v] Received response of type %T from the stream", c.id, resp.Content)
+	logger.Debugf("%+v", resp)
+
 	return resp, nil
 }
 

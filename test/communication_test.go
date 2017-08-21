@@ -24,6 +24,10 @@ var testGrpcClientConn *grpc.ClientConn
 // connection is then re-used in all the tests to reduce overhead.
 // Once all the tests run, we close the connection to the server and stop the server.
 func TestMain(m *testing.M) {
+	// Set debug log level for easier troubleshooting in case something goes wrong
+	client.SetLogLevel("debug")
+	server.SetLogLevel("debug")
+
 	server := server.NewProtocolServer()
 	go server.Start(7008)
 
