@@ -9,7 +9,7 @@ The library comes with a convenient CLI for running *emmy server*, *emmy clients
 To get some more information about the theory behind zero knowledge proofs, please refer to additional documentation in the *docs* folder.
 
 #### What does emmy stand for?
-Emmy is named after [Emmy Noether](https://sl.wikipedia.org/wiki/Emmy_Noether).
+Emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
 
 # Installation
 To install emmy, run 
@@ -30,10 +30,19 @@ Below we provide isntructions for using the `emmy` CLI tool. In addition, you ca
 ## Emmy server
 Emmy server waits for requests from clients (provers) and starts verifying them.
 
+```bash
+$ emmy server        # prints available commands, options and default values
+$ emmy server start  # starts emmy server with default settings
 ```
-$ emmy server        # prints help
-$ emmy server start  # starts emmy server
+
+Alternatively, to control what gets logged server-side, you can provide the flag `--loglevel` (shorthand `-l`) with one of the values `debug|info|notice|error|critical`. For instance, for development or debugging purposes we might prefer more fine-grained logs, in which case we would run
+
+
+```bash
+$ emmy server start --loglevel debug # or shorthand '-l debug'
 ```
+
+If this flag is omitted, the log level defaults to `info`.
 
 Starting the server should produce an output similar to the one below:
 
@@ -57,8 +66,9 @@ Running the clients requires an instance of emmy server. First, spin up the emmy
 1. **Which protocol to run**: flags *--protocol* (shorthand *-p*) which must be one of `pedersen|pedersen_ec|schnorr|schnorr_ec|cspaillier` and defaults to pedersen, and flag *--variant* (shorthand *-v*) which must be one of `sigma|zkp|zkpok` and defaults to sigma. 
 2. **How many clients to start**: flag *--nclients* (shorthand *-n*), defaults to 1.
 3. **Whether to run clients concurrently or not**: flag *--concurrent*. Include this flag if you want to run the specified number of clients consurrently. The absence of this flag means that clients will be run sequentially.
+4. **Logging level**: flag *--loglevel* (shorthand *-l*), which must be one of `debug|info|notice|error|critical`. Defaults to `ìnfo`.
 
-You can also list these flags by running `emmy client --help`.
+You can also list these flags and their default values by running `emmy client --help`.
 
 Here are some equivalent examples:
 ```
@@ -147,14 +157,6 @@ Currently supported crypto primitives with fully implemented communication layer
 # Documentation
 * [A short overview of the theory Emmy is based on](./docs/theory.md) 
 * [Developing Emmy (draft)](./docs/develop.md) 
-
-# Roadmap
-* Implement newer schemes for anonymous credentials
-* Enable ZKP & ZKPOK for CSPailier
-* Implement communication layer for latest protocols
-* Reorganize library - divide client, server, core (to be decided)
-* Benchmarks
-* ...
 
 # References
 

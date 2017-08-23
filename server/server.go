@@ -24,14 +24,15 @@ type Server struct {
 
 var logger = log.ServerLogger
 
+func SetLogLevel(level string) error {
+	return logger.SetLevel(level)
+}
+
 // NewProtocolServer initializes an instance of the Server struct and returns a pointer.
 // It performs some default configuration (tracing of gRPC communication and interceptors)
 // and registers RPC protocol server with gRPC server.
 func NewProtocolServer() *Server {
 	logger.Info("Instantiating new protocol server")
-
-	// Register our generic service
-	logger.Info("Registering services")
 
 	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
 	// for logging and monitoring purposes.
@@ -52,6 +53,7 @@ func NewProtocolServer() *Server {
 	// Initialize gRPC metrics offered by Prometheus package
 	grpc_prometheus.Register(server.grpcServer)
 
+	logger.Notice("gRPC Services registered")
 	return server
 }
 
@@ -73,7 +75,7 @@ func (s *Server) Start(port int) {
 	go http.ListenAndServe(":8881", nil)
 
 	// From here on, gRPC server will accept connections
-	logger.Infof("Emmy server listening for connections on port %d", port)
+	logger.Noticef("Emmy server listening for connections on port %d", port)
 	s.grpcServer.Serve(listener)
 }
 
@@ -88,14 +90,15 @@ func (s *Server) Teardown() {
 // in order to provide a nicer API when setting up the server.
 func (s *Server) EnableTracing() {
 	grpc.EnableTracing = true
-	logger.Infof("Enabled gRPC tracing")
+	logger.Notice("Enabled gRPC tracing")
 }
 
 func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
 	if err := stream.Send(msg); err != nil {
 		return fmt.Errorf("Error sending message:", err)
 	}
-	logger.Info("Successfully sent response:", msg)
+	logger.Infof("Successfully sent response of type %T", msg.Content)
+	logger.Debugf("%+v", msg)
 
 	return nil
 }
@@ -107,7 +110,9 @@ func (s *Server) receive(stream pb.Protocol_RunServer) (*pb.Message, error) {
 	} else if err != nil {
 		return nil, fmt.Errorf("An error ocurred: %v", err)
 	}
-	logger.Info("Received request from the stream", resp)
+	logger.Infof("Received request of type %T from the stream", resp.Content)
+	logger.Debugf("%+v", resp)
+
 	return resp, nil
 }
 
@@ -180,10 +185,10 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	}
 
 	if err != nil {
-		logger.Notice("Closing RPC due to previous errors")
+		logger.Error("Closing RPC due to previous errors")
 		return fmt.Errorf("FAIL: %v", err)
 	}
 
-	logger.Info("RPC finished successfully")
+	logger.Notice("RPC finished successfully")
 	return nil
 }

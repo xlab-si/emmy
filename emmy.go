@@ -35,19 +35,31 @@ func main() {
 	// protocol type and variant to demonstrate
 	var protocolType, protocolVariant string
 
+	// log level applied to client/server loggers
+	var logLevel string
+
 	app := cli.NewApp()
 	app.Name = "emmy"
 	app.Version = "0.1"
 	app.Usage = "A CLI app for running emmy server, emmy clients and examples of proofs offered by the emmy library"
 
+	logLevelFlag := cli.StringFlag{
+		Name:        "loglevel, l",
+		Value:       "info",
+		Usage:       "debug|info|notice|error|critical",
+		Destination: &logLevel,
+	}
+
 	serverApp := cli.Command{
 		Name:  "server",
 		Usage: "A server that verifies clients (provers)",
+		Flags: []cli.Flag{logLevelFlag},
 		Subcommands: []cli.Command{
 			{
 				Name:  "start",
 				Usage: "Starts emmy server",
 				Action: func(c *cli.Context) error {
+					server.SetLogLevel(logLevel)
 					startEmmyServer()
 					return nil
 				},
@@ -77,12 +89,14 @@ func main() {
 			Name:        "concurrent",
 			Destination: &runConcurrently,
 		},
+		logLevelFlag,
 	}
 	clientApp := cli.Command{
 		Name:  "client",
 		Usage: "A client that wants to prove something to the verifier (server)",
 		Flags: clientFlags,
 		Action: func(ctx *cli.Context) error {
+			client.SetLogLevel(logLevel)
 			runClients(n, runConcurrently, protocolType, protocolVariant, emmyServerEndpoint)
 			return nil
 		},
@@ -94,6 +108,8 @@ func main() {
 		Runs both emmy server as well as client(s).`,
 		Flags: clientFlags,
 		Action: func(ctx *cli.Context) error {
+			client.SetLogLevel(logLevel)
+			server.SetLogLevel(logLevel)
 			go startEmmyServer()
 			runClients(n, runConcurrently, protocolType, protocolVariant, emmyServerEndpoint)
 			return nil
