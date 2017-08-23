@@ -9,6 +9,7 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"io"
 	"math"
 	"net"
@@ -30,14 +31,27 @@ func SetLogLevel(level string) error {
 
 // NewProtocolServer initializes an instance of the Server struct and returns a pointer.
 // It performs some default configuration (tracing of gRPC communication and interceptors)
-// and registers RPC protocol server with gRPC server.
-func NewProtocolServer() *Server {
+// and registers RPC protocol server with gRPC server. It requires TLS cert and keyfile
+// in order to establish a secure channel with clients.
+func NewProtocolServer(certFile, keyFile string) (*Server, error) {
 	logger.Info("Instantiating new protocol server")
+
+	// Register our generic service
+	logger.Info("Registering services")
+
+	// Obtain TLS credentials
+	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Infof("Successfully read certificate [%s] and key [%s]", certFile, keyFile)
 
 	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
 	// for logging and monitoring purposes.
 	server := &Server{
 		grpcServer: grpc.NewServer(
+			grpc.Creds(creds),
 			grpc.MaxConcurrentStreams(math.MaxUint32),
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		),
@@ -54,7 +68,7 @@ func NewProtocolServer() *Server {
 	grpc_prometheus.Register(server.grpcServer)
 
 	logger.Notice("gRPC Services registered")
-	return server
+	return server, nil
 }
 
 // Start configures and starts the protocol server at the requested port.

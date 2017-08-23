@@ -48,6 +48,10 @@ func LoadKeyDirFromConfig() string {
 	return key_path
 }
 
+func LoadTestdataDir() string {
+	return viper.GetString("testdata_dir")
+}
+
 func LoadTestKeyDirFromConfig() string {
 	key_path := viper.GetString("key_folder")
 	return key_path
