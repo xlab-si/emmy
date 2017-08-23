@@ -38,6 +38,10 @@ func main() {
 	// log level applied to client/server loggers
 	var logLevel string
 
+	// paths to certificate and key used for establishing a secure channel with the server
+	serverKey := filepath.Join(config.LoadTestdataDir(), "server.key")
+	serverCert := filepath.Join(config.LoadTestdataDir(), "server.pem")
+
 	app := cli.NewApp()
 	app.Name = "emmy"
 	app.Version = "0.1"
@@ -50,18 +54,32 @@ func main() {
 		Destination: &logLevel,
 	}
 
+	serverFlags := []cli.Flag{
+		cli.StringFlag{
+			Name:        "cert",
+			Value:       serverCert,
+			Usage:       "Path to servers certificate file",
+			Destination: &serverCert,
+		},
+		cli.StringFlag{
+			Name:        "key",
+			Value:       serverKey,
+			Usage:       "Path to server key file",
+			Destination: &serverKey,
+		},
+	}
+
 	serverApp := cli.Command{
 		Name:  "server",
 		Usage: "A server that verifies clients (provers)",
-		Flags: []cli.Flag{logLevelFlag},
+		Flags: append(serverFlags, logLevelFlag),
 		Subcommands: []cli.Command{
 			{
 				Name:  "start",
 				Usage: "Starts emmy server",
 				Action: func(c *cli.Context) error {
 					server.SetLogLevel(logLevel)
-					startEmmyServer()
-					return nil
+					return startEmmyServer(serverCert, serverKey)
 				},
 			},
 		},
@@ -89,6 +107,12 @@ func main() {
 			Name:        "concurrent",
 			Destination: &runConcurrently,
 		},
+		cli.StringFlag{
+			Name:        "caCert",
+			Value:       serverCert,
+			Usage:       "Path to certificate file of the CA that issued emmy server's certificate",
+			Destination: &serverCert,
+		},
 		logLevelFlag,
 	}
 	clientApp := cli.Command{
@@ -97,7 +121,7 @@ func main() {
 		Flags: clientFlags,
 		Action: func(ctx *cli.Context) error {
 			client.SetLogLevel(logLevel)
-			runClients(n, runConcurrently, protocolType, protocolVariant, emmyServerEndpoint)
+			runClients(n, runConcurrently, protocolType, protocolVariant, emmyServerEndpoint, serverCert)
 			return nil
 		},
 	}
@@ -106,12 +130,12 @@ func main() {
 		Name: "example",
 		Usage: `An entire example of chosen protocol execution for demonstration.
 		Runs both emmy server as well as client(s).`,
-		Flags: clientFlags,
+		Flags: append(serverFlags, clientFlags...),
 		Action: func(ctx *cli.Context) error {
 			client.SetLogLevel(logLevel)
 			server.SetLogLevel(logLevel)
-			go startEmmyServer()
-			runClients(n, runConcurrently, protocolType, protocolVariant, emmyServerEndpoint)
+			go startEmmyServer(serverCert, serverKey)
+			runClients(n, runConcurrently, protocolType, protocolVariant, emmyServerEndpoint, serverCert)
 			return nil
 		},
 	}
@@ -124,8 +148,8 @@ func main() {
 // sequentially and times the execution.
 // It passes a single gRPC client connection to multiple clients as gRPC is capable of
 // multiplexing several RPCs on a single connection
-func runClients(n int, concurrently bool, protocolType, protocolVariant, endpoint string) {
-	conn, err := client.GetConnection(endpoint)
+func runClients(n int, concurrently bool, protocolType, protocolVariant, endpoint, caCert string) {
+	conn, err := client.GetConnection(endpoint, caCert)
 	if err != nil {
 		cLogger.Criticalf("Cannot connect to gRPC server: %v", err)
 		return
@@ -239,12 +263,17 @@ func parseSchema(schemaType, schemaVariant string) (pb.SchemaType, pb.SchemaVari
 }
 
 // startEmmyServer configures and starts the gRPC server.
-func startEmmyServer() {
+func startEmmyServer(cert, key string) error {
 	// Listen on the port specified in the config
 	port := config.LoadServerPort()
 
 	// Create and start new instance of emmy server
-	server := server.NewProtocolServer()
+	server, err := server.NewProtocolServer(cert, key)
+	if err != nil {
+		return err
+	}
+
 	server.EnableTracing()
 	server.Start(port)
+	return nil
 }

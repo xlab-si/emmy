@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
@@ -28,11 +29,19 @@ func TestMain(m *testing.M) {
 	client.SetLogLevel("debug")
 	server.SetLogLevel("debug")
 
-	server := server.NewProtocolServer()
+	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	go server.Start(7008)
 
 	// Establish a connection to previously started server
-	testGrpcClientConn, _ = client.GetConnection(testGrpcServerEndpoint)
+	testGrpcClientConn, err = client.GetConnection(testGrpcServerEndpoint, "testdata/server.pem")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	// At this point all the tests will actually run
 	returnCode := m.Run()

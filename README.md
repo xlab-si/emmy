@@ -133,6 +133,24 @@ $ emmy example -protocol schnorr -n 2 --concurrent
 ...
 ```
 
+## TLS support
+Communication channel between emmy clients and emmy server is secure, as it enforces the usage of TLS. TLS is used to encrypt communication and to ensure emmy server's authenticity.
+
+By default, the server will attempt to use the private key and certificate in `test/testdata` directory. The provided certificate is self-signed, and therefore the clients can use it as the CA certificate (e.g. certificate of the entity that issued server's certificate) which they have to provide in order to authenticate the server.
+ >**Important note:** You should never use the private key and certificate that comes with this repository when running emmy in production. These are meant *for testing and development purposes only*.
+
+In a real world setting, the client needs to keep a copy of the CA certificate which issued server's certificate. When the server presents its certificate to the client, the client uses CA's certificate to check the validity of server's certifiacate.
+
+To control keys and certificates used for TLS, emmy CLI programs use several flags. In addition to those already presented in this document, `emmy server` supports the following flags:
+
+* `--cert` which expects the path to server's certificate in PEM format, 
+* `--key` which expects the path to server's private key file.
+
+The same flags can be used with `emmy example` program. If they are omitted, files in `test/testdata` directory are used.
+
+On the other hand, we can provide `emmy client` with the `--caCert` flag, which expects the certificate of the CA that issued emmy server's certificate (in PEM format). Again, if this flag is omitted, the certificate in `test/testdata` directory is used.
+
+
 # Currently supported crypto primitives
 
 Currently supported crypto primitives with fully implemented communication layer (e.g. client-server communication via gRPC) are listed in the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.

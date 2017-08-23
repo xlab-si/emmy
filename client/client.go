@@ -7,6 +7,7 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"io"
 	"math/rand"
 	"time"
@@ -18,15 +19,21 @@ func SetLogLevel(level string) error {
 	return logger.SetLevel(level)
 }
 
-// GetConnection attempts to return a connection to a gRPC server at a given endpoint.
+// GetConnection attempts to return a secure connection to a gRPC server at a given endpoint.
 // Note that several clients can be passed the same connection object, as the gRPC framework
 // is able to multiplex several RPCs on the same connection, thus reducing the overhead
-func GetConnection(serverEndpoint string) (*grpc.ClientConn, error) {
+func GetConnection(serverEndpoint, caCert string) (*grpc.ClientConn, error) {
 	logger.Info("Getting the connection")
 	timeoutSec := config.LoadTimeout()
+
+	// Create client TLS credentials
+	creds, err := credentials.NewClientTLSFromFile(caCert, "")
+	if err != nil {
+		return nil, fmt.Errorf("Error creating TLS client credentials: %v", err)
+	}
+
 	dialOptions := []grpc.DialOption{
-		// TODO enable secure connection to gRPC server
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(creds),
 		grpc.WithBlock(),
 		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
 	}
