@@ -54,6 +54,28 @@ func NewPair(a, b *big.Int) *Pair {
 	return &pair
 }
 
+type Triple struct {
+	A *big.Int
+	B *big.Int
+	C *big.Int
+}
+
+func NewTriple(a, b, c *big.Int) *Triple {
+	triple := Triple{A: a, B: b, C: c}
+	return &triple
+}
+
+type ECTriple struct {
+	A *ECGroupElement
+	B *ECGroupElement
+	C *ECGroupElement
+}
+
+func NewECTriple(a, b, c *ECGroupElement) *ECTriple {
+	triple := ECTriple{A: a, B: b, C: c}
+	return &triple
+}
+
 func ToProtocolType(variant pb.SchemaVariant) ProtocolType {
 	switch variant {
 	case pb.SchemaVariant_ZKP:
