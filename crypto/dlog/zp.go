@@ -48,8 +48,7 @@ func NewZpSafePrime(modulusBitLength int) (*ZpDLog, error) {
 // Multiply multiplies two elements from Z_p. Note that two values are returned
 // to make it implementation of DLog interface - the second value is always nil
 // (differently as in EC DLog).
-//func (dlog *ZpDLog) Multiply(x, y *big.Int) *big.Int {
-func (dlog ZpDLog) Multiply(params ...*big.Int) (*big.Int, *big.Int) {
+func (dlog *ZpDLog) Multiply(params ...*big.Int) (*big.Int, *big.Int) {
 	x := params[0]
 	y := params[1]
 
@@ -62,8 +61,7 @@ func (dlog ZpDLog) Multiply(params ...*big.Int) (*big.Int, *big.Int) {
 	return r, nil
 }
 
-//func (dlog *ZpDLog) Exponentiate(x, exponent *big.Int) *big.Int {
-func (dlog ZpDLog) Exponentiate(params ...*big.Int) (*big.Int, *big.Int) {
+func (dlog *ZpDLog) Exponentiate(params ...*big.Int) (*big.Int, *big.Int) {
 	x := params[0]
 	exponent := params[1]
 
@@ -72,12 +70,17 @@ func (dlog ZpDLog) Exponentiate(params ...*big.Int) (*big.Int, *big.Int) {
 	return r, nil
 }
 
-func (dlog ZpDLog) ExponentiateBaseG(exponent *big.Int) (*big.Int, *big.Int) {
+func (dlog *ZpDLog) ExponentiateBaseG(exponent *big.Int) (*big.Int, *big.Int) {
 	x := new(big.Int)
 	x.Exp(dlog.G, exponent, dlog.P)
 	return x, nil
 }
 
-func (dlog ZpDLog) GetOrderOfSubgroup() *big.Int {
+func (dlog *ZpDLog) Inverse(x *big.Int) *big.Int {
+	inv := new(big.Int).ModInverse(x, dlog.P)
+	return inv
+}
+
+func (dlog *ZpDLog) GetOrderOfSubgroup() *big.Int {
 	return dlog.OrderOfSubgroup
 }

@@ -38,7 +38,6 @@ func NewECDLog(curve Curve) *ECDLog {
 	return &ecdlog
 }
 
-//func (dlog *ECDLog) Multiply(x1, y1, x2, y2 *big.Int) (*big.Int, *big.Int) {
 func (dlog *ECDLog) Multiply(params ...*big.Int) (*big.Int, *big.Int) {
 	x1 := params[0]
 	y1 := params[1]
@@ -50,7 +49,6 @@ func (dlog *ECDLog) Multiply(params ...*big.Int) (*big.Int, *big.Int) {
 	return x, y
 }
 
-//func (dlog *ECDLog) Exponentiate(x, y, exponent *big.Int) (*big.Int, *big.Int) {
 func (dlog *ECDLog) Exponentiate(params ...*big.Int) (*big.Int, *big.Int) {
 	x := params[0]
 	y := params[1]
@@ -65,6 +63,12 @@ func (dlog *ECDLog) ExponentiateBaseG(exponent *big.Int) (*big.Int, *big.Int) {
 	// calculates g ^^ exponent or better to say g * exponent as this is elliptic ((gx, gy) * exponent)
 	hx, hy := dlog.Curve.ScalarBaseMult(exponent.Bytes())
 	return hx, hy
+}
+
+func (dlog *ECDLog) Inverse(x, y *big.Int) (*big.Int, *big.Int) {
+	orderMin := new(big.Int).Sub(dlog.OrderOfSubgroup, big.NewInt(1))
+	invX, invY := dlog.Exponentiate(x, y, orderMin)
+	return invX, invY
 }
 
 func (dlog *ECDLog) GetOrderOfSubgroup() *big.Int {

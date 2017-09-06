@@ -155,19 +155,18 @@ On the other hand, we can provide `emmy client` with the `--caCert` flag, which 
 
 Currently supported crypto primitives with fully implemented communication layer (e.g. client-server communication via gRPC) are listed in the tables below. Note that the ones not ticked are also implemented, but not from communication perspective.
 
->**Note**: EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
+>**Note**: &#8484;<sub>p</sub> = multiplicative group of integers modulo prime p, EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
 
 | Primitives |
 | ----- |
-| [✓] Schnorr protocol [5] (sigma protocol can be turned into ZKP and ZKPOK) |
-| [✓] Schnorr protocol EC (sigma protocol can be turned into ZKP and ZKPOK) |
-| [✓] Pedersen commitments |
-| [✓] Pedersen commitments EC |
+| [✓] Schnorr protocol [5] (&#8484;<sub>p</sub> and EC)(sigma protocol can be turned into ZKP and ZKPOK) |
+| [✓] Pedersen commitments (&#8484;<sub>p</sub> and EC) |
 | [✓] ZKP of quadratic residuosity [6] |
 | [✓] ZKP of quadratic nonresiduosity [6] |
-| [✓] Chaump-Pedersen for proving dlog equality [7] | 
-| [✓] DLog Equality Blinded Transcript [4] | 
-| [✓] Pseudonym system [4] |
+| [✓] Chaump-Pedersen for proving dlog equality [7] (&#8484;<sub>p</sub> and EC) | 
+| [✓] DLog Equality Blinded Transcript [4] (&#8484;<sub>p</sub> and EC) | 
+| [✓] Pseudonym system [4] (&#8484;<sub>p</sub> and EC) |
+| [✗] Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
 | [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
 | [✗] Shamir's secret sharing scheme |
@@ -191,3 +190,5 @@ Currently supported crypto primitives with fully implemented communication layer
 [6] Goldwasser, Shafi, Silvio Micali, and Charles Rackoff. "The knowledge complexity of interactive proof systems." SIAM Journal on computing 18.1 (1989): 186-208.
 
 [7] D. Chaum and T. P. Pedersen, Wallet databases with observers, Advances in Cryptology — CRYPTO ’92 (E. F. Brickell, ed.), LNCS, vol. 740, Springer-Verlag, 1993, pp. 89– 105.
+
+[8] Cramer, Ronald, Ivan Damgård, and Berry Schoenmakers. "Proofs of partial knowledge and simplified design of witness hiding protocols." Advances in Cryptology—CRYPTO’94. Springer Berlin/Heidelberg, 1994.

@@ -83,3 +83,44 @@ func TestDLogEqualityEC(t *testing.T) {
 	assert.Equal(t, valid, true, "DLogEqualityECBTranscript does not work correctly")
 
 }
+
+func TestPartialDLogKnowledge(t *testing.T) {
+	dlog := config.LoadDLog("pseudonymsys")
+
+	secret1 := common.GetRandomInt(dlog.OrderOfSubgroup)
+	x := common.GetRandomInt(dlog.OrderOfSubgroup)
+
+	groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1))
+	a1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
+	a2, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
+
+	//b1, _ := dlog.Exponentiate(a1, secret1)
+	// we pretend that we don't know x:
+	b2, _ := dlog.Exponentiate(a2, x)
+	proved := dlogproofs.ProvePartialDLogKnowledge(dlog, secret1, a1, a2, b2)
+
+	assert.Equal(t, proved, true, "ProvePartialDLogKnowledge does not work correctly")
+}
+
+func TestPartialECDLogKnowledge(t *testing.T) {
+	dlog := dlog.NewECDLog(dlog.P256)
+
+	exp1 := common.GetRandomInt(dlog.OrderOfSubgroup)
+	exp2 := common.GetRandomInt(dlog.OrderOfSubgroup)
+	a1X, a1Y := dlog.ExponentiateBaseG(exp1)
+	a1 := types.NewECGroupElement(a1X, a1Y)
+	a2X, a2Y := dlog.ExponentiateBaseG(exp2)
+	a2 := types.NewECGroupElement(a2X, a2Y)
+
+	secret1 := common.GetRandomInt(dlog.OrderOfSubgroup)
+	x := common.GetRandomInt(dlog.OrderOfSubgroup)
+
+	//b1X, b1Y := dlog.ExponentiateBaseG(secret1)
+	// we pretend that we don't know x:
+	b2X, b2Y := dlog.ExponentiateBaseG(x)
+	b2 := types.NewECGroupElement(b2X, b2Y)
+
+	proved := dlogproofs.ProvePartialECDLogKnowledge(dlog, secret1, a1, a2, b2)
+
+	assert.Equal(t, proved, true, "ProvePartialECDLogKnowledge does not work correctly")
+}
