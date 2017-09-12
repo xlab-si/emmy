@@ -5,8 +5,8 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -35,11 +35,7 @@ func NewCACertificate(blindedA, blindedB, r, s *big.Int) *CACertificate {
 	}
 }
 
-func NewCA() *CA {
-	dlog := config.LoadDLog("pseudonymsys")
-	x, y := config.LoadPseudonymsysCAPubKey()
-	d := config.LoadPseudonymsysCASecret()
-
+func NewCA(dlog *dlog.ZpDLog, d, x, y *big.Int) *CA {
 	c := elliptic.P256()
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}

@@ -8,7 +8,9 @@ import (
 )
 
 func (s *Server) PseudonymsysGenerateNym(req *pb.Message, stream pb.Protocol_RunServer) error {
-	org := pseudonymsys.NewOrgNymGen()
+	dlog := config.LoadDLog("pseudonymsys")
+	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
+	org := pseudonymsys.NewOrgNymGen(dlog, caPubKeyX, caPubKeyY)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomData()
 	x1 := new(big.Int).SetBytes(proofRandData.X1)
@@ -64,12 +66,14 @@ func (s *Server) PseudonymsysGenerateNym(req *pb.Message, stream pb.Protocol_Run
 }
 
 func (s *Server) PseudonymsysIssueCredential(req *pb.Message, stream pb.Protocol_RunServer) error {
+	dlog := config.LoadDLog("pseudonymsys")
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
+	org := pseudonymsys.NewOrgCredentialIssuer(dlog, s1, s2)
+
 	sProofRandData := req.GetSchnorrProofRandomData()
 	x := new(big.Int).SetBytes(sProofRandData.X)
 	a := new(big.Int).SetBytes(sProofRandData.A)
 	b := new(big.Int).SetBytes(sProofRandData.B)
-
-	org := pseudonymsys.NewOrgCredentialIssuer()
 	challenge := org.GetAuthenticationChallenge(a, b, x)
 
 	resp := &pb.Message{
@@ -146,7 +150,10 @@ func (s *Server) PseudonymsysIssueCredential(req *pb.Message, stream pb.Protocol
 }
 
 func (s *Server) PseudonymsysTransferCredential(req *pb.Message, stream pb.Protocol_RunServer) error {
-	org := pseudonymsys.NewOrgCredentialVerifier()
+	dlog := config.LoadDLog("pseudonymsys")
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
+	org := pseudonymsys.NewOrgCredentialVerifier(dlog, s1, s2)
+
 	data := req.GetPseudonymsysTransferCredentialData()
 	orgName := data.OrgName
 	x1 := new(big.Int).SetBytes(data.X1)

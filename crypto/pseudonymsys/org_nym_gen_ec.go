@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/dlogproofs"
@@ -26,21 +25,24 @@ func NewPseudonymEC(a, b *types.ECGroupElement) *PseudonymEC {
 
 type OrgNymGenEC struct {
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
+	x                *big.Int
+	y                *big.Int
 }
 
-func NewOrgNymGenEC() *OrgNymGenEC {
+func NewOrgNymGenEC(x, y *big.Int) *OrgNymGenEC {
 	verifier := dlogproofs.NewECDLogEqualityVerifier(dlog.P256)
 	org := OrgNymGenEC{
 		EqualityVerifier: verifier,
+		x:                x,
+		y:                y,
 	}
 	return &org
 }
 
 func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
 	x1, x2 *types.ECGroupElement, r, s *big.Int) (*big.Int, error) {
-	x, y := config.LoadPseudonymsysCAPubKey()
 	c := elliptic.P256()
-	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
+	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
 
 	hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)
 	verified := ecdsa.Verify(&pubKey, hashed, r, s)

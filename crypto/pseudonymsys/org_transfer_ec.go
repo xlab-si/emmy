@@ -1,7 +1,6 @@
 package pseudonymsys
 
 import (
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	"github.com/xlab-si/emmy/types"
@@ -17,10 +16,7 @@ type OrgCredentialVerifierEC struct {
 	b                *types.ECGroupElement
 }
 
-func NewOrgCredentialVerifierEC() *OrgCredentialVerifierEC {
-	// this presumes that organization's own keys are stored under "org1"
-	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-
+func NewOrgCredentialVerifierEC(s1, s2 *big.Int) *OrgCredentialVerifierEC {
 	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(dlog.P256)
 	org := OrgCredentialVerifierEC{
 		s1:               s1,
