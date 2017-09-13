@@ -9,7 +9,8 @@ import (
 )
 
 func (s *Server) PseudonymsysGenerateNymEC(req *pb.Message, stream pb.Protocol_RunServer) error {
-	org := pseudonymsys.NewOrgNymGenEC()
+	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
+	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
 	x1 := types.ToECGroupElement(proofRandData.X1)
@@ -70,7 +71,8 @@ func (s *Server) PseudonymsysIssueCredentialEC(req *pb.Message, stream pb.Protoc
 	a := types.ToECGroupElement(proofRandData.A)
 	b := types.ToECGroupElement(proofRandData.B)
 
-	org := pseudonymsys.NewOrgCredentialIssuerEC()
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
+	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2)
 	challenge := org.GetAuthenticationChallenge(a, b, x)
 
 	resp := &pb.Message{
@@ -148,7 +150,9 @@ func (s *Server) PseudonymsysIssueCredentialEC(req *pb.Message, stream pb.Protoc
 }
 
 func (s *Server) PseudonymsysTransferCredentialEC(req *pb.Message, stream pb.Protocol_RunServer) error {
-	org := pseudonymsys.NewOrgCredentialVerifierEC()
+	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
+	org := pseudonymsys.NewOrgCredentialVerifierEC(s1, s2)
+
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
 	x1 := types.ToECGroupElement(data.X1)

@@ -4,8 +4,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/dlogproofs"
 	"math/big"
 )
@@ -24,22 +24,24 @@ func NewPseudonym(a, b *big.Int) *Pseudonym {
 
 type OrgNymGen struct {
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
+	x                *big.Int
+	y                *big.Int
 }
 
-func NewOrgNymGen() *OrgNymGen {
-	dlog := config.LoadDLog("pseudonymsys")
+func NewOrgNymGen(dlog *dlog.ZpDLog, x, y *big.Int) *OrgNymGen {
 	verifier := dlogproofs.NewDLogEqualityVerifier(dlog)
 	org := OrgNymGen{
 		EqualityVerifier: verifier,
+		x:                x,
+		y:                y,
 	}
 	return &org
 }
 
-func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB,
-	x1, x2, r, s *big.Int) (*big.Int, error) {
-	x, y := config.LoadPseudonymsysCAPubKey()
+func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
+	r, s *big.Int) (*big.Int, error) {
 	c := elliptic.P256()
-	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
+	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
 
 	hashed := common.HashIntoBytes(blindedA, blindedB)
 	verified := ecdsa.Verify(&pubKey, hashed, r, s)

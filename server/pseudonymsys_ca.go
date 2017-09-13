@@ -1,14 +1,19 @@
 package server
 
 import (
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
 
 func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) error {
-	ca := pseudonymsys.NewCA()
 	var err error
+
+	dlog := config.LoadDLog("pseudonymsys")
+	d := config.LoadPseudonymsysCASecret()
+	pubKeyX, pubKeyY := config.LoadPseudonymsysCAPubKey()
+	ca := pseudonymsys.NewCA(dlog, d, pubKeyX, pubKeyY)
 
 	sProofRandData := req.GetSchnorrProofRandomData()
 	x := new(big.Int).SetBytes(sProofRandData.X)

@@ -5,7 +5,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/dlogproofs"
@@ -37,10 +36,7 @@ func NewCACertificateEC(blindedA, blindedB *types.ECGroupElement, r, s *big.Int)
 	}
 }
 
-func NewCAEC() *CAEC {
-	x, y := config.LoadPseudonymsysCAPubKey()
-	d := config.LoadPseudonymsysCASecret()
-
+func NewCAEC(d, x, y *big.Int) *CAEC {
 	c := elliptic.P256()
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
