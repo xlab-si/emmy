@@ -72,11 +72,11 @@ func NewProtocolServer(certFile, keyFile string) (*Server, error) {
 }
 
 // Start configures and starts the protocol server at the requested port.
-func (s *Server) Start(port int) {
+func (s *Server) Start(port int) error {
 	connStr := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", connStr)
 	if err != nil {
-		logger.Criticalf("Could not connect: %v", err)
+		return fmt.Errorf("Could not connect: %v", err)
 	}
 
 	// Register Prometheus metrics handler and serve metrics page on the desired endpoint.
@@ -91,6 +91,7 @@ func (s *Server) Start(port int) {
 	// From here on, gRPC server will accept connections
 	logger.Noticef("Emmy server listening for connections on port %d", port)
 	s.grpcServer.Serve(listener)
+	return nil
 }
 
 // Teardown stops the protocol server by gracefully stopping enclosed gRPC server.
