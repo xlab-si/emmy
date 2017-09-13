@@ -1,0 +1,112 @@
+package cli
+
+// This file contains definitions for all the command-line flags to be used with different commands
+// or subcommands of the emmy CLI.
+
+import (
+	"github.com/urfave/cli"
+	"github.com/xlab-si/emmy/config"
+	"path/filepath"
+)
+
+// logLevelFlag indicates the log level applied to client/server loggers.
+var logLevelFlag = cli.StringFlag{
+	Name:  "loglevel, l",
+	Value: "info",
+	Usage: "debug|info|notice|error|critical",
+}
+
+// keyFlag keeps the path to server's private key in PEM format
+// (for establishing a secure channel with the server).
+var keyFlag = cli.StringFlag{
+	Name:  "key",
+	Value: filepath.Join(config.LoadTestdataDir(), "server.key"),
+	Usage: "`PATH` to server key file",
+}
+
+// certFlag keeps the path to server's certificate in PEM format
+// (for establishing a secure channel with the server).
+var certFlag = cli.StringFlag{
+	Name:  "cert",
+	Value: filepath.Join(config.LoadTestdataDir(), "server.pem"),
+	Usage: "`PATH` to servers certificate file",
+}
+
+// caCertFlag keeps the path to CA's certificate in PEM format
+// (for establishing a secure channel with the server).
+var caCertFlag = cli.StringFlag{
+	Name:  "cacert",
+	Value: filepath.Join(config.LoadTestdataDir(), "server.pem"),
+	Usage: "`PATH` to certificate file of the CA that issued emmy server's certificate",
+}
+
+// portFlag indicates the port where emmy server will listen.
+var portFlag = cli.IntFlag{
+	Name:  "port, p",
+	Value: config.LoadServerPort(),
+	Usage: "`PORT` where emmy server will listen for client connections",
+}
+
+// serverEndpointFlag points to the endpoint at which emmy clients will contact emmy server.
+var serverEndpointFlag = cli.StringFlag{
+	Name:  "server",
+	Value: config.LoadServerEndpoint(),
+	Usage: "`URI` of emmy server in the form serverHost:serverPort",
+}
+
+// nClientsFlag indicates the number of (either concurrent or sequential) clients to run.
+var nClientsFlag = cli.IntFlag{
+	Name:  "nclients, n",
+	Value: 1,
+	Usage: "How many clients to run",
+}
+
+// concurrencyFlag indicates whether to run clients concurrently or not.
+var concurrencyFlag = cli.BoolFlag{
+	Name:  "concurrent",
+	Usage: "Whether to run clients concurrently or not",
+}
+
+// protocolVariantFlag indicates which protocol variant to demonstrate.
+var protocolVariantFlag = cli.StringFlag{
+	Name:  "variant, v",
+	Value: "sigma",
+	Usage: "sigma|zkp|zkpok",
+}
+
+// protocolSecretFlag keeps the secret value used to bootstrap a given protocol.
+var protocolSecretFlag = cli.Int64Flag{
+	Name:  "secret",
+	Value: 121212121,
+}
+
+// protocolLabelFlag keeps the label used to bootstrap cspaillier verifiable encryption.
+var protocolLabelFlag = cli.Int64Flag{
+	Name:  "label",
+	Value: 340002223232,
+}
+
+// protocolPubKeyFlag keeps the path to the public key file of the verifier used in cspaillier
+// verifiable encryption protocol.
+var protocolPubKeyFlag = cli.StringFlag{
+	Name:  "pubkey",
+	Value: filepath.Join(config.LoadKeyDirFromConfig(), "cspaillierpubkey.txt"),
+	Usage: "`PATH` to the verifier's public key file",
+}
+
+// serverFlags are the flags used by the server CLI commands.
+var serverFlags = []cli.Flag{
+	portFlag,
+	certFlag,
+	keyFlag,
+	logLevelFlag,
+}
+
+// clientFlags are flags common to all client CLI subcommands, regardless of the protocol.
+var clientFlags = []cli.Flag{
+	nClientsFlag,
+	concurrencyFlag,
+	serverEndpointFlag,
+	caCertFlag,
+	logLevelFlag,
+}
