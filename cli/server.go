@@ -32,6 +32,5 @@ func startEmmyServer(port int, certPath, keyPath string) error {
 		return err
 	}
 	srv.EnableTracing()
-	srv.Start(port)
-	return nil
+	return srv.Start(port)
 }
