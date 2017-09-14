@@ -135,7 +135,7 @@ func run(ctx, subCmdCtx *cli.Context, f func(ctx *cli.Context, conn *grpc.Client
 
 	// Establish a connection to emmy server
 	client.SetLogLevel(ctx.String("loglevel"))
-	conn, err = client.GetConnection(ctx.String("server"), ctx.String("cacert"))
+	conn, err = client.GetConnection(ctx.String("server"), ctx.String("cacert"), ctx.Bool("insecure"))
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Cannot connect to gRPC server: %v", err), 2)
 	}

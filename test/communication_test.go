@@ -37,7 +37,8 @@ func TestMain(m *testing.M) {
 	go server.Start(7008)
 
 	// Establish a connection to previously started server
-	testGrpcClientConn, err = client.GetConnection(testGrpcServerEndpoint, "testdata/server.pem")
+	testGrpcClientConn, err = client.GetConnection(testGrpcServerEndpoint,
+		"testdata/server.pem", false)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

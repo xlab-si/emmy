@@ -130,6 +130,9 @@ where *commonClientFlags* control the following aspects:
 3. **Logging level**: flag *--loglevel* (shorthand *-l*), which must be one of `debug|info|notice|error|critical`. Defaults to `ìnfo`.
 4. **URI of the emmy server**: flag *--server*, defaults to *localhost:7007*.
 5. **CA certificate**: flag *--cacert*, points to a path to a certificate of the CA that issued emmy server's certificate, in PEM format. This will be used to secure communication channel with the server. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
+6. **Allowing insecure connections**: flag *--insecure*. In the absence of this flag clients will check emmy server's hostname and CA certificate chain. If you include this flag, none of these checks will be performed.
+  
+    > This should only be used for connecting clients to emmy development server, where self-signed certificate is used.
 
 Moreover, the *protocolSubcommand* corresponds to a concrete crypto protocol that we want to demonstrate between emmy client and emmy server. You can list valid *protocolSubcommand* values by running 
 
@@ -191,7 +194,30 @@ To control keys and certificates used for TLS, emmy CLI programs use several fla
 * `--cert` which expects the path to server's certificate in PEM format, 
 * `--key` which expects the path to server's private key file.
 
-On the other hand, we can provide `emmy client` with the `--cacert` flag, which expects the certificate of the CA that issued emmy server's certificate (in PEM format). Again, if this flag is omitted, the certificate in `test/testdata` directory is used.
+On the other hand, we can provide `emmy client` with the following flags:
+* `--cacert`, which expects the certificate of the CA that issued emmy server's certificate (in PEM format). Again, if this flag is omitted, the certificate in `test/testdata` directory is used.
+* `--insecure`, which tells the client not to check the CA certificate chain or emmy server's hostname. This option is meant for development purposes only, for instance when we have deployed emmy server with a self-signed certificate to a host whose hostname does not match the hostname specified in the server's certificate (for instance, *localhost*).
+  
+  To give you an example, let's try to run an emmy client against an instance of emmy server that uses the self-signed certificate shipped with this repository. The hostname in the certificate is *localhost*, but the server is deployed on a host other than localhost (for instance, *10.12.13.45*). When we try to contact the server withour the *--insecure* flag, here's what happens:
+
+  ```bash
+  $ emmy client --server 10.12.13.45:7007 schnorr
+
+  2017/09/13 12:48:47 [client] 12:48:47.232 GetConnection ▶ INFO 001 Getting the connection
+  Cannot connect to gRPC server: Could not connect to server 10.12.13.45:7007 (x509: cannot validate certificate for 10.12.13.45 because it doesnt contain any IP SANs)
+  ```
+
+  Now let's include the *--insecure* flag, and the (insecure) connection to the server is now successfully established.
+
+  ```bash
+  $ emmy client --server 10.10.43.45:7007 --insecure schnorr
+
+  2017/09/14 09:02:01 [client] 09:02:01.153 GetConnection ▶ INFO 001 Getting the connection
+  2017/09/14 09:02:01 [client] 09:02:01.153 GetConnection ▶ WARN 002 ######## You requested an **insecure** channel! ########
+  2017/09/14 09:02:01 [client] 09:02:01.153 GetConnection ▶ WARN 003 As a consequence, server's identity will *NOT* be validated!
+  2017/09/14 09:02:01 [client] 09:02:01.153 GetConnection ▶ WARN 004 Please consider using a secure connection instead
+  2017/09/14 09:02:01 [client] 09:02:01.162 GetConnection ▶ NOTI 005 Established connection to gRPC server
+  ```
 
 # Documentation
 * [A short overview of the theory Emmy is based on](./docs/theory.md) 
