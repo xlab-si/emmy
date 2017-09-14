@@ -8,7 +8,8 @@ import (
 	"math/big"
 )
 
-// It returns primes p and q where p = r * q + 1 for some integer r.
+// GetSchnorrGroup returns primes g, q, p, where p = r * q + 1 for some integer r and g is generator
+// of the group.
 func GetSchnorrGroup(qBitLength int) (*big.Int, *big.Int, *big.Int, error) {
 	// Using DSA GenerateParameters:
 
@@ -36,3 +37,4 @@ func GetSchnorrGroup(qBitLength int) (*big.Int, *big.Int, *big.Int, error) {
 		return nil, nil, nil, err
 	}
 }
+
