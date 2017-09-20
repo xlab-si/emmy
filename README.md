@@ -48,7 +48,7 @@ Note that the ones not ticked are implemented, but are currently missing a commu
 | [✓] Pedersen commitments (&#8484;<sub>p</sub> and EC) |
 | [✓] ZKP of quadratic residuosity [6] |
 | [✓] ZKP of quadratic nonresiduosity [6] |
-| [✓] Chaump-Pedersen for proving dlog equality [7] (&#8484;<sub>p</sub> and EC) | 
+| [✓] Chaum-Pedersen for proving dlog equality [7] (&#8484;<sub>p</sub> and EC) |
 | [✓] DLog Equality Blinded Transcript [4] (&#8484;<sub>p</sub> and EC) | 
 | [✓] Pseudonym system [4] (&#8484;<sub>p</sub> and EC) |
 | [✗] Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |

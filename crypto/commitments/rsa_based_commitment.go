@@ -9,11 +9,28 @@ import (
 	"errors"
 )
 
+// GenerateRSABasedQOneWay generates RSA, RSA.Exp presents q-one-way homomorphism.
+func GenerateRSABasedQOneWay(nBitLength int) (*dlog.RSA, error) {
+	rsa, err := dlog.NewRSA(nBitLength)
+	if err != nil {
+		return nil, err
+	}
+	q, err := rand.Prime(rand.Reader, rsa.N.BitLen() + 1)
+	if err != nil {
+		return nil, err
+	}
+	if q.Cmp(rsa.N) < 1 {
+		return nil, fmt.Errorf("Q must be > N")
+	}
+	rsa.E = q
+
+	return rsa, nil
+}
+
 // RSABasedCommitter implements commitment scheme based on (RSA based) group homomorphism
 // (scheme proposed by Cramer and Damgard).
 type RSABasedCommitter struct {
-	N *big.Int
-	Q *big.Int
+	RSA *dlog.RSA
 	Y *big.Int
 	committedValue *big.Int
 	r *big.Int
@@ -26,31 +43,24 @@ func NewRSABasedCommitter(n, q, y *big.Int) (*RSABasedCommitter, error) {
 	if !yIsValid {
 		return nil, fmt.Errorf("Y is not valid")
 	}
+	rsa := dlog.NewPublicRSA(n, q)
 	return &RSABasedCommitter{
-		N: n,
-		Q: q,
+		RSA: rsa,
 		Y: y,
 	}, nil
 }
 
 func (committer *RSABasedCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
-	if a.Cmp(committer.Q) != -1 {
+	if a.Cmp(committer.RSA.E) != -1 {
 		err := errors.New("the committed value needs to be < Q")
 		return nil, err
 	}
 	// Y^a * r^Q mod N, where r is random from Z_N*
-	var r *big.Int
-	for {
-		r = common.GetRandomInt(committer.N)
-		if new(big.Int).GCD(nil, nil, r, committer.N).Cmp(big.NewInt(1)) == 0 {
-			break
-		}
-	}
-
-	t1 := new(big.Int).Exp(committer.Y, a, committer.N)
-	t2 := new(big.Int).Exp(r, committer.Q, committer.N)
+	r := common.GetZnInvertibleElement(committer.RSA.N)
+	t1 := new(big.Int).Exp(committer.Y, a, committer.RSA.N)
+	t2 := committer.RSA.Exp(r) // q-one-way homomorphism image
 	c := new(big.Int).Mul(t1, t2)
-	c.Mod(c, committer.N)
+	c.Mod(c, committer.RSA.N)
 
 	committer.committedValue = a
 	committer.r = r
@@ -62,25 +72,19 @@ func (committer *RSABasedCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
 }
 
 type RSABasedCommitReceiver struct {
-	RSA *dlog.RSA
-	Q *big.Int // Q prime, Q > n
+	RSA *dlog.RSA // with E = Q; Q prime, Q > n
 	Y *big.Int
 	x *big.Int
 	commitment *big.Int
 }
 
 func NewRSABasedCommitReceiver(nBitLength int) (*RSABasedCommitReceiver, error) {
-	rsa, err := dlog.NewRSA(nBitLength)
+	rsa, err := GenerateRSABasedQOneWay(nBitLength)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
-	q, err := rand.Prime(rand.Reader, rsa.N.BitLen() + 1)
-	if err != nil {
-		return nil, err
-	}
-	if q.Cmp(rsa.N) < 1 {
-		return nil, fmt.Errorf("Q must be > N")
-	}
+
 	// gcd(q, phi(N)) is prime because q is prime and q > N > phi(N)
 	// let's choose some x from Z_n*
 	x, err := rand.Prime(rand.Reader, rsa.N.BitLen() - 1)
@@ -92,12 +96,10 @@ func NewRSABasedCommitReceiver(nBitLength int) (*RSABasedCommitReceiver, error) 
 	if g.Cmp(big.NewInt(1)) != 0 {
 		return nil, fmt.Errorf("gcd(x, N) must be 1")
 	}
-	y := new(big.Int)
-	y.Exp(x, q, rsa.N)
+	y := rsa.Exp(x) // q-one-way homomorphism image
 
 	return &RSABasedCommitReceiver{
 		RSA: rsa,
-		Q: q,
 		Y: y,
 		x: x,
 	}, nil
@@ -110,7 +112,7 @@ func (receiver *RSABasedCommitReceiver) SetCommitment(c *big.Int) {
 
 func (receiver *RSABasedCommitReceiver) CheckDecommitment(r, a *big.Int) bool {
 	t1 := new(big.Int).Exp(receiver.Y, a, receiver.RSA.N)
-	t2 := new(big.Int).Exp(r, receiver.Q, receiver.RSA.N)
+	t2 := new(big.Int).Exp(r, receiver.RSA.E, receiver.RSA.N)
 	c := new(big.Int).Mul(t1, t2)
 	c.Mod(c, receiver.RSA.N)
 
