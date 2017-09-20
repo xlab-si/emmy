@@ -15,13 +15,13 @@ func TestRSABasedCommitment(t *testing.T) {
 		t.Errorf("Error when initializing RSABasedCommitReceiver")
 	}
 
-	committer, err := commitments.NewRSABasedCommitter(receiver.RSA.N, receiver.Q, receiver.Y)
+	committer, err := commitments.NewRSABasedCommitter(receiver.RSA.N, receiver.RSA.E, receiver.Y)
 	if err != nil {
 		fmt.Println(err)
 		t.Errorf("Error when initializing RSABasedCommitter")
 	}
 
-	a := common.GetRandomInt(committer.Q)
+	a := common.GetRandomInt(committer.RSA.E)
 	c, _ := committer.GetCommitMsg(a)
 
 	receiver.SetCommitment(c)

@@ -38,3 +38,42 @@ func GetSchnorrGroup(qBitLength int) (*big.Int, *big.Int, *big.Int, error) {
 	}
 }
 
+// TODO: Group interface is experimental, used currently in FPreimageProver, it should be checked
+// in the existing code if it makes sense to use it there.
+// I would say for EC we should introduce ECGroup interface. All these should be moved
+// into dlog package which should be renamed as groups.
+type Group interface {
+	GetRandomElement() (*big.Int)
+	Mul(*big.Int, *big.Int) (*big.Int)
+	Exp(*big.Int, *big.Int) (*big.Int)
+}
+
+type ZnGroup struct {
+	N *big.Int
+}
+
+func NewZnGroup(n *big.Int) *ZnGroup {
+	return &ZnGroup {
+		N: n,
+	}
+}
+
+func (znGroup *ZnGroup) GetRandomElement() *big.Int {
+	r := GetZnInvertibleElement(znGroup.N)
+	return r
+}
+
+func (znGroup *ZnGroup) Mul(x, y *big.Int) *big.Int {
+	r := new(big.Int)
+	r.Mul(x, y)
+	r.Mod(r, znGroup.N)
+	return r
+}
+
+func (znGroup *ZnGroup) Exp(x, exponent *big.Int) *big.Int {
+	r := new(big.Int)
+	r.Exp(x, exponent, znGroup.N)
+	return r
+}
+
+
