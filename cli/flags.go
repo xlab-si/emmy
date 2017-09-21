@@ -40,6 +40,13 @@ var caCertFlag = cli.StringFlag{
 	Usage: "`PATH` to certificate file of the CA that issued emmy server's certificate",
 }
 
+// insecureFlag indicates whether a client should use an insecure connection to connect to
+// the server, meaning that server's certificate and hostname will not be checked by the client.
+var insecureFlag = cli.BoolFlag{
+	Name:  "insecure",
+	Usage: "Whether to disable checking server's hostname and certificate chain",
+}
+
 // portFlag indicates the port where emmy server will listen.
 var portFlag = cli.IntFlag{
 	Name:  "port, p",
@@ -108,5 +115,6 @@ var clientFlags = []cli.Flag{
 	concurrencyFlag,
 	serverEndpointFlag,
 	caCertFlag,
+	insecureFlag,
 	logLevelFlag,
 }
