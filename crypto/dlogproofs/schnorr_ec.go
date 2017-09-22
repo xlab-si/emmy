@@ -34,15 +34,15 @@ type SchnorrECProver struct {
 	protocolType     types.ProtocolType
 }
 
-func NewSchnorrECProver(curve dlog.Curve, protocolType types.ProtocolType) (*SchnorrECProver, error) {
-	dLog := dlog.NewECDLog(curve)
+func NewSchnorrECProver(curveType dlog.Curve, protocolType types.ProtocolType) (*SchnorrECProver, error) {
+	dLog := dlog.NewECDLog(curveType)
 	prover := SchnorrECProver{
 		DLog:         dLog,
 		protocolType: protocolType,
 	}
 
 	if protocolType != types.Sigma {
-		prover.PedersenReceiver = commitments.NewPedersenECReceiver()
+		prover.PedersenReceiver = commitments.NewPedersenECReceiver(curveType)
 	}
 
 	return &prover, nil
@@ -92,15 +92,15 @@ type SchnorrECVerifier struct {
 	protocolType      types.ProtocolType
 }
 
-func NewSchnorrECVerifier(curve dlog.Curve, protocolType types.ProtocolType) *SchnorrECVerifier {
-	dLog := dlog.NewECDLog(curve)
+func NewSchnorrECVerifier(curveType dlog.Curve, protocolType types.ProtocolType) *SchnorrECVerifier {
+	dLog := dlog.NewECDLog(curveType)
 	verifier := SchnorrECVerifier{
 		DLog:         dLog,
 		protocolType: protocolType,
 	}
 
 	if protocolType != types.Sigma {
-		verifier.pedersenCommitter = commitments.NewPedersenECCommitter()
+		verifier.pedersenCommitter = commitments.NewPedersenECCommitter(curveType)
 	}
 
 	return &verifier

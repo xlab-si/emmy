@@ -2,7 +2,6 @@ package pseudonymsys
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
@@ -36,12 +35,12 @@ func NewCACertificateEC(blindedA, blindedB *types.ECGroupElement, r, s *big.Int)
 	}
 }
 
-func NewCAEC(d, x, y *big.Int) *CAEC {
-	c := elliptic.P256()
+func NewCAEC(d, x, y *big.Int, curveType dlog.Curve) *CAEC {
+	c := dlog.GetEllipticCurve(curveType)
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(dlog.P256, types.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, types.Sigma)
 	ca := CAEC{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,
