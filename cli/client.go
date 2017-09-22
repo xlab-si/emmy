@@ -6,6 +6,7 @@ import (
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
 	"math/big"
@@ -52,7 +53,8 @@ var clientSubcommands = []cli.Command{
 		Action: func(ctx *cli.Context) error {
 			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
 				secret := big.NewInt(ctx.Int64("secret"))
-				client, err := client.NewPedersenECClient(conn, secret)
+				curve := dlog.P256
+				client, err := client.NewPedersenECClient(conn, secret, curve)
 				if err != nil {
 					return fmt.Errorf("Error creating client: %v", err)
 				}

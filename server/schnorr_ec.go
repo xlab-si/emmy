@@ -8,8 +8,9 @@ import (
 	"math/big"
 )
 
-func (s *Server) SchnorrEC(req *pb.Message, protocolType types.ProtocolType, stream pb.Protocol_RunServer) error {
-	verifier := dlogproofs.NewSchnorrECVerifier(dlog.P256, protocolType)
+func (s *Server) SchnorrEC(req *pb.Message, protocolType types.ProtocolType,
+	stream pb.Protocol_RunServer, curve dlog.Curve) error {
+	verifier := dlogproofs.NewSchnorrECVerifier(curve, protocolType)
 	var err error
 
 	if protocolType != types.Sigma {

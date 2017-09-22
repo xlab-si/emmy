@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
@@ -15,7 +16,7 @@ type PedersenECClient struct {
 }
 
 // NewPedersenECClient returns an initialized struct of type PedersenECClient.
-func NewPedersenECClient(conn *grpc.ClientConn, v *big.Int) (*PedersenECClient, error) {
+func NewPedersenECClient(conn *grpc.ClientConn, v *big.Int, curveType dlog.Curve) (*PedersenECClient, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
@@ -23,7 +24,7 @@ func NewPedersenECClient(conn *grpc.ClientConn, v *big.Int) (*PedersenECClient, 
 
 	return &PedersenECClient{
 		pedersenCommonClient: pedersenCommonClient{genericClient: *genericClient},
-		committer:            commitments.NewPedersenECCommitter(),
+		committer:            commitments.NewPedersenECCommitter(curveType),
 		val:                  v,
 	}, nil
 }
