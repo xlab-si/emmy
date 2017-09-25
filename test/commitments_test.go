@@ -28,6 +28,16 @@ func TestRSABasedCommitment(t *testing.T) {
 	committedVal, r := committer.GetDecommitMsg()
 	success := receiver.CheckDecommitment(r, committedVal)
 
-	assert.Equal(t, true, success, "DLogEquality does not work correctly")
+	assert.Equal(t, true, success, "RSABasedCommitment does not work correctly")
+}
+
+func TestBitCommitmentProof(t *testing.T) {
+	verified, err := commitments.ProveBitCommitment()
+	if err != nil {
+		fmt.Println(err)
+		t.Errorf("Error in bit commitment proof.")
+	}
+
+	assert.Equal(t, true, verified, "DLogEquality does not work correctly")
 }
 
