@@ -5,6 +5,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
@@ -159,10 +160,12 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 
 	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
 	protocolType := types.ToProtocolType(reqSchemaVariant)
+	// This curve will be used for all schemes
+	curve := dlog.P256
 
 	switch reqSchemaType {
 	case pb.SchemaType_PEDERSEN_EC:
-		err = s.PedersenEC(stream)
+		err = s.PedersenEC(curve, stream)
 	case pb.SchemaType_PEDERSEN:
 		dlog := config.LoadDLog("pedersen")
 		err = s.Pedersen(dlog, stream)
@@ -170,7 +173,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		dlog := config.LoadDLog("schnorr")
 		err = s.Schnorr(req, dlog, protocolType, stream)
 	case pb.SchemaType_SCHNORR_EC:
-		err = s.SchnorrEC(req, protocolType, stream)
+		err = s.SchnorrEC(req, protocolType, stream, curve)
 	case pb.SchemaType_CSPAILLIER:
 		keyDir := config.LoadKeyDirFromConfig()
 		secKeyPath := filepath.Join(keyDir, "cspaillierseckey.txt")
@@ -184,13 +187,13 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL:
 		err = s.PseudonymsysTransferCredential(req, stream)
 	case pb.SchemaType_PSEUDONYMSYS_CA_EC:
-		err = s.PseudonymsysCAEC(req, stream)
+		err = s.PseudonymsysCAEC(curve, req, stream)
 	case pb.SchemaType_PSEUDONYMSYS_NYM_GEN_EC:
-		err = s.PseudonymsysGenerateNymEC(req, stream)
+		err = s.PseudonymsysGenerateNymEC(curve, req, stream)
 	case pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL_EC:
-		err = s.PseudonymsysIssueCredentialEC(req, stream)
+		err = s.PseudonymsysIssueCredentialEC(curve, req, stream)
 	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC:
-		err = s.PseudonymsysTransferCredentialEC(req, stream)
+		err = s.PseudonymsysTransferCredentialEC(curve, req, stream)
 	case pb.SchemaType_QR:
 		dlog := config.LoadDLog("pseudonymsys")
 		err = s.QR(req, dlog, stream)

@@ -2,7 +2,6 @@ package pseudonymsys
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
@@ -40,7 +39,7 @@ func NewOrgNymGen(dlog *dlog.ZpDLog, x, y *big.Int) *OrgNymGen {
 
 func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
 	r, s *big.Int) (*big.Int, error) {
-	c := elliptic.P256()
+	c := dlog.GetEllipticCurve(dlog.P256)
 	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
 
 	hashed := common.HashIntoBytes(blindedA, blindedB)

@@ -19,18 +19,23 @@ type ECDLog struct {
 	OrderOfSubgroup *big.Int
 }
 
-func NewECDLog(curve Curve) *ECDLog {
-	var c elliptic.Curve
-	if curve == 1 {
-		c = elliptic.P224()
-	} else if curve == 2 {
-		c = elliptic.P256()
-	} else if curve == 3 {
-		c = elliptic.P384()
-	} else if curve == 4 {
-		c = elliptic.P521()
+func GetEllipticCurve(curveType Curve) elliptic.Curve {
+	switch curveType {
+	case P224:
+		return elliptic.P224()
+	case P256:
+		return elliptic.P256()
+	case P384:
+		return elliptic.P384()
+	case P521:
+		return elliptic.P521()
 	}
 
+	return elliptic.P256()
+}
+
+func NewECDLog(curveType Curve) *ECDLog {
+	c := GetEllipticCurve(curveType)
 	ecdlog := ECDLog{
 		Curve:           c,
 		OrderOfSubgroup: c.Params().N, // order of G

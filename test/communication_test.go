@@ -63,7 +63,7 @@ func testPedersen(n *big.Int) error {
 }
 
 func testPedersenEC(n *big.Int) error {
-	c, err := client.NewPedersenECClient(testGrpcClientConn, n)
+	c, err := client.NewPedersenECClient(testGrpcClientConn, n, dlog.P256)
 	if err != nil {
 		return err
 	}

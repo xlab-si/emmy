@@ -14,16 +14,17 @@ import (
 
 type PseudonymsysClientEC struct {
 	genericClient
-	dlog *dlog.ECDLog
+	curve dlog.Curve
 }
 
-func NewPseudonymsysClientEC(conn *grpc.ClientConn) (*PseudonymsysClientEC, error) {
+func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve dlog.Curve) (*PseudonymsysClientEC, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
 	return &PseudonymsysClientEC{
 		genericClient: *genericClient,
+		curve:         curve,
 	}, nil
 }
 
@@ -35,7 +36,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	c.openStream()
 	defer c.closeStream()
 
-	prover := dlogproofs.NewECDLogEqualityProver(dlog.P256)
+	prover := dlogproofs.NewECDLogEqualityProver(c.curve)
 
 	// Differently as in Pseudonym Systems paper a user here generates a nym (if master
 	// key pair is (g, g^s), a generated nym is (g^gamma, g^(gamma * s)),
@@ -128,7 +129,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver, err := dlogproofs.NewSchnorrECProver(dlog.P256, types.Sigma)
+	schnorrProver, err := dlogproofs.NewSchnorrECProver(c.curve, types.Sigma)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +185,8 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	B := types.ToECGroupElement(randomData.B)
 
 	gamma := common.GetRandomInt(schnorrProver.DLog.OrderOfSubgroup)
-	equalityVerifier1 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(dlog.P256, gamma)
-	equalityVerifier2 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(dlog.P256, gamma)
+	equalityVerifier1 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
+	equalityVerifier2 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 
 	g := types.NewECGroupElement(equalityVerifier1.DLog.Curve.Params().Gx,
 		equalityVerifier1.DLog.Curve.Params().Gy)
@@ -219,9 +220,9 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	aToGamma1, aToGamma2 := equalityVerifier1.DLog.Exponentiate(nym.A.X, nym.A.Y, gamma)
 	aToGamma := types.NewECGroupElement(aToGamma1, aToGamma2)
 	if verified1 && verified2 {
-		valid1 := dlogproofs.VerifyBlindedTranscriptEC(transcript1, dlog.P256, g, orgPubKeys.H2,
+		valid1 := dlogproofs.VerifyBlindedTranscriptEC(transcript1, c.curve, g, orgPubKeys.H2,
 			bToGamma, AToGamma)
-		valid2 := dlogproofs.VerifyBlindedTranscriptEC(transcript2, dlog.P256, g, orgPubKeys.H1,
+		valid2 := dlogproofs.VerifyBlindedTranscriptEC(transcript2, c.curve, g, orgPubKeys.H1,
 			aAToGamma, BToGamma)
 		if valid1 && valid2 {
 			credential := pseudonymsys.NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma,
@@ -250,7 +251,7 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	// with this organization. But we need also to prove that dlog_a(b) = dlog_a2(b2), where
 	// a2, b2 are a1, b1 exponentiated to gamma, and (a1, b1) is a nym for organization that
 	// issued a credential. So we can do both proofs at the same time using DLogEqualityProver.
-	equalityProver := dlogproofs.NewECDLogEqualityProver(dlog.P256)
+	equalityProver := dlogproofs.NewECDLogEqualityProver(c.curve)
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscriptEC{

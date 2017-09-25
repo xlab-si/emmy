@@ -15,13 +15,13 @@ type PseudonymsysCAClientEC struct {
 	prover *dlogproofs.SchnorrECProver
 }
 
-func NewPseudonymsysCAClientEC(conn *grpc.ClientConn) (*PseudonymsysCAClientEC, error) {
+func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve dlog.Curve) (*PseudonymsysCAClientEC, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
 	}
 
-	prover, err := dlogproofs.NewSchnorrECProver(dlog.P256, types.Sigma)
+	prover, err := dlogproofs.NewSchnorrECProver(curve, types.Sigma)
 	if err != nil {
 		return nil, err
 	}

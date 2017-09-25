@@ -2,18 +2,20 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func (s *Server) PseudonymsysCAEC(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) PseudonymsysCAEC(curveType dlog.Curve, req *pb.Message,
+	stream pb.Protocol_RunServer) error {
 	var err error
 
 	d := config.LoadPseudonymsysCASecret()
 	pubKeyX, pubKeyY := config.LoadPseudonymsysCAPubKey()
-	ca := pseudonymsys.NewCAEC(d, pubKeyX, pubKeyY)
+	ca := pseudonymsys.NewCAEC(d, pubKeyX, pubKeyY, curveType)
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
 	x := types.ToECGroupElement(sProofRandData.X)

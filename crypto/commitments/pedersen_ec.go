@@ -18,8 +18,8 @@ type PedersenECCommitter struct {
 	r              *big.Int
 }
 
-func NewPedersenECCommitter() *PedersenECCommitter {
-	dLog := dlog.NewECDLog(dlog.P256)
+func NewPedersenECCommitter(curveType dlog.Curve) *PedersenECCommitter {
+	dLog := dlog.NewECDLog(curveType)
 	committer := PedersenECCommitter{
 		dLog: dLog,
 	}
@@ -74,8 +74,8 @@ type PedersenECReceiver struct {
 	commitment *types.ECGroupElement
 }
 
-func NewPedersenECReceiver() *PedersenECReceiver {
-	dLog := dlog.NewECDLog(dlog.P256)
+func NewPedersenECReceiver(curve dlog.Curve) *PedersenECReceiver {
+	dLog := dlog.NewECDLog(curve)
 
 	a := common.GetRandomInt(dLog.OrderOfSubgroup)
 	x, y := dLog.ExponentiateBaseG(a)

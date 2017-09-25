@@ -54,12 +54,12 @@ type OrgCredentialIssuerEC struct {
 	b               *types.ECGroupElement
 }
 
-func NewOrgCredentialIssuerEC(s1, s2 *big.Int) *OrgCredentialIssuerEC {
+func NewOrgCredentialIssuerEC(s1, s2 *big.Int, curveType dlog.Curve) *OrgCredentialIssuerEC {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(dlog.P256, types.Sigma)
-	equalityProver1 := dlogproofs.NewECDLogEqualityBTranscriptProver(dlog.P256)
-	equalityProver2 := dlogproofs.NewECDLogEqualityBTranscriptProver(dlog.P256)
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, types.Sigma)
+	equalityProver1 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
+	equalityProver2 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
 	org := OrgCredentialIssuerEC{
 		s1:              s1,
 		s2:              s2,

@@ -11,16 +11,17 @@ import (
 )
 
 func TestPseudonymsysEC(t *testing.T) {
-	dlog := dlog.NewECDLog(dlog.P256)
-	caClient, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn)
+	curveType := dlog.P256
+	ecdlog := dlog.NewECDLog(curveType)
+	caClient, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")
 	}
 
 	userSecret := config.LoadPseudonymsysUserSecret("user1", "ecdlog")
 
-	nymA := types.NewECGroupElement(dlog.Curve.Params().Gx, dlog.Curve.Params().Gy)
-	nymB1, nymB2 := dlog.Exponentiate(nymA.X, nymA.Y, userSecret) // this is user's public key
+	nymA := types.NewECGroupElement(ecdlog.Curve.Params().Gx, ecdlog.Curve.Params().Gy)
+	nymB1, nymB2 := ecdlog.Exponentiate(nymA.X, nymA.Y, userSecret) // this is user's public key
 	nymB := types.NewECGroupElement(nymB1, nymB2)
 
 	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
@@ -30,7 +31,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	}
 
 	// usually the endpoint is different from the one used for CA:
-	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn)
+	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	nym1, err := c1.GenerateNym(userSecret, caCertificate)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -48,13 +49,13 @@ func TestPseudonymsysEC(t *testing.T) {
 
 	// register with org2
 	// create a client to communicate with org2
-	caClient1, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn)
+	caClient1, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	caCertificate1, err := caClient1.ObtainCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
 	}
 
-	c2, err := client.NewPseudonymsysClientEC(testGrpcClientConn)
+	c2, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	nym2, err := c2.GenerateNym(userSecret, caCertificate1)
 	if err != nil {
 		t.Errorf(err.Error())

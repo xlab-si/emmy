@@ -2,13 +2,14 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func (s *Server) PedersenEC(stream pb.Protocol_RunServer) error {
-	pedersenECReceiver := commitments.NewPedersenECReceiver()
+func (s *Server) PedersenEC(curveType dlog.Curve, stream pb.Protocol_RunServer) error {
+	pedersenECReceiver := commitments.NewPedersenECReceiver(curveType)
 
 	h := pedersenECReceiver.GetH()
 	ecge := pb.ECGroupElement{

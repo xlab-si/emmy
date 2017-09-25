@@ -14,14 +14,16 @@ type OrgCredentialVerifierEC struct {
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
 	a                *types.ECGroupElement
 	b                *types.ECGroupElement
+	curveType        dlog.Curve
 }
 
-func NewOrgCredentialVerifierEC(s1, s2 *big.Int) *OrgCredentialVerifierEC {
-	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(dlog.P256)
+func NewOrgCredentialVerifierEC(s1, s2 *big.Int, curveType dlog.Curve) *OrgCredentialVerifierEC {
+	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgCredentialVerifierEC{
 		s1:               s1,
 		s2:               s2,
 		EqualityVerifier: equalityVerifier,
+		curveType:        curveType,
 	}
 
 	return &org

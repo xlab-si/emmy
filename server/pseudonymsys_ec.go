@@ -2,15 +2,17 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func (s *Server) PseudonymsysGenerateNymEC(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) PseudonymsysGenerateNymEC(curveType dlog.Curve, req *pb.Message,
+	stream pb.Protocol_RunServer) error {
 	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
-	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY)
+	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY, curveType)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
 	x1 := types.ToECGroupElement(proofRandData.X1)
@@ -65,14 +67,15 @@ func (s *Server) PseudonymsysGenerateNymEC(req *pb.Message, stream pb.Protocol_R
 	return nil
 }
 
-func (s *Server) PseudonymsysIssueCredentialEC(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) PseudonymsysIssueCredentialEC(curveType dlog.Curve, req *pb.Message,
+	stream pb.Protocol_RunServer) error {
 	proofRandData := req.GetSchnorrEcProofRandomData()
 	x := types.ToECGroupElement(proofRandData.X)
 	a := types.ToECGroupElement(proofRandData.A)
 	b := types.ToECGroupElement(proofRandData.B)
 
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2)
+	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2, curveType)
 	challenge := org.GetAuthenticationChallenge(a, b, x)
 
 	resp := &pb.Message{
@@ -149,9 +152,10 @@ func (s *Server) PseudonymsysIssueCredentialEC(req *pb.Message, stream pb.Protoc
 	return nil
 }
 
-func (s *Server) PseudonymsysTransferCredentialEC(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) PseudonymsysTransferCredentialEC(curveType dlog.Curve, req *pb.Message,
+	stream pb.Protocol_RunServer) error {
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialVerifierEC(s1, s2)
+	org := pseudonymsys.NewOrgCredentialVerifierEC(s1, s2, curveType)
 
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
