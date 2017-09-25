@@ -7,9 +7,47 @@ import (
 	"crypto/rand"
 	"fmt"
 	"errors"
+	"github.com/xlab-si/emmy/zkp/preimage"
 )
 
-// GenerateRSABasedQOneWay generates RSA, RSA.Exp presents q-one-way homomorphism.
+// ProveBitCommitment demonstrates how committer can prove that a commitment contains
+// 0 or 1. This is achieved by using PartialPreimageProver.
+func ProveBitCommitment() (bool, error) {
+	receiver, err := NewRSABasedCommitReceiver(1024)
+	if err != nil {
+		return false, err
+	}
+
+	committer, err := NewRSABasedCommitter(receiver.RSA.N, receiver.RSA.E, receiver.Y)
+	if err != nil {
+		return false, err
+	}
+
+	u1, _ := committer.GetCommitMsg(big.NewInt(0))
+	// commitment contains 0: u1 = commitment(0)
+	// if we would like to have a commitment that contains 1, we
+	// need to use u1 = Y^(-1) * c where c is committer.GetCommitMsg(big.NewInt(1))
+	_, v1 := committer.GetDecommitMsg() // v1 is a random r used in commitment: c = Y^a * r^q mod N
+
+	// receiver.RSA.E is Q
+	H := common.NewZnGroup(receiver.RSA.N)
+	u2 := H.GetRandomElement()
+
+	prover := preimage.NewPartialPreimageProver(committer.RSA.Exp, H, committer.RSA.E, v1, u1, u2)
+	verifier := preimage.NewPartialPreimageVerifier(receiver.RSA.Exp, H, receiver.RSA.E)
+
+	pair1, pair2 := prover.GetProofRandomData()
+
+	verifier.SetProofRandomData(pair1, pair2)
+	challenge := verifier.GetChallenge()
+
+	c1, z1, c2, z2 := prover.GetProofData(challenge)
+	verified := verifier.Verify(c1, z1, c2, z2)
+
+	return verified, nil
+}
+
+// GenerateRSABasedQOneWay generates RSA. RSA.Exp presents q-one-way homomorphism.
 func GenerateRSABasedQOneWay(nBitLength int) (*dlog.RSA, error) {
 	rsa, err := dlog.NewRSA(nBitLength)
 	if err != nil {
@@ -27,8 +65,10 @@ func GenerateRSABasedQOneWay(nBitLength int) (*dlog.RSA, error) {
 	return rsa, nil
 }
 
-// RSABasedCommitter implements commitment scheme based on (RSA based) group homomorphism
-// (scheme proposed by Cramer and Damgard).
+// RSABasedCommitter implements commitment scheme based on (RSA based) q-one-way group homomorphism
+// (scheme proposed by Cramer and Damgard). Commitment schemes based on q-one-way homomorphism
+// have some nice properties - for example it can be proved in zero knowledge that a commitment
+// contains 0 or 1 (see ProveBitCommitment).
 type RSABasedCommitter struct {
 	RSA *dlog.RSA
 	Y *big.Int

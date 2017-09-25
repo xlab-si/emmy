@@ -46,6 +46,7 @@ type Group interface {
 	GetRandomElement() (*big.Int)
 	Mul(*big.Int, *big.Int) (*big.Int)
 	Exp(*big.Int, *big.Int) (*big.Int)
+	Inv(*big.Int) (*big.Int)
 }
 
 type ZnGroup struct {
@@ -74,6 +75,11 @@ func (znGroup *ZnGroup) Exp(x, exponent *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Exp(x, exponent, znGroup.N)
 	return r
+}
+
+func (znGroup *ZnGroup) Inv(x *big.Int) *big.Int {
+	inv := new(big.Int).ModInverse(x, znGroup.N)
+	return inv
 }
 
 
