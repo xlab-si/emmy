@@ -48,21 +48,29 @@ func ProveBitCommitment() (bool, error) {
 }
 
 // GenerateRSABasedQOneWay generates RSA. RSA.Exp presents q-one-way homomorphism.
-func GenerateRSABasedQOneWay(nBitLength int) (*dlog.RSA, error) {
+// QOneWayHomomorphism has the following property: it is difficult to compute a preimage of y^i
+// for i < Q, but it is easy for i = Q. For RSABased computing preimage for y^Q is trivial: it is y.
+func GenerateRSABasedQOneWay(nBitLength int) (*dlog.RSA, func(*big.Int) *big.Int, error) {
 	rsa, err := dlog.NewRSA(nBitLength)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	q, err := rand.Prime(rand.Reader, rsa.N.BitLen() + 1)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if q.Cmp(rsa.N) < 1 {
-		return nil, fmt.Errorf("Q must be > N")
+		return nil, nil, fmt.Errorf("Q must be > N")
 	}
 	rsa.E = q
+	// given y^Q, homomorphismInv can compute x such that homomorphism(x) = y^Q.
+	// Note: it takes y as input, not y^Q.
+	// For RSABased it is trivial: identity. For other QOneHomomorphisms it might be different.
+	homomorphismInv := func (y *big.Int) *big.Int {
+		return y
+	}
 
-	return rsa, nil
+	return rsa, homomorphismInv, nil
 }
 
 // RSABasedCommitter implements commitment scheme based on (RSA based) q-one-way group homomorphism
@@ -95,31 +103,53 @@ func (committer *RSABasedCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
 		err := errors.New("the committed value needs to be < Q")
 		return nil, err
 	}
+	c, r := committer.computeCommitment(a)
+	committer.committedValue = a
+	committer.r = r
+	return c, nil
+}
+
+func (committer *RSABasedCommitter) computeCommitment(a *big.Int) (*big.Int, *big.Int) {
 	// Y^a * r^Q mod N, where r is random from Z_N*
 	r := common.GetZnInvertibleElement(committer.RSA.N)
 	t1 := new(big.Int).Exp(committer.Y, a, committer.RSA.N)
 	t2 := committer.RSA.Exp(r) // q-one-way homomorphism image
 	c := new(big.Int).Mul(t1, t2)
 	c.Mod(c, committer.RSA.N)
-
-	committer.committedValue = a
-	committer.r = r
-	return c, nil
+	return c, r
 }
 
 func (committer *RSABasedCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
 	return committer.committedValue, committer.r
 }
 
+// GetCommitmentToMultiplication receives a, b, u where u is a random integer used in
+// commitment B to b (B = y^b * QOneWayHomomorphism(u)). It returns commitment C to c = a * b,
+// random integer o where C = y^(a*b) * QOneWayHomomorphism(o), and integer t such that
+// C = B^a * QOneWayHomomorphism(t).
+func (committer *RSABasedCommitter) GetCommitmentToMultiplication(a, b, u *big.Int) (*big.Int,
+	*big.Int, *big.Int) {
+	H := common.NewZnGroup(committer.RSA.N)
+	c := H.Mul(a, b)
+	C, o := committer.computeCommitment(c)
+	// We want C = B^a * f(t). We know C = y^(a*b) * f(o) and B^a = y^(a*b) * f(u)^a.
+	// t = o * u^(-a)
+	uToa := H.Exp(u, a)
+	uToaInv := H.Inv(uToa)
+	t := H.Mul(o, uToaInv)
+	return C, o, t
+}
+
 type RSABasedCommitReceiver struct {
 	RSA *dlog.RSA // with E = Q; Q prime, Q > n
+	HomomorphismInv func(*big.Int) *big.Int
 	Y *big.Int
 	x *big.Int
 	commitment *big.Int
 }
 
 func NewRSABasedCommitReceiver(nBitLength int) (*RSABasedCommitReceiver, error) {
-	rsa, err := GenerateRSABasedQOneWay(nBitLength)
+	rsa, homomorphismInv, err := GenerateRSABasedQOneWay(nBitLength)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -140,6 +170,7 @@ func NewRSABasedCommitReceiver(nBitLength int) (*RSABasedCommitReceiver, error) 
 
 	return &RSABasedCommitReceiver{
 		RSA: rsa,
+		HomomorphismInv: homomorphismInv,
 		Y: y,
 		x: x,
 	}, nil
