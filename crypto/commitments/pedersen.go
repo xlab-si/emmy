@@ -7,6 +7,11 @@ import (
 	"math/big"
 )
 
+// TODO: might be better to have only one method (like GetCommitment) instead of
+// GetCommitMsg and GetDecommit msg, which would return c, r. Having two methods and storing r into
+// committer might be awkward when having more commitments (like in RSABasedCommitment when
+// proving multiplication property, see commitments_test.go).
+
 // Committer first needs to know H (it gets it from the receiver).
 // Then committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.

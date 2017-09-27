@@ -9,7 +9,7 @@ import (
 )
 
 func TestFPreimage(t *testing.T) {
-	rsa, err := commitments.GenerateRSABasedQOneWay(1024)
+	rsa, _, err := commitments.GenerateRSABasedQOneWay(1024)
 	if err != nil {
 		t.Errorf("Error when initializing RSA")
 	}
@@ -24,7 +24,7 @@ func TestFPreimage(t *testing.T) {
 	challenge := verifier.GetChallenge()
 
 	z := prover.GetProofData(challenge)
-	proved := verifier.Verify(z, prover)
+	proved := verifier.Verify(z)
 
 	assert.Equal(t, true, proved, "FPreimage proof does not work correctly")
 }

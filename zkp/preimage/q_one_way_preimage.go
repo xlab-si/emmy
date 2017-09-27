@@ -75,7 +75,7 @@ func (verifier *FPreimageVerifier) GetChallenge() *big.Int {
 }
 
 // It receives z = r * v^challenge. It returns true if QOneWayHomomorphism(z) = x * u^challenge, otherwise false.
-func (verifier *FPreimageVerifier) Verify(z *big.Int, prover *FPreimageProver) bool {
+func (verifier *FPreimageVerifier) Verify(z *big.Int) bool {
 	left := verifier.QOneWayHomomorphism(z)
 	right := verifier.H.Exp(verifier.u, verifier.challenge)
 	right = verifier.H.Mul(verifier.x, right)
