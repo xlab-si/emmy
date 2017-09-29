@@ -5,26 +5,17 @@ import (
 	"github.com/xlab-si/emmy/zkp/preimage"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"github.com/xlab-si/emmy/crypto/common"
 )
 
 func TestFPreimage(t *testing.T) {
-	rsa, _, err := commitments.GenerateRSABasedQOneWay(1024)
+	homomorphism, _, H, Q, err := commitments.GenerateRSABasedQOneWay(1024)
 	if err != nil {
-		t.Errorf("Error when initializing RSA")
+		t.Errorf("Error when generating RSABasedQOneWay homomorphism")
 	}
-	v := common.GetZnInvertibleElement(rsa.N)
-	H := common.NewZnGroup(rsa.N)
-	prover := preimage.NewFPreimageProver(rsa.Exp, H, v)
-	proofRandomData := prover.GetProofRandomData()
+	v := H.GetRandomElement()
+	u := homomorphism(v)
 
-	u := rsa.Exp(v)
-	verifier := preimage.NewFPreimageVerifier(rsa.Exp, H, rsa.E, u)
-	verifier.SetProofRandomData(proofRandomData)
-	challenge := verifier.GetChallenge()
-
-	z := prover.GetProofData(challenge)
-	proved := verifier.Verify(z)
+	proved := preimage.ProvePreimageKnowledge(homomorphism, H, Q, u, v)
 
 	assert.Equal(t, true, proved, "FPreimage proof does not work correctly")
 }

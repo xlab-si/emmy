@@ -36,9 +36,13 @@ $ go test -v test/*.go
 
 # Currently supported crypto primitives
 
-The crypto primitives supported by Emmy are listed in the table below.
+The crypto primitives and schemes (primitives combined in some more complex protocol) 
+supported by Emmy are listed in the table below.
 
-Note that the ones not ticked are implemented, but are currently missing a communication-layer implementation (e.g. they are supported by Emmy, but at the moment lack client-server communication via gRPC).
+Note that the ones not ticked are implemented, but without client-server communication via gRPC. 
+Primitives are meant to be used in schemes (like Schnorr, DLogEquality and others in Pseudonymsys) 
+and communication messages for primitives are implemented there (different schemes might require 
+slightly different messages).
 
 >**Note**: &#8484;<sub>p</sub> = multiplicative group of integers modulo prime p, EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
 
@@ -54,6 +58,7 @@ Note that the ones not ticked are implemented, but are currently missing a commu
 | [✗] Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
 | [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
+| [✗] Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
 | [✗] Shamir's secret sharing scheme |
 
 
@@ -240,3 +245,5 @@ On the other hand, we can provide `emmy client` with the following flags:
 [7] D. Chaum and T. P. Pedersen, Wallet databases with observers, Advances in Cryptology — CRYPTO ’92 (E. F. Brickell, ed.), LNCS, vol. 740, Springer-Verlag, 1993, pp. 89– 105.
 
 [8] Cramer, Ronald, Ivan Damgård, and Berry Schoenmakers. "Proofs of partial knowledge and simplified design of witness hiding protocols." Advances in Cryptology—CRYPTO’94. Springer Berlin/Heidelberg, 1994.
+
+[9] Cramer, Ronald, and Ivan Damgård. "Zero-knowledge proofs for finite field arithmetic, or: Can zero-knowledge be for free?." Advances in Cryptology—CRYPTO'98. Springer Berlin/Heidelberg, 1998.

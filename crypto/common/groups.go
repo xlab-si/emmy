@@ -47,6 +47,7 @@ type Group interface {
 	Mul(*big.Int, *big.Int) (*big.Int)
 	Exp(*big.Int, *big.Int) (*big.Int)
 	Inv(*big.Int) (*big.Int)
+	IsElementInGroup(*big.Int) bool
 }
 
 type ZnGroup struct {
@@ -60,7 +61,7 @@ func NewZnGroup(n *big.Int) *ZnGroup {
 }
 
 func (znGroup *ZnGroup) GetRandomElement() *big.Int {
-	r := GetZnInvertibleElement(znGroup.N)
+	r := GetRandomZnInvertibleElement(znGroup.N)
 	return r
 }
 
@@ -80,6 +81,15 @@ func (znGroup *ZnGroup) Exp(x, exponent *big.Int) *big.Int {
 func (znGroup *ZnGroup) Inv(x *big.Int) *big.Int {
 	inv := new(big.Int).ModInverse(x, znGroup.N)
 	return inv
+}
+
+func (znGroup *ZnGroup) IsElementInGroup(x *big.Int) bool {
+	c := new(big.Int).GCD(nil, nil, x, znGroup.N)
+	if x.Cmp(znGroup.N) < 0	&& c.Cmp(big.NewInt(1)) == 0 {
+		return true
+	} else {
+		return false
+	}
 }
 
 
