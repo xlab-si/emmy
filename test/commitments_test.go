@@ -7,6 +7,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"fmt"
 	"github.com/xlab-si/emmy/zkp/commitments"
+	"math/big"
 )
 
 func TestRSABasedCommitment(t *testing.T) {
@@ -16,13 +17,14 @@ func TestRSABasedCommitment(t *testing.T) {
 		t.Errorf("Error when initializing RSABasedCommitReceiver")
 	}
 
-	committer, err := commitments.NewRSABasedCommitter(receiver.RSA.N, receiver.RSA.E, receiver.Y)
+	committer, err := commitments.NewRSABasedCommitter(receiver.Homomorphism, receiver.HomomorphismInv,
+		receiver.H, receiver.Q, receiver.Y)
 	if err != nil {
 		fmt.Println(err)
 		t.Errorf("Error when initializing RSABasedCommitter")
 	}
 
-	a := common.GetRandomInt(committer.RSA.E)
+	a := common.GetRandomInt(committer.Q)
 	c, _ := committer.GetCommitMsg(a)
 
 	receiver.SetCommitment(c)
@@ -33,7 +35,7 @@ func TestRSABasedCommitment(t *testing.T) {
 }
 
 func TestBitCommitmentProof(t *testing.T) {
-	verified, err := commitments.ProveBitCommitment()
+	verified, err := commitmentzkp.ProveBitCommitment()
 	if err != nil {
 		fmt.Println(err)
 		t.Errorf("Error in bit commitment proof.")
@@ -49,15 +51,15 @@ func TestCommitmentMultiplicationProof(t *testing.T) {
 		t.Errorf("Error when initializing RSABasedCommitReceiver")
 	}
 
-	committer, err := commitments.NewRSABasedCommitter(receiver.RSA.N, receiver.RSA.E, receiver.Y)
+	committer, err := commitments.NewRSABasedCommitter(receiver.Homomorphism, receiver.HomomorphismInv,
+		receiver.H, receiver.Q, receiver.Y)
 	if err != nil {
 		fmt.Println(err)
 		t.Errorf("Error when initializing RSABasedCommitter")
 	}
-	H := common.NewZnGroup(committer.RSA.N)
 
-	a := common.GetRandomInt(committer.RSA.E)
-	b := common.GetRandomInt(committer.RSA.E)
+	a := common.GetRandomInt(committer.Q)
+	b := common.GetRandomInt(committer.Q)
 	A, err1 := committer.GetCommitMsg(a)
 	_, r := committer.GetDecommitMsg()
 	B, err2 := committer.GetCommitMsg(b)
@@ -65,18 +67,16 @@ func TestCommitmentMultiplicationProof(t *testing.T) {
 	// this management of commitments and decommitments is awkward,
 	// see TODO in pedersen.go about refactoring commitment schemes API
 
-	c := H.Mul(a, b)
-	C, err3 := committer.GetCommitMsg(c)
-	_, o := committer.GetDecommitMsg()
-	if err1 != nil || err2 != nil || err3 != nil {
+	c := new(big.Int).Mul(a, b)
+	c.Mod(c, committer.Q) // c = a * b mod Q
+	C, o, tt := committer.GetCommitmentToMultiplication(a, b, u)
+	if err1 != nil || err2 != nil {
 		fmt.Println(err)
 		t.Errorf("Error when computing commitments")
 	}
 
-	//C, o, tt := committer.GetCommitmentToMultiplication(a, b, u)
-
-	proved := commitmentzkp.ProveCommitmentMultiplication(committer.RSA.Exp, receiver.HomomorphismInv,
-		H, committer.RSA.E, committer.Y, A, B, C, a, b, r, u, o)
+	proved := commitmentzkp.ProveCommitmentMultiplication(committer.Homomorphism, receiver.HomomorphismInv,
+		committer.H, committer.Q, committer.Y, A, B, C, a, b, r, u, o, tt)
 
 	assert.Equal(t, true, proved, "Commitments multiplication proof failed.")
 }

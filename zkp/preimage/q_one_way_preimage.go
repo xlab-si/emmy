@@ -7,6 +7,23 @@ import (
 	"math/big"
 )
 
+// ProvePreimageKnowledge demonstrates how given homomorphism f:H->G and element u from G
+// prover can prove the knowledge of v such that f(v) = u.
+func ProvePreimageKnowledge(homomorphism func(*big.Int) *big.Int, H common.Group,
+		challengeMax, u, v *big.Int) bool {
+	prover := NewFPreimageProver(homomorphism, H, v)
+	proofRandomData := prover.GetProofRandomData()
+
+	verifier := NewFPreimageVerifier(homomorphism, H, challengeMax, u)
+	verifier.SetProofRandomData(proofRandomData)
+	challenge := verifier.GetChallenge()
+
+	z := prover.GetProofData(challenge)
+	proved := verifier.Verify(z)
+
+	return proved
+}
+
 // Given q-one-way homomorphism f: H -> G and u from group G, we want to prove that
 // we know v such that f(v) = u. This is generalized Schnorr prover where QOneWayHomomorphism(x)
 // would be g^x mod N.
