@@ -63,14 +63,9 @@ message Message {
 	string ProtocolError = 29;
 }
 
-service Pedersen {
-	rpc Run (stream Message) returns (stream Message) {}
-}
-
 // A generic service
 service Protocol {
 	rpc Run (stream Message) returns (stream Message) {}
-	rpc RunPedersen (stream Message) returns (stream Message) {}
 }
 
 message EmptyMsg {}
