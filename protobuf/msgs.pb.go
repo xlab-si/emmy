@@ -303,6 +303,20 @@ func (m *Message) GetContent() isMessage_Content {
 	return nil
 }
 
+func (m *Message) GetSchema() SchemaType {
+	if m != nil {
+		return m.Schema
+	}
+	return SchemaType_PEDERSEN
+}
+
+func (m *Message) GetSchemaVariant() SchemaVariant {
+	if m != nil {
+		return m.SchemaVariant
+	}
+	return SchemaVariant_SIGMA
+}
+
 func (m *Message) GetEmpty() *EmptyMsg {
 	if x, ok := m.GetContent().(*Message_Empty); ok {
 		return x.Empty
@@ -476,6 +490,20 @@ func (m *Message) GetEint() int32 {
 		return x.Eint
 	}
 	return 0
+}
+
+func (m *Message) GetClientId() int32 {
+	if m != nil {
+		return m.ClientId
+	}
+	return 0
+}
+
+func (m *Message) GetProtocolError() string {
+	if m != nil {
+		return m.ProtocolError
+	}
+	return ""
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
@@ -1001,6 +1029,13 @@ func (m *Status) String() string            { return proto.CompactTextString(m) 
 func (*Status) ProtoMessage()               {}
 func (*Status) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
+func (m *Status) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
 type BigInt struct {
 	X1 []byte `protobuf:"bytes,1,opt,name=X1,proto3" json:"X1,omitempty"`
 }
@@ -1009,6 +1044,13 @@ func (m *BigInt) Reset()                    { *m = BigInt{} }
 func (m *BigInt) String() string            { return proto.CompactTextString(m) }
 func (*BigInt) ProtoMessage()               {}
 func (*BigInt) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *BigInt) GetX1() []byte {
+	if m != nil {
+		return m.X1
+	}
+	return nil
+}
 
 type DoubleBigInt struct {
 	X1 []byte `protobuf:"bytes,1,opt,name=X1,proto3" json:"X1,omitempty"`
@@ -1020,6 +1062,20 @@ func (m *DoubleBigInt) String() string            { return proto.CompactTextStri
 func (*DoubleBigInt) ProtoMessage()               {}
 func (*DoubleBigInt) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
+func (m *DoubleBigInt) GetX1() []byte {
+	if m != nil {
+		return m.X1
+	}
+	return nil
+}
+
+func (m *DoubleBigInt) GetX2() []byte {
+	if m != nil {
+		return m.X2
+	}
+	return nil
+}
+
 type PedersenFirst struct {
 	H []byte `protobuf:"bytes,1,opt,name=H,proto3" json:"H,omitempty"`
 }
@@ -1028,6 +1084,13 @@ func (m *PedersenFirst) Reset()                    { *m = PedersenFirst{} }
 func (m *PedersenFirst) String() string            { return proto.CompactTextString(m) }
 func (*PedersenFirst) ProtoMessage()               {}
 func (*PedersenFirst) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *PedersenFirst) GetH() []byte {
+	if m != nil {
+		return m.H
+	}
+	return nil
+}
 
 type PedersenDecommitment struct {
 	X []byte `protobuf:"bytes,1,opt,name=X,proto3" json:"X,omitempty"`
@@ -1039,6 +1102,20 @@ func (m *PedersenDecommitment) String() string            { return proto.Compact
 func (*PedersenDecommitment) ProtoMessage()               {}
 func (*PedersenDecommitment) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
+func (m *PedersenDecommitment) GetX() []byte {
+	if m != nil {
+		return m.X
+	}
+	return nil
+}
+
+func (m *PedersenDecommitment) GetR() []byte {
+	if m != nil {
+		return m.R
+	}
+	return nil
+}
+
 type ECGroupElement struct {
 	X []byte `protobuf:"bytes,1,opt,name=X,proto3" json:"X,omitempty"`
 	Y []byte `protobuf:"bytes,2,opt,name=Y,proto3" json:"Y,omitempty"`
@@ -1048,6 +1125,20 @@ func (m *ECGroupElement) Reset()                    { *m = ECGroupElement{} }
 func (m *ECGroupElement) String() string            { return proto.CompactTextString(m) }
 func (*ECGroupElement) ProtoMessage()               {}
 func (*ECGroupElement) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *ECGroupElement) GetX() []byte {
+	if m != nil {
+		return m.X
+	}
+	return nil
+}
+
+func (m *ECGroupElement) GetY() []byte {
+	if m != nil {
+		return m.Y
+	}
+	return nil
+}
 
 type Pair struct {
 	A []byte `protobuf:"bytes,1,opt,name=A,proto3" json:"A,omitempty"`
@@ -1059,6 +1150,20 @@ func (m *Pair) String() string            { return proto.CompactTextString(m) }
 func (*Pair) ProtoMessage()               {}
 func (*Pair) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
+func (m *Pair) GetA() []byte {
+	if m != nil {
+		return m.A
+	}
+	return nil
+}
+
+func (m *Pair) GetB() []byte {
+	if m != nil {
+		return m.B
+	}
+	return nil
+}
+
 type SchnorrProofRandomData struct {
 	X []byte `protobuf:"bytes,1,opt,name=X,proto3" json:"X,omitempty"`
 	A []byte `protobuf:"bytes,2,opt,name=A,proto3" json:"A,omitempty"`
@@ -1069,6 +1174,27 @@ func (m *SchnorrProofRandomData) Reset()                    { *m = SchnorrProofR
 func (m *SchnorrProofRandomData) String() string            { return proto.CompactTextString(m) }
 func (*SchnorrProofRandomData) ProtoMessage()               {}
 func (*SchnorrProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+func (m *SchnorrProofRandomData) GetX() []byte {
+	if m != nil {
+		return m.X
+	}
+	return nil
+}
+
+func (m *SchnorrProofRandomData) GetA() []byte {
+	if m != nil {
+		return m.A
+	}
+	return nil
+}
+
+func (m *SchnorrProofRandomData) GetB() []byte {
+	if m != nil {
+		return m.B
+	}
+	return nil
+}
 
 type SchnorrECProofRandomData struct {
 	X *ECGroupElement `protobuf:"bytes,1,opt,name=X" json:"X,omitempty"`
@@ -1112,6 +1238,20 @@ func (m *SchnorrProofData) String() string            { return proto.CompactText
 func (*SchnorrProofData) ProtoMessage()               {}
 func (*SchnorrProofData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
+func (m *SchnorrProofData) GetZ() []byte {
+	if m != nil {
+		return m.Z
+	}
+	return nil
+}
+
+func (m *SchnorrProofData) GetTrapdoor() []byte {
+	if m != nil {
+		return m.Trapdoor
+	}
+	return nil
+}
+
 type PseudonymsysNymGenProofRandomData struct {
 	X1 []byte `protobuf:"bytes,1,opt,name=X1,proto3" json:"X1,omitempty"`
 	A1 []byte `protobuf:"bytes,2,opt,name=A1,proto3" json:"A1,omitempty"`
@@ -1128,6 +1268,62 @@ func (m *PseudonymsysNymGenProofRandomData) String() string { return proto.Compa
 func (*PseudonymsysNymGenProofRandomData) ProtoMessage()    {}
 func (*PseudonymsysNymGenProofRandomData) Descriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{12}
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetX1() []byte {
+	if m != nil {
+		return m.X1
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetA1() []byte {
+	if m != nil {
+		return m.A1
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetB1() []byte {
+	if m != nil {
+		return m.B1
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetX2() []byte {
+	if m != nil {
+		return m.X2
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetA2() []byte {
+	if m != nil {
+		return m.A2
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetB2() []byte {
+	if m != nil {
+		return m.B2
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetR() []byte {
+	if m != nil {
+		return m.R
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomData) GetS() []byte {
+	if m != nil {
+		return m.S
+	}
+	return nil
 }
 
 type PseudonymsysNymGenProofRandomDataEC struct {
@@ -1190,6 +1386,20 @@ func (m *PseudonymsysNymGenProofRandomDataEC) GetB2() *ECGroupElement {
 	return nil
 }
 
+func (m *PseudonymsysNymGenProofRandomDataEC) GetR() []byte {
+	if m != nil {
+		return m.R
+	}
+	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomDataEC) GetS() []byte {
+	if m != nil {
+		return m.S
+	}
+	return nil
+}
+
 type PseudonymsysCACertificate struct {
 	BlindedA []byte `protobuf:"bytes,1,opt,name=BlindedA,proto3" json:"BlindedA,omitempty"`
 	BlindedB []byte `protobuf:"bytes,2,opt,name=BlindedB,proto3" json:"BlindedB,omitempty"`
@@ -1201,6 +1411,34 @@ func (m *PseudonymsysCACertificate) Reset()                    { *m = Pseudonyms
 func (m *PseudonymsysCACertificate) String() string            { return proto.CompactTextString(m) }
 func (*PseudonymsysCACertificate) ProtoMessage()               {}
 func (*PseudonymsysCACertificate) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+
+func (m *PseudonymsysCACertificate) GetBlindedA() []byte {
+	if m != nil {
+		return m.BlindedA
+	}
+	return nil
+}
+
+func (m *PseudonymsysCACertificate) GetBlindedB() []byte {
+	if m != nil {
+		return m.BlindedB
+	}
+	return nil
+}
+
+func (m *PseudonymsysCACertificate) GetR() []byte {
+	if m != nil {
+		return m.R
+	}
+	return nil
+}
+
+func (m *PseudonymsysCACertificate) GetS() []byte {
+	if m != nil {
+		return m.S
+	}
+	return nil
+}
 
 type PseudonymsysCACertificateEC struct {
 	BlindedA *ECGroupElement `protobuf:"bytes,1,opt,name=BlindedA" json:"BlindedA,omitempty"`
@@ -1228,6 +1466,20 @@ func (m *PseudonymsysCACertificateEC) GetBlindedB() *ECGroupElement {
 	return nil
 }
 
+func (m *PseudonymsysCACertificateEC) GetR() []byte {
+	if m != nil {
+		return m.R
+	}
+	return nil
+}
+
+func (m *PseudonymsysCACertificateEC) GetS() []byte {
+	if m != nil {
+		return m.S
+	}
+	return nil
+}
+
 type PseudonymsysIssueProofRandomData struct {
 	X11 []byte `protobuf:"bytes,1,opt,name=X11,proto3" json:"X11,omitempty"`
 	X12 []byte `protobuf:"bytes,2,opt,name=X12,proto3" json:"X12,omitempty"`
@@ -1242,6 +1494,48 @@ func (m *PseudonymsysIssueProofRandomData) String() string { return proto.Compac
 func (*PseudonymsysIssueProofRandomData) ProtoMessage()    {}
 func (*PseudonymsysIssueProofRandomData) Descriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{16}
+}
+
+func (m *PseudonymsysIssueProofRandomData) GetX11() []byte {
+	if m != nil {
+		return m.X11
+	}
+	return nil
+}
+
+func (m *PseudonymsysIssueProofRandomData) GetX12() []byte {
+	if m != nil {
+		return m.X12
+	}
+	return nil
+}
+
+func (m *PseudonymsysIssueProofRandomData) GetX21() []byte {
+	if m != nil {
+		return m.X21
+	}
+	return nil
+}
+
+func (m *PseudonymsysIssueProofRandomData) GetX22() []byte {
+	if m != nil {
+		return m.X22
+	}
+	return nil
+}
+
+func (m *PseudonymsysIssueProofRandomData) GetA() []byte {
+	if m != nil {
+		return m.A
+	}
+	return nil
+}
+
+func (m *PseudonymsysIssueProofRandomData) GetB() []byte {
+	if m != nil {
+		return m.B
+	}
+	return nil
 }
 
 type PseudonymsysIssueProofRandomDataEC struct {
@@ -1314,6 +1608,34 @@ func (m *PseudonymsysTranscript) String() string            { return proto.Compa
 func (*PseudonymsysTranscript) ProtoMessage()               {}
 func (*PseudonymsysTranscript) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18} }
 
+func (m *PseudonymsysTranscript) GetA() []byte {
+	if m != nil {
+		return m.A
+	}
+	return nil
+}
+
+func (m *PseudonymsysTranscript) GetB() []byte {
+	if m != nil {
+		return m.B
+	}
+	return nil
+}
+
+func (m *PseudonymsysTranscript) GetHash() []byte {
+	if m != nil {
+		return m.Hash
+	}
+	return nil
+}
+
+func (m *PseudonymsysTranscript) GetZAlpha() []byte {
+	if m != nil {
+		return m.ZAlpha
+	}
+	return nil
+}
+
 type PseudonymsysTranscriptEC struct {
 	A      *ECGroupElement `protobuf:"bytes,1,opt,name=A" json:"A,omitempty"`
 	B      *ECGroupElement `protobuf:"bytes,2,opt,name=B" json:"B,omitempty"`
@@ -1340,6 +1662,20 @@ func (m *PseudonymsysTranscriptEC) GetB() *ECGroupElement {
 	return nil
 }
 
+func (m *PseudonymsysTranscriptEC) GetHash() []byte {
+	if m != nil {
+		return m.Hash
+	}
+	return nil
+}
+
+func (m *PseudonymsysTranscriptEC) GetZAlpha() []byte {
+	if m != nil {
+		return m.ZAlpha
+	}
+	return nil
+}
+
 type PseudonymsysCredential struct {
 	SmallAToGamma []byte                  `protobuf:"bytes,1,opt,name=SmallAToGamma,proto3" json:"SmallAToGamma,omitempty"`
 	SmallBToGamma []byte                  `protobuf:"bytes,2,opt,name=SmallBToGamma,proto3" json:"SmallBToGamma,omitempty"`
@@ -1353,6 +1689,34 @@ func (m *PseudonymsysCredential) Reset()                    { *m = PseudonymsysC
 func (m *PseudonymsysCredential) String() string            { return proto.CompactTextString(m) }
 func (*PseudonymsysCredential) ProtoMessage()               {}
 func (*PseudonymsysCredential) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{20} }
+
+func (m *PseudonymsysCredential) GetSmallAToGamma() []byte {
+	if m != nil {
+		return m.SmallAToGamma
+	}
+	return nil
+}
+
+func (m *PseudonymsysCredential) GetSmallBToGamma() []byte {
+	if m != nil {
+		return m.SmallBToGamma
+	}
+	return nil
+}
+
+func (m *PseudonymsysCredential) GetAToGamma() []byte {
+	if m != nil {
+		return m.AToGamma
+	}
+	return nil
+}
+
+func (m *PseudonymsysCredential) GetBToGamma() []byte {
+	if m != nil {
+		return m.BToGamma
+	}
+	return nil
+}
 
 func (m *PseudonymsysCredential) GetT1() *PseudonymsysTranscript {
 	if m != nil {
@@ -1440,6 +1804,41 @@ func (*PseudonymsysTransferCredentialData) Descriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{22}
 }
 
+func (m *PseudonymsysTransferCredentialData) GetOrgName() string {
+	if m != nil {
+		return m.OrgName
+	}
+	return ""
+}
+
+func (m *PseudonymsysTransferCredentialData) GetX1() []byte {
+	if m != nil {
+		return m.X1
+	}
+	return nil
+}
+
+func (m *PseudonymsysTransferCredentialData) GetX2() []byte {
+	if m != nil {
+		return m.X2
+	}
+	return nil
+}
+
+func (m *PseudonymsysTransferCredentialData) GetNymA() []byte {
+	if m != nil {
+		return m.NymA
+	}
+	return nil
+}
+
+func (m *PseudonymsysTransferCredentialData) GetNymB() []byte {
+	if m != nil {
+		return m.NymB
+	}
+	return nil
+}
+
 func (m *PseudonymsysTransferCredentialData) GetCredential() *PseudonymsysCredential {
 	if m != nil {
 		return m.Credential
@@ -1461,6 +1860,13 @@ func (m *PseudonymsysTransferCredentialDataEC) String() string { return proto.Co
 func (*PseudonymsysTransferCredentialDataEC) ProtoMessage()    {}
 func (*PseudonymsysTransferCredentialDataEC) Descriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{23}
+}
+
+func (m *PseudonymsysTransferCredentialDataEC) GetOrgName() string {
+	if m != nil {
+		return m.OrgName
+	}
+	return ""
 }
 
 func (m *PseudonymsysTransferCredentialDataEC) GetX1() *ECGroupElement {
@@ -1508,6 +1914,13 @@ func (m *QNRVerifierChallenge) String() string            { return proto.Compact
 func (*QNRVerifierChallenge) ProtoMessage()               {}
 func (*QNRVerifierChallenge) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{24} }
 
+func (m *QNRVerifierChallenge) GetW() []byte {
+	if m != nil {
+		return m.W
+	}
+	return nil
+}
+
 func (m *QNRVerifierChallenge) GetPairs() []*Pair {
 	if m != nil {
 		return m.Pairs
@@ -1523,6 +1936,13 @@ func (m *RepeatedInt) Reset()                    { *m = RepeatedInt{} }
 func (m *RepeatedInt) String() string            { return proto.CompactTextString(m) }
 func (*RepeatedInt) ProtoMessage()               {}
 func (*RepeatedInt) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{25} }
+
+func (m *RepeatedInt) GetInts() []int32 {
+	if m != nil {
+		return m.Ints
+	}
+	return nil
+}
 
 type RepeatedPair struct {
 	Pairs []*Pair `protobuf:"bytes,1,rep,name=Pairs" json:"Pairs,omitempty"`
@@ -1561,6 +1981,97 @@ func (m *CSPaillierSecretKey) String() string            { return proto.CompactT
 func (*CSPaillierSecretKey) ProtoMessage()               {}
 func (*CSPaillierSecretKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{27} }
 
+func (m *CSPaillierSecretKey) GetN() []byte {
+	if m != nil {
+		return m.N
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetG() []byte {
+	if m != nil {
+		return m.G
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetX1() []byte {
+	if m != nil {
+		return m.X1
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetX2() []byte {
+	if m != nil {
+		return m.X2
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetX3() []byte {
+	if m != nil {
+		return m.X3
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetDLogP() []byte {
+	if m != nil {
+		return m.DLogP
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetDLogG() []byte {
+	if m != nil {
+		return m.DLogG
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetDLogQ() []byte {
+	if m != nil {
+		return m.DLogQ
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetVerifiableEncGroupN() []byte {
+	if m != nil {
+		return m.VerifiableEncGroupN
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetVerifiableEncGroupG1() []byte {
+	if m != nil {
+		return m.VerifiableEncGroupG1
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetVerifiableEncGroupH1() []byte {
+	if m != nil {
+		return m.VerifiableEncGroupH1
+	}
+	return nil
+}
+
+func (m *CSPaillierSecretKey) GetK() int32 {
+	if m != nil {
+		return m.K
+	}
+	return 0
+}
+
+func (m *CSPaillierSecretKey) GetK1() int32 {
+	if m != nil {
+		return m.K1
+	}
+	return 0
+}
+
 type CSPaillierPubKey struct {
 	N                    []byte `protobuf:"bytes,1,opt,name=N,proto3" json:"N,omitempty"`
 	G                    []byte `protobuf:"bytes,2,opt,name=G,proto3" json:"G,omitempty"`
@@ -1582,6 +2093,97 @@ func (m *CSPaillierPubKey) String() string            { return proto.CompactText
 func (*CSPaillierPubKey) ProtoMessage()               {}
 func (*CSPaillierPubKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{28} }
 
+func (m *CSPaillierPubKey) GetN() []byte {
+	if m != nil {
+		return m.N
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetG() []byte {
+	if m != nil {
+		return m.G
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetY1() []byte {
+	if m != nil {
+		return m.Y1
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetY2() []byte {
+	if m != nil {
+		return m.Y2
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetY3() []byte {
+	if m != nil {
+		return m.Y3
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetDLogP() []byte {
+	if m != nil {
+		return m.DLogP
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetDLogG() []byte {
+	if m != nil {
+		return m.DLogG
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetDLogQ() []byte {
+	if m != nil {
+		return m.DLogQ
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetVerifiableEncGroupN() []byte {
+	if m != nil {
+		return m.VerifiableEncGroupN
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetVerifiableEncGroupG1() []byte {
+	if m != nil {
+		return m.VerifiableEncGroupG1
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetVerifiableEncGroupH1() []byte {
+	if m != nil {
+		return m.VerifiableEncGroupH1
+	}
+	return nil
+}
+
+func (m *CSPaillierPubKey) GetK() int32 {
+	if m != nil {
+		return m.K
+	}
+	return 0
+}
+
+func (m *CSPaillierPubKey) GetK1() int32 {
+	if m != nil {
+		return m.K1
+	}
+	return 0
+}
+
 type CSPaillierOpening struct {
 	U     []byte `protobuf:"bytes,1,opt,name=U,proto3" json:"U,omitempty"`
 	E     []byte `protobuf:"bytes,2,opt,name=E,proto3" json:"E,omitempty"`
@@ -1596,6 +2198,48 @@ func (m *CSPaillierOpening) String() string            { return proto.CompactTex
 func (*CSPaillierOpening) ProtoMessage()               {}
 func (*CSPaillierOpening) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{29} }
 
+func (m *CSPaillierOpening) GetU() []byte {
+	if m != nil {
+		return m.U
+	}
+	return nil
+}
+
+func (m *CSPaillierOpening) GetE() []byte {
+	if m != nil {
+		return m.E
+	}
+	return nil
+}
+
+func (m *CSPaillierOpening) GetV() []byte {
+	if m != nil {
+		return m.V
+	}
+	return nil
+}
+
+func (m *CSPaillierOpening) GetDelta() []byte {
+	if m != nil {
+		return m.Delta
+	}
+	return nil
+}
+
+func (m *CSPaillierOpening) GetLabel() []byte {
+	if m != nil {
+		return m.Label
+	}
+	return nil
+}
+
+func (m *CSPaillierOpening) GetL() []byte {
+	if m != nil {
+		return m.L
+	}
+	return nil
+}
+
 type CSPaillierProofRandomData struct {
 	U1     []byte `protobuf:"bytes,1,opt,name=U1,proto3" json:"U1,omitempty"`
 	E1     []byte `protobuf:"bytes,2,opt,name=E1,proto3" json:"E1,omitempty"`
@@ -1608,6 +2252,41 @@ func (m *CSPaillierProofRandomData) Reset()                    { *m = CSPaillier
 func (m *CSPaillierProofRandomData) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierProofRandomData) ProtoMessage()               {}
 func (*CSPaillierProofRandomData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{30} }
+
+func (m *CSPaillierProofRandomData) GetU1() []byte {
+	if m != nil {
+		return m.U1
+	}
+	return nil
+}
+
+func (m *CSPaillierProofRandomData) GetE1() []byte {
+	if m != nil {
+		return m.E1
+	}
+	return nil
+}
+
+func (m *CSPaillierProofRandomData) GetV1() []byte {
+	if m != nil {
+		return m.V1
+	}
+	return nil
+}
+
+func (m *CSPaillierProofRandomData) GetDelta1() []byte {
+	if m != nil {
+		return m.Delta1
+	}
+	return nil
+}
+
+func (m *CSPaillierProofRandomData) GetL1() []byte {
+	if m != nil {
+		return m.L1
+	}
+	return nil
+}
 
 type CSPaillierProofData struct {
 	RTilde      []byte `protobuf:"bytes,1,opt,name=RTilde,proto3" json:"RTilde,omitempty"`
@@ -1622,6 +2301,48 @@ func (m *CSPaillierProofData) Reset()                    { *m = CSPaillierProofD
 func (m *CSPaillierProofData) String() string            { return proto.CompactTextString(m) }
 func (*CSPaillierProofData) ProtoMessage()               {}
 func (*CSPaillierProofData) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{31} }
+
+func (m *CSPaillierProofData) GetRTilde() []byte {
+	if m != nil {
+		return m.RTilde
+	}
+	return nil
+}
+
+func (m *CSPaillierProofData) GetRTildeIsNeg() bool {
+	if m != nil {
+		return m.RTildeIsNeg
+	}
+	return false
+}
+
+func (m *CSPaillierProofData) GetSTilde() []byte {
+	if m != nil {
+		return m.STilde
+	}
+	return nil
+}
+
+func (m *CSPaillierProofData) GetSTildeIsNeg() bool {
+	if m != nil {
+		return m.STildeIsNeg
+	}
+	return false
+}
+
+func (m *CSPaillierProofData) GetMTilde() []byte {
+	if m != nil {
+		return m.MTilde
+	}
+	return nil
+}
+
+func (m *CSPaillierProofData) GetMTildeIsNeg() bool {
+	if m != nil {
+		return m.MTildeIsNeg
+	}
+	return false
+}
 
 func init() {
 	proto.RegisterType((*Message)(nil), "protobuf.Message")
