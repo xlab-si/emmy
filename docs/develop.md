@@ -4,6 +4,6 @@
 
 Go into the root project folder and execute:
 
-```
-protoc -I protobuf/ protobuf/msgs.proto --go_out=plugins=grpc:protobuf
+```bash
+$ protoc -I protobuf/ protobuf/messages.proto protobuf/services.proto protobuf/enums.proto --go_out=plugins=grpc:protobuf
 ```

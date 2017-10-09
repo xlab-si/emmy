@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package protobuf;
+
+import "messages.proto";
+
+// A generic service
+service Protocol {
+	rpc Run (stream Message) returns (stream Message) {}
+}

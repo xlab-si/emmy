@@ -2,31 +2,7 @@ syntax = "proto3";
 
 package protobuf;
 
-// Valid schema types
-enum SchemaType {
-	PEDERSEN = 0;
-	PEDERSEN_EC = 1;
-	SCHNORR = 2;
-	SCHNORR_EC = 3;
-	CSPAILLIER = 4;
-	PSEUDONYMSYS_CA = 5;
-	PSEUDONYMSYS_NYM_GEN = 6;
-	PSEUDONYMSYS_ISSUE_CREDENTIAL = 7;
-	PSEUDONYMSYS_TRANSFER_CREDENTIAL = 8;
-	PSEUDONYMSYS_CA_EC = 9;
-	PSEUDONYMSYS_NYM_GEN_EC = 10;
-	PSEUDONYMSYS_ISSUE_CREDENTIAL_EC = 11;
-	PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC = 12;
-	QR = 13;
-	QNR = 14;
-}
-
-// Valid schema variants
-enum SchemaVariant {
-	SIGMA = 0;	// Sigma protocol only. This is the default - if you don't specify schema variant, sigma will be used
-	ZKP = 1;	// Zero knowledge proof
-	ZKPOK = 2;	// Zero knowledge proof of knowledge
-}
+import "enums.proto";
 
 // A generic message
 message Message {
@@ -61,11 +37,6 @@ message Message {
 	}
 	int32 clientId = 28;
 	string ProtocolError = 29;
-}
-
-// A generic service
-service Protocol {
-	rpc Run (stream Message) returns (stream Message) {}
 }
 
 message EmptyMsg {}
