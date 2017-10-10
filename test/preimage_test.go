@@ -1,9 +1,9 @@
 package test
 
 import (
-	"github.com/xlab-si/emmy/crypto/commitments"
-	"github.com/xlab-si/emmy/zkp/preimage"
 	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/crypto/commitments"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
 	"testing"
 )
 
@@ -19,4 +19,3 @@ func TestFPreimage(t *testing.T) {
 
 	assert.Equal(t, true, proved, "FPreimage proof does not work correctly")
 }
-

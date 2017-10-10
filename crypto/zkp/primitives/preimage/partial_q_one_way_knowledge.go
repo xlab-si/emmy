@@ -10,7 +10,7 @@ import (
 // the verifier does not know whether knowledge of f^(-1)(u1) or f^(-1)(u2) was proved.
 // Note that PartialDLogKnowledge is a special case of PartialPreimageKnowledge.
 func ProvePartialPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H common.Group,
-		q, v1, u1, u2 *big.Int) bool {
+	q, v1, u1, u2 *big.Int) bool {
 	prover := NewPartialPreimageProver(homomorphism, H, q, v1, u1, u2)
 	verifier := NewPartialPreimageVerifier(homomorphism, H, q)
 
@@ -26,26 +26,26 @@ func ProvePartialPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H commo
 
 type PartialPreimageProver struct {
 	QOneWayHomomorphism func(*big.Int) *big.Int
-	H 				common.Group
-	Q 				*big.Int
-	v1      		*big.Int
-	u1      		*big.Int
-	u2      		*big.Int
-	r1      *big.Int
-	c2      *big.Int
-	z2      *big.Int
-	ord     		int
+	H                   common.Group
+	Q                   *big.Int
+	v1                  *big.Int
+	u1                  *big.Int
+	u2                  *big.Int
+	r1                  *big.Int
+	c2                  *big.Int
+	z2                  *big.Int
+	ord                 int
 }
 
 func NewPartialPreimageProver(homomorphism func(*big.Int) *big.Int, H common.Group,
-		q, v1, u1, u2 *big.Int ) *PartialPreimageProver {
+	q, v1, u1, u2 *big.Int) *PartialPreimageProver {
 	return &PartialPreimageProver{
 		QOneWayHomomorphism: homomorphism,
-		H: H,
-		Q: q,
-		v1: v1,
-		u1: u1,
-		u2: u2,
+		H:                   H,
+		Q:                   q,
+		v1:                  v1,
+		u1:                  u1,
+		u2:                  u2,
 	}
 }
 
@@ -94,19 +94,19 @@ func (prover *PartialPreimageProver) GetProofData(challenge *big.Int) (*big.Int,
 
 type PartialPreimageVerifier struct {
 	QOneWayHomomorphism func(*big.Int) *big.Int
-	H 					common.Group
-	Q 					*big.Int
-	pair1   			*types.Pair
-	pair2   			*types.Pair
-	challenge 			*big.Int
+	H                   common.Group
+	Q                   *big.Int
+	pair1               *types.Pair
+	pair2               *types.Pair
+	challenge           *big.Int
 }
 
 func NewPartialPreimageVerifier(homomorphism func(*big.Int) *big.Int,
 	H common.Group, q *big.Int) *PartialPreimageVerifier {
 	return &PartialPreimageVerifier{
 		QOneWayHomomorphism: homomorphism,
-		H: H,
-		Q: q,
+		H:                   H,
+		Q:                   q,
 	}
 }
 

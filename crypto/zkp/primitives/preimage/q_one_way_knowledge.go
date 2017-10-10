@@ -10,7 +10,7 @@ import (
 // ProvePreimageKnowledge demonstrates how given homomorphism f:H->G and element u from G
 // prover can prove the knowledge of v such that f(v) = u.
 func ProvePreimageKnowledge(homomorphism func(*big.Int) *big.Int, H common.Group,
-		challengeMax, u, v *big.Int) bool {
+	challengeMax, u, v *big.Int) bool {
 	prover := NewFPreimageProver(homomorphism, H, v)
 	proofRandomData := prover.GetProofRandomData()
 
@@ -29,16 +29,16 @@ func ProvePreimageKnowledge(homomorphism func(*big.Int) *big.Int, H common.Group
 // would be g^x mod N.
 type FPreimageProver struct {
 	QOneWayHomomorphism func(*big.Int) *big.Int
-	H 				 common.Group
-	v           	 *big.Int
-	r                *big.Int
+	H                   common.Group
+	v                   *big.Int
+	r                   *big.Int
 }
 
 func NewFPreimageProver(homomorphism func(*big.Int) *big.Int, H common.Group, v *big.Int) *FPreimageProver {
 	return &FPreimageProver{
 		QOneWayHomomorphism: homomorphism,
-		H: H,
-		v: v,
+		H:                   H,
+		v:                   v,
 	}
 }
 
@@ -64,20 +64,20 @@ func (prover *FPreimageProver) GetProofData(challenge *big.Int) *big.Int {
 
 type FPreimageVerifier struct {
 	QOneWayHomomorphism func(*big.Int) *big.Int
-	H 				    common.Group
-	ChallengeMax		*big.Int
+	H                   common.Group
+	ChallengeMax        *big.Int
 	challenge           *big.Int
-	u           		*big.Int
-	x           		*big.Int
+	u                   *big.Int
+	x                   *big.Int
 }
 
 func NewFPreimageVerifier(homomorphism func(*big.Int) *big.Int, H common.Group,
-		challengeMax *big.Int, u *big.Int) *FPreimageVerifier {
+	challengeMax *big.Int, u *big.Int) *FPreimageVerifier {
 	return &FPreimageVerifier{
 		QOneWayHomomorphism: homomorphism,
-		H: H,
-		ChallengeMax: challengeMax,
-		u: u,
+		H:                   H,
+		ChallengeMax:        challengeMax,
+		u:                   u,
 	}
 }
 
@@ -96,11 +96,5 @@ func (verifier *FPreimageVerifier) Verify(z *big.Int) bool {
 	left := verifier.QOneWayHomomorphism(z)
 	right := verifier.H.Exp(verifier.u, verifier.challenge)
 	right = verifier.H.Mul(verifier.x, right)
-
-	if left.Cmp(right) == 0 {
-		return true
-	} else {
-		return false
-	}
+	return left.Cmp(right) == 0
 }
-

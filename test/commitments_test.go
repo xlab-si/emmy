@@ -1,13 +1,14 @@
 package test
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
-	"testing"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"fmt"
-	"github.com/xlab-si/emmy/zkp/commitments"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
+	"testing"
 )
 
 func TestRSABasedCommitment(t *testing.T) {
@@ -76,8 +77,8 @@ func TestCommitmentMultiplicationProof(t *testing.T) {
 	}
 
 	proved := commitmentzkp.ProveCommitmentMultiplication(committer.Homomorphism, receiver.HomomorphismInv,
-		committer.H, committer.Q, committer.Y, A, B, C, a, b, r, u, o, tt)
+		committer.H, committer.Q, committer.Y, types.NewTriple(A, B, C), types.NewPair(a, b),
+		types.NewTriple(r, u, o), tt)
 
 	assert.Equal(t, true, proved, "Commitments multiplication proof failed.")
 }
-

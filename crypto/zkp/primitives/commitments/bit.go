@@ -1,9 +1,9 @@
 package commitmentzkp
 
 import (
-	"math/big"
-	"github.com/xlab-si/emmy/zkp/preimage"
 	"github.com/xlab-si/emmy/crypto/commitments"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
+	"math/big"
 )
 
 // ProveBitCommitment demonstrates how committer can prove that a commitment contains

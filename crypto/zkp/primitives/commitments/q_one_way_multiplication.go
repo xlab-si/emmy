@@ -2,6 +2,7 @@ package commitmentzkp
 
 import (
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -9,10 +10,11 @@ import (
 // prove that C = A * B. Note that commitments need to be based on q-one-way homomorphism
 // (see RSABasedCommitter which is q-one-way homomorphism based).
 func ProveCommitmentMultiplication(homomorphism func(*big.Int) *big.Int, homomorphismInv func(*big.Int) *big.Int,
-	H common.Group, Q, Y,
-	A, B, C, a, b, r, u, o, t *big.Int) bool {
-	prover := NewQOneWayMultiplicationProver(homomorphism, homomorphismInv, H, Q, Y, A, B, C, a, b, r, u, o, t)
-	verifier := NewQOneWayMultiplicationVerifier(homomorphism, H, Q, Y, A, B, C)
+	H common.Group, Q *big.Int, Y *big.Int, commitments *types.Triple, committedValues *types.Pair,
+	randomValues *types.Triple, t *big.Int) bool {
+	prover := NewQOneWayMultiplicationProver(homomorphism, homomorphismInv, H, Q, Y,
+		commitments, committedValues, randomValues, t)
+	verifier := NewQOneWayMultiplicationVerifier(homomorphism, H, Q, Y, commitments)
 
 	m1, m2, m3 := prover.GetProofRandomData()
 	verifier.SetProofRandomData(m1, m2, m3)
@@ -25,44 +27,47 @@ func ProveCommitmentMultiplication(homomorphism func(*big.Int) *big.Int, homomor
 }
 
 type QOneWayMultiplicationProver struct {
-	QOneWayHomomorphism func(*big.Int) *big.Int
+	QOneWayHomomorphism    func(*big.Int) *big.Int
 	QOneWayHomomorphismInv func(*big.Int) *big.Int // works only for y^Q, takes y as input
-	H 				 common.Group
-	Q *big.Int
-	Y *big.Int
-	A *big.Int // commitment to a
-	B *big.Int // commitment to b
-	C *big.Int // commitment to c = a * b mod Q
-	a *big.Int
-	b *big.Int
-	r *big.Int // r is random factor in A
-	u *big.Int // u is random factor in B
-	o *big.Int // o is random factor in B
-	t *big.Int // t is such that: C = B^a * f(t)
-	x *big.Int // for protocol 1
-	s1 *big.Int // for protocol 1
-	s2 *big.Int // for protocol 1
-	d *big.Int // for protocol 2
-	s *big.Int // for protocol 2
+	H                      common.Group
+	Q                      *big.Int
+	Y                      *big.Int
+	A                      *big.Int // commitments to a
+	B                      *big.Int // commitment to b
+	C                      *big.Int // commitment to c = a * b mod Q
+	a                      *big.Int
+	b                      *big.Int
+	r                      *big.Int // r is random factor in A
+	u                      *big.Int // u is random factor in B
+	o                      *big.Int // o is random factor in C
+	t                      *big.Int // t is such that: C = B^a * f(t)
+	x                      *big.Int // for protocol 1
+	s1                     *big.Int // for protocol 1
+	s2                     *big.Int // for protocol 1
+	d                      *big.Int // for protocol 2
+	s                      *big.Int // for protocol 2
+	// proof consists of two protocols: The first is intended to verify
+	// that A, C have the correct form, while the second verifies that the prover can open B.
 }
 
 func NewQOneWayMultiplicationProver(homomorphism func(*big.Int) *big.Int,
 	homomorphismInv func(*big.Int) *big.Int,
-	H common.Group, Q, Y, A, B, C, a, b, r, u, o, t *big.Int) *QOneWayMultiplicationProver {
+	H common.Group, Q, Y *big.Int, commitments *types.Triple, committedValues *types.Pair,
+	randomValues *types.Triple, t *big.Int) *QOneWayMultiplicationProver {
 	return &QOneWayMultiplicationProver{
-		QOneWayHomomorphism: homomorphism,
+		QOneWayHomomorphism:    homomorphism,
 		QOneWayHomomorphismInv: homomorphismInv,
 		H: H,
 		Q: Q,
 		Y: Y,
-		A: A,
-		B: B,
-		C: C,
-		a: a,
-		b: b,
-		r: r,
-		u: u,
-		o: o,
+		A: commitments.A,
+		B: commitments.B,
+		C: commitments.C,
+		a: committedValues.A,
+		b: committedValues.B,
+		r: randomValues.A,
+		u: randomValues.B,
+		o: randomValues.C,
 		t: t,
 	}
 }
@@ -90,7 +95,7 @@ func (prover *QOneWayMultiplicationProver) GetProofRandomData() (*big.Int, *big.
 }
 
 func (prover *QOneWayMultiplicationProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int,
-		*big.Int, *big.Int, *big.Int) {
+	*big.Int, *big.Int, *big.Int) {
 	// protocol 1 (verifies that A and C have the correct form):
 
 	// z1 = x + challenge * a mod Q
@@ -138,28 +143,28 @@ func (prover *QOneWayMultiplicationProver) GetProofData(challenge *big.Int) (*bi
 
 type QOneWayMultiplicationVerifier struct {
 	QOneWayHomomorphism func(*big.Int) *big.Int
-	H 				    common.Group
-	Q					*big.Int
-	Y					*big.Int
-	A					*big.Int
-	B					*big.Int
-	C					*big.Int
+	H                   common.Group
+	Q                   *big.Int
+	Y                   *big.Int
+	A                   *big.Int
+	B                   *big.Int
+	C                   *big.Int
 	challenge           *big.Int
-	m1           		*big.Int
-	m2           		*big.Int
-	m3           		*big.Int
+	m1                  *big.Int
+	m2                  *big.Int
+	m3                  *big.Int
 }
 
 func NewQOneWayMultiplicationVerifier(homomorphism func(*big.Int) *big.Int, H common.Group,
-		Q, Y, A, B, C *big.Int) *QOneWayMultiplicationVerifier {
+	Q, Y *big.Int, commitments *types.Triple) *QOneWayMultiplicationVerifier {
 	return &QOneWayMultiplicationVerifier{
 		QOneWayHomomorphism: homomorphism,
-		H: H,
-		Q: Q,
-		Y: Y,
-		A: A,
-		B: B,
-		C: C,
+		H:                   H,
+		Q:                   Q,
+		Y:                   Y,
+		A:                   commitments.A,
+		B:                   commitments.B,
+		C:                   commitments.C,
 	}
 }
 
@@ -191,11 +196,8 @@ func (verifier *QOneWayMultiplicationVerifier) Verify(z1, w1, w2, z2, w3 *big.In
 	right3 := verifier.H.Exp(verifier.B, verifier.challenge)
 	right3 = verifier.H.Mul(verifier.m3, right3)
 
-	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 && left3.Cmp(right3) == 0 {
-		return true
-	} else {
-		return false
-	}
+	return left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 &&
+		left3.Cmp(right3) == 0
 }
 
 // Returns x^y * f(s) computed in group H.

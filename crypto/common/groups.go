@@ -43,10 +43,10 @@ func GetSchnorrGroup(qBitLength int) (*big.Int, *big.Int, *big.Int, error) {
 // I would say for EC we should introduce ECGroup interface. All these should be moved
 // into dlog package which should be renamed as groups.
 type Group interface {
-	GetRandomElement() (*big.Int)
-	Mul(*big.Int, *big.Int) (*big.Int)
-	Exp(*big.Int, *big.Int) (*big.Int)
-	Inv(*big.Int) (*big.Int)
+	GetRandomElement() *big.Int
+	Mul(*big.Int, *big.Int) *big.Int
+	Exp(*big.Int, *big.Int) *big.Int
+	Inv(*big.Int) *big.Int
 	IsElementInGroup(*big.Int) bool
 }
 
@@ -55,14 +55,13 @@ type ZnGroup struct {
 }
 
 func NewZnGroup(n *big.Int) *ZnGroup {
-	return &ZnGroup {
+	return &ZnGroup{
 		N: n,
 	}
 }
 
 func (znGroup *ZnGroup) GetRandomElement() *big.Int {
-	r := GetRandomZnInvertibleElement(znGroup.N)
-	return r
+	return GetRandomZnInvertibleElement(znGroup.N)
 }
 
 func (znGroup *ZnGroup) Mul(x, y *big.Int) *big.Int {
@@ -79,17 +78,10 @@ func (znGroup *ZnGroup) Exp(x, exponent *big.Int) *big.Int {
 }
 
 func (znGroup *ZnGroup) Inv(x *big.Int) *big.Int {
-	inv := new(big.Int).ModInverse(x, znGroup.N)
-	return inv
+	return new(big.Int).ModInverse(x, znGroup.N)
 }
 
 func (znGroup *ZnGroup) IsElementInGroup(x *big.Int) bool {
 	c := new(big.Int).GCD(nil, nil, x, znGroup.N)
-	if x.Cmp(znGroup.N) < 0	&& c.Cmp(big.NewInt(1)) == 0 {
-		return true
-	} else {
-		return false
-	}
+	return x.Cmp(znGroup.N) < 0 && c.Cmp(big.NewInt(1)) == 0
 }
-
-

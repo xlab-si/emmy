@@ -1,19 +1,19 @@
 package dlog
 
 import (
-	"math/big"
 	"crypto/rand"
 	"crypto/rsa"
+	"math/big"
 )
 
 // TODO: dlog will be renamed into cproblems (as computational problems). EDIT: now that I
 // am adding Group interface (currently in common/groups.go), we might simply name this package as groups.
 
 type RSA struct {
-	N       *big.Int // N = P1 * P2
-	P1 		*big.Int
-	P2		*big.Int
-	E		*big.Int
+	N  *big.Int // N = P1 * P2
+	P1 *big.Int
+	P2 *big.Int
+	E  *big.Int
 }
 
 func NewRSA(nBitLength int) (*RSA, error) {
@@ -24,15 +24,15 @@ func NewRSA(nBitLength int) (*RSA, error) {
 	p1 := priv.Primes[0]
 	p2 := priv.Primes[1]
 	n := new(big.Int).Mul(p1, p2)
-	return &RSA {
+	return &RSA{
 		P1: p1,
 		P2: p2,
-		N: n,
+		N:  n,
 	}, nil
 }
 
 func NewPublicRSA(n, e *big.Int) *RSA {
-	return &RSA {
+	return &RSA{
 		N: n,
 		E: e,
 	}
@@ -42,4 +42,3 @@ func NewPublicRSA(n, e *big.Int) *RSA {
 func (rsa *RSA) Exp(x *big.Int) *big.Int {
 	return new(big.Int).Exp(x, rsa.E, rsa.N)
 }
-
