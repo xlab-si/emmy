@@ -58,15 +58,26 @@ func (prover *SchnorrProver) GetOpeningMsg() *big.Int {
 	return h
 }
 
-// It contains also value b = a^secret. TODO: b (public key) might be transferred at a different stage.
+// GetProofRandomData sets prover.secret and prover.a, and returns a^r % p where r is random.
 func (prover *SchnorrProver) GetProofRandomData(secret, a *big.Int) *big.Int {
+	// TODO: name GetProofRandomData is not ok, but I am not sure what would be the best way
+	// to fix it.
+	// It might be replaced with something that
+	// would reflect setting of parameters secret and a. Splitting into two functions is
+	// another option, but it would add complexity of the API (for example SetParams necessary to
+	// be called before GetProofRandomData). Possible solution would also be to push secret and a
+	// into SchnorrProver constructor, but then if SchnorrProver used for two different proofs
+	// (two different (secret, a) pairs), its params would need to be reset before proof execution.
+	// Thinking of it, this last option might be the one to go, because usually Schnorr is
+	// executed once.
+	// The problem is the same for all proofs.
+
 	// x = a^r % p, where r is random
 	prover.a = a
 	prover.secret = secret
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
 	x, _ := prover.DLog.Exponentiate(a, r)
-	//b, _ := prover.DLog.Exponentiate(a, secret) // b can be considered as a public key
 
 	return x
 }
@@ -124,6 +135,8 @@ func (verifier *SchnorrVerifier) GetOpeningMsgReply(h *big.Int) *big.Int {
 	return commitment
 }
 
+// TODO: similar as described above for GetProofRandomData - this one is not setting
+// only proofRandomData, thus it might be split (a, b for example set in SchnorrVerifier constructor).
 func (verifier *SchnorrVerifier) SetProofRandomData(x, a, b *big.Int) {
 	verifier.x = x
 	verifier.a = a
