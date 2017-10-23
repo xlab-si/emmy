@@ -24,6 +24,8 @@ import (
 	"math/big"
 )
 
+// ProvePartialDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
+// the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
 func ProvePartialDLogKnowledge(dlog *dlog.ZpDLog, secret1, a1, a2, b2 *big.Int) bool {
 	prover := NewPartialDLogProver(dlog)
 	verifier := NewPartialDLogVerifier(dlog)
