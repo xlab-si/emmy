@@ -19,6 +19,7 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
@@ -178,17 +179,19 @@ func (s *Server) PseudonymsysTransferCredential(req *pb.Message, stream pb.Proto
 	nymA := new(big.Int).SetBytes(data.NymA)
 	nymB := new(big.Int).SetBytes(data.NymB)
 
-	t1 := make([]*big.Int, 4)
-	t1[0] = new(big.Int).SetBytes(data.Credential.T1.A)
-	t1[1] = new(big.Int).SetBytes(data.Credential.T1.B)
-	t1[2] = new(big.Int).SetBytes(data.Credential.T1.Hash)
-	t1[3] = new(big.Int).SetBytes(data.Credential.T1.ZAlpha)
+	t1 := dlogproofs.NewTranscript(
+		new(big.Int).SetBytes(data.Credential.T1.A),
+		new(big.Int).SetBytes(data.Credential.T1.B),
+		new(big.Int).SetBytes(data.Credential.T1.Hash),
+		new(big.Int).SetBytes(data.Credential.T1.ZAlpha),
+	)
 
-	t2 := make([]*big.Int, 4)
-	t2[0] = new(big.Int).SetBytes(data.Credential.T2.A)
-	t2[1] = new(big.Int).SetBytes(data.Credential.T2.B)
-	t2[2] = new(big.Int).SetBytes(data.Credential.T2.Hash)
-	t2[3] = new(big.Int).SetBytes(data.Credential.T2.ZAlpha)
+	t2 := dlogproofs.NewTranscript(
+		new(big.Int).SetBytes(data.Credential.T2.A),
+		new(big.Int).SetBytes(data.Credential.T2.B),
+		new(big.Int).SetBytes(data.Credential.T2.Hash),
+		new(big.Int).SetBytes(data.Credential.T2.ZAlpha),
+	)
 
 	credential := pseudonymsys.NewCredential(
 		new(big.Int).SetBytes(data.Credential.SmallAToGamma),

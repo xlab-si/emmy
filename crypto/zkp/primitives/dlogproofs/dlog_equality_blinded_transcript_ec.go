@@ -24,37 +24,56 @@ import (
 	"math/big"
 )
 
-// VerifyBlindedTranscriptEC demonstrates how the prover can prove that the blinded transcript is valid.
-// That means the knowledge of log_g1(t1), log_G2(T2) and log_g1(t1) = log_G2(T2) in EC group.
-// Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen by verifier.
-func VerifyBlindedTranscriptEC(transcript []*big.Int, curve dlog.Curve,
+// Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
+// and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
+// by verifier.
+func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve dlog.Curve,
 	g1, t1, G2, T2 *types.ECGroupElement) bool {
 	dlog := dlog.NewECDLog(curve)
-	// Transcript should be in the following form:
-	// [alpha11, alpha12, beta11, beta12, hash(alpha11, alpha12, beta11, beta12), z+alpha]
 
 	// check hash:
-	hashNum := common.Hash(transcript[0], transcript[1], transcript[2], transcript[3])
-	if hashNum.Cmp(transcript[4]) != 0 {
+	hashNum := common.Hash(transcript.Alpha_1, transcript.Alpha_2,
+		transcript.Beta_1, transcript.Beta_2)
+	if hashNum.Cmp(transcript.Hash) != 0 {
 		return false
 	}
 
 	// We need to verify (note that c-beta = hash(alpha11, alpha12, beta11, beta12))
 	// g1^(z+alpha) = (alpha11, alpha12) * t1^(c-beta)
 	// G2^(z+alpha) = (beta11, beta12) * T2^(c-beta)
-	left11, left12 := dlog.Exponentiate(g1.X, g1.Y, transcript[5])
-	right11, right12 := dlog.Exponentiate(t1.X, t1.Y, transcript[4])
-	right11, right12 = dlog.Multiply(transcript[0], transcript[1], right11, right12)
+	left11, left12 := dlog.Exponentiate(g1.X, g1.Y, transcript.ZAlpha)
+	right11, right12 := dlog.Exponentiate(t1.X, t1.Y, transcript.Hash)
+	right11, right12 = dlog.Multiply(transcript.Alpha_1, transcript.Alpha_2, right11, right12)
 
-	left21, left22 := dlog.Exponentiate(G2.X, G2.Y, transcript[5])
-	right21, right22 := dlog.Exponentiate(T2.X, T2.Y, transcript[4])
-	right21, right22 = dlog.Multiply(transcript[2], transcript[3], right21, right22)
+	left21, left22 := dlog.Exponentiate(G2.X, G2.Y, transcript.ZAlpha)
+	right21, right22 := dlog.Exponentiate(T2.X, T2.Y, transcript.Hash)
+	right21, right22 = dlog.Multiply(transcript.Beta_1, transcript.Beta_2, right21, right22)
 
 	if left11.Cmp(right11) == 0 && left12.Cmp(right12) == 0 &&
 		left21.Cmp(right21) == 0 && left22.Cmp(right22) == 0 {
 		return true
 	} else {
 		return false
+	}
+}
+
+type TranscriptEC struct {
+	Alpha_1 *big.Int
+	Alpha_2 *big.Int
+	Beta_1  *big.Int
+	Beta_2  *big.Int
+	Hash    *big.Int
+	ZAlpha  *big.Int
+}
+
+func NewTranscriptEC(alpha_1, alpha_2, beta_1, beta_2, hash, zAlpha *big.Int) *TranscriptEC {
+	return &TranscriptEC{
+		Alpha_1: alpha_1,
+		Alpha_2: alpha_2,
+		Beta_1:  beta_1,
+		Beta_2:  beta_2,
+		Hash:    hash,
+		ZAlpha:  zAlpha,
 	}
 }
 
@@ -110,8 +129,8 @@ type ECDLogEqualityBTranscriptVerifier struct {
 	x2         *types.ECGroupElement
 	t1         *types.ECGroupElement
 	t2         *types.ECGroupElement
-	transcript []*big.Int
 	alpha      *big.Int
+	transcript *TranscriptEC
 }
 
 func NewECDLogEqualityBTranscriptVerifier(curve dlog.Curve,
@@ -162,15 +181,9 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, 
 	hashNum := common.Hash(alpha11, alpha12, beta11, beta12)
 	challenge := new(big.Int).Add(hashNum, beta)
 	challenge.Mod(challenge, verifier.DLog.OrderOfSubgroup)
-	verifier.challenge = challenge
 
-	var transcript []*big.Int
-	transcript = append(transcript, alpha11)
-	transcript = append(transcript, alpha12)
-	transcript = append(transcript, beta11)
-	transcript = append(transcript, beta12)
-	transcript = append(transcript, hashNum)
-	verifier.transcript = transcript
+	verifier.challenge = challenge
+	verifier.transcript = NewTranscriptEC(alpha11, alpha12, beta11, beta12, hashNum, nil)
 	verifier.alpha = alpha
 
 	return challenge
@@ -178,7 +191,7 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, 
 
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
-func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, []*big.Int,
+func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *TranscriptEC,
 	*types.ECGroupElement, *types.ECGroupElement) {
 	left11, left12 := verifier.DLog.Exponentiate(verifier.g1.X, verifier.g1.Y, z)
 	left21, left22 := verifier.DLog.Exponentiate(verifier.g2.X, verifier.g2.Y, z)
@@ -192,7 +205,7 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, []*
 	// however, we are actually returning:
 	// [alpha11, alpha12, beta11, beta12, hash(alpha11, alpha12, beta11, beta12), z+alpha]
 	z1 := new(big.Int).Add(z, verifier.alpha)
-	verifier.transcript = append(verifier.transcript, z1)
+	verifier.transcript.ZAlpha = z1
 
 	G21, G22 := verifier.DLog.Exponentiate(verifier.g2.X, verifier.g2.Y, verifier.gamma)
 	T21, T22 := verifier.DLog.Exponentiate(verifier.t2.X, verifier.t2.Y, verifier.gamma)

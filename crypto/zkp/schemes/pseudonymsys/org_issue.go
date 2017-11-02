@@ -30,12 +30,12 @@ type Credential struct {
 	SmallBToGamma *big.Int
 	AToGamma      *big.Int
 	BToGamma      *big.Int
-	T1            []*big.Int
-	T2            []*big.Int
+	T1            *dlogproofs.Transcript
+	T2            *dlogproofs.Transcript
 }
 
 func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int,
-	t1, t2 []*big.Int) *Credential {
+	t1, t2 *dlogproofs.Transcript) *Credential {
 	credential := &Credential{
 		SmallAToGamma: aToGamma,
 		SmallBToGamma: bToGamma,
