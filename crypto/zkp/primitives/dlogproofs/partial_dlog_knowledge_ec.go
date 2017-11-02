@@ -24,6 +24,8 @@ import (
 	"math/big"
 )
 
+// ProvePartialECDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
+// the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
 func ProvePartialECDLogKnowledge(dlog *dlog.ECDLog, secret1 *big.Int,
 	a1, a2, b2 *types.ECGroupElement) bool {
 	prover := NewPartialECDLogProver(dlog)

@@ -36,9 +36,11 @@ $ go test -v test/*.go
 
 # Currently supported crypto primitives
 
-The crypto primitives and schemes (primitives combined in some more complex protocol) supported by Emmy are listed in the table below.
+The crypto primitives and schemes (schemes are primitives combined in some more complex protocol) supported by emmy are listed in the table below.
+ZKP primitives and schemes are collected in `crypto/zkp/primitives` and `crypto/zkp/schemes` respectively.
+Each of the ZKP primitives contains a function (at the beginning of the file) which demonstrates how proof should be executed. Client-server communication via gRPC which enable execution of ZKPs over the internet is in `client` and `server` packages.
 
-Note that the ones not ticked are implemented, but without client-server communication via gRPC. 
+Note that the primitives not ticked are implemented, but without client-server communication via gRPC. 
 Primitives are meant to be used in schemes (like Schnorr, DLogEquality and others in Pseudonymsys) and communication messages for primitives are implemented there 
 (different schemes might require slightly different messages).
 
@@ -244,4 +246,8 @@ On the other hand, we can provide `emmy client` with the following flags:
 
 [8] Cramer, Ronald, Ivan Damgård, and Berry Schoenmakers. "Proofs of partial knowledge and simplified design of witness hiding protocols." Advances in Cryptology—CRYPTO’94. Springer Berlin/Heidelberg, 1994.
 
+<<<<<<< ff6d3f9efa6e71f3c011d0e7ac5bc05bf2906e1d
 [9] Cramer, Ronald, and Ivan Damgård. "Zero-knowledge proofs for finite field arithmetic, or: Can zero-knowledge be for free?." Advances in Cryptology—CRYPTO'98. Springer Berlin/Heidelberg, 1998.
+=======
+[9] Cramer, Ronald, and Ivan Damgård. "Zero-knowledge proofs for finite field arithmetic, or: Can zero-knowledge be for free?." Advances in Cryptology—CRYPTO'98. Springer Berlin/Heidelberg, 1998.
+>>>>>>> ZKPs moved to crypto/zkp.

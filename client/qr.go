@@ -19,7 +19,7 @@ package client
 
 import (
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/crypto/qrproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
 	"math/big"

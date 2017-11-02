@@ -22,23 +22,56 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/crypto/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 	"testing"
+	"fmt"
 )
+
+func TestDLogKnowledge(t *testing.T) {
+	dlog := config.LoadDLog("pseudonymsys")
+
+	secret := common.GetRandomInt(dlog.OrderOfSubgroup)
+	groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1))
+	g1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
+	t1, _ := dlog.Exponentiate(g1, secret)
+	proved := dlogproofs.ProveDLogKnowledge(secret, g1, t1, dlog)
+
+	assert.Equal(t, proved, true, "DLogKnowledge does not work correctly")
+}
+
+func TestECDLogKnowledge(t *testing.T) {
+	dLog := dlog.NewECDLog(dlog.P256)
+
+	exp1 := common.GetRandomInt(dLog.OrderOfSubgroup)
+	a1X, a1Y := dLog.ExponentiateBaseG(exp1)
+	a1 := types.NewECGroupElement(a1X, a1Y)
+
+	secret := common.GetRandomInt(dLog.OrderOfSubgroup)
+	b1X, b1Y := dLog.Exponentiate(a1X, a1Y, secret)
+	b1 := types.NewECGroupElement(b1X, b1Y)
+
+	proved, err := dlogproofs.ProveECDLogKnowledge(secret, a1, b1, dlog.P256)
+	if err != nil {
+		fmt.Println(err)
+		assert.Equal(t, proved, false, "ECDLogEquality proof failed")
+	}
+
+	assert.Equal(t, proved, true, "ECDLogEquality does not work correctly")
+}
 
 func TestDLogEquality(t *testing.T) {
 	dlog := config.LoadDLog("pseudonymsys")
 
-	secret := big.NewInt(213412)
+	secret := common.GetRandomInt(dlog.OrderOfSubgroup)
 	groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1))
 	g1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
 	g2, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
 
 	t1, _ := dlog.Exponentiate(g1, secret)
 	t2, _ := dlog.Exponentiate(g2, secret)
-	proved := dlogproofs.RunDLogEquality(secret, g1, g2, t1, t2, dlog)
+	proved := dlogproofs.ProveDLogEquality(secret, g1, g2, t1, t2, dlog)
 
 	assert.Equal(t, proved, true, "DLogEquality does not work correctly")
 }
@@ -49,7 +82,7 @@ func TestDLogEqualityBlindedTranscript(t *testing.T) {
 	eProver := dlogproofs.NewDLogEqualityBTranscriptProver(dlog)
 	eVerifier := dlogproofs.NewDLogEqualityBTranscriptVerifier(dlog, nil)
 
-	secret := big.NewInt(213412)
+	secret := common.GetRandomInt(dlog.OrderOfSubgroup)
 	groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1))
 	g1, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
 	g2, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
@@ -86,7 +119,7 @@ func TestDLogEqualityEC(t *testing.T) {
 	t1 := types.NewECGroupElement(t11, t12)
 	t2 := types.NewECGroupElement(t21, t22)
 
-	proved := dlogproofs.RunECDLogEquality(secret, g1, g2, t1, t2, dlog.P256)
+	proved := dlogproofs.ProveECDLogEquality(secret, g1, g2, t1, t2, dlog.P256)
 	assert.Equal(t, proved, true, "DLogEqualityEC does not work correctly")
 
 	eProver := dlogproofs.NewECDLogEqualityBTranscriptProver(dlog.P256)

@@ -20,14 +20,14 @@ package dlogproofs
 import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func RunECDLogEquality(secret *big.Int, g1, g2, t1, t2 *types.ECGroupElement,
-	curve dlog.Curve) bool {
-	eProver := NewECDLogEqualityProver(curve)
-	eVerifier := NewECDLogEqualityVerifier(curve)
+// ProveDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and
+// that log_g1(t1) = log_g2(t2).
+func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, dlog *dlog.ZpDLog) bool {
+	eProver := NewDLogEqualityProver(dlog)
+	eVerifier := NewDLogEqualityVerifier(dlog)
 
 	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
 
@@ -37,25 +37,23 @@ func RunECDLogEquality(secret *big.Int, g1, g2, t1, t2 *types.ECGroupElement,
 	return verified
 }
 
-type ECDLogEqualityProver struct {
-	DLog   *dlog.ECDLog
+type DLogEqualityProver struct {
+	DLog   *dlog.ZpDLog
 	r      *big.Int
 	secret *big.Int
-	g1     *types.ECGroupElement
-	g2     *types.ECGroupElement
+	g1     *big.Int
+	g2     *big.Int
 }
 
-func NewECDLogEqualityProver(curve dlog.Curve) *ECDLogEqualityProver {
-	dlog := dlog.NewECDLog(curve)
-	prover := ECDLogEqualityProver{
+func NewDLogEqualityProver(dlog *dlog.ZpDLog) *DLogEqualityProver {
+	prover := DLogEqualityProver{
 		DLog: dlog,
 	}
 
 	return &prover
 }
 
-func (prover *ECDLogEqualityProver) GetProofRandomData(secret *big.Int,
-	g1, g2 *types.ECGroupElement) (*types.ECGroupElement, *types.ECGroupElement) {
+func (prover *DLogEqualityProver) GetProofRandomData(secret, g1, g2 *big.Int) (*big.Int, *big.Int) {
 	// Sets the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -65,12 +63,12 @@ func (prover *ECDLogEqualityProver) GetProofRandomData(secret *big.Int,
 
 	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
 	prover.r = r
-	x1, y1 := prover.DLog.Exponentiate(prover.g1.X, prover.g1.Y, r)
-	x2, y2 := prover.DLog.Exponentiate(prover.g2.X, prover.g2.Y, r)
-	return types.NewECGroupElement(x1, y1), types.NewECGroupElement(x2, y2)
+	x1, _ := prover.DLog.Exponentiate(prover.g1, r)
+	x2, _ := prover.DLog.Exponentiate(prover.g2, r)
+	return x1, x2
 }
 
-func (prover *ECDLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
+func (prover *DLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
 	// z = r + challenge * secret
 	z := new(big.Int)
 	z.Mul(challenge, prover.secret)
@@ -79,28 +77,26 @@ func (prover *ECDLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
 	return z
 }
 
-type ECDLogEqualityVerifier struct {
-	DLog      *dlog.ECDLog
+type DLogEqualityVerifier struct {
+	DLog      *dlog.ZpDLog
 	challenge *big.Int
-	g1        *types.ECGroupElement
-	g2        *types.ECGroupElement
-	x1        *types.ECGroupElement
-	x2        *types.ECGroupElement
-	t1        *types.ECGroupElement
-	t2        *types.ECGroupElement
+	g1        *big.Int
+	g2        *big.Int
+	x1        *big.Int
+	x2        *big.Int
+	t1        *big.Int
+	t2        *big.Int
 }
 
-func NewECDLogEqualityVerifier(curve dlog.Curve) *ECDLogEqualityVerifier {
-	dlog := dlog.NewECDLog(curve)
-	verifier := ECDLogEqualityVerifier{
+func NewDLogEqualityVerifier(dlog *dlog.ZpDLog) *DLogEqualityVerifier {
+	verifier := DLogEqualityVerifier{
 		DLog: dlog,
 	}
 
 	return &verifier
 }
 
-func (verifier *ECDLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1,
-	x2 *types.ECGroupElement) *big.Int {
+func (verifier *DLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.Int) *big.Int {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -120,17 +116,16 @@ func (verifier *ECDLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1,
 
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
-func (verifier *ECDLogEqualityVerifier) Verify(z *big.Int) bool {
-	left11, left12 := verifier.DLog.Exponentiate(verifier.g1.X, verifier.g1.Y, z)
-	left21, left22 := verifier.DLog.Exponentiate(verifier.g2.X, verifier.g2.Y, z)
+func (verifier *DLogEqualityVerifier) Verify(z *big.Int) bool {
+	left1, _ := verifier.DLog.Exponentiate(verifier.g1, z)
+	left2, _ := verifier.DLog.Exponentiate(verifier.g2, z)
 
-	r11, r12 := verifier.DLog.Exponentiate(verifier.t1.X, verifier.t1.Y, verifier.challenge)
-	r21, r22 := verifier.DLog.Exponentiate(verifier.t2.X, verifier.t2.Y, verifier.challenge)
-	right11, right12 := verifier.DLog.Multiply(r11, r12, verifier.x1.X, verifier.x1.Y)
-	right21, right22 := verifier.DLog.Multiply(r21, r22, verifier.x2.X, verifier.x2.Y)
+	r11, _ := verifier.DLog.Exponentiate(verifier.t1, verifier.challenge)
+	r12, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.challenge)
+	right1, _ := verifier.DLog.Multiply(r11, verifier.x1)
+	right2, _ := verifier.DLog.Multiply(r12, verifier.x2)
 
-	if left11.Cmp(right11) == 0 && left12.Cmp(right12) == 0 &&
-		left21.Cmp(right21) == 0 && left22.Cmp(right22) == 0 {
+	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
 		return true
 	} else {
 		return false

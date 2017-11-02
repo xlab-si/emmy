@@ -24,9 +24,9 @@ import (
 	"math/big"
 )
 
-// Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
-// and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
-// by verifier.
+// VerifyBlindedTranscriptEC demonstrates how the prover can prove that the blinded transcript is valid.
+// That means the knowledge of log_g1(t1), log_G2(T2) and log_g1(t1) = log_G2(T2) in EC group.
+// Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen by verifier.
 func VerifyBlindedTranscriptEC(transcript []*big.Int, curve dlog.Curve,
 	g1, t1, G2, T2 *types.ECGroupElement) bool {
 	dlog := dlog.NewECDLog(curve)

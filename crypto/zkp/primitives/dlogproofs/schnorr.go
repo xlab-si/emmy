@@ -25,6 +25,23 @@ import (
 	"math/big"
 )
 
+// ProveDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
+// means g1^secret = t1.
+func ProveDLogKnowledge(secret, g1, t1 *big.Int, dlog *dlog.ZpDLog) bool {
+	prover := NewSchnorrProver(dlog, types.Sigma)
+	verifier := NewSchnorrVerifier(dlog, types.Sigma)
+
+	x := prover.GetProofRandomData(secret, g1)
+	verifier.SetProofRandomData(x, g1, t1)
+
+	challenge, _ := verifier.GetChallenge()
+	z, _ := prover.GetProofData(challenge)
+	verified := verifier.Verify(z, nil)
+	return verified
+}
+
+// TODO: demonstrator for ZKP and ZKPOK
+
 // Proving that it knows w such that g^w = h (mod p).
 type SchnorrProver struct {
 	DLog             *dlog.ZpDLog

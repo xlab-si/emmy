@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/crypto/qrproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"

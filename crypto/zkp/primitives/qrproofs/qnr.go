@@ -17,8 +17,7 @@
 
 package qrproofs
 
-// Statistical zero-knowledge proof of quadratic non-residousity (implemented for historical
-// reasons).
+// Statistical zero-knowledge proof of quadratic non-residousity.
 
 import (
 	"errors"
@@ -28,7 +27,9 @@ import (
 	"math/big"
 )
 
-func QNR(y *big.Int, qr *dlog.QR) (bool, error) {
+// ProveQNR demonstrates how the prover can prove that y is not quadratic residue (there does
+// not exist element y1 such that y1^2 = y in group QR.
+func ProveQNR(y *big.Int, qr *dlog.QR) (bool, error) {
 	prover := NewQNRProver(qr, y)
 	verifier := NewQNRVerifier(qr, y)
 	m := qr.N.BitLen()

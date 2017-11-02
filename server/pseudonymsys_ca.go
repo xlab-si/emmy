@@ -19,7 +19,7 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
