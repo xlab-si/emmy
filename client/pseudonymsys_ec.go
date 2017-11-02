@@ -272,20 +272,20 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscriptEC{
-		A: types.ToPbECGroupElement(types.NewECGroupElement(credential.T1[0],
-			credential.T1[1])),
-		B: types.ToPbECGroupElement(types.NewECGroupElement(credential.T1[2],
-			credential.T1[3])),
-		Hash:   credential.T1[4].Bytes(),
-		ZAlpha: credential.T1[5].Bytes(),
+		A: types.ToPbECGroupElement(types.NewECGroupElement(credential.T1.Alpha_1,
+			credential.T1.Alpha_2)),
+		B: types.ToPbECGroupElement(types.NewECGroupElement(credential.T1.Beta_1,
+			credential.T1.Beta_2)),
+		Hash:   credential.T1.Hash.Bytes(),
+		ZAlpha: credential.T1.ZAlpha.Bytes(),
 	}
 	transcript2 := &pb.PseudonymsysTranscriptEC{
-		A: types.ToPbECGroupElement(types.NewECGroupElement(credential.T2[0],
-			credential.T2[1])),
-		B: types.ToPbECGroupElement(types.NewECGroupElement(credential.T2[2],
-			credential.T2[3])),
-		Hash:   credential.T2[4].Bytes(),
-		ZAlpha: credential.T2[5].Bytes(),
+		A: types.ToPbECGroupElement(types.NewECGroupElement(credential.T2.Alpha_1,
+			credential.T2.Alpha_2)),
+		B: types.ToPbECGroupElement(types.NewECGroupElement(credential.T2.Beta_1,
+			credential.T2.Beta_2)),
+		Hash:   credential.T2.Hash.Bytes(),
+		ZAlpha: credential.T2.ZAlpha.Bytes(),
 	}
 	pbCredential := &pb.PseudonymsysCredentialEC{
 		SmallAToGamma: types.ToPbECGroupElement(credential.SmallAToGamma),

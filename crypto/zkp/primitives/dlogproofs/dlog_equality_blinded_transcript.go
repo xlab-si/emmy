@@ -23,28 +23,44 @@ import (
 	"math/big"
 )
 
-// VerifyBlindedTranscript demonstrates how the prover can prove that the blinded transcript is valid.
-// That means the knowledge of log_g1(t1), log_G2(T2) and log_g1(t1) = log_G2(T2).
-// Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen by verifier.
-func VerifyBlindedTranscript(transcript []*big.Int, dlog *dlog.ZpDLog, g1, t1, G2, T2 *big.Int) bool {
+type Transcript struct {
+	A      *big.Int
+	B      *big.Int
+	Hash   *big.Int
+	ZAlpha *big.Int
+}
+
+func NewTranscript(a, b, hash, zAlpha *big.Int) *Transcript {
+	return &Transcript{
+		A:      a,
+		B:      b,
+		Hash:   hash,
+		ZAlpha: zAlpha,
+	}
+}
+
+// Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
+// and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
+// by verifier.
+func VerifyBlindedTranscript(transcript *Transcript, dlog *dlog.ZpDLog, g1, t1, G2, T2 *big.Int) bool {
 	// Transcript should be in the following form: [alpha1, beta1, hash(alpha1, beta1), z+alpha]
 
 	// check hash:
-	hashNum := common.Hash(transcript[0], transcript[1])
-	if hashNum.Cmp(transcript[2]) != 0 {
+	hashNum := common.Hash(transcript.A, transcript.B)
+	if hashNum.Cmp(transcript.Hash) != 0 {
 		return false
 	}
 
 	// We need to verify (note that c-beta = hash(alpha1, beta1))
 	// g1^(z+alpha) = alpha1 * t1^(c-beta)
 	// G2^(z+alpha) = beta1 * T2^(c-beta)
-	left1, _ := dlog.Exponentiate(g1, transcript[3])
-	right1, _ := dlog.Exponentiate(t1, transcript[2])
-	right1, _ = dlog.Multiply(transcript[0], right1)
+	left1, _ := dlog.Exponentiate(g1, transcript.ZAlpha)
+	right1, _ := dlog.Exponentiate(t1, transcript.Hash)
+	right1, _ = dlog.Multiply(transcript.A, right1)
 
-	left2, _ := dlog.Exponentiate(G2, transcript[3])
-	right2, _ := dlog.Exponentiate(T2, transcript[2])
-	right2, _ = dlog.Multiply(transcript[1], right2)
+	left2, _ := dlog.Exponentiate(G2, transcript.ZAlpha)
+	right2, _ := dlog.Exponentiate(T2, transcript.Hash)
+	right2, _ = dlog.Multiply(transcript.B, right2)
 
 	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
 		return true
@@ -104,8 +120,8 @@ type DLogEqualityBTranscriptVerifier struct {
 	x2         *big.Int
 	t1         *big.Int
 	t2         *big.Int
-	transcript []*big.Int
 	alpha      *big.Int
+	transcript *Transcript
 }
 
 func NewDLogEqualityBTranscriptVerifier(dlog *dlog.ZpDLog,
@@ -154,13 +170,9 @@ func (verifier *DLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1
 	hashNum := common.Hash(alpha1, beta1)
 	challenge := new(big.Int).Add(hashNum, beta)
 	challenge.Mod(challenge, verifier.DLog.OrderOfSubgroup)
-	verifier.challenge = challenge
 
-	var transcript []*big.Int
-	transcript = append(transcript, alpha1)
-	transcript = append(transcript, beta1)
-	transcript = append(transcript, hashNum)
-	verifier.transcript = transcript
+	verifier.challenge = challenge
+	verifier.transcript = NewTranscript(alpha1, beta1, hashNum, nil)
 	verifier.alpha = alpha
 
 	return challenge
@@ -168,7 +180,7 @@ func (verifier *DLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1
 
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
-func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, []*big.Int,
+func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *Transcript,
 	*big.Int, *big.Int) {
 	left1, _ := verifier.DLog.Exponentiate(verifier.g1, z)
 	left2, _ := verifier.DLog.Exponentiate(verifier.g2, z)
@@ -181,7 +193,7 @@ func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, []*bi
 	// transcript [(alpha1, beta1), hash(alpha1, beta1), z+alpha]
 	// however, we are actually returning [alpha1, beta1, hash(alpha1, beta1), z+alpha]
 	z1 := new(big.Int).Add(z, verifier.alpha)
-	verifier.transcript = append(verifier.transcript, z1)
+	verifier.transcript.ZAlpha = z1
 
 	G2, _ := verifier.DLog.Exponentiate(verifier.g2, verifier.gamma)
 	T2, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.gamma)

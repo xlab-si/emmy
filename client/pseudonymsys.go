@@ -248,16 +248,16 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscript{
-		A:      credential.T1[0].Bytes(),
-		B:      credential.T1[1].Bytes(),
-		Hash:   credential.T1[2].Bytes(),
-		ZAlpha: credential.T1[3].Bytes(),
+		A:      credential.T1.A.Bytes(),
+		B:      credential.T1.B.Bytes(),
+		Hash:   credential.T1.Hash.Bytes(),
+		ZAlpha: credential.T1.ZAlpha.Bytes(),
 	}
 	transcript2 := &pb.PseudonymsysTranscript{
-		A:      credential.T2[0].Bytes(),
-		B:      credential.T2[1].Bytes(),
-		Hash:   credential.T2[2].Bytes(),
-		ZAlpha: credential.T2[3].Bytes(),
+		A:      credential.T2.A.Bytes(),
+		B:      credential.T2.B.Bytes(),
+		Hash:   credential.T2.Hash.Bytes(),
+		ZAlpha: credential.T2.ZAlpha.Bytes(),
 	}
 	pbCredential := &pb.PseudonymsysCredential{
 		SmallAToGamma: credential.SmallAToGamma.Bytes(),

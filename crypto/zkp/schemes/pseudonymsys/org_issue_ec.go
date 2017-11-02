@@ -30,12 +30,12 @@ type CredentialEC struct {
 	SmallBToGamma *types.ECGroupElement
 	AToGamma      *types.ECGroupElement
 	BToGamma      *types.ECGroupElement
-	T1            []*big.Int
-	T2            []*big.Int
+	T1            *dlogproofs.TranscriptEC
+	T2            *dlogproofs.TranscriptEC
 }
 
 func NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma *types.ECGroupElement,
-	t1, t2 []*big.Int) *CredentialEC {
+	t1, t2 *dlogproofs.TranscriptEC) *CredentialEC {
 	credential := &CredentialEC{
 		SmallAToGamma: aToGamma,
 		SmallBToGamma: bToGamma,
