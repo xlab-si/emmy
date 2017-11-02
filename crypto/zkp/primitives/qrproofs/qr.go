@@ -26,7 +26,8 @@ import (
 	"math/big"
 )
 
-func ExecuteProtocol(y1 *big.Int, dlog *dlog.ZpDLog) bool {
+// ProveQR demonstrates how the prover can prove that y1^2 is QR.
+func ProveQR(y1 *big.Int, dlog *dlog.ZpDLog) bool {
 	y, _ := dlog.Multiply(y1, y1)
 	prover := NewQRProver(dlog, y1)
 	verifier := NewQRVerifier(y, dlog)

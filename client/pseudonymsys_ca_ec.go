@@ -19,8 +19,8 @@ package client
 
 import (
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/crypto/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"

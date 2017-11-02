@@ -25,6 +25,27 @@ import (
 	"math/big"
 )
 
+// ProveECDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
+// means g1^secret = t1 in EC group.
+func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve dlog.Curve) (bool, error) {
+	prover, err := NewSchnorrECProver(curve, types.Sigma)
+	if err != nil {
+		return false, err
+	}
+	verifier := NewSchnorrECVerifier(curve, types.Sigma)
+
+	x := prover.GetProofRandomData(secret, g1)
+	verifier.SetProofRandomData(x, g1, t1)
+
+	challenge, _ := verifier.GetChallenge()
+	z, _ := prover.GetProofData(challenge)
+	verified := verifier.Verify(z, nil)
+	return verified, nil
+}
+
+// TODO: demonstrator for ZKP and ZKPOK
+
+
 // Note that this is zero knowledge proof (contructed from sigma protocol) -
 // this is protocol 6.5.1 from Hazay-Lindell.
 //

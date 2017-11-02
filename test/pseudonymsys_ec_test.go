@@ -22,7 +22,7 @@ import (
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/crypto/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	"github.com/xlab-si/emmy/types"
 	"testing"
 )

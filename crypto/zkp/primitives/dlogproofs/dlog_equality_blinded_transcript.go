@@ -23,9 +23,9 @@ import (
 	"math/big"
 )
 
-// Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
-// and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
-// by verifier.
+// VerifyBlindedTranscript demonstrates how the prover can prove that the blinded transcript is valid.
+// That means the knowledge of log_g1(t1), log_G2(T2) and log_g1(t1) = log_G2(T2).
+// Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen by verifier.
 func VerifyBlindedTranscript(transcript []*big.Int, dlog *dlog.ZpDLog, g1, t1, G2, T2 *big.Int) bool {
 	// Transcript should be in the following form: [alpha1, beta1, hash(alpha1, beta1), z+alpha]
 

@@ -20,7 +20,7 @@ package pseudonymsys
 import (
 	"errors"
 	"github.com/xlab-si/emmy/crypto/dlog"
-	"github.com/xlab-si/emmy/crypto/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )

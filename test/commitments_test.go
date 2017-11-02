@@ -23,8 +23,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
-	"github.com/xlab-si/emmy/types"
-	"math/big"
 	"testing"
 )
 
@@ -59,43 +57,15 @@ func TestBitCommitmentProof(t *testing.T) {
 		t.Errorf("Error in bit commitment proof.")
 	}
 
-	assert.Equal(t, true, verified, "DLogEquality does not work correctly")
+	assert.Equal(t, true, verified, "Bit commitment does not work correctly")
 }
 
 func TestCommitmentMultiplicationProof(t *testing.T) {
-	receiver, err := commitments.NewRSABasedCommitReceiver(1024)
+	proved, err := commitmentzkp.ProveCommitmentMultiplication()
 	if err != nil {
 		fmt.Println(err)
-		t.Errorf("Error when initializing RSABasedCommitReceiver")
+		t.Errorf("Error in multiplication proof.")
 	}
-
-	committer, err := commitments.NewRSABasedCommitter(receiver.Homomorphism, receiver.HomomorphismInv,
-		receiver.H, receiver.Q, receiver.Y)
-	if err != nil {
-		fmt.Println(err)
-		t.Errorf("Error when initializing RSABasedCommitter")
-	}
-
-	a := common.GetRandomInt(committer.Q)
-	b := common.GetRandomInt(committer.Q)
-	A, err1 := committer.GetCommitMsg(a)
-	_, r := committer.GetDecommitMsg()
-	B, err2 := committer.GetCommitMsg(b)
-	_, u := committer.GetDecommitMsg()
-	// this management of commitments and decommitments is awkward,
-	// see TODO in pedersen.go about refactoring commitment schemes API
-
-	c := new(big.Int).Mul(a, b)
-	c.Mod(c, committer.Q) // c = a * b mod Q
-	C, o, tt := committer.GetCommitmentToMultiplication(a, b, u)
-	if err1 != nil || err2 != nil {
-		fmt.Println(err)
-		t.Errorf("Error when computing commitments")
-	}
-
-	proved := commitmentzkp.ProveCommitmentMultiplication(committer.Homomorphism, receiver.HomomorphismInv,
-		committer.H, committer.Q, committer.Y, types.NewTriple(A, B, C), types.NewPair(a, b),
-		types.NewTriple(r, u, o), tt)
 
 	assert.Equal(t, true, proved, "Commitments multiplication proof failed.")
 }

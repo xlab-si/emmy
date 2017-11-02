@@ -19,16 +19,91 @@ package commitmentzkp
 
 import (
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
 	"math/big"
 )
 
+// ProveBitCommitment demonstrates how committer can prove that a commitment contains
+// 0 or 1. This is achieved by using PartialPreimageProver.
+func ProveBitCommitment() (bool, error) {
+	receiver, err := commitments.NewRSABasedCommitReceiver(1024)
+	if err != nil {
+		return false, err
+	}
+
+	committer, err := commitments.NewRSABasedCommitter(receiver.Homomorphism, receiver.HomomorphismInv,
+		receiver.H, receiver.Q, receiver.Y)
+	if err != nil {
+		return false, err
+	}
+
+	u1, _ := committer.GetCommitMsg(big.NewInt(0))
+	// commitment contains 0: u1 = commitment(0)
+	// if we would like to have a commitment that contains 1, we
+	// need to use u1 = Y^(-1) * c where c is committer.GetCommitMsg(big.NewInt(1))
+	_, v1 := committer.GetDecommitMsg() // v1 is a random r used in commitment: c = Y^a * r^q mod N
+
+	// receiver.RSA.E is Q
+	u2 := committer.H.GetRandomElement()
+
+	prover := preimage.NewPartialPreimageProver(committer.Homomorphism, committer.H,
+		committer.Q, v1, u1, u2)
+	verifier := preimage.NewPartialPreimageVerifier(receiver.Homomorphism, receiver.H,
+		receiver.Q)
+
+	pair1, pair2 := prover.GetProofRandomData()
+
+	verifier.SetProofRandomData(pair1, pair2)
+	challenge := verifier.GetChallenge()
+
+	c1, z1, c2, z2 := prover.GetProofData(challenge)
+	verified := verifier.Verify(c1, z1, c2, z2)
+
+	return verified, nil
+}
+
 // ProveCommitmentMultiplication demonstrates how, given commitments A, B, C, prover can
-// prove that C = A * B. Note that commitments need to be based on q-one-way homomorphism
-// (see RSABasedCommitter which is q-one-way homomorphism based).
-func ProveCommitmentMultiplication(homomorphism func(*big.Int) *big.Int, homomorphismInv func(*big.Int) *big.Int,
-	H common.Group, Q *big.Int, Y *big.Int, commitments *types.Triple, committedValues *types.Pair,
-	randomValues *types.Triple, t *big.Int) bool {
+// prove that C = A * B. Note that the proof should work also for other commitments that are based
+// on q-one-way homomorphism, not only for RSABasedCommitter.
+func ProveCommitmentMultiplication() (bool, error) {
+		receiver, err := commitments.NewRSABasedCommitReceiver(1024)
+	if err != nil {
+		return false, err
+	}
+
+	committer, err := commitments.NewRSABasedCommitter(receiver.Homomorphism, receiver.HomomorphismInv,
+		receiver.H, receiver.Q, receiver.Y)
+	if err != nil {
+		return false, err
+	}
+
+	a := common.GetRandomInt(committer.Q)
+	b := common.GetRandomInt(committer.Q)
+	A, err1 := committer.GetCommitMsg(a)
+	_, r := committer.GetDecommitMsg()
+	B, err2 := committer.GetCommitMsg(b)
+	_, u := committer.GetDecommitMsg()
+	// this management of commitments and decommitments is awkward,
+	// see TODO in pedersen.go about refactoring commitment schemes API
+
+	c := new(big.Int).Mul(a, b)
+	c.Mod(c, committer.Q) // c = a * b mod Q
+	C, o, t := committer.GetCommitmentToMultiplication(a, b, u)
+	if err1 != nil || err2 != nil {
+		return false, err
+	}
+
+	homomorphism := committer.Homomorphism
+	homomorphismInv := receiver.HomomorphismInv
+	H := committer.H
+	Q := committer.Q
+	Y := committer.Y
+	commitments := types.NewTriple(A, B, C)
+	committedValues := types.NewPair(a, b)
+	randomValues := types.NewTriple(r, u, o)
+
 	prover := NewQOneWayMultiplicationProver(homomorphism, homomorphismInv, H, Q, Y,
 		commitments, committedValues, randomValues, t)
 	verifier := NewQOneWayMultiplicationVerifier(homomorphism, H, Q, Y, commitments)
@@ -40,7 +115,7 @@ func ProveCommitmentMultiplication(homomorphism func(*big.Int) *big.Int, homomor
 	z1, w1, w2, z2, w3 := prover.GetProofData(challenge)
 	proved := verifier.Verify(z1, w1, w2, z2, w3)
 
-	return proved
+	return proved, nil
 }
 
 type QOneWayMultiplicationProver struct {
