@@ -30,15 +30,6 @@ type ZpDLog struct {
 	OrderOfSubgroup *big.Int // order of subgroup
 }
 
-func NewZpSchnorr(qBitLength int) (*ZpDLog, error) {
-	dlog := ZpDLog{}
-	g, q, p, err := common.GetSchnorrGroup(qBitLength)
-	dlog.G = g
-	dlog.OrderOfSubgroup = q
-	dlog.P = p
-	return &dlog, err
-}
-
 func NewZpSafePrime(modulusBitLength int) (*ZpDLog, error) {
 	p, err := common.GetSafePrime(modulusBitLength)
 	if err != nil {

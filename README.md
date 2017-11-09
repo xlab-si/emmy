@@ -59,6 +59,7 @@ Primitives are meant to be used in schemes (like Schnorr, DLogEquality and other
 | [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
 | [✗] Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
+| [✗] Proof of knowledge of representation (generalized Schnorr for multiple bases) [10] |
 | [✗] Shamir's secret sharing scheme |
 
 
@@ -246,8 +247,7 @@ On the other hand, we can provide `emmy client` with the following flags:
 
 [8] Cramer, Ronald, Ivan Damgård, and Berry Schoenmakers. "Proofs of partial knowledge and simplified design of witness hiding protocols." Advances in Cryptology—CRYPTO’94. Springer Berlin/Heidelberg, 1994.
 
-<<<<<<< ff6d3f9efa6e71f3c011d0e7ac5bc05bf2906e1d
 [9] Cramer, Ronald, and Ivan Damgård. "Zero-knowledge proofs for finite field arithmetic, or: Can zero-knowledge be for free?." Advances in Cryptology—CRYPTO'98. Springer Berlin/Heidelberg, 1998.
-=======
-[9] Cramer, Ronald, and Ivan Damgård. "Zero-knowledge proofs for finite field arithmetic, or: Can zero-knowledge be for free?." Advances in Cryptology—CRYPTO'98. Springer Berlin/Heidelberg, 1998.
->>>>>>> ZKPs moved to crypto/zkp.
+
+[10] Brands, Stefan A. "An efficient off-line electronic cash system based on the representation problem." (1993): 01-16.
+

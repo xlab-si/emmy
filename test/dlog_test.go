@@ -18,6 +18,7 @@
 package test
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
@@ -26,7 +27,6 @@ import (
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 	"testing"
-	"fmt"
 )
 
 func TestDLogKnowledge(t *testing.T) {

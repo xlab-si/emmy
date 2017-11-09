@@ -45,7 +45,6 @@ func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve d
 
 // TODO: demonstrator for ZKP and ZKPOK
 
-
 // Note that this is zero knowledge proof (contructed from sigma protocol) -
 // this is protocol 6.5.1 from Hazay-Lindell.
 //

@@ -22,10 +22,10 @@ import (
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	"github.com/xlab-si/emmy/log"
 	"math/big"
 	"testing"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 )
 
 func TestQRProof(t *testing.T) {
