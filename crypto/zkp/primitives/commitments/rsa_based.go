@@ -18,10 +18,10 @@
 package commitmentzkp
 
 import (
-	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/commitments"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -68,7 +68,7 @@ func ProveBitCommitment() (bool, error) {
 // prove that C = A * B. Note that the proof should work also for other commitments that are based
 // on q-one-way homomorphism, not only for RSABasedCommitter.
 func ProveCommitmentMultiplication() (bool, error) {
-		receiver, err := commitments.NewRSABasedCommitReceiver(1024)
+	receiver, err := commitments.NewRSABasedCommitReceiver(1024)
 	if err != nil {
 		return false, err
 	}

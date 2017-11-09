@@ -21,7 +21,7 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/storage"
 	"log"
@@ -60,7 +60,7 @@ type CSPaillierSecretKey struct {
 	X2 *big.Int
 	X3 *big.Int
 	// the parameters below are for verifiable encryption
-	Gamma                *dlog.ZpDLog // for discrete logarithm
+	Gamma                *groups.SchnorrGroup // for discrete logarithm
 	VerifiableEncGroupN  *big.Int
 	VerifiableEncGroupG1 *big.Int
 	VerifiableEncGroupH1 *big.Int
@@ -77,7 +77,7 @@ type CSPaillierPubKey struct {
 	Y2 *big.Int
 	Y3 *big.Int
 	// the parameters below are for verifiable encryption
-	Gamma                *dlog.ZpDLog // for discrete logarithm
+	Gamma                *groups.SchnorrGroup // for discrete logarithm
 	VerifiableEncGroupN  *big.Int
 	VerifiableEncGroupG1 *big.Int
 	VerifiableEncGroupH1 *big.Int
@@ -137,18 +137,15 @@ func NewCSPaillierFromSecKey(path string) (*CSPaillier, error) {
 		return nil, err
 	}
 
-	gamma := dlog.ZpDLog{
-		P:               new(big.Int).SetBytes(sKey.DLogP),
-		G:               new(big.Int).SetBytes(sKey.DLogG),
-		OrderOfSubgroup: new(big.Int).SetBytes(sKey.DLogQ),
-	}
+	gamma := groups.NewSchnorrGroupFromParams(new(big.Int).SetBytes(sKey.DLogP),
+		new(big.Int).SetBytes(sKey.DLogG), new(big.Int).SetBytes(sKey.DLogQ))
 	secKey := CSPaillierSecretKey{
 		N:                    new(big.Int).SetBytes(sKey.N),
 		G:                    new(big.Int).SetBytes(sKey.G),
 		X1:                   new(big.Int).SetBytes(sKey.X1),
 		X2:                   new(big.Int).SetBytes(sKey.X2),
 		X3:                   new(big.Int).SetBytes(sKey.X3),
-		Gamma:                &gamma,
+		Gamma:                gamma,
 		VerifiableEncGroupN:  new(big.Int).SetBytes(sKey.VerifiableEncGroupN),
 		VerifiableEncGroupG1: new(big.Int).SetBytes(sKey.VerifiableEncGroupG1),
 		VerifiableEncGroupH1: new(big.Int).SetBytes(sKey.VerifiableEncGroupH1),
@@ -190,18 +187,15 @@ func NewCSPaillierFromPubKeyFile(path string) (*CSPaillier, error) {
 		return nil, err
 	}
 
-	gamma := dlog.ZpDLog{
-		P:               new(big.Int).SetBytes(pKey.DLogP),
-		G:               new(big.Int).SetBytes(pKey.DLogG),
-		OrderOfSubgroup: new(big.Int).SetBytes(pKey.DLogQ),
-	}
+	gamma := groups.NewSchnorrGroupFromParams(new(big.Int).SetBytes(pKey.DLogP),
+		new(big.Int).SetBytes(pKey.DLogG), new(big.Int).SetBytes(pKey.DLogQ))
 	pubKey := CSPaillierPubKey{
 		N:                    new(big.Int).SetBytes(pKey.N),
 		G:                    new(big.Int).SetBytes(pKey.G),
 		Y1:                   new(big.Int).SetBytes(pKey.Y1),
 		Y2:                   new(big.Int).SetBytes(pKey.Y2),
 		Y3:                   new(big.Int).SetBytes(pKey.Y3),
-		Gamma:                &gamma,
+		Gamma:                gamma,
 		VerifiableEncGroupN:  new(big.Int).SetBytes(pKey.VerifiableEncGroupN),
 		VerifiableEncGroupG1: new(big.Int).SetBytes(pKey.VerifiableEncGroupG1),
 		VerifiableEncGroupH1: new(big.Int).SetBytes(pKey.VerifiableEncGroupH1),
@@ -227,7 +221,7 @@ func (cspaillier *CSPaillier) StoreSecKey(path string) error {
 		X3:                   cspaillier.SecretKey.X3.Bytes(),
 		DLogP:                cspaillier.SecretKey.Gamma.P.Bytes(),
 		DLogG:                cspaillier.SecretKey.Gamma.G.Bytes(),
-		DLogQ:                cspaillier.SecretKey.Gamma.OrderOfSubgroup.Bytes(),
+		DLogQ:                cspaillier.SecretKey.Gamma.Q.Bytes(),
 		VerifiableEncGroupN:  cspaillier.SecretKey.VerifiableEncGroupN.Bytes(),
 		VerifiableEncGroupG1: cspaillier.SecretKey.VerifiableEncGroupG1.Bytes(),
 		VerifiableEncGroupH1: cspaillier.SecretKey.VerifiableEncGroupH1.Bytes(),
@@ -254,7 +248,7 @@ func (cspaillier *CSPaillier) StorePubKey(path string) error {
 		Y3:                   cspaillier.PubKey.Y3.Bytes(),
 		DLogP:                cspaillier.PubKey.Gamma.P.Bytes(),
 		DLogG:                cspaillier.PubKey.Gamma.G.Bytes(),
-		DLogQ:                cspaillier.PubKey.Gamma.OrderOfSubgroup.Bytes(),
+		DLogQ:                cspaillier.PubKey.Gamma.Q.Bytes(),
 		VerifiableEncGroupN:  cspaillier.PubKey.VerifiableEncGroupN.Bytes(),
 		VerifiableEncGroupG1: cspaillier.PubKey.VerifiableEncGroupG1.Bytes(),
 		VerifiableEncGroupH1: cspaillier.PubKey.VerifiableEncGroupH1.Bytes(),
@@ -397,24 +391,24 @@ func (cspaillier *CSPaillier) generateKey() {
 	}
 
 	// for verifiable encryption:
-	Gamma, err := dlog.NewZpSchnorr(cspaillier.SecParams.RoLength)
+	Gamma, err := groups.NewSchnorrGroup(cspaillier.SecParams.RoLength)
 	if err != nil {
 		log.Fatal(err)
 	}
 	pubKey.Gamma = Gamma
 
 	// it must hold:
-	// 2**K < min{p1, q1, ro}; ro is Gamma.OrderOfSubgroup
+	// 2**K < min{p1, q1, ro}; ro is Gamma.Q
 	// ro * 2**(K + K1 + 3) < n
 
 	check1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cspaillier.SecParams.K)), nil)
-	if check1.Cmp(p1) >= 0 || check1.Cmp(q1) >= 0 || check1.Cmp(Gamma.OrderOfSubgroup) >= 0 {
+	if check1.Cmp(p1) >= 0 || check1.Cmp(q1) >= 0 || check1.Cmp(Gamma.Q) >= 0 {
 		log.Fatal(err)
 	}
 
 	tmp := cspaillier.SecParams.K + cspaillier.SecParams.K1 + 3
 	check2 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(tmp)), nil)
-	check2.Mul(check2, Gamma.OrderOfSubgroup)
+	check2.Mul(check2, Gamma.Q)
 
 	if check2.Cmp(n) >= 0 {
 		log.Fatal(err)
@@ -509,7 +503,7 @@ func (cspaillier *CSPaillier) GetProofRandomData(u, e, label *big.Int) (*big.Int
 	}
 
 	t2 := new(big.Int).Exp(two, big.NewInt(int64(cspaillier.PubKey.K+cspaillier.PubKey.K1)), nil)
-	b3 := new(big.Int).Mul(cspaillier.PubKey.Gamma.OrderOfSubgroup, t2)
+	b3 := new(big.Int).Mul(cspaillier.PubKey.Gamma.Q, t2)
 	m1, err := common.GetRandomIntFromRange(new(big.Int).Neg(b3), b3)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
