@@ -147,7 +147,7 @@ where *commonClientFlags* control the following aspects:
   
     > This should only be used for connecting clients to emmy development server, where self-signed certificate is used.
 
-Moreover, the *protocolSubcommand* corresponds to a concrete crypto protocol that we want to demonstrate between emmy client and emmy server. You can list valid *protocolSubcommand* values by running 
+Moreover, the *protocolSubcommand* corresponds to a concrete protocol that we want to demonstrate between emmy client and emmy server. You can list valid *protocolSubcommand* values by running 
 
 ```bash
 $ emmy client --help 

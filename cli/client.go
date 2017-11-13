@@ -140,6 +140,17 @@ var clientSubcommands = []cli.Command{
 			})
 		},
 	},
+	{
+		Name:     "info",
+		Usage:    "Fetch information about the service provider",
+		Category: "Info",
+		Action: func(ctx *cli.Context) error {
+			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
+				_, err := client.GetServiceInfo(conn)
+				return err
+			})
+		},
+	},
 }
 
 // run accepts pointers to parent (command) and child (subcommand) contexts in order to read
