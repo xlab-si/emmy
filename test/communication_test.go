@@ -24,6 +24,7 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
@@ -42,15 +43,17 @@ var testGrpcClientConn *grpc.ClientConn
 // connection is then re-used in all the tests to reduce overhead.
 // Once all the tests run, we close the connection to the server and stop the server.
 func TestMain(m *testing.M) {
-	// Set debug log level for easier troubleshooting in case something goes wrong
-	client.SetLogLevel("debug")
-	server.SetLogLevel("debug")
-
-	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key")
+	logger, _ := log.NewStdoutLogger("testServer", log.NOTICE, log.FORMAT_LONG)
+	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key", logger)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	// Configure a custom logger for the client package
+	clientLogger, err := log.NewStdoutLogger("client", log.NOTICE, log.FORMAT_SHORT)
+	client.SetLogger(clientLogger)
+
 	go server.Start(7008)
 
 	// Establish a connection to previously started server

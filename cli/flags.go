@@ -33,6 +33,13 @@ var logLevelFlag = cli.StringFlag{
 	Usage: "debug|info|notice|error|critical",
 }
 
+// logFilePathFlag indicates a path to the log file used by the server (optional).
+var logFilePathFlag = cli.StringFlag{
+	Name:  "logfile",
+	Value: "",
+	Usage: "`PATH` to the file where server logs will be written (created if it doesn't exist)",
+}
+
 // keyFlag keeps the path to server's private key in PEM format
 // (for establishing a secure channel with the server).
 var keyFlag = cli.StringFlag{
@@ -123,6 +130,7 @@ var serverFlags = []cli.Flag{
 	portFlag,
 	certFlag,
 	keyFlag,
+	logFilePathFlag,
 	logLevelFlag,
 }
 

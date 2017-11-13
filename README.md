@@ -100,16 +100,23 @@ Alternatively, you can control emmy server's behavior with the following options
     ```bash
     $ emmy server start --loglevel debug # or shorthand '-l debug'
     ```
-3. **Certificate and private key**: flags *--cert* and *--key*, whose value is a path to a valid certificate and private key in PEM format. These will be used to secure communication channel with clients. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
+3. **Log file**: flag *--logfile*, whose value is a path to the file where emmy server will output logs in addition to standard output. If the file does not exist, one is created. If it exists, logs will be appended to the file. It defaults to empty string, meaning that the server will not write output to any file.
+
+    Example:
+    ```bash
+    $ emmy server start --loglevel debug --logfile ~/emmy-server.log
+    ```
+
+4. **Certificate and private key**: flags *--cert* and *--key*, whose value is a path to a valid certificate and private key in PEM format. These will be used to secure communication channel with clients. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
 
 Starting the server should produce an output similar to the one below:
 
 ```
-(1) 2017/09/06 12:38:52 [server] 12:38:52.561 NewProtocolServer ▶ INFO 001 Instantiating new protocol server
-(2) 2017/09/06 12:38:52 [server] 12:38:52.562 NewProtocolServer ▶ INFO 003 Successfully read certificate [test/testdata/server.pem] and key [test/testdata/server.key]
-(3) 2017/09/06 12:38:52 [server] 12:38:52.562 NewProtocolServer ▶ NOTI 004 gRPC Services registered
-(4) 2017/09/06 12:38:52 [server] 12:38:52.562 EnableTracing ▶ NOTI 005 Enabled gRPC tracing
-(5) 2017/09/06 12:38:52 [server] 12:38:52.562 Start ▶ NOTI 006 Emmy server listening for connections on port 7007
+(1) [server][Mon 25.Sep 2017,14:11:041] NewProtocolServer ▶ INFO  Instantiating new protocol server
+(2) [server][Mon 25.Sep 2017,14:11:041] NewProtocolServer ▶ INFO  Successfully read certificate [test/testdata/server.pem] and key [test/testdata/server.key]
+(3) [server][Mon 25.Sep 2017,14:11:041] NewProtocolServer ▶ NOTI  gRPC Services registered
+(4) [server][Mon 25.Sep 2017,14:11:041] EnableTracing ▶ NOTI  Enabled gRPC tracing
+(5) [server][Mon 25.Sep 2017,14:11:041] Start ▶ NOTI  Emmy server listening for connections on port 7007
 ```
 
 Line 1 indicates that the emmy server is being instantiated. Line 2 informs us about the server's certificate and private key paths to be used for secure communication with clients. Line 3 indicates that gRPC service for execution of crypto protocols is ready, and Line 4 tells us that gRPC tracing (used to oversee RPC calls) has been enabled. Finaly, line 5 indicates that emmy server is ready to serve clients.
@@ -172,17 +179,16 @@ $ emmy client -n 5 --concurrent schnorr -v zkpok
 And here is some example output of the `emmy client` command:
 ```
 $ emmy client --server localhost:7007 pedersen
-(1) 2017/09/06 14:54:48 [client] 14:54:48.025 GetConnection ▶ INFO 001 Getting the connection
-(2) 2017/09/06 14:54:48 [client] 14:54:48.028 GetConnection ▶ NOTI 002 Established connection to gRPC server
+(1) GetConnection ▶ INFO  Getting the connection
+(2) GetConnection ▶ NOTICE  Established connection to gRPC server
 (3) ***Running client #1***
-(4) 2017/09/06 14:54:48 [client] 14:54:48.029 send ▶ INFO 003 [Client 998848799] Successfully sent request of type *protobuf.Message_Empty
-(5) 2017/09/06 14:54:48 [client] 14:54:48.030 receive ▶ INFO 004 [Client 998848799] Received response of type *protobuf.Message_PedersenFirst from the stream
-(6) 2017/09/06 14:54:48 [client] 14:54:48.031 send ▶ INFO 005 [Client 998848799] Successfully sent request of type *protobuf.Message_Bigint
-(7) 2017/09/06 14:54:48 [client] 14:54:48.031 receive ▶ INFO 006 [Client 998848799] Received response of type *protobuf.Message_Empty from the stream
-(8) 2017/09/06 14:54:48 [client] 14:54:48.031 send ▶ INFO 007 [Client 998848799] Successfully sent request of type *protobuf.Message_PedersenDecommitment
-(9) 2017/09/06 14:54:48 [client] 14:54:48.032 receive ▶ INFO 008 [Client 998848799] Received response of type *protobuf.Message_Status from the stream
+(4) send ▶ INFO  [Client 1257061046] Successfully sent request of type *protobuf.Message_Empty
+(5) receive ▶ INFO  [Client 1257061046] Received response of type *protobuf.Message_PedersenFirst from the stream
+(6) send ▶ INFO  [Client 1257061046] Successfully sent request of type *protobuf.Message_Bigint
+(7) receive ▶ INFO  [Client 1257061046] Received response of type *protobuf.Message_Empty from the stream
+(8) send ▶ INFO  [Client 1257061046] Successfully sent request of type *protobuf.Message_PedersenDecommitment
+(9) receive ▶ INFO  [Client 1257061046] Received response of type *protobuf.Message_Status from the stream
 (10) ***Time: 0.003153414 seconds***
-
 ```
 
 Lines 1-2 tell us about the procedure of initializing, and eventually, establishing a connection to Emmy server at the given URI. Line 3 comes from the Emmy CLI, and notifies us that the protocol client is about to start. Lines 4-9 indicate the communication taking place between the client and the server (e.g. here they are executing the chosen crypto protocol). The last line reports the total time required to execute the protocol - if we run several clients (either sequentially or concurrently), it prints the total time required for all the clients to finish.
