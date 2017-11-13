@@ -24,6 +24,7 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
 	"math/big"
@@ -147,13 +148,18 @@ var clientSubcommands = []cli.Command{
 // execute client-side of the chosen protocol.
 func run(ctx, subCmdCtx *cli.Context, f func(ctx *cli.Context, conn *grpc.ClientConn) error) error {
 	var err error
+	logger, err := log.NewStdoutLogger("client", ctx.String("loglevel"), log.FORMAT_SHORT)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 2)
+	}
+	client.SetLogger(logger)
+
 	// conn is a connection to emmy server.
 	// In case we are running more than one client, conn will be shared among all the clients.
 	// We made it global because it is needed in both 'Before' and 'After' actions of the clientCmd.
 	var conn *grpc.ClientConn
 
 	// Establish a connection to emmy server
-	client.SetLogLevel(ctx.String("loglevel"))
 	conn, err = client.GetConnection(ctx.String("server"), ctx.String("cacert"), ctx.Bool("insecure"))
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Cannot connect to gRPC server: %v", err), 2)

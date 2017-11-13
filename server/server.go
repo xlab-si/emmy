@@ -39,19 +39,14 @@ var _ pb.ProtocolServer = (*Server)(nil)
 
 type Server struct {
 	grpcServer *grpc.Server
-}
-
-var logger = log.ServerLogger
-
-func SetLogLevel(level string) error {
-	return logger.SetLevel(level)
+	logger     log.Logger
 }
 
 // NewProtocolServer initializes an instance of the Server struct and returns a pointer.
 // It performs some default configuration (tracing of gRPC communication and interceptors)
 // and registers RPC protocol server with gRPC server. It requires TLS cert and keyfile
 // in order to establish a secure channel with clients.
-func NewProtocolServer(certFile, keyFile string) (*Server, error) {
+func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, error) {
 	logger.Info("Instantiating new protocol server")
 
 	// Register our generic service
@@ -73,6 +68,7 @@ func NewProtocolServer(certFile, keyFile string) (*Server, error) {
 			grpc.MaxConcurrentStreams(math.MaxUint32),
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		),
+		logger: logger,
 	}
 
 	// Disable tracing by default, as is used for debugging purposes.
@@ -107,13 +103,14 @@ func (s *Server) Start(port int) error {
 	go http.ListenAndServe(":8881", nil)
 
 	// From here on, gRPC server will accept connections
-	logger.Noticef("Emmy server listening for connections on port %d", port)
+	s.logger.Noticef("Emmy server listening for connections on port %d", port)
 	s.grpcServer.Serve(listener)
 	return nil
 }
 
 // Teardown stops the protocol server by gracefully stopping enclosed gRPC server.
 func (s *Server) Teardown() {
+	s.logger.Notice("Tearing down gRPC server")
 	s.grpcServer.GracefulStop()
 }
 
@@ -123,15 +120,15 @@ func (s *Server) Teardown() {
 // in order to provide a nicer API when setting up the server.
 func (s *Server) EnableTracing() {
 	grpc.EnableTracing = true
-	logger.Notice("Enabled gRPC tracing")
+	s.logger.Notice("Enabled gRPC tracing")
 }
 
 func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
 	if err := stream.Send(msg); err != nil {
 		return fmt.Errorf("Error sending message:", err)
 	}
-	logger.Infof("Successfully sent response of type %T", msg.Content)
-	logger.Debugf("%+v", msg)
+	s.logger.Infof("Successfully sent response of type %T", msg.Content)
+	s.logger.Debugf("%+v", msg)
 
 	return nil
 }
@@ -143,14 +140,14 @@ func (s *Server) receive(stream pb.Protocol_RunServer) (*pb.Message, error) {
 	} else if err != nil {
 		return nil, fmt.Errorf("An error ocurred: %v", err)
 	}
-	logger.Infof("Received request of type %T from the stream", resp.Content)
-	logger.Debugf("%+v", resp)
+	s.logger.Infof("Received request of type %T from the stream", resp.Content)
+	s.logger.Debugf("%+v", resp)
 
 	return resp, nil
 }
 
 func (s *Server) Run(stream pb.Protocol_RunServer) error {
-	logger.Info("Starting new RPC")
+	s.logger.Info("Starting new RPC")
 
 	req, err := s.receive(stream)
 	if err != nil {
@@ -173,7 +170,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		return fmt.Errorf("Client [ %v ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
 	}
 
-	logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
+	s.logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
 
 	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
 	protocolType := types.ToProtocolType(reqSchemaVariant)
@@ -220,10 +217,10 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	}
 
 	if err != nil {
-		logger.Error("Closing RPC due to previous errors")
+		s.logger.Error("Closing RPC due to previous errors")
 		return fmt.Errorf("FAIL: %v", err)
 	}
 
-	logger.Notice("RPC finished successfully")
+	s.logger.Notice("RPC finished successfully")
 	return nil
 }

@@ -61,7 +61,7 @@ func (s *Server) Pedersen(dlog *dlog.ZpDLog, stream pb.Protocol_RunServer) error
 	r := new(big.Int).SetBytes(pedersenDecommitment.R)
 	valid := pedersenReceiver.CheckDecommitment(r, val)
 
-	logger.Noticef("Commitment scheme success: **%v**", valid)
+	s.logger.Noticef("Commitment scheme success: **%v**", valid)
 
 	resp = &pb.Message{
 		Content: &pb.Message_Status{&pb.Status{Success: valid}},

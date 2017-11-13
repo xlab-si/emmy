@@ -29,10 +29,26 @@ import (
 	"time"
 )
 
-var logger = log.ClientLogger
+var logger log.Logger
 
-func SetLogLevel(level string) error {
-	return logger.SetLevel(level)
+// init instantiates and configures client logger with default log level.
+func init() {
+	clientLogger, err := log.NewStdoutLogger("client", log.INFO, log.FORMAT_SHORT)
+	if err != nil {
+		panic(err)
+	}
+	logger = clientLogger
+}
+
+// GetLogger returns the instance of log.Logger currently configured for this package.
+func GetLogger() log.Logger {
+	return logger
+}
+
+// SetLogger assigns the log.Logger instance passed as argument to the logger of this package.
+// This is to support loggers other than log.StdoutLogger, which is set as default in init function.
+func SetLogger(lgr log.Logger) {
+	logger = lgr
 }
 
 // GetConnection attempts to return a secure connection to a gRPC server at a given endpoint.

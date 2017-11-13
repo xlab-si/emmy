@@ -46,7 +46,7 @@ func (s *Server) PedersenEC(curveType dlog.Curve, stream pb.Protocol_RunServer) 
 
 	ecgrop := req.GetEcGroupElement()
 	if ecgrop == nil {
-		logger.Critical("Got a nil EC group element")
+		s.logger.Critical("Got a nil EC group element")
 		return err
 	}
 
@@ -67,7 +67,7 @@ func (s *Server) PedersenEC(curveType dlog.Curve, stream pb.Protocol_RunServer) 
 	r := new(big.Int).SetBytes(pedersenDecommitment.R)
 	valid := pedersenECReceiver.CheckDecommitment(r, val)
 
-	logger.Noticef("Commitment scheme success: **%v**", valid)
+	s.logger.Noticef("Commitment scheme success: **%v**", valid)
 
 	resp = &pb.Message{
 		Content: &pb.Message_Status{&pb.Status{Success: valid}},
