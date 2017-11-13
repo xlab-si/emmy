@@ -137,3 +137,10 @@ func LoadPseudonymsysCAPubKey() (*big.Int, *big.Int) {
 	y, _ := new(big.Int).SetString(ca["y1"].(string), 10)
 	return x, y
 }
+
+func LoadServiceInfo() (string, string, string) {
+	serviceName := viper.GetString("service_info.name")
+	serviceProvider := viper.GetString("service_info.provider")
+	serviceDescription := viper.GetString("service_info.description")
+	return serviceName, serviceProvider, serviceDescription
+}
