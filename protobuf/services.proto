@@ -25,3 +25,7 @@ import "messages.proto";
 service Protocol {
 	rpc Run (stream Message) returns (stream Message) {}
 }
+
+service Info {
+	rpc GetServiceInfo(EmptyMsg) returns (ServiceInfo) {}
+}
