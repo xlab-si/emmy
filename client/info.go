@@ -20,29 +20,12 @@ package client
 import (
 	"fmt"
 	pb "github.com/xlab-si/emmy/protobuf"
+	"github.com/xlab-si/emmy/types"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-// ServiceInfo holds the data related to the service supported by emmy.
-// All fields are exported to ensure access to data from any package.
-type ServiceInfo struct {
-	Name        string
-	Description string
-	Provider    string
-}
-
-// NewServiceInfo accepts the matching *pb.ServiceInfo type and returns a pointer to our own
-// ServiceInfo type.
-func NewServiceInfo(info *pb.ServiceInfo) *ServiceInfo {
-	return &ServiceInfo{
-		Name:        info.GetName(),
-		Description: info.GetDescription(),
-		Provider:    info.GetProvider(),
-	}
-}
-
-func GetServiceInfo(conn *grpc.ClientConn) (*ServiceInfo, error) {
+func GetServiceInfo(conn *grpc.ClientConn) (*types.ServiceInfo, error) {
 	logger.Debug("GetServiceInfo invoked")
 	client := pb.NewInfoClient(conn)
 
@@ -51,7 +34,7 @@ func GetServiceInfo(conn *grpc.ClientConn) (*ServiceInfo, error) {
 		return nil, fmt.Errorf("Unable to retrieve service info: %v", err)
 	}
 
-	serviceInfo := NewServiceInfo(info)
+	serviceInfo := types.NewServiceInfo(info.GetName(), info.GetDescription(), info.GetProvider())
 	logger.Noticef("Retrieved service info:\n Name: %s\n Provider: %s\n Description: %s",
 		serviceInfo.Name, serviceInfo.Provider, serviceInfo.Description)
 

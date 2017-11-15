@@ -26,11 +26,11 @@ import (
 func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
 	s.logger.Info("Client requested service information")
 
-	name, provider, description := config.LoadServiceInfo()
+	serviceInfo := config.LoadServiceInfo()
 	info := &pb.ServiceInfo{
-		Name:        name,
-		Provider:    provider,
-		Description: description,
+		Name:        serviceInfo.Name,
+		Provider:    serviceInfo.Provider,
+		Description: serviceInfo.Description,
 	}
 
 	return info, nil

@@ -103,3 +103,19 @@ func ToProtocolType(variant pb.SchemaVariant) ProtocolType {
 		return Sigma
 	}
 }
+
+// ServiceInfo holds the data related to the service supported by emmy.
+// All fields are exported to ensure access to data from any package.
+type ServiceInfo struct {
+	Name        string
+	Description string
+	Provider    string
+}
+
+func NewServiceInfo(name, description, provider string) *ServiceInfo {
+	return &ServiceInfo{
+		Name:        name,
+		Description: description,
+		Provider:    provider,
+	}
+}
