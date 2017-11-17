@@ -58,6 +58,12 @@ message Message {
 
 message EmptyMsg {}
 
+message ServiceInfo {
+	string name = 1;
+	string description = 2;
+	string provider = 3;
+}
+
 message Status {
 	bool Success = 1;
 }

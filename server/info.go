@@ -15,17 +15,23 @@
  *
  */
 
-syntax = "proto3";
+package server
 
-package protobuf;
+import (
+	"github.com/xlab-si/emmy/config"
+	pb "github.com/xlab-si/emmy/protobuf"
+	"golang.org/x/net/context"
+)
 
-import "messages.proto";
+func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
+	s.logger.Info("Client requested service information")
 
-// A generic service
-service Protocol {
-	rpc Run (stream Message) returns (stream Message) {}
-}
+	serviceInfo := config.LoadServiceInfo()
+	info := &pb.ServiceInfo{
+		Name:        serviceInfo.Name,
+		Provider:    serviceInfo.Provider,
+		Description: serviceInfo.Description,
+	}
 
-service Info {
-	rpc GetServiceInfo(EmptyMsg) returns (ServiceInfo) {}
+	return info, nil
 }

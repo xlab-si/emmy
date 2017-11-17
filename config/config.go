@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
@@ -136,4 +137,11 @@ func LoadPseudonymsysCAPubKey() (*big.Int, *big.Int) {
 	x, _ := new(big.Int).SetString(ca["x"].(string), 10)
 	y, _ := new(big.Int).SetString(ca["y1"].(string), 10)
 	return x, y
+}
+
+func LoadServiceInfo() *types.ServiceInfo {
+	serviceName := viper.GetString("service_info.name")
+	serviceProvider := viper.GetString("service_info.provider")
+	serviceDescription := viper.GetString("service_info.description")
+	return types.NewServiceInfo(serviceName, serviceProvider, serviceDescription)
 }

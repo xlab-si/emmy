@@ -15,17 +15,15 @@
  *
  */
 
-syntax = "proto3";
+package test
 
-package protobuf;
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/client"
+	"testing"
+)
 
-import "messages.proto";
-
-// A generic service
-service Protocol {
-	rpc Run (stream Message) returns (stream Message) {}
-}
-
-service Info {
-	rpc GetServiceInfo(EmptyMsg) returns (ServiceInfo) {}
+func TestGetServiceInfo(t *testing.T) {
+	info, _ := client.GetServiceInfo(testGrpcClientConn)
+	assert.NotNil(t, info, "expected non-nil service info")
 }

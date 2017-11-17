@@ -61,4 +61,7 @@ pseudonymsys:
     x: "65326558506481070730591115387915499623679021660430456972125964980023301473231"
     y1: "37526396936964061204061100652712760357856013823850948443144488667237183893571"
 
-
+service_info:
+  name: "Anonymous E-Voting system"
+  provider: "Government"
+  description: "This service verifies your right to vote and allows you to vote electronically with cryptographically assured anonymity"

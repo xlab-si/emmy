@@ -75,8 +75,9 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 	// The user will be able to turn it on via Server's EnableTracing function.
 	grpc.EnableTracing = false
 
-	// Register our protocol server with the supporting gRPC server
+	// Register our services with the supporting gRPC server
 	pb.RegisterProtocolServer(server.grpcServer, server)
+	pb.RegisterInfoServer(server.grpcServer, server)
 
 	// Initialize gRPC metrics offered by Prometheus package
 	grpc_prometheus.Register(server.grpcServer)
