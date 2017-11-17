@@ -19,15 +19,15 @@ package dlogproofs
 
 import (
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
 )
 
 // ProveDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and
 // that log_g1(t1) = log_g2(t2).
-func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, dlog *dlog.ZpDLog) bool {
-	eProver := NewDLogEqualityProver(dlog)
-	eVerifier := NewDLogEqualityVerifier(dlog)
+func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, group *groups.SchnorrGroup) bool {
+	eProver := NewDLogEqualityProver(group)
+	eVerifier := NewDLogEqualityVerifier(group)
 
 	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
 
@@ -38,16 +38,16 @@ func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, dlog *dlog.ZpDLog) bool 
 }
 
 type DLogEqualityProver struct {
-	DLog   *dlog.ZpDLog
+	Group  *groups.SchnorrGroup
 	r      *big.Int
 	secret *big.Int
 	g1     *big.Int
 	g2     *big.Int
 }
 
-func NewDLogEqualityProver(dlog *dlog.ZpDLog) *DLogEqualityProver {
+func NewDLogEqualityProver(group *groups.SchnorrGroup) *DLogEqualityProver {
 	prover := DLogEqualityProver{
-		DLog: dlog,
+		Group: group,
 	}
 
 	return &prover
@@ -61,10 +61,10 @@ func (prover *DLogEqualityProver) GetProofRandomData(secret, g1, g2 *big.Int) (*
 	prover.g1 = g1
 	prover.g2 = g2
 
-	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
+	r := common.GetRandomInt(prover.Group.Q)
 	prover.r = r
-	x1, _ := prover.DLog.Exponentiate(prover.g1, r)
-	x2, _ := prover.DLog.Exponentiate(prover.g2, r)
+	x1 := prover.Group.Exp(prover.g1, r)
+	x2 := prover.Group.Exp(prover.g2, r)
 	return x1, x2
 }
 
@@ -73,12 +73,12 @@ func (prover *DLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
 	z := new(big.Int)
 	z.Mul(challenge, prover.secret)
 	z.Add(z, prover.r)
-	z.Mod(z, prover.DLog.GetOrderOfSubgroup())
+	z.Mod(z, prover.Group.Q)
 	return z
 }
 
 type DLogEqualityVerifier struct {
-	DLog      *dlog.ZpDLog
+	Group     *groups.SchnorrGroup
 	challenge *big.Int
 	g1        *big.Int
 	g2        *big.Int
@@ -88,9 +88,9 @@ type DLogEqualityVerifier struct {
 	t2        *big.Int
 }
 
-func NewDLogEqualityVerifier(dlog *dlog.ZpDLog) *DLogEqualityVerifier {
+func NewDLogEqualityVerifier(group *groups.SchnorrGroup) *DLogEqualityVerifier {
 	verifier := DLogEqualityVerifier{
-		DLog: dlog,
+		Group: group,
 	}
 
 	return &verifier
@@ -109,7 +109,7 @@ func (verifier *DLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.I
 	verifier.x1 = x1
 	verifier.x2 = x2
 
-	challenge := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
+	challenge := common.GetRandomInt(verifier.Group.Q)
 	verifier.challenge = challenge
 	return challenge
 }
@@ -117,13 +117,13 @@ func (verifier *DLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1, x2 *big.I
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
 func (verifier *DLogEqualityVerifier) Verify(z *big.Int) bool {
-	left1, _ := verifier.DLog.Exponentiate(verifier.g1, z)
-	left2, _ := verifier.DLog.Exponentiate(verifier.g2, z)
+	left1 := verifier.Group.Exp(verifier.g1, z)
+	left2 := verifier.Group.Exp(verifier.g2, z)
 
-	r11, _ := verifier.DLog.Exponentiate(verifier.t1, verifier.challenge)
-	r12, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.challenge)
-	right1, _ := verifier.DLog.Multiply(r11, verifier.x1)
-	right2, _ := verifier.DLog.Multiply(r12, verifier.x2)
+	r11 := verifier.Group.Exp(verifier.t1, verifier.challenge)
+	r12 := verifier.Group.Exp(verifier.t2, verifier.challenge)
+	right1 := verifier.Group.Mul(r11, verifier.x1)
+	right2 := verifier.Group.Mul(r12, verifier.x2)
 
 	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
 		return true

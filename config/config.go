@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
@@ -75,18 +76,12 @@ func LoadTestKeyDirFromConfig() string {
 	return key_path
 }
 
-func LoadDLog(scheme string) *dlog.ZpDLog {
-	dlogMap := viper.GetStringMap(scheme)
-	p, _ := new(big.Int).SetString(dlogMap["p"].(string), 10)
-	g, _ := new(big.Int).SetString(dlogMap["g"].(string), 10)
-	q, _ := new(big.Int).SetString(dlogMap["q"].(string), 10)
-	dlog := dlog.ZpDLog{
-		P:               p,
-		G:               g,
-		OrderOfSubgroup: q,
-	}
-
-	return &dlog
+func LoadGroup(scheme string) *groups.SchnorrGroup {
+	groupMap := viper.GetStringMap(scheme)
+	p, _ := new(big.Int).SetString(groupMap["p"].(string), 10)
+	g, _ := new(big.Int).SetString(groupMap["g"].(string), 10)
+	q, _ := new(big.Int).SetString(groupMap["q"].(string), 10)
+	return groups.NewSchnorrGroupFromParams(p, g, q)
 }
 
 func LoadQR(name string) *dlog.QR {

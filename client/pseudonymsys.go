@@ -21,7 +21,7 @@ import (
 	"errors"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
@@ -32,7 +32,7 @@ import (
 
 type PseudonymsysClient struct {
 	genericClient
-	dlog *dlog.ZpDLog
+	group *groups.SchnorrGroup
 }
 
 func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
@@ -40,10 +40,10 @@ func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 
 	return &PseudonymsysClient{
-		dlog:          dlog,
+		group:         group,
 		genericClient: *genericClient,
 	}, nil
 }
@@ -56,7 +56,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	c.openStream()
 	defer c.closeStream()
 
-	prover := dlogproofs.NewDLogEqualityProver(c.dlog)
+	prover := dlogproofs.NewDLogEqualityProver(c.group)
 
 	// Differently as in Pseudonym Systems paper a user here generates a nym (if master
 	// key pair is (g, g^s), a generated nym is (g^gamma, g^(gamma * s)),
@@ -64,9 +64,9 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 
 	// Note that as there is very little logic needed (besides what is in DLog equality
 	// prover), everything is implemented here (no pseudoynymsys nym gen client).
-	gamma := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
-	nymA, _ := c.dlog.ExponentiateBaseG(gamma)
-	nymB, _ := c.dlog.Exponentiate(nymA, userSecret)
+	gamma := common.GetRandomInt(prover.Group.Q)
+	nymA := c.group.Exp(c.group.G, gamma)
+	nymB := c.group.Exp(nymA, userSecret)
 
 	// Prove now that log_nymA(nymB) = log_blindedA(blindedB):
 	// g1 = nymA, g2 = blindedA
@@ -133,13 +133,13 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	c.openStream()
 	defer c.closeStream()
 
-	gamma := common.GetRandomInt(c.dlog.GetOrderOfSubgroup())
-	equalityVerifier1 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.dlog, gamma)
-	equalityVerifier2 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.dlog, gamma)
+	gamma := common.GetRandomInt(c.group.Q)
+	equalityVerifier1 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.group, gamma)
+	equalityVerifier2 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.group, gamma)
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver := dlogproofs.NewSchnorrProver(c.dlog, types.Sigma)
+	schnorrProver := dlogproofs.NewSchnorrProver(c.group, types.Sigma)
 	x := schnorrProver.GetProofRandomData(userSecret, nym.A)
 
 	pRandomData := pb.SchnorrProofRandomData{
@@ -190,9 +190,9 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	A := new(big.Int).SetBytes(randomData.A)
 	B := new(big.Int).SetBytes(randomData.B)
 
-	challenge1 := equalityVerifier1.GetChallenge(c.dlog.G, nym.B, orgPubKeys.H2, A, x11, x12)
-	aA, _ := c.dlog.Multiply(nym.A, A)
-	challenge2 := equalityVerifier2.GetChallenge(c.dlog.G, aA, orgPubKeys.H1, B, x21, x22)
+	challenge1 := equalityVerifier1.GetChallenge(c.group.G, nym.B, orgPubKeys.H2, A, x11, x12)
+	aA := c.group.Mul(nym.A, A)
+	challenge2 := equalityVerifier2.GetChallenge(c.group.G, aA, orgPubKeys.H1, B, x21, x22)
 
 	msg = &pb.Message{
 		Content: &pb.Message_DoubleBigint{
@@ -215,11 +215,11 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	verified1, transcript1, bToGamma, AToGamma := equalityVerifier1.Verify(z1)
 	verified2, transcript2, aAToGamma, BToGamma := equalityVerifier2.Verify(z2)
 
-	aToGamma, _ := c.dlog.Exponentiate(nym.A, gamma)
+	aToGamma := c.group.Exp(nym.A, gamma)
 	if verified1 && verified2 {
-		valid1 := dlogproofs.VerifyBlindedTranscript(transcript1, c.dlog, c.dlog.G, orgPubKeys.H2,
+		valid1 := dlogproofs.VerifyBlindedTranscript(transcript1, c.group, c.group.G, orgPubKeys.H2,
 			bToGamma, AToGamma)
-		valid2 := dlogproofs.VerifyBlindedTranscript(transcript2, c.dlog, c.dlog.G, orgPubKeys.H1,
+		valid2 := dlogproofs.VerifyBlindedTranscript(transcript2, c.group, c.group.G, orgPubKeys.H1,
 			aAToGamma, BToGamma)
 		if valid1 && valid2 {
 			credential := pseudonymsys.NewCredential(aToGamma, bToGamma, AToGamma, BToGamma,
@@ -244,7 +244,7 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 	// with this organization. But we need also to prove that dlog_a(b) = dlog_a2(b2), where
 	// a2, b2 are a1, b1 exponentiated to gamma, and (a1, b1) is a nym for organization that
 	// issued a credential. So we can do both proofs at the same time using DLogEqualityProver.
-	equalityProver := dlogproofs.NewDLogEqualityProver(c.dlog)
+	equalityProver := dlogproofs.NewDLogEqualityProver(c.group)
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscript{

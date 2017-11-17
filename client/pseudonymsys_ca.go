@@ -33,7 +33,7 @@ type PseudonymsysCAClient struct {
 }
 
 func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, error) {
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, erro
 
 	return &PseudonymsysCAClient{
 		genericClient: *genericClient,
-		prover:        dlogproofs.NewSchnorrProver(dlog, types.Sigma),
+		prover:        dlogproofs.NewSchnorrProver(group, types.Sigma),
 	}, nil
 }
 
@@ -54,7 +54,7 @@ func (c *PseudonymsysCAClient) ObtainCertificate(userSecret *big.Int, nym *pseud
 	defer c.closeStream()
 
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
-	b, _ := c.prover.DLog.Exponentiate(nym.A, userSecret)
+	b := c.prover.Group.Exp(nym.A, userSecret)
 	pRandomData := pb.SchnorrProofRandomData{
 		X: x.Bytes(),
 		A: nym.A.Bytes(),

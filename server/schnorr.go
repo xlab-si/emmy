@@ -18,16 +18,16 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func (s *Server) Schnorr(req *pb.Message, dlog *dlog.ZpDLog,
+func (s *Server) Schnorr(req *pb.Message, group *groups.SchnorrGroup,
 	protocolType types.ProtocolType, stream pb.Protocol_RunServer) error {
-	verifier := dlogproofs.NewSchnorrVerifier(dlog, protocolType)
+	verifier := dlogproofs.NewSchnorrVerifier(group, protocolType)
 	var err error
 
 	if protocolType != types.Sigma {

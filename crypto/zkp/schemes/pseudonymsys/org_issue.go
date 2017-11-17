@@ -19,7 +19,7 @@ package pseudonymsys
 
 import (
 	"errors"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -60,9 +60,9 @@ func NewOrgPubKeys(h1, h2 *big.Int) *OrgPubKeys {
 }
 
 type OrgCredentialIssuer struct {
-	DLog *dlog.ZpDLog
-	s1   *big.Int
-	s2   *big.Int
+	Group *groups.SchnorrGroup
+	s1    *big.Int
+	s2    *big.Int
 
 	// the following fields are needed for issuing a credential
 	SchnorrVerifier *dlogproofs.SchnorrVerifier
@@ -72,14 +72,14 @@ type OrgCredentialIssuer struct {
 	b               *big.Int
 }
 
-func NewOrgCredentialIssuer(dlog *dlog.ZpDLog, s1, s2 *big.Int) *OrgCredentialIssuer {
+func NewOrgCredentialIssuer(group *groups.SchnorrGroup, s1, s2 *big.Int) *OrgCredentialIssuer {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(dlog, types.Sigma)
-	equalityProver1 := dlogproofs.NewDLogEqualityBTranscriptProver(dlog)
-	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(dlog)
+	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, types.Sigma)
+	equalityProver1 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
+	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	org := OrgCredentialIssuer{
-		DLog:            dlog,
+		Group:           group,
 		s1:              s1,
 		s2:              s2,
 		SchnorrVerifier: schnorrVerifier,
@@ -105,12 +105,12 @@ func (org *OrgCredentialIssuer) VerifyAuthentication(z *big.Int) (
 	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, error) {
 	verified := org.SchnorrVerifier.Verify(z, nil)
 	if verified {
-		A, _ := org.DLog.Exponentiate(org.b, org.s2)
-		aA, _ := org.DLog.Multiply(org.a, A)
-		B, _ := org.DLog.Exponentiate(aA, org.s1)
+		A := org.Group.Exp(org.b, org.s2)
+		aA := org.Group.Mul(org.a, A)
+		B := org.Group.Exp(aA, org.s1)
 
-		x11, x12 := org.EqualityProver1.GetProofRandomData(org.s2, org.DLog.G, org.b)
-		x21, x22 := org.EqualityProver2.GetProofRandomData(org.s1, org.DLog.G, aA)
+		x11, x12 := org.EqualityProver1.GetProofRandomData(org.s2, org.Group.G, org.b)
+		x21, x22 := org.EqualityProver2.GetProofRandomData(org.s1, org.Group.G, aA)
 
 		return x11, x12, x21, x22, A, B, nil
 	} else {

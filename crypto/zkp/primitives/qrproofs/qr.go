@@ -22,16 +22,16 @@ package qrproofs
 import (
 	"errors"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
 )
 
 // ProveQR demonstrates how the prover can prove that y1^2 is QR.
-func ProveQR(y1 *big.Int, dlog *dlog.ZpDLog) bool {
-	y, _ := dlog.Multiply(y1, y1)
-	prover := NewQRProver(dlog, y1)
-	verifier := NewQRVerifier(y, dlog)
-	m := dlog.P.BitLen()
+func ProveQR(y1 *big.Int, group *groups.SchnorrGroup) bool {
+	y := group.Mul(y1, y1)
+	prover := NewQRProver(group, y1)
+	verifier := NewQRVerifier(y, group)
+	m := group.P.BitLen()
 
 	for i := 0; i < m; i++ {
 		x := prover.GetProofRandomData()
@@ -48,25 +48,25 @@ func ProveQR(y1 *big.Int, dlog *dlog.ZpDLog) bool {
 }
 
 type QRProver struct {
-	DLog *dlog.ZpDLog
-	Y    *big.Int
-	y1   *big.Int
-	r    *big.Int
+	Group *groups.SchnorrGroup
+	Y     *big.Int
+	y1    *big.Int
+	r     *big.Int
 }
 
-func NewQRProver(dlog *dlog.ZpDLog, y1 *big.Int) *QRProver {
-	y, _ := dlog.Multiply(y1, y1)
+func NewQRProver(group *groups.SchnorrGroup, y1 *big.Int) *QRProver {
+	y := group.Mul(y1, y1)
 	return &QRProver{
-		DLog: dlog,
-		Y:    y,
-		y1:   y1,
+		Group: group,
+		Y:     y,
+		y1:    y1,
 	}
 }
 
 func (prover *QRProver) GetProofRandomData() *big.Int {
-	r := common.GetRandomInt(prover.DLog.P)
+	r := common.GetRandomInt(prover.Group.P)
 	prover.r = r
-	x, _ := prover.DLog.Exponentiate(r, big.NewInt(2))
+	x := prover.Group.Exp(r, big.NewInt(2))
 	return x
 }
 
@@ -75,7 +75,7 @@ func (prover *QRProver) GetProofData(challenge *big.Int) (*big.Int, error) {
 		return prover.r, nil
 	} else if challenge.Cmp(big.NewInt(1)) == 0 {
 		z := new(big.Int).Mul(prover.r, prover.y1)
-		z.Mod(z, prover.DLog.P)
+		z.Mod(z, prover.Group.P)
 		return z, nil
 	} else {
 		err := errors.New("The challenge is not valid.")
@@ -84,16 +84,16 @@ func (prover *QRProver) GetProofData(challenge *big.Int) (*big.Int, error) {
 }
 
 type QRVerifier struct {
-	DLog      *dlog.ZpDLog
+	Group     *groups.SchnorrGroup
 	x         *big.Int
 	y         *big.Int
 	challenge *big.Int
 }
 
-func NewQRVerifier(y *big.Int, dlog *dlog.ZpDLog) *QRVerifier {
+func NewQRVerifier(y *big.Int, group *groups.SchnorrGroup) *QRVerifier {
 	return &QRVerifier{
-		DLog: dlog,
-		y:    y,
+		Group: group,
+		y:     y,
 	}
 }
 
@@ -106,12 +106,12 @@ func (verifier *QRVerifier) GetChallenge(x *big.Int) *big.Int {
 
 func (verifier *QRVerifier) Verify(z *big.Int) bool {
 	z2 := new(big.Int).Mul(z, z)
-	z2.Mod(z2, verifier.DLog.P)
+	z2.Mod(z2, verifier.Group.P)
 	if verifier.challenge.Cmp(big.NewInt(0)) == 0 {
 		return z2.Cmp(verifier.x) == 0
 	} else {
 		s := new(big.Int).Mul(verifier.x, verifier.y)
-		s.Mod(s, verifier.DLog.P)
+		s.Mod(s, verifier.Group.P)
 		return z2.Cmp(s) == 0
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"math/big"
 )
@@ -44,8 +45,8 @@ type OrgNymGen struct {
 	y                *big.Int
 }
 
-func NewOrgNymGen(dlog *dlog.ZpDLog, x, y *big.Int) *OrgNymGen {
-	verifier := dlogproofs.NewDLogEqualityVerifier(dlog)
+func NewOrgNymGen(group *groups.SchnorrGroup, x, y *big.Int) *OrgNymGen {
+	verifier := dlogproofs.NewDLogEqualityVerifier(group)
 	org := OrgNymGen{
 		EqualityVerifier: verifier,
 		x:                x,

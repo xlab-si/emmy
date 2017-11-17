@@ -18,7 +18,7 @@
 package client
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
@@ -32,7 +32,7 @@ type QRClient struct {
 }
 
 // NewQRClient returns an initialized struct of type QRClient.
-func NewQRClient(conn *grpc.ClientConn, dlog *dlog.ZpDLog, y1 *big.Int) (*QRClient, error) {
+func NewQRClient(conn *grpc.ClientConn, group *groups.SchnorrGroup, y1 *big.Int) (*QRClient, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func NewQRClient(conn *grpc.ClientConn, dlog *dlog.ZpDLog, y1 *big.Int) (*QRClie
 
 	return &QRClient{
 		genericClient: *genericClient,
-		prover:        qrproofs.NewQRProver(dlog, y1),
+		prover:        qrproofs.NewQRProver(group, y1),
 	}, nil
 }
 
@@ -50,7 +50,7 @@ func (c *QRClient) Run() (bool, error) {
 	defer c.closeStream()
 
 	// proof requires as many rounds as is the bit length of modulo N
-	m := c.prover.DLog.P.BitLen()
+	m := c.prover.Group.P.BitLen()
 
 	// message where y is sent to the verifier - this message could be as well skipped and
 	// y could be sent via the first message in a loop

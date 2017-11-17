@@ -20,16 +20,16 @@ package dlogproofs
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
 // ProveDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
 // means g1^secret = t1.
-func ProveDLogKnowledge(secret, g1, t1 *big.Int, dlog *dlog.ZpDLog) bool {
-	prover := NewSchnorrProver(dlog, types.Sigma)
-	verifier := NewSchnorrVerifier(dlog, types.Sigma)
+func ProveDLogKnowledge(secret, g1, t1 *big.Int, group *groups.SchnorrGroup) bool {
+	prover := NewSchnorrProver(group, types.Sigma)
+	verifier := NewSchnorrVerifier(group, types.Sigma)
 
 	x := prover.GetProofRandomData(secret, g1)
 	verifier.SetProofRandomData(x, g1, t1)
@@ -44,7 +44,7 @@ func ProveDLogKnowledge(secret, g1, t1 *big.Int, dlog *dlog.ZpDLog) bool {
 
 // Proving that it knows w such that g^w = h (mod p).
 type SchnorrProver struct {
-	DLog             *dlog.ZpDLog
+	Group            *groups.SchnorrGroup
 	secret           *big.Int
 	a                *big.Int
 	r                *big.Int
@@ -52,10 +52,10 @@ type SchnorrProver struct {
 	protocolType     types.ProtocolType
 }
 
-func NewSchnorrProver(dlog *dlog.ZpDLog, protocolType types.ProtocolType) *SchnorrProver {
+func NewSchnorrProver(group *groups.SchnorrGroup, protocolType types.ProtocolType) *SchnorrProver {
 	var prover SchnorrProver
 	prover = SchnorrProver{
-		DLog:         dlog,
+		Group:        group,
 		protocolType: protocolType,
 	}
 
@@ -63,7 +63,7 @@ func NewSchnorrProver(dlog *dlog.ZpDLog, protocolType types.ProtocolType) *Schno
 		// TODO: currently Pedersen is using the same dlog as SchnorrProver, this
 		// is because SchnorrVerifier for ZKP/ZKPOK needs to know Pedersen's dlog
 		// to generate a challenge and create a commitment
-		prover.PedersenReceiver = commitments.NewPedersenReceiverFromExistingDLog(dlog)
+		prover.PedersenReceiver = commitments.NewPedersenReceiverFromExistingDLog(group)
 	}
 
 	return &prover
@@ -92,9 +92,9 @@ func (prover *SchnorrProver) GetProofRandomData(secret, a *big.Int) *big.Int {
 	// x = a^r % p, where r is random
 	prover.a = a
 	prover.secret = secret
-	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
+	r := common.GetRandomInt(prover.Group.Q)
 	prover.r = r
-	x, _ := prover.DLog.Exponentiate(a, r)
+	x := prover.Group.Exp(a, r)
 
 	return x
 }
@@ -106,7 +106,7 @@ func (prover *SchnorrProver) GetProofData(challenge *big.Int) (*big.Int, *big.In
 	z := new(big.Int)
 	z.Mul(challenge, prover.secret)
 	z.Add(z, prover.r)
-	z.Mod(z, prover.DLog.GetOrderOfSubgroup())
+	z.Mod(z, prover.Group.Q)
 
 	if prover.protocolType != types.ZKPOK {
 		return z, nil
@@ -117,7 +117,7 @@ func (prover *SchnorrProver) GetProofData(challenge *big.Int) (*big.Int, *big.In
 }
 
 type SchnorrVerifier struct {
-	DLog              *dlog.ZpDLog
+	Group             *groups.SchnorrGroup
 	x                 *big.Int
 	a                 *big.Int
 	b                 *big.Int
@@ -126,13 +126,13 @@ type SchnorrVerifier struct {
 	protocolType      types.ProtocolType
 }
 
-func NewSchnorrVerifier(dlog *dlog.ZpDLog, protocolType types.ProtocolType) *SchnorrVerifier {
+func NewSchnorrVerifier(group *groups.SchnorrGroup, protocolType types.ProtocolType) *SchnorrVerifier {
 	verifier := SchnorrVerifier{
-		DLog:         dlog,
+		Group:        group,
 		protocolType: protocolType,
 	}
 	if protocolType != types.Sigma {
-		verifier.pedersenCommitter = commitments.NewPedersenCommitter(dlog)
+		verifier.pedersenCommitter = commitments.NewPedersenCommitter(group)
 	}
 	return &verifier
 }
@@ -140,7 +140,7 @@ func NewSchnorrVerifier(dlog *dlog.ZpDLog, protocolType types.ProtocolType) *Sch
 // GenerateChallenge is used in ZKP where challenge needs to be
 // chosen (and committed to) before sigma protocol starts.
 func (verifier *SchnorrVerifier) GenerateChallenge() *big.Int {
-	challenge := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
+	challenge := common.GetRandomInt(verifier.Group.Q)
 	verifier.challenge = challenge
 	return challenge
 }
@@ -180,9 +180,9 @@ func (verifier *SchnorrVerifier) Verify(z *big.Int, trapdoor *big.Int) bool {
 		}
 	}
 
-	left, _ := verifier.DLog.Exponentiate(verifier.a, z)
-	r1, _ := verifier.DLog.Exponentiate(verifier.b, verifier.challenge)
-	right, _ := verifier.DLog.Multiply(r1, verifier.x)
+	left := verifier.Group.Exp(verifier.a, z)
+	r1 := verifier.Group.Exp(verifier.b, verifier.challenge)
+	right := verifier.Group.Mul(r1, verifier.x)
 
 	if left.Cmp(right) == 0 {
 		return true

@@ -74,8 +74,8 @@ func TestMain(m *testing.M) {
 }
 
 func testPedersen(n *big.Int) error {
-	dlog := config.LoadDLog("pedersen")
-	c, err := client.NewPedersenClient(testGrpcClientConn, pb.SchemaVariant_SIGMA, dlog, n)
+	group := config.LoadGroup("pedersen")
+	c, err := client.NewPedersenClient(testGrpcClientConn, pb.SchemaVariant_SIGMA, group, n)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func testPedersenEC(n *big.Int) error {
 }
 
 func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
-	dlog := config.LoadDLog("schnorr")
+	dlog := config.LoadGroup("schnorr")
 	c, err := client.NewSchnorrClient(testGrpcClientConn, variant, dlog, n)
 	if err != nil {
 		return err

@@ -30,13 +30,13 @@ import (
 )
 
 func TestDLogKnowledge(t *testing.T) {
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 
-	secret := common.GetRandomInt(dlog.OrderOfSubgroup)
-	groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1))
-	g1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
-	t1, _ := dlog.Exponentiate(g1, secret)
-	proved := dlogproofs.ProveDLogKnowledge(secret, g1, t1, dlog)
+	secret := common.GetRandomInt(group.Q)
+	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))
+	g1, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
+	t1 := group.Exp(g1, secret)
+	proved := dlogproofs.ProveDLogKnowledge(secret, g1, t1, group)
 
 	assert.Equal(t, proved, true, "DLogKnowledge does not work correctly")
 }
@@ -62,33 +62,33 @@ func TestECDLogKnowledge(t *testing.T) {
 }
 
 func TestDLogEquality(t *testing.T) {
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 
-	secret := common.GetRandomInt(dlog.OrderOfSubgroup)
-	groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1))
-	g1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
-	g2, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
+	secret := common.GetRandomInt(group.Q)
+	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))
+	g1, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
+	g2, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
 
-	t1, _ := dlog.Exponentiate(g1, secret)
-	t2, _ := dlog.Exponentiate(g2, secret)
-	proved := dlogproofs.ProveDLogEquality(secret, g1, g2, t1, t2, dlog)
+	t1 := group.Exp(g1, secret)
+	t2 := group.Exp(g2, secret)
+	proved := dlogproofs.ProveDLogEquality(secret, g1, g2, t1, t2, group)
 
 	assert.Equal(t, proved, true, "DLogEquality does not work correctly")
 }
 
 func TestDLogEqualityBlindedTranscript(t *testing.T) {
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 
-	eProver := dlogproofs.NewDLogEqualityBTranscriptProver(dlog)
-	eVerifier := dlogproofs.NewDLogEqualityBTranscriptVerifier(dlog, nil)
+	eProver := dlogproofs.NewDLogEqualityBTranscriptProver(group)
+	eVerifier := dlogproofs.NewDLogEqualityBTranscriptVerifier(group, nil)
 
-	secret := common.GetRandomInt(dlog.OrderOfSubgroup)
-	groupOrder := new(big.Int).Sub(eProver.DLog.P, big.NewInt(1))
-	g1, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
-	g2, _ := common.GetGeneratorOfZnSubgroup(eProver.DLog.P, groupOrder, eProver.DLog.OrderOfSubgroup)
+	secret := common.GetRandomInt(group.Q)
+	groupOrder := new(big.Int).Sub(eProver.Group.P, big.NewInt(1))
+	g1, _ := common.GetGeneratorOfZnSubgroup(eProver.Group.P, groupOrder, eProver.Group.Q)
+	g2, _ := common.GetGeneratorOfZnSubgroup(eProver.Group.P, groupOrder, eProver.Group.Q)
 
-	t1, _ := eProver.DLog.Exponentiate(g1, secret)
-	t2, _ := eProver.DLog.Exponentiate(g2, secret)
+	t1 := eProver.Group.Exp(g1, secret)
+	t2 := eProver.Group.Exp(g2, secret)
 
 	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
 
@@ -96,7 +96,7 @@ func TestDLogEqualityBlindedTranscript(t *testing.T) {
 	z := eProver.GetProofData(challenge)
 	_, transcript, G2, T2 := eVerifier.Verify(z)
 
-	valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.DLog, g1, t1, G2, T2)
+	valid := dlogproofs.VerifyBlindedTranscript(transcript, eProver.Group, g1, t1, G2, T2)
 	assert.Equal(t, valid, true, "DLogEqualityBTranscript does not work correctly")
 }
 
@@ -135,19 +135,19 @@ func TestDLogEqualityEC(t *testing.T) {
 }
 
 func TestPartialDLogKnowledge(t *testing.T) {
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 
-	secret1 := common.GetRandomInt(dlog.OrderOfSubgroup)
-	x := common.GetRandomInt(dlog.OrderOfSubgroup)
+	secret1 := common.GetRandomInt(group.Q)
+	x := common.GetRandomInt(group.Q)
 
-	groupOrder := new(big.Int).Sub(dlog.P, big.NewInt(1))
-	a1, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
-	a2, _ := common.GetGeneratorOfZnSubgroup(dlog.P, groupOrder, dlog.OrderOfSubgroup)
+	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))
+	a1, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
+	a2, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
 
 	//b1, _ := dlog.Exponentiate(a1, secret1)
 	// we pretend that we don't know x:
-	b2, _ := dlog.Exponentiate(a2, x)
-	proved := dlogproofs.ProvePartialDLogKnowledge(dlog, secret1, a1, a2, b2)
+	b2 := group.Exp(a2, x)
+	proved := dlogproofs.ProvePartialDLogKnowledge(group, secret1, a1, a2, b2)
 
 	assert.Equal(t, proved, true, "ProvePartialDLogKnowledge does not work correctly")
 }

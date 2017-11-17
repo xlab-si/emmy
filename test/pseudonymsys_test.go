@@ -27,7 +27,7 @@ import (
 
 // TestPseudonymsys requires a running server (it is started in communication_test.go).
 func TestPseudonymsys(t *testing.T) {
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 	caClient, err := client.NewPseudonymsysCAClient(testGrpcClientConn)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClient")
@@ -35,8 +35,8 @@ func TestPseudonymsys(t *testing.T) {
 
 	userSecret := config.LoadPseudonymsysUserSecret("user1", "dlog")
 
-	p, _ := dlog.Exponentiate(dlog.G, userSecret) // this is user's public key
-	masterNym := pseudonymsys.NewPseudonym(dlog.G, p)
+	p := group.Exp(group.G, userSecret) // this is user's public key
+	masterNym := pseudonymsys.NewPseudonym(group.G, p)
 	caCertificate, err := caClient.ObtainCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
