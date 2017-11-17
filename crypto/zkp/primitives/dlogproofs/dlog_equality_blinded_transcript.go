@@ -19,7 +19,7 @@ package dlogproofs
 
 import (
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
 )
 
@@ -42,7 +42,7 @@ func NewTranscript(a, b, hash, zAlpha *big.Int) *Transcript {
 // Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
 // and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
 // by verifier.
-func VerifyBlindedTranscript(transcript *Transcript, dlog *dlog.ZpDLog, g1, t1, G2, T2 *big.Int) bool {
+func VerifyBlindedTranscript(transcript *Transcript, group *groups.SchnorrGroup, g1, t1, G2, T2 *big.Int) bool {
 	// Transcript should be in the following form: [alpha1, beta1, hash(alpha1, beta1), z+alpha]
 
 	// check hash:
@@ -54,13 +54,13 @@ func VerifyBlindedTranscript(transcript *Transcript, dlog *dlog.ZpDLog, g1, t1, 
 	// We need to verify (note that c-beta = hash(alpha1, beta1))
 	// g1^(z+alpha) = alpha1 * t1^(c-beta)
 	// G2^(z+alpha) = beta1 * T2^(c-beta)
-	left1, _ := dlog.Exponentiate(g1, transcript.ZAlpha)
-	right1, _ := dlog.Exponentiate(t1, transcript.Hash)
-	right1, _ = dlog.Multiply(transcript.A, right1)
+	left1 := group.Exp(g1, transcript.ZAlpha)
+	right1 := group.Exp(t1, transcript.Hash)
+	right1 = group.Mul(transcript.A, right1)
 
-	left2, _ := dlog.Exponentiate(G2, transcript.ZAlpha)
-	right2, _ := dlog.Exponentiate(T2, transcript.Hash)
-	right2, _ = dlog.Multiply(transcript.B, right2)
+	left2 := group.Exp(G2, transcript.ZAlpha)
+	right2 := group.Exp(T2, transcript.Hash)
+	right2 = group.Mul(transcript.B, right2)
 
 	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
 		return true
@@ -70,16 +70,16 @@ func VerifyBlindedTranscript(transcript *Transcript, dlog *dlog.ZpDLog, g1, t1, 
 }
 
 type DLogEqualityBTranscriptProver struct {
-	DLog   *dlog.ZpDLog
+	Group  *groups.SchnorrGroup
 	r      *big.Int
 	secret *big.Int
 	g1     *big.Int
 	g2     *big.Int
 }
 
-func NewDLogEqualityBTranscriptProver(dlog *dlog.ZpDLog) *DLogEqualityBTranscriptProver {
+func NewDLogEqualityBTranscriptProver(group *groups.SchnorrGroup) *DLogEqualityBTranscriptProver {
 	prover := DLogEqualityBTranscriptProver{
-		DLog: dlog,
+		Group: group,
 	}
 	return &prover
 }
@@ -94,10 +94,10 @@ func (prover *DLogEqualityBTranscriptProver) GetProofRandomData(secret, g1, g2 *
 	prover.g1 = g1
 	prover.g2 = g2
 
-	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
+	r := common.GetRandomInt(prover.Group.Q)
 	prover.r = r
-	x1, _ := prover.DLog.Exponentiate(prover.g1, r)
-	x2, _ := prover.DLog.Exponentiate(prover.g2, r)
+	x1 := prover.Group.Exp(prover.g1, r)
+	x2 := prover.Group.Exp(prover.g2, r)
 	return x1, x2
 }
 
@@ -106,12 +106,12 @@ func (prover *DLogEqualityBTranscriptProver) GetProofData(challenge *big.Int) *b
 	z := new(big.Int)
 	z.Mul(challenge, prover.secret)
 	z.Add(z, prover.r)
-	z.Mod(z, prover.DLog.GetOrderOfSubgroup())
+	z.Mod(z, prover.Group.Q)
 	return z
 }
 
 type DLogEqualityBTranscriptVerifier struct {
-	DLog       *dlog.ZpDLog
+	Group      *groups.SchnorrGroup
 	gamma      *big.Int
 	challenge  *big.Int
 	g1         *big.Int
@@ -124,13 +124,13 @@ type DLogEqualityBTranscriptVerifier struct {
 	transcript *Transcript
 }
 
-func NewDLogEqualityBTranscriptVerifier(dlog *dlog.ZpDLog,
+func NewDLogEqualityBTranscriptVerifier(group *groups.SchnorrGroup,
 	gamma *big.Int) *DLogEqualityBTranscriptVerifier {
 	if gamma == nil {
-		gamma = common.GetRandomInt(dlog.GetOrderOfSubgroup())
+		gamma = common.GetRandomInt(group.Q)
 	}
 	verifier := DLogEqualityBTranscriptVerifier{
-		DLog:  dlog,
+		Group: group,
 		gamma: gamma,
 	}
 
@@ -150,26 +150,26 @@ func (verifier *DLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1
 	verifier.x1 = x1
 	verifier.x2 = x2
 
-	alpha := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
-	beta := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
+	alpha := common.GetRandomInt(verifier.Group.Q)
+	beta := common.GetRandomInt(verifier.Group.Q)
 
 	// alpha1 = g1^r * g1^alpha * t1^beta
 	// beta1 = (g2^r * g2^alpha * t2^beta)^gamma
-	alpha1, _ := verifier.DLog.Exponentiate(verifier.g1, alpha)
-	alpha1, _ = verifier.DLog.Multiply(verifier.x1, alpha1)
-	tmp, _ := verifier.DLog.Exponentiate(verifier.t1, beta)
-	alpha1, _ = verifier.DLog.Multiply(alpha1, tmp)
+	alpha1 := verifier.Group.Exp(verifier.g1, alpha)
+	alpha1 = verifier.Group.Mul(verifier.x1, alpha1)
+	tmp := verifier.Group.Exp(verifier.t1, beta)
+	alpha1 = verifier.Group.Mul(alpha1, tmp)
 
-	beta1, _ := verifier.DLog.Exponentiate(verifier.g2, alpha)
-	beta1, _ = verifier.DLog.Multiply(verifier.x2, beta1)
-	tmp, _ = verifier.DLog.Exponentiate(verifier.t2, beta)
-	beta1, _ = verifier.DLog.Multiply(beta1, tmp)
-	beta1, _ = verifier.DLog.Exponentiate(beta1, verifier.gamma)
+	beta1 := verifier.Group.Exp(verifier.g2, alpha)
+	beta1 = verifier.Group.Mul(verifier.x2, beta1)
+	tmp = verifier.Group.Exp(verifier.t2, beta)
+	beta1 = verifier.Group.Mul(beta1, tmp)
+	beta1 = verifier.Group.Exp(beta1, verifier.gamma)
 
 	// c = hash(alpha1, beta) + beta mod q
 	hashNum := common.Hash(alpha1, beta1)
 	challenge := new(big.Int).Add(hashNum, beta)
-	challenge.Mod(challenge, verifier.DLog.OrderOfSubgroup)
+	challenge.Mod(challenge, verifier.Group.Q)
 
 	verifier.challenge = challenge
 	verifier.transcript = NewTranscript(alpha1, beta1, hashNum, nil)
@@ -182,21 +182,21 @@ func (verifier *DLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
 func (verifier *DLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *Transcript,
 	*big.Int, *big.Int) {
-	left1, _ := verifier.DLog.Exponentiate(verifier.g1, z)
-	left2, _ := verifier.DLog.Exponentiate(verifier.g2, z)
+	left1 := verifier.Group.Exp(verifier.g1, z)
+	left2 := verifier.Group.Exp(verifier.g2, z)
 
-	r11, _ := verifier.DLog.Exponentiate(verifier.t1, verifier.challenge)
-	r12, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.challenge)
-	right1, _ := verifier.DLog.Multiply(r11, verifier.x1)
-	right2, _ := verifier.DLog.Multiply(r12, verifier.x2)
+	r11 := verifier.Group.Exp(verifier.t1, verifier.challenge)
+	r12 := verifier.Group.Exp(verifier.t2, verifier.challenge)
+	right1 := verifier.Group.Mul(r11, verifier.x1)
+	right2 := verifier.Group.Mul(r12, verifier.x2)
 
 	// transcript [(alpha1, beta1), hash(alpha1, beta1), z+alpha]
 	// however, we are actually returning [alpha1, beta1, hash(alpha1, beta1), z+alpha]
 	z1 := new(big.Int).Add(z, verifier.alpha)
 	verifier.transcript.ZAlpha = z1
 
-	G2, _ := verifier.DLog.Exponentiate(verifier.g2, verifier.gamma)
-	T2, _ := verifier.DLog.Exponentiate(verifier.t2, verifier.gamma)
+	G2 := verifier.Group.Exp(verifier.g2, verifier.gamma)
+	T2 := verifier.Group.Exp(verifier.t2, verifier.gamma)
 
 	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
 		return true, verifier.transcript, G2, T2

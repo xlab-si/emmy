@@ -18,25 +18,25 @@
 package pseudonymsys
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"math/big"
 )
 
 type OrgCredentialVerifier struct {
-	DLog *dlog.ZpDLog
-	s1   *big.Int
-	s2   *big.Int
+	Group *groups.SchnorrGroup
+	s1    *big.Int
+	s2    *big.Int
 
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
 	a                *big.Int
 	b                *big.Int
 }
 
-func NewOrgCredentialVerifier(dlog *dlog.ZpDLog, s1, s2 *big.Int) *OrgCredentialVerifier {
-	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(dlog)
+func NewOrgCredentialVerifier(group *groups.SchnorrGroup, s1, s2 *big.Int) *OrgCredentialVerifier {
+	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(group)
 	org := OrgCredentialVerifier{
-		DLog:             dlog,
+		Group:            group,
 		s1:               s1,
 		s2:               s2,
 		EqualityVerifier: equalityVerifier,
@@ -61,11 +61,11 @@ func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
 		return false
 	}
 
-	valid1 := dlogproofs.VerifyBlindedTranscript(credential.T1, org.DLog, org.DLog.G, orgPubKeys.H2,
+	valid1 := dlogproofs.VerifyBlindedTranscript(credential.T1, org.Group, org.Group.G, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
 
-	aAToGamma, _ := org.DLog.Multiply(credential.SmallAToGamma, credential.AToGamma)
-	valid2 := dlogproofs.VerifyBlindedTranscript(credential.T2, org.DLog, org.DLog.G, orgPubKeys.H1,
+	aAToGamma := org.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
+	valid2 := dlogproofs.VerifyBlindedTranscript(credential.T2, org.Group, org.Group.G, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
 	if valid1 && valid2 {

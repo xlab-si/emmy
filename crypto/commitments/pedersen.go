@@ -20,7 +20,7 @@ package commitments
 import (
 	"errors"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
 )
 
@@ -33,15 +33,15 @@ import (
 // Then committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
 type PedersenCommitter struct {
-	dLog           *dlog.ZpDLog
+	group          *groups.SchnorrGroup
 	h              *big.Int
 	committedValue *big.Int
 	r              *big.Int
 }
 
-func NewPedersenCommitter(dlog *dlog.ZpDLog) *PedersenCommitter {
+func NewPedersenCommitter(group *groups.SchnorrGroup) *PedersenCommitter {
 	committer := PedersenCommitter{
-		dLog: dlog,
+		group: group,
 	}
 	return &committer
 }
@@ -53,19 +53,19 @@ func (committer *PedersenCommitter) SetH(h *big.Int) {
 
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
 func (committer *PedersenCommitter) GetCommitMsg(val *big.Int) (*big.Int, error) {
-	if val.Cmp(committer.dLog.OrderOfSubgroup) == 1 || val.Cmp(big.NewInt(0)) == -1 {
+	if val.Cmp(committer.group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
 		err := errors.New("the committed value needs to be in Z_q (order of a base point)")
 		return nil, err
 	}
 
 	// c = g^x * h^r
-	r := common.GetRandomInt(committer.dLog.OrderOfSubgroup)
+	r := common.GetRandomInt(committer.group.Q)
 
 	committer.r = r
 	committer.committedValue = val
-	t1, _ := committer.dLog.ExponentiateBaseG(val)
-	t2, _ := committer.dLog.Exponentiate(committer.h, r)
-	c, _ := committer.dLog.Multiply(t1, t2)
+	t1 := committer.group.Exp(committer.group.G, val)
+	t2 := committer.group.Exp(committer.h, r)
+	c := committer.group.Mul(t1, t2)
 
 	return c, nil
 }
@@ -78,7 +78,7 @@ func (committer *PedersenCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
 }
 
 func (committer *PedersenCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
-	h, _ := committer.dLog.ExponentiateBaseG(trapdoor)
+	h := committer.group.Exp(committer.group.G, trapdoor)
 	if h.Cmp(committer.h) == 0 {
 		return true
 	} else {
@@ -87,30 +87,30 @@ func (committer *PedersenCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
 }
 
 type PedersenReceiver struct {
-	dLog       *dlog.ZpDLog
+	group      *groups.SchnorrGroup
 	a          *big.Int
 	h          *big.Int
 	commitment *big.Int
 }
 
-func NewPedersenReceiver(dLog *dlog.ZpDLog) *PedersenReceiver {
-	a := common.GetRandomInt(dLog.OrderOfSubgroup)
-	h, _ := dLog.ExponentiateBaseG(a)
+func NewPedersenReceiver(group *groups.SchnorrGroup) *PedersenReceiver {
+	a := common.GetRandomInt(group.Q)
+	h := group.Exp(group.G, a)
 
 	receiver := new(PedersenReceiver)
-	receiver.dLog = dLog
+	receiver.group = group
 	receiver.a = a
 	receiver.h = h
 
 	return receiver
 }
 
-func NewPedersenReceiverFromExistingDLog(dLog *dlog.ZpDLog) *PedersenReceiver {
-	a := common.GetRandomInt(dLog.OrderOfSubgroup)
-	h, _ := dLog.ExponentiateBaseG(a)
+func NewPedersenReceiverFromExistingDLog(group *groups.SchnorrGroup) *PedersenReceiver {
+	a := common.GetRandomInt(group.Q)
+	h := group.Exp(group.G, a)
 
 	receiver := new(PedersenReceiver)
-	receiver.dLog = dLog
+	receiver.group = group
 	receiver.a = a
 	receiver.h = h
 
@@ -133,9 +133,9 @@ func (s *PedersenReceiver) SetCommitment(el *big.Int) {
 // When receiver receives a decommitment, CheckDecommitment verifies it against the stored value
 // (stored by SetCommitment).
 func (s *PedersenReceiver) CheckDecommitment(r, val *big.Int) bool {
-	t1, _ := s.dLog.ExponentiateBaseG(val) // g^x
-	t2, _ := s.dLog.Exponentiate(s.h, r)   // h^r
-	c, _ := s.dLog.Multiply(t1, t2)        // g^x * h^r
+	t1 := s.group.Exp(s.group.G, val) // g^x
+	t2 := s.group.Exp(s.h, r)         // h^r
+	c := s.group.Mul(t1, t2)          // g^x * h^r
 
 	var success bool
 	if c.Cmp(s.commitment) == 0 {

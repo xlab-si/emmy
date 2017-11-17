@@ -27,10 +27,10 @@ import (
 func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) error {
 	var err error
 
-	dlog := config.LoadDLog("pseudonymsys")
+	group := config.LoadGroup("pseudonymsys")
 	d := config.LoadPseudonymsysCASecret()
 	pubKeyX, pubKeyY := config.LoadPseudonymsysCAPubKey()
-	ca := pseudonymsys.NewCA(dlog, d, pubKeyX, pubKeyY)
+	ca := pseudonymsys.NewCA(group, d, pubKeyX, pubKeyY)
 
 	sProofRandData := req.GetSchnorrProofRandomData()
 	x := new(big.Int).SetBytes(sProofRandData.X)

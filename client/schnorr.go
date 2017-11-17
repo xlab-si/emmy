@@ -19,7 +19,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
@@ -36,7 +36,7 @@ type SchnorrClient struct {
 }
 
 // NewSchnorrClient returns an initialized struct of type SchnorrClient.
-func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
+func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, group *groups.SchnorrGroup,
 	s *big.Int) (*SchnorrClient, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
@@ -46,9 +46,9 @@ func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlo
 	return &SchnorrClient{
 		genericClient: *genericClient,
 		variant:       variant,
-		prover:        dlogproofs.NewSchnorrProver(dlog, types.ToProtocolType(variant)),
+		prover:        dlogproofs.NewSchnorrProver(group, types.ToProtocolType(variant)),
 		secret:        s,
-		a:             dlog.G,
+		a:             group.G,
 	}, nil
 }
 
@@ -141,7 +141,7 @@ func (c *SchnorrClient) open() (*big.Int, error) {
 
 func (c *SchnorrClient) getProofRandomData(isFirstMsg bool, msg *pb.Message) (*pb.PedersenDecommitment, error) {
 	x := c.prover.GetProofRandomData(c.secret, c.a)
-	b, _ := c.prover.DLog.Exponentiate(c.a, c.secret)
+	b := c.prover.Group.Exp(c.a, c.secret)
 	pRandomData := pb.SchnorrProofRandomData{
 		X: x.Bytes(),
 		A: c.a.Bytes(),

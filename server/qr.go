@@ -18,18 +18,18 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
 
-func (s *Server) QR(req *pb.Message, dlog *dlog.ZpDLog,
+func (s *Server) QR(req *pb.Message, group *groups.SchnorrGroup,
 	stream pb.Protocol_RunServer) error {
 
 	initMsg := req.GetBigint()
 	y := new(big.Int).SetBytes(initMsg.X1)
-	verifier := qrproofs.NewQRVerifier(y, dlog)
+	verifier := qrproofs.NewQRVerifier(y, group)
 	var err error
 
 	resp := &pb.Message{
@@ -39,7 +39,7 @@ func (s *Server) QR(req *pb.Message, dlog *dlog.ZpDLog,
 		return err
 	}
 
-	m := dlog.P.BitLen()
+	m := group.P.BitLen()
 	// the client has to prove for all i - if in one iteration the knowledge
 	// is not proved, the protocol is stopped
 	for i := 0; i < m; i++ {

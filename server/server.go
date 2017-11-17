@@ -182,11 +182,11 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	case pb.SchemaType_PEDERSEN_EC:
 		err = s.PedersenEC(curve, stream)
 	case pb.SchemaType_PEDERSEN:
-		dlog := config.LoadDLog("pedersen")
-		err = s.Pedersen(dlog, stream)
+		group := config.LoadGroup("pedersen")
+		err = s.Pedersen(group, stream)
 	case pb.SchemaType_SCHNORR:
-		dlog := config.LoadDLog("schnorr")
-		err = s.Schnorr(req, dlog, protocolType, stream)
+		group := config.LoadGroup("schnorr")
+		err = s.Schnorr(req, group, protocolType, stream)
 	case pb.SchemaType_SCHNORR_EC:
 		err = s.SchnorrEC(req, protocolType, stream, curve)
 	case pb.SchemaType_CSPAILLIER:
@@ -210,8 +210,8 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC:
 		err = s.PseudonymsysTransferCredentialEC(curve, req, stream)
 	case pb.SchemaType_QR:
-		dlog := config.LoadDLog("pseudonymsys")
-		err = s.QR(req, dlog, stream)
+		group := config.LoadGroup("pseudonymsys")
+		err = s.QR(req, group, stream)
 	case pb.SchemaType_QNR:
 		qr := config.LoadQR("qrsmall") // only for testing
 		err = s.QNR(req, qr, stream)

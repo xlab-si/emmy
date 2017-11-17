@@ -17,14 +17,12 @@
 
 package groups
 
-// TODO: this will replace dlog/zp.go
-
 import (
 	"crypto/dsa"
 	"crypto/rand"
+	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
-	"fmt"
 )
 
 // SchnorrGroup is a cyclic group in modular arithmetic. It holds P = Q * R + 1 for some R.
@@ -49,7 +47,7 @@ func NewSchnorrGroup(qBitLength int) (*SchnorrGroup, error) {
 	} else if qBitLength == 256 {
 		sizes = dsa.L2048N256
 	} else {
-		err := fmt.Errorf("Generating Schnorr primes for bit length %d is not supported",  qBitLength)
+		err := fmt.Errorf("Generating Schnorr primes for bit length %d is not supported", qBitLength)
 		return nil, err
 	}
 

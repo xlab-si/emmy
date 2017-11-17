@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -51,12 +52,12 @@ func NewCACertificate(blindedA, blindedB, r, s *big.Int) *CACertificate {
 	}
 }
 
-func NewCA(zpdlog *dlog.ZpDLog, d, x, y *big.Int) *CA {
+func NewCA(group *groups.SchnorrGroup, d, x, y *big.Int) *CA {
 	c := dlog.GetEllipticCurve(dlog.P256)
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(zpdlog, types.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, types.Sigma)
 	ca := CA{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,
@@ -78,9 +79,9 @@ func (ca *CA) GetChallenge(a, b, x *big.Int) *big.Int {
 func (ca *CA) Verify(z *big.Int) (*CACertificate, error) {
 	verified := ca.SchnorrVerifier.Verify(z, nil)
 	if verified {
-		r := common.GetRandomInt(ca.SchnorrVerifier.DLog.OrderOfSubgroup)
-		blindedA, _ := ca.SchnorrVerifier.DLog.Exponentiate(ca.a, r)
-		blindedB, _ := ca.SchnorrVerifier.DLog.Exponentiate(ca.b, r)
+		r := common.GetRandomInt(ca.SchnorrVerifier.Group.Q)
+		blindedA := ca.SchnorrVerifier.Group.Exp(ca.a, r)
+		blindedB := ca.SchnorrVerifier.Group.Exp(ca.b, r)
 		// blindedA, blindedB must be used only once (never use the same pair for two
 		// different organizations)
 

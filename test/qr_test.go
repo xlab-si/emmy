@@ -31,10 +31,10 @@ func TestQRProof(t *testing.T) {
 	prevLogger := client.GetLogger()
 	client.SetLogger(log.NewNullLogger())
 
-	dlog := config.LoadDLog("pseudonymsys")
-	y1 := common.GetRandomInt(dlog.P)
+	group := config.LoadGroup("pseudonymsys")
+	y1 := common.GetRandomInt(group.P)
 
-	qrClient, err := client.NewQRClient(testGrpcClientConn, dlog, y1)
+	qrClient, err := client.NewQRClient(testGrpcClientConn, group, y1)
 	if err != nil {
 		t.Errorf("Error when initializing NewQRClient")
 	}

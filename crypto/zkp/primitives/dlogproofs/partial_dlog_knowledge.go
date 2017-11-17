@@ -19,18 +19,18 @@ package dlogproofs
 
 import (
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
 // ProvePartialDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
 // the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
-func ProvePartialDLogKnowledge(dlog *dlog.ZpDLog, secret1, a1, a2, b2 *big.Int) bool {
-	prover := NewPartialDLogProver(dlog)
-	verifier := NewPartialDLogVerifier(dlog)
+func ProvePartialDLogKnowledge(group *groups.SchnorrGroup, secret1, a1, a2, b2 *big.Int) bool {
+	prover := NewPartialDLogProver(group)
+	verifier := NewPartialDLogVerifier(group)
 
-	b1, _ := prover.DLog.Exponentiate(a1, secret1)
+	b1 := prover.Group.Exp(a1, secret1)
 	triple1, triple2 := prover.GetProofRandomData(secret1, a1, b1, a2, b2)
 
 	verifier.SetProofRandomData(triple1, triple2)
@@ -44,7 +44,7 @@ func ProvePartialDLogKnowledge(dlog *dlog.ZpDLog, secret1, a1, a2, b2 *big.Int) 
 // Proving that it knows either secret1 such that a1^secret1 = b1 (mod p1) or
 //  secret2 such that a2^secret2 = b2 (mod p2).
 type PartialDLogProver struct {
-	DLog    *dlog.ZpDLog
+	Group   *groups.SchnorrGroup
 	secret1 *big.Int
 	a1      *big.Int
 	a2      *big.Int
@@ -54,9 +54,9 @@ type PartialDLogProver struct {
 	ord     int
 }
 
-func NewPartialDLogProver(dlog *dlog.ZpDLog) *PartialDLogProver {
+func NewPartialDLogProver(group *groups.SchnorrGroup) *PartialDLogProver {
 	return &PartialDLogProver{
-		DLog: dlog,
+		Group: group,
 	}
 }
 
@@ -65,17 +65,17 @@ func (prover *PartialDLogProver) GetProofRandomData(secret1, a1, b1, a2,
 	prover.a1 = a1
 	prover.a2 = a2
 	prover.secret1 = secret1
-	r1 := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
-	c2 := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
-	z2 := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
+	r1 := common.GetRandomInt(prover.Group.Q)
+	c2 := common.GetRandomInt(prover.Group.Q)
+	z2 := common.GetRandomInt(prover.Group.Q)
 	prover.r1 = r1
 	prover.c2 = c2
 	prover.z2 = z2
-	x1, _ := prover.DLog.Exponentiate(a1, r1)
-	x2, _ := prover.DLog.Exponentiate(a2, z2)
-	b2ToC2, _ := prover.DLog.Exponentiate(b2, c2)
-	b2ToC2Inv := prover.DLog.Inverse(b2ToC2)
-	x2, _ = prover.DLog.Multiply(x2, b2ToC2Inv)
+	x1 := prover.Group.Exp(a1, r1)
+	x2 := prover.Group.Exp(a2, z2)
+	b2ToC2 := prover.Group.Exp(b2, c2)
+	b2ToC2Inv := prover.Group.Inv(b2ToC2)
+	x2 = prover.Group.Mul(x2, b2ToC2Inv)
 
 	// we need to make sure that the order does not reveal which secret we do know:
 	ord := common.GetRandomInt(big.NewInt(2))
@@ -98,7 +98,7 @@ func (prover *PartialDLogProver) GetProofData(challenge *big.Int) (*big.Int, *bi
 	z1 := new(big.Int)
 	z1.Mul(c1, prover.secret1)
 	z1.Add(z1, prover.r1)
-	z1.Mod(z1, prover.DLog.GetOrderOfSubgroup())
+	z1.Mod(z1, prover.Group.Q)
 
 	if prover.ord == 0 {
 		return c1, z1, prover.c2, prover.z2
@@ -108,15 +108,15 @@ func (prover *PartialDLogProver) GetProofData(challenge *big.Int) (*big.Int, *bi
 }
 
 type PartialDLogVerifier struct {
-	DLog      *dlog.ZpDLog
+	Group     *groups.SchnorrGroup
 	triple1   *types.Triple // contains x1, a1, b1
 	triple2   *types.Triple // contains x2, a2, b2
 	challenge *big.Int
 }
 
-func NewPartialDLogVerifier(dlog *dlog.ZpDLog) *PartialDLogVerifier {
+func NewPartialDLogVerifier(group *groups.SchnorrGroup) *PartialDLogVerifier {
 	return &PartialDLogVerifier{
-		DLog: dlog,
+		Group: group,
 	}
 }
 
@@ -126,16 +126,16 @@ func (verifier *PartialDLogVerifier) SetProofRandomData(triple1, triple2 *types.
 }
 
 func (verifier *PartialDLogVerifier) GetChallenge() *big.Int {
-	challenge := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
+	challenge := common.GetRandomInt(verifier.Group.Q)
 	verifier.challenge = challenge
 	return challenge
 }
 
 func (verifier *PartialDLogVerifier) verifyTriple(triple *types.Triple,
 	challenge, z *big.Int) bool {
-	left, _ := verifier.DLog.Exponentiate(triple.B, z)       // (a, z)
-	r1, _ := verifier.DLog.Exponentiate(triple.C, challenge) // (b, challenge)
-	right, _ := verifier.DLog.Multiply(r1, triple.A)         // (r1, x1)
+	left := verifier.Group.Exp(triple.B, z)       // (a, z)
+	r1 := verifier.Group.Exp(triple.C, challenge) // (b, challenge)
+	right := verifier.Group.Mul(r1, triple.A)     // (r1, x1)
 
 	return left.Cmp(right) == 0
 }

@@ -19,13 +19,13 @@ package server
 
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
 )
 
-func (s *Server) Pedersen(dlog *dlog.ZpDLog, stream pb.Protocol_RunServer) error {
-	pedersenReceiver := commitments.NewPedersenReceiver(dlog)
+func (s *Server) Pedersen(group *groups.SchnorrGroup, stream pb.Protocol_RunServer) error {
+	pedersenReceiver := commitments.NewPedersenReceiver(group)
 
 	h := pedersenReceiver.GetH()
 

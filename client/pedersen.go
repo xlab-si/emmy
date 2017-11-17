@@ -19,7 +19,7 @@ package client
 
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
 	"math/big"
@@ -32,7 +32,7 @@ type PedersenClient struct {
 }
 
 // NewPedersenClient returns an initialized struct of type PedersenClient.
-func NewPedersenClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *dlog.ZpDLog,
+func NewPedersenClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *groups.SchnorrGroup,
 	val *big.Int) (*PedersenClient, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
