@@ -230,8 +230,23 @@ func (s *Server) PseudonymsysTransferCredential(req *pb.Message, stream pb.Proto
 
 	verified := org.VerifyAuthentication(z, credential, orgPubKeys)
 
-	resp = &pb.Message{
-		Content: &pb.Message_Status{&pb.Status{Success: verified}},
+	resp = &pb.Message{}
+	// If something went wrong (either user was not authenticated or secure session key could not
+	// be generated), then sessionKey will be nil and the message will contain ProtocolError.
+	if verified {
+		sessionKey, err := s.generateSessionKey()
+		if err != nil {
+			resp.ProtocolError = err.Error()
+			s.logger.Notice(err)
+		} else {
+			resp.Content = &pb.Message_SessionKey{
+				SessionKey: &pb.SessionKey{
+					Value: *sessionKey,
+				},
+			}
+		}
+	} else {
+		resp.ProtocolError = "User authentication failed"
 	}
 
 	if err = s.send(resp, stream); err != nil {

@@ -22,6 +22,7 @@ import (
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
+	"math/big"
 	"testing"
 )
 
@@ -71,10 +72,14 @@ func TestPseudonymsys(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	authenticated, err := c2.TransferCredential(orgName, userSecret, nym2, credential)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+	// Authentication should succeed
+	sessionKey1, err := c2.TransferCredential(orgName, userSecret, nym2, credential)
+	assert.NotNil(t, sessionKey1, "Should authenticate and obtain a valid (non-nil) session key")
+	assert.Nil(t, err, "Should not produce an error")
 
-	assert.Equal(t, authenticated, true, "Pseudonymsys test failed")
+	// Authentication should fail because the user doesn't have the right secret
+	wrongUserSecret := big.NewInt(3952123123)
+	sessionKey2, err := c2.TransferCredential(orgName, wrongUserSecret, nym2, credential)
+	assert.Nil(t, sessionKey2, "Authentication should fail, and session key should be nil")
+	assert.NotNil(t, err, "Should produce an error")
 }

@@ -140,3 +140,7 @@ func LoadServiceInfo() *types.ServiceInfo {
 	serviceDescription := viper.GetString("service_info.description")
 	return types.NewServiceInfo(serviceName, serviceProvider, serviceDescription)
 }
+
+func LoadSessionKeyMinByteLen() int {
+	return viper.GetInt("session_key_bytelen")
+}
