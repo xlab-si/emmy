@@ -92,12 +92,6 @@ func LoadQR(name string) *dlog.QR {
 	return dlog.NewQR(factors)
 }
 
-func LoadPseudonymsysUserSecret(user, dlogType string) *big.Int {
-	m := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", user, dlogType))
-	s, _ := new(big.Int).SetString(m["secret"].(string), 10)
-	return s
-}
-
 func LoadPseudonymsysOrgSecrets(orgName, dlogType string) (*big.Int, *big.Int) {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, dlogType))
 	s1, _ := new(big.Int).SetString(org["s1"].(string), 10)

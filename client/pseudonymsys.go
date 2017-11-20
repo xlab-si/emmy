@@ -48,6 +48,12 @@ func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
 	}, nil
 }
 
+// GenerateMasterKey generates a master secret key, representing a random integer betweeen
+// 0 and order of the group. This key will be used subsequently by all the protocols in the scheme.
+func (c *PseudonymsysClient) GenerateMasterKey() *big.Int {
+	return common.GetRandomInt(c.group.Q)
+}
+
 // GenerateNym generates a nym and registers it to the organization. Do not use
 // the same CACertificate for different organizations - use it only once!
 func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
