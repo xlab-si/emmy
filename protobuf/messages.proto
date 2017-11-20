@@ -51,6 +51,7 @@ message Message {
 		RepeatedInt repeated_int = 25;
 		RepeatedPair repeated_pair = 26;
 		int32 Eint = 27;
+		SessionKey SessionKey = 30;
 	}
 	int32 clientId = 28;
 	string ProtocolError = 29;
@@ -286,4 +287,8 @@ message CSPaillierProofData {
 	bool STildeIsNeg = 4;
 	bytes MTilde = 5;
 	bool MTildeIsNeg = 6;
+}
+
+message SessionKey {
+	string value = 1;
 }
