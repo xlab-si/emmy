@@ -33,7 +33,9 @@ func TestPseudonymsys(t *testing.T) {
 		t.Errorf("Error when initializing NewPseudonymsysCAClient")
 	}
 
-	userSecret := config.LoadPseudonymsysUserSecret("user1", "dlog")
+	// usually the endpoint is different from the one used for CA:
+	c1, err := client.NewPseudonymsysClient(testGrpcClientConn)
+	userSecret := c1.GenerateMasterKey()
 
 	p := group.Exp(group.G, userSecret) // this is user's public key
 	masterNym := pseudonymsys.NewPseudonym(group.G, p)
@@ -42,8 +44,6 @@ func TestPseudonymsys(t *testing.T) {
 		t.Errorf("Error when registering with CA")
 	}
 
-	// usually the endpoint is different from the one used for CA:
-	c1, err := client.NewPseudonymsysClient(testGrpcClientConn)
 	nym1, err := c1.GenerateNym(userSecret, caCertificate)
 	if err != nil {
 		t.Errorf(err.Error())

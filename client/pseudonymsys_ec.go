@@ -45,6 +45,13 @@ func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve dlog.Curve) (*Pseudony
 	}, nil
 }
 
+// GenerateMasterKey generates a master secret key to be used subsequently by all the
+// protocols in the scheme.
+func (c *PseudonymsysClientEC) GenerateMasterKey() *big.Int {
+	discreteLog := dlog.NewECDLog(c.curve)
+	return common.GetRandomInt(discreteLog.OrderOfSubgroup)
+}
+
 // GenerateNym generates a nym and registers it to the organization. Do not
 // use the same CACertificateEC for different organizations - use it only once!
 func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,

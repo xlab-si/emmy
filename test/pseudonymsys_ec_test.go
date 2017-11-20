@@ -35,7 +35,9 @@ func TestPseudonymsysEC(t *testing.T) {
 		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")
 	}
 
-	userSecret := config.LoadPseudonymsysUserSecret("user1", "ecdlog")
+	// usually the endpoint is different from the one used for CA:
+	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
+	userSecret := c1.GenerateMasterKey()
 
 	nymA := types.NewECGroupElement(ecdlog.Curve.Params().Gx, ecdlog.Curve.Params().Gy)
 	nymB1, nymB2 := ecdlog.Exponentiate(nymA.X, nymA.Y, userSecret) // this is user's public key
@@ -47,8 +49,6 @@ func TestPseudonymsysEC(t *testing.T) {
 		t.Errorf("Error when registering with CA")
 	}
 
-	// usually the endpoint is different from the one used for CA:
-	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	nym1, err := c1.GenerateNym(userSecret, caCertificate)
 	if err != nil {
 		t.Errorf(err.Error())
