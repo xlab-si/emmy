@@ -60,3 +60,5 @@ service_info:
   name: "Anonymous E-Voting system"
   provider: "Government"
   description: "This service verifies your right to vote and allows you to vote electronically with cryptographically assured anonymity"
+
+session_key_bytelen: 32

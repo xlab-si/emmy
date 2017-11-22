@@ -19,6 +19,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
@@ -242,7 +243,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 // authentication should happen (the organization takes credential issued by
 // another organization).
 func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.Int,
-	nym *pseudonymsys.Pseudonym, credential *pseudonymsys.Credential) (bool, error) {
+	nym *pseudonymsys.Pseudonym, credential *pseudonymsys.Credential) (*pb.SessionKey, error) {
 	c.openStream()
 	defer c.closeStream()
 
@@ -290,7 +291,7 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 	}
 	resp, err := c.getResponseTo(initMsg)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	ch := resp.GetBigint()
@@ -307,9 +308,16 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 
 	resp, err = c.getResponseTo(msg)
 	if err != nil {
-		return false, err
+		return nil, err
+	}
+	sessionKey := resp.GetSessionKey()
+	if sessionKey == nil {
+		return nil, fmt.Errorf(resp.GetProtocolError())
 	}
 
-	status := resp.GetStatus()
-	return status.Success, nil
+	if err := c.stream.CloseSend(); err != nil {
+		return nil, err
+	}
+
+	return sessionKey, nil
 }

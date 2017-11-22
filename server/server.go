@@ -40,6 +40,7 @@ var _ pb.ProtocolServer = (*Server)(nil)
 type Server struct {
 	grpcServer *grpc.Server
 	logger     log.Logger
+	*sessionManager
 }
 
 // NewProtocolServer initializes an instance of the Server struct and returns a pointer.
@@ -60,6 +61,11 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 
 	logger.Infof("Successfully read certificate [%s] and key [%s]", certFile, keyFile)
 
+	sessionManager, err := newSessionManager(config.LoadSessionKeyMinByteLen())
+	if err != nil {
+		logger.Warning(err)
+	}
+
 	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
 	// for logging and monitoring purposes.
 	server := &Server{
@@ -69,6 +75,7 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		),
 		logger: logger,
+		sessionManager: sessionManager,
 	}
 
 	// Disable tracing by default, as is used for debugging purposes.
