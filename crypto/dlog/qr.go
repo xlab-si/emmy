@@ -17,6 +17,8 @@
 
 package dlog
 
+// TODO: move into groups
+
 import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"

@@ -22,7 +22,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
@@ -74,7 +74,7 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 			grpc.MaxConcurrentStreams(math.MaxUint32),
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		),
-		logger: logger,
+		logger:         logger,
 		sessionManager: sessionManager,
 	}
 
@@ -183,7 +183,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
 	protocolType := types.ToProtocolType(reqSchemaVariant)
 	// This curve will be used for all schemes
-	curve := dlog.P256
+	curve := groups.P256
 
 	switch reqSchemaType {
 	case pb.SchemaType_PEDERSEN_EC:

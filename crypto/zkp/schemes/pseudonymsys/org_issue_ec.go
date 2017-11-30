@@ -19,7 +19,7 @@ package pseudonymsys
 
 import (
 	"errors"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -71,7 +71,7 @@ type OrgCredentialIssuerEC struct {
 	b               *types.ECGroupElement
 }
 
-func NewOrgCredentialIssuerEC(s1, s2 *big.Int, curveType dlog.Curve) *OrgCredentialIssuerEC {
+func NewOrgCredentialIssuerEC(s1, s2 *big.Int, curveType groups.ECurve) *OrgCredentialIssuerEC {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
 	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, types.Sigma)
@@ -104,20 +104,16 @@ func (org *OrgCredentialIssuerEC) VerifyAuthentication(z *big.Int) (
 	*types.ECGroupElement, *types.ECGroupElement, *types.ECGroupElement, error) {
 	verified := org.SchnorrVerifier.Verify(z, nil)
 	if verified {
-		A1, A2 := org.SchnorrVerifier.DLog.Exponentiate(org.b.X, org.b.Y, org.s2)
-		aA1, aA2 := org.SchnorrVerifier.DLog.Multiply(org.a.X, org.a.Y, A1, A2)
-		B1, B2 := org.SchnorrVerifier.DLog.Exponentiate(aA1, aA2, org.s1)
+		A := org.SchnorrVerifier.Group.Exp(org.b, org.s2)
+		aA := org.SchnorrVerifier.Group.Mul(org.a, A)
+		B := org.SchnorrVerifier.Group.Exp(aA, org.s1)
 
-		A := types.NewECGroupElement(A1, A2)
-		B := types.NewECGroupElement(B1, B2)
-
-		g1 := types.NewECGroupElement(org.SchnorrVerifier.DLog.Curve.Params().Gx,
-			org.SchnorrVerifier.DLog.Curve.Params().Gy)
+		g1 := types.NewECGroupElement(org.SchnorrVerifier.Group.Curve.Params().Gx,
+			org.SchnorrVerifier.Group.Curve.Params().Gy)
 		g2 := types.NewECGroupElement(org.b.X, org.b.Y)
-		g3 := types.NewECGroupElement(aA1, aA2)
 
 		x11, x12 := org.EqualityProver1.GetProofRandomData(org.s2, g1, g2)
-		x21, x22 := org.EqualityProver2.GetProofRandomData(org.s1, g1, g3)
+		x21, x22 := org.EqualityProver2.GetProofRandomData(org.s1, g1, aA)
 
 		return x11, x12, x21, x22, A, B, nil
 	} else {

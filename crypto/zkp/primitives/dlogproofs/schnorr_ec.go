@@ -20,14 +20,14 @@ package dlogproofs
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
 // ProveECDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
 // means g1^secret = t1 in EC group.
-func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve dlog.Curve) (bool, error) {
+func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve groups.ECurve) (bool, error) {
 	prover, err := NewSchnorrECProver(curve, types.Sigma)
 	if err != nil {
 		return false, err
@@ -63,7 +63,7 @@ func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve d
 // <-- e, r1
 // z = r2 + secret * e -->  (if ZKPOK, trapdoor is sent as well)
 type SchnorrECProver struct {
-	DLog             *dlog.ECDLog
+	Group            *groups.ECGroup
 	a                *types.ECGroupElement
 	secret           *big.Int
 	r                *big.Int                        // ProofRandomData
@@ -71,10 +71,10 @@ type SchnorrECProver struct {
 	protocolType     types.ProtocolType
 }
 
-func NewSchnorrECProver(curveType dlog.Curve, protocolType types.ProtocolType) (*SchnorrECProver, error) {
-	dLog := dlog.NewECDLog(curveType)
+func NewSchnorrECProver(curveType groups.ECurve, protocolType types.ProtocolType) (*SchnorrECProver, error) {
+	group := groups.NewECGroup(curveType)
 	prover := SchnorrECProver{
-		DLog:         dLog,
+		Group:        group,
 		protocolType: protocolType,
 	}
 
@@ -93,13 +93,12 @@ func (prover *SchnorrECProver) GetOpeningMsg() *types.ECGroupElement {
 // It contains also value b = a^secret.
 func (prover *SchnorrECProver) GetProofRandomData(secret *big.Int,
 	a *types.ECGroupElement) *types.ECGroupElement {
-	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
+	r := common.GetRandomInt(prover.Group.Q)
 	prover.r = r
 	prover.a = a
 	prover.secret = secret
-	x1, x2 := prover.DLog.Exponentiate(a.X, a.Y, r)
-
-	return types.NewECGroupElement(x1, x2)
+	x := prover.Group.Exp(a, r)
+	return x
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w
@@ -109,7 +108,7 @@ func (prover *SchnorrECProver) GetProofData(challenge *big.Int) (*big.Int, *big.
 	z := new(big.Int)
 	z.Mul(challenge, prover.secret)
 	z.Add(z, prover.r)
-	z.Mod(z, prover.DLog.GetOrderOfSubgroup())
+	z.Mod(z, prover.Group.Q)
 
 	if prover.protocolType != types.ZKPOK {
 		return z, nil
@@ -120,7 +119,7 @@ func (prover *SchnorrECProver) GetProofData(challenge *big.Int) (*big.Int, *big.
 }
 
 type SchnorrECVerifier struct {
-	DLog              *dlog.ECDLog
+	Group             *groups.ECGroup
 	x                 *types.ECGroupElement
 	a                 *types.ECGroupElement
 	b                 *types.ECGroupElement
@@ -129,10 +128,10 @@ type SchnorrECVerifier struct {
 	protocolType      types.ProtocolType
 }
 
-func NewSchnorrECVerifier(curveType dlog.Curve, protocolType types.ProtocolType) *SchnorrECVerifier {
-	dLog := dlog.NewECDLog(curveType)
+func NewSchnorrECVerifier(curveType groups.ECurve, protocolType types.ProtocolType) *SchnorrECVerifier {
+	group := groups.NewECGroup(curveType)
 	verifier := SchnorrECVerifier{
-		DLog:         dLog,
+		Group:        group,
 		protocolType: protocolType,
 	}
 
@@ -146,7 +145,7 @@ func NewSchnorrECVerifier(curveType dlog.Curve, protocolType types.ProtocolType)
 // GenerateChallenge is used in ZKP where challenge needs to be
 // chosen (and committed to) before sigma protocol starts.
 func (verifier *SchnorrECVerifier) GenerateChallenge() *big.Int {
-	challenge := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
+	challenge := common.GetRandomInt(verifier.Group.Q)
 	verifier.challenge = challenge
 	return challenge
 }
@@ -183,14 +182,9 @@ func (verifier *SchnorrECVerifier) Verify(z *big.Int, trapdoor *big.Int) bool {
 			return false
 		}
 	}
-	left1, left2 := verifier.DLog.Exponentiate(verifier.a.X, verifier.a.Y, z)
+	left := verifier.Group.Exp(verifier.a, z)
+	r := verifier.Group.Exp(verifier.b, verifier.challenge)
+	right := verifier.Group.Mul(r, verifier.x)
 
-	r1, r2 := verifier.DLog.Exponentiate(verifier.b.X, verifier.b.Y, verifier.challenge)
-	right1, right2 := verifier.DLog.Multiply(r1, r2, verifier.x.X, verifier.x.Y)
-
-	if left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 {
-		return true
-	} else {
-		return false
-	}
+	return types.CmpECGroupElements(left, right)
 }

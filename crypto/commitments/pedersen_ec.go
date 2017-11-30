@@ -20,7 +20,7 @@ package commitments
 import (
 	"errors"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
@@ -29,16 +29,16 @@ import (
 // Then committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
 type PedersenECCommitter struct {
-	dLog           *dlog.ECDLog
+	group          *groups.ECGroup
 	h              *types.ECGroupElement
 	committedValue *big.Int
 	r              *big.Int
 }
 
-func NewPedersenECCommitter(curveType dlog.Curve) *PedersenECCommitter {
-	dLog := dlog.NewECDLog(curveType)
+func NewPedersenECCommitter(curveType groups.ECurve) *PedersenECCommitter {
+	group := groups.NewECGroup(curveType)
 	committer := PedersenECCommitter{
-		dLog: dLog,
+		group: group,
 	}
 	return &committer
 }
@@ -50,21 +50,21 @@ func (committer *PedersenECCommitter) SetH(h *types.ECGroupElement) {
 
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
 func (committer *PedersenECCommitter) GetCommitMsg(val *big.Int) (*types.ECGroupElement, error) {
-	if val.Cmp(committer.dLog.OrderOfSubgroup) == 1 || val.Cmp(big.NewInt(0)) == -1 {
+	if val.Cmp(committer.group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
 		err := errors.New("the committed value needs to be in Z_q (order of a base point)")
 		return nil, err
 	}
 
 	// c = g^x * h^r
-	r := common.GetRandomInt(committer.dLog.OrderOfSubgroup)
+	r := common.GetRandomInt(committer.group.Q)
 
 	committer.r = r
 	committer.committedValue = val
-	x1, y1 := committer.dLog.ExponentiateBaseG(val)
-	x2, y2 := committer.dLog.Exponentiate(committer.h.X, committer.h.Y, r)
-	c1, c2 := committer.dLog.Multiply(x1, y1, x2, y2)
+	x1 := committer.group.ExpBaseG(val)
+	x2 := committer.group.Exp(committer.h, r)
+	c := committer.group.Mul(x1, x2)
 
-	return &types.ECGroupElement{X: c1, Y: c2}, nil
+	return c, nil
 }
 
 // It returns values x and r (commitment was c = g^x * g^r).
@@ -76,31 +76,27 @@ func (committer *PedersenECCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
 }
 
 func (committer *PedersenECCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
-	hx, hy := committer.dLog.ExponentiateBaseG(trapdoor)
-	if hx.Cmp(committer.h.X) == 0 && hy.Cmp(committer.h.Y) == 0 {
-		return true
-	} else {
-		return false
-	}
+	h := committer.group.ExpBaseG(trapdoor)
+	return types.CmpECGroupElements(h, committer.h)
 }
 
 type PedersenECReceiver struct {
-	dLog       *dlog.ECDLog
+	group      *groups.ECGroup
 	a          *big.Int
 	h          *types.ECGroupElement
 	commitment *types.ECGroupElement
 }
 
-func NewPedersenECReceiver(curve dlog.Curve) *PedersenECReceiver {
-	dLog := dlog.NewECDLog(curve)
+func NewPedersenECReceiver(curve groups.ECurve) *PedersenECReceiver {
+	group := groups.NewECGroup(curve)
 
-	a := common.GetRandomInt(dLog.OrderOfSubgroup)
-	x, y := dLog.ExponentiateBaseG(a)
+	a := common.GetRandomInt(group.Q)
+	h := group.ExpBaseG(a)
 
 	receiver := new(PedersenECReceiver)
-	receiver.dLog = dLog
+	receiver.group = group
 	receiver.a = a
-	receiver.h = &types.ECGroupElement{X: x, Y: y}
+	receiver.h = h
 
 	return receiver
 }
@@ -121,16 +117,9 @@ func (s *PedersenECReceiver) SetCommitment(el *types.ECGroupElement) {
 // When receiver receives a decommitment, CheckDecommitment verifies it against the stored value
 // (stored by SetCommitment).
 func (s *PedersenECReceiver) CheckDecommitment(r, val *big.Int) bool {
-	x1, y1 := s.dLog.ExponentiateBaseG(val)        // g^x
-	x2, y2 := s.dLog.Exponentiate(s.h.X, s.h.Y, r) // h^r
-	c1, c2 := s.dLog.Multiply(x1, y1, x2, y2)      // g^x * h^r
+	a := s.group.ExpBaseG(val) // g^x
+	b := s.group.Exp(s.h, r)   // h^r
+	c := s.group.Mul(a, b)     // g^x * h^r
 
-	var success bool
-	if c1.Cmp(s.commitment.X) == 0 && c2.Cmp(s.commitment.Y) == 0 {
-		success = true
-	} else {
-		success = false
-	}
-
-	return success
+	return types.CmpECGroupElements(c, s.commitment)
 }

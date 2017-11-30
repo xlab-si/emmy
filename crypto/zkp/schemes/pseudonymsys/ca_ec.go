@@ -22,14 +22,14 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
 type CAEC struct {
-	DLog            *dlog.ECDLog
+	Group           *groups.ECGroup
 	SchnorrVerifier *dlogproofs.SchnorrECVerifier
 	a               *types.ECGroupElement
 	b               *types.ECGroupElement
@@ -52,8 +52,8 @@ func NewCACertificateEC(blindedA, blindedB *types.ECGroupElement, r, s *big.Int)
 	}
 }
 
-func NewCAEC(d, x, y *big.Int, curveType dlog.Curve) *CAEC {
-	c := dlog.GetEllipticCurve(curveType)
+func NewCAEC(d, x, y *big.Int, curveType groups.ECurve) *CAEC {
+	c := groups.GetEllipticCurve(curveType)
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
@@ -79,19 +79,17 @@ func (ca *CAEC) GetChallenge(a, b, x *types.ECGroupElement) *big.Int {
 func (ca *CAEC) Verify(z *big.Int) (*CACertificateEC, error) {
 	verified := ca.SchnorrVerifier.Verify(z, nil)
 	if verified {
-		r := common.GetRandomInt(ca.SchnorrVerifier.DLog.OrderOfSubgroup)
-		blindedA1, blindedA2 := ca.SchnorrVerifier.DLog.Exponentiate(ca.a.X, ca.a.Y, r)
-		blindedB1, blindedB2 := ca.SchnorrVerifier.DLog.Exponentiate(ca.b.X, ca.b.Y, r)
+		r := common.GetRandomInt(ca.SchnorrVerifier.Group.Q)
+		blindedA := ca.SchnorrVerifier.Group.Exp(ca.a, r)
+		blindedB := ca.SchnorrVerifier.Group.Exp(ca.b, r)
 		// blindedA, blindedB must be used only once (never use the same pair for two
 		// different organizations)
 
-		hashed := common.HashIntoBytes(blindedA1, blindedA2, blindedB1, blindedB2)
+		hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)
 		r, s, err := ecdsa.Sign(rand.Reader, ca.privateKey, hashed)
 		if err != nil {
 			return nil, err
 		} else {
-			blindedA := types.NewECGroupElement(blindedA1, blindedA2)
-			blindedB := types.NewECGroupElement(blindedB1, blindedB2)
 			return NewCACertificateEC(blindedA, blindedB, r, s), nil
 		}
 	} else {

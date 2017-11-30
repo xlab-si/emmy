@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -29,8 +29,8 @@ import (
 )
 
 func TestPseudonymsysEC(t *testing.T) {
-	curveType := dlog.P256
-	ecdlog := dlog.NewECDLog(curveType)
+	curveType := groups.P256
+	group := groups.NewECGroup(curveType)
 	caClient, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")
@@ -40,9 +40,8 @@ func TestPseudonymsysEC(t *testing.T) {
 	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	userSecret := c1.GenerateMasterKey()
 
-	nymA := types.NewECGroupElement(ecdlog.Curve.Params().Gx, ecdlog.Curve.Params().Gy)
-	nymB1, nymB2 := ecdlog.Exponentiate(nymA.X, nymA.Y, userSecret) // this is user's public key
-	nymB := types.NewECGroupElement(nymB1, nymB2)
+	nymA := types.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
+	nymB := group.Exp(nymA, userSecret) // this is user's public key
 
 	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
 	caCertificate, err := caClient.ObtainCertificate(userSecret, masterNym)

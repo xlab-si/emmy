@@ -19,7 +19,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
@@ -36,7 +36,7 @@ type SchnorrECClient struct {
 }
 
 // NewSchnorrECClient returns an initialized struct of type SchnorrECClient.
-func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve dlog.Curve,
+func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve groups.ECurve,
 	s *big.Int) (*SchnorrECClient, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
@@ -54,8 +54,8 @@ func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve d
 		variant:       variant,
 		secret:        s,
 		a: &types.ECGroupElement{
-			X: prover.DLog.Curve.Params().Gx,
-			Y: prover.DLog.Curve.Params().Gy,
+			X: prover.Group.Curve.Params().Gx,
+			Y: prover.Group.Curve.Params().Gy,
 		},
 	}, nil
 }
@@ -143,8 +143,7 @@ func (c *SchnorrECClient) open() (*types.ECGroupElement, error) {
 
 func (c *SchnorrECClient) getProofRandomData(isFirstMsg bool) (*pb.PedersenDecommitment, error) {
 	x := c.prover.GetProofRandomData(c.secret, c.a) // x = a^r, b = a^secret is "public key"
-	b1, b2 := c.prover.DLog.Exponentiate(c.a.X, c.a.Y, c.secret)
-	b := &types.ECGroupElement{X: b1, Y: b2}
+	b := c.prover.Group.Exp(c.a, c.secret)
 
 	pRandomData := pb.SchnorrECProofRandomData{
 		X: types.ToPbECGroupElement(x),
