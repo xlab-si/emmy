@@ -41,45 +41,60 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 	blindedB := types.ToECGroupElement(proofRandData.B2)
 	signatureR := new(big.Int).SetBytes(proofRandData.R)
 	signatureS := new(big.Int).SetBytes(proofRandData.S)
+	regKey := proofRandData.RegKey
 
-	challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, signatureR, signatureS)
+	regKeyOk, err := s.registrationManager.CheckRegistrationKey(regKey)
+
 	var resp *pb.Message
-	if err != nil {
+
+	if !regKeyOk || err != nil {
 		resp = &pb.Message{
-			Content: &pb.Message_PedersenDecommitment{
-				&pb.PedersenDecommitment{},
-			},
-			ProtocolError: err.Error(),
+			Content:       nil,
+			ProtocolError: "Registration key verification failed",
+		}
+
+		if err = s.send(resp, stream); err != nil {
+			return err
 		}
 	} else {
-		resp = &pb.Message{
-			Content: &pb.Message_PedersenDecommitment{
-				&pb.PedersenDecommitment{
-					X: challenge.Bytes(),
+		challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, signatureR, signatureS)
+		if err != nil {
+			resp = &pb.Message{
+				Content: &pb.Message_PedersenDecommitment{
+					&pb.PedersenDecommitment{},
 				},
-			},
+				ProtocolError: err.Error(),
+			}
+		} else {
+			resp = &pb.Message{
+				Content: &pb.Message_PedersenDecommitment{
+					&pb.PedersenDecommitment{
+						X: challenge.Bytes(),
+					},
+				},
+			}
 		}
-	}
 
-	if err := s.send(resp, stream); err != nil {
-		return err
-	}
+		if err := s.send(resp, stream); err != nil {
+			return err
+		}
 
-	req, err = s.receive(stream)
-	if err != nil {
-		return err
-	}
+		req, err = s.receive(stream)
+		if err != nil {
+			return err
+		}
 
-	proofData := req.GetSchnorrProofData() // SchnorrProofData is used in DLog equality proof as well
-	z := new(big.Int).SetBytes(proofData.Z)
-	valid := org.Verify(z)
+		proofData := req.GetSchnorrProofData() // SchnorrProofData is used in DLog equality proof as well
+		z := new(big.Int).SetBytes(proofData.Z)
+		valid := org.Verify(z)
 
-	resp = &pb.Message{
-		Content: &pb.Message_Status{&pb.Status{Success: valid}},
-	}
+		resp = &pb.Message{
+			Content: &pb.Message_Status{&pb.Status{Success: valid}},
+		}
 
-	if err = s.send(resp, stream); err != nil {
-		return err
+		if err = s.send(resp, stream); err != nil {
+			return err
+		}
 	}
 
 	return nil

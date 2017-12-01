@@ -1237,6 +1237,7 @@ type PseudonymsysNymGenProofRandomData struct {
 	B2 []byte `protobuf:"bytes,6,opt,name=B2,proto3" json:"B2,omitempty"`
 	R  []byte `protobuf:"bytes,7,opt,name=R,proto3" json:"R,omitempty"`
 	S  []byte `protobuf:"bytes,8,opt,name=S,proto3" json:"S,omitempty"`
+	RegKey string `protobuf:"bytes,9,opt,name=RegKey" json:"RegKey,omitempty"`
 }
 
 func (m *PseudonymsysNymGenProofRandomData) Reset()         { *m = PseudonymsysNymGenProofRandomData{} }
@@ -1302,6 +1303,13 @@ func (m *PseudonymsysNymGenProofRandomData) GetS() []byte {
 	return nil
 }
 
+func (m *PseudonymsysNymGenProofRandomData) GetRegKey() string {
+	if m != nil {
+		return m.RegKey
+	}
+	return ""
+}
+
 type PseudonymsysNymGenProofRandomDataEC struct {
 	X1 *ECGroupElement `protobuf:"bytes,1,opt,name=X1" json:"X1,omitempty"`
 	A1 *ECGroupElement `protobuf:"bytes,2,opt,name=A1" json:"A1,omitempty"`
@@ -1311,6 +1319,7 @@ type PseudonymsysNymGenProofRandomDataEC struct {
 	B2 *ECGroupElement `protobuf:"bytes,6,opt,name=B2" json:"B2,omitempty"`
 	R  []byte          `protobuf:"bytes,7,opt,name=R,proto3" json:"R,omitempty"`
 	S  []byte          `protobuf:"bytes,8,opt,name=S,proto3" json:"S,omitempty"`
+	RegKey string `protobuf:"bytes,9,opt,name=RegKey" json:"RegKey,omitempty"`
 }
 
 func (m *PseudonymsysNymGenProofRandomDataEC) Reset()         { *m = PseudonymsysNymGenProofRandomDataEC{} }
@@ -1374,6 +1383,13 @@ func (m *PseudonymsysNymGenProofRandomDataEC) GetS() []byte {
 		return m.S
 	}
 	return nil
+}
+
+func (m *PseudonymsysNymGenProofRandomDataEC) GetRegKey() string {
+	if m != nil {
+		return m.RegKey
+	}
+	return ""
 }
 
 type PseudonymsysCACertificate struct {

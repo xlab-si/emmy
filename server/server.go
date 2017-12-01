@@ -41,6 +41,7 @@ type Server struct {
 	grpcServer *grpc.Server
 	logger     log.Logger
 	*sessionManager
+	*registrationManager
 }
 
 // NewProtocolServer initializes an instance of the Server struct and returns a pointer.
@@ -66,6 +67,12 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 		logger.Warning(err)
 	}
 
+	registrationManager, err := NewRegistrationManager(config.LoadRegistrationDBAddress())
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+
 	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
 	// for logging and monitoring purposes.
 	server := &Server{
@@ -76,6 +83,7 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 		),
 		logger:         logger,
 		sessionManager: sessionManager,
+		registrationManager: registrationManager,
 	}
 
 	// Disable tracing by default, as is used for debugging purposes.

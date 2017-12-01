@@ -62,3 +62,5 @@ service_info:
   description: "This service verifies your right to vote and allows you to vote electronically with cryptographically assured anonymity"
 
 session_key_bytelen: 32
+
+registration_db_address: "localhost:6379"
