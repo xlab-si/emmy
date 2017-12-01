@@ -123,6 +123,7 @@ message PseudonymsysNymGenProofRandomData {
 	bytes B2 = 6;
 	bytes R = 7;
 	bytes S = 8;
+	string RegKey = 9;
 }
 
 message PseudonymsysNymGenProofRandomDataEC {
@@ -134,6 +135,7 @@ message PseudonymsysNymGenProofRandomDataEC {
 	ECGroupElement B2 = 6;
 	bytes R = 7;
 	bytes S = 8;
+	string RegKey = 9;
 }
 
 message PseudonymsysCACertificate {

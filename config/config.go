@@ -138,3 +138,7 @@ func LoadServiceInfo() *types.ServiceInfo {
 func LoadSessionKeyMinByteLen() int {
 	return viper.GetInt("session_key_bytelen")
 }
+
+func LoadRegistrationDBAddress() string {
+	return viper.GetString("registration_db_address")
+}

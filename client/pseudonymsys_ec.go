@@ -56,7 +56,7 @@ func (c *PseudonymsysClientEC) GenerateMasterKey() *big.Int {
 // GenerateNym generates a nym and registers it to the organization. Do not
 // use the same CACertificateEC for different organizations - use it only once!
 func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
-	caCertificate *pseudonymsys.CACertificateEC) (
+	caCertificate *pseudonymsys.CACertificateEC, regKey string) (
 	*pseudonymsys.PseudonymEC, error) {
 	c.openStream()
 	defer c.closeStream()
@@ -94,6 +94,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 		B2: types.ToPbECGroupElement(caCertificate.BlindedB),
 		R:  caCertificate.R.Bytes(),
 		S:  caCertificate.S.Bytes(),
+		RegKey: regKey,
 	}
 
 	initMsg := &pb.Message{
@@ -109,10 +110,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 		return nil, err
 	}
 
-	pedersenDecommitment, err := resp.GetPedersenDecommitment(), nil
-	if err != nil {
-		return nil, err
-	}
+	pedersenDecommitment := resp.GetPedersenDecommitment()
 	challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
 
 	z := prover.GetProofData(challenge)
