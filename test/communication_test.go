@@ -23,7 +23,7 @@ import (
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
@@ -83,7 +83,7 @@ func testPedersen(n *big.Int) error {
 }
 
 func testPedersenEC(n *big.Int) error {
-	c, err := client.NewPedersenECClient(testGrpcClientConn, n, dlog.P256)
+	c, err := client.NewPedersenECClient(testGrpcClientConn, n, groups.P256)
 	if err != nil {
 		return err
 	}
@@ -91,8 +91,8 @@ func testPedersenEC(n *big.Int) error {
 }
 
 func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
-	dlog := config.LoadGroup("schnorr")
-	c, err := client.NewSchnorrClient(testGrpcClientConn, variant, dlog, n)
+	group := config.LoadGroup("schnorr")
+	c, err := client.NewSchnorrClient(testGrpcClientConn, variant, group, n)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func testSchnorr(n *big.Int, variant pb.SchemaVariant) error {
 }
 
 func testSchnorrEC(n *big.Int, variant pb.SchemaVariant) error {
-	c, err := client.NewSchnorrECClient(testGrpcClientConn, variant, dlog.P256, n)
+	c, err := client.NewSchnorrECClient(testGrpcClientConn, variant, groups.P256, n)
 	if err != nil {
 		return err
 	}

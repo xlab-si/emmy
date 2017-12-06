@@ -49,6 +49,14 @@ func ToPbECGroupElement(el *ECGroupElement) *pb.ECGroupElement {
 	return &x
 }
 
+func CmpECGroupElements(a, b *ECGroupElement) bool {
+	if a.X.Cmp(b.X) == 0 && a.Y.Cmp(b.Y) == 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 // Pair is the same as ECGroupElement, but to be used in non EC schemes when a pair of
 // *big.Int is needed.
 type Pair struct {

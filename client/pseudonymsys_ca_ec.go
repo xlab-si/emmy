@@ -18,7 +18,7 @@
 package client
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
@@ -32,7 +32,7 @@ type PseudonymsysCAClientEC struct {
 	prover *dlogproofs.SchnorrECProver
 }
 
-func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve dlog.Curve) (*PseudonymsysCAClientEC, error) {
+func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*PseudonymsysCAClientEC, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err

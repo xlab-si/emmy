@@ -18,7 +18,7 @@
 package pseudonymsys
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -31,10 +31,10 @@ type OrgCredentialVerifierEC struct {
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
 	a                *types.ECGroupElement
 	b                *types.ECGroupElement
-	curveType        dlog.Curve
+	curveType        groups.ECurve
 }
 
-func NewOrgCredentialVerifierEC(s1, s2 *big.Int, curveType dlog.Curve) *OrgCredentialVerifierEC {
+func NewOrgCredentialVerifierEC(s1, s2 *big.Int, curveType groups.ECurve) *OrgCredentialVerifierEC {
 	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgCredentialVerifierEC{
 		s1:               s1,
@@ -63,21 +63,15 @@ func (org *OrgCredentialVerifierEC) VerifyAuthentication(z *big.Int,
 		return false
 	}
 
-	g := types.NewECGroupElement(org.EqualityVerifier.DLog.Curve.Params().Gx,
-		org.EqualityVerifier.DLog.Curve.Params().Gy)
+	g := types.NewECGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
+		org.EqualityVerifier.Group.Curve.Params().Gy)
 
-	valid1 := dlogproofs.VerifyBlindedTranscriptEC(credential.T1, dlog.P256, g, orgPubKeys.H2,
+	valid1 := dlogproofs.VerifyBlindedTranscriptEC(credential.T1, groups.P256, g, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
 
-	aAToGamma1, aAToGamma2 := org.EqualityVerifier.DLog.Multiply(credential.SmallAToGamma.X,
-		credential.SmallAToGamma.Y, credential.AToGamma.X, credential.AToGamma.Y)
-	aAToGamma := types.NewECGroupElement(aAToGamma1, aAToGamma2)
-	valid2 := dlogproofs.VerifyBlindedTranscriptEC(credential.T2, dlog.P256, g, orgPubKeys.H1,
+	aAToGamma := org.EqualityVerifier.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
+	valid2 := dlogproofs.VerifyBlindedTranscriptEC(credential.T2, groups.P256, g, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
-	if valid1 && valid2 {
-		return true
-	} else {
-		return false
-	}
+	return valid1 && valid2
 }

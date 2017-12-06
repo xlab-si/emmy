@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
@@ -32,10 +32,10 @@ import (
 
 type PseudonymsysClientEC struct {
 	genericClient
-	curve dlog.Curve
+	curve groups.ECurve
 }
 
-func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve dlog.Curve) (*PseudonymsysClientEC, error) {
+func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*PseudonymsysClientEC, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err
@@ -49,8 +49,8 @@ func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve dlog.Curve) (*Pseudony
 // GenerateMasterKey generates a master secret key to be used subsequently by all the
 // protocols in the scheme.
 func (c *PseudonymsysClientEC) GenerateMasterKey() *big.Int {
-	discreteLog := dlog.NewECDLog(c.curve)
-	return common.GetRandomInt(discreteLog.OrderOfSubgroup)
+	group := groups.NewECGroup(c.curve)
+	return common.GetRandomInt(group.Q)
 }
 
 // GenerateNym generates a nym and registers it to the organization. Do not
@@ -70,17 +70,13 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	// Note that as there is very little logic needed (besides what is in DLog equality
 	// prover), everything is implemented here (no pseudoynymsys nym gen client).
 
-	masterNymA := types.NewECGroupElement(prover.DLog.Curve.Params().Gx,
-		prover.DLog.Curve.Params().Gy)
-	nymB1, nymB2 := prover.DLog.Exponentiate(masterNymA.X, masterNymA.Y, userSecret)
-	masterNymB := types.NewECGroupElement(nymB1, nymB2)
+	masterNymA := types.NewECGroupElement(prover.Group.Curve.Params().Gx,
+		prover.Group.Curve.Params().Gy)
+	masterNymB := prover.Group.Exp(masterNymA, userSecret)
 
-	gamma := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
-	nymAX, nymAY := prover.DLog.Exponentiate(masterNymA.X, masterNymA.Y, gamma)
-	nymBX, nymBY := prover.DLog.Exponentiate(masterNymB.X, masterNymB.Y, gamma)
-
-	nymA := types.NewECGroupElement(nymAX, nymAY)
-	nymB := types.NewECGroupElement(nymBX, nymBY)
+	gamma := common.GetRandomInt(prover.Group.Q)
+	nymA := prover.Group.Exp(masterNymA, gamma)
+	nymB := prover.Group.Exp(masterNymB, gamma)
 
 	// Prove now that log_nymA(nymB) = log_blindedA(blindedB):
 	// g1 = nymA, g2 = blindedA
@@ -209,16 +205,15 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	A := types.ToECGroupElement(randomData.A)
 	B := types.ToECGroupElement(randomData.B)
 
-	gamma := common.GetRandomInt(schnorrProver.DLog.OrderOfSubgroup)
+	gamma := common.GetRandomInt(schnorrProver.Group.Q)
 	equalityVerifier1 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 	equalityVerifier2 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 
-	g := types.NewECGroupElement(equalityVerifier1.DLog.Curve.Params().Gx,
-		equalityVerifier1.DLog.Curve.Params().Gy)
+	g := types.NewECGroupElement(equalityVerifier1.Group.Curve.Params().Gx,
+		equalityVerifier1.Group.Curve.Params().Gy)
 
 	challenge1 := equalityVerifier1.GetChallenge(g, nym.B, orgPubKeys.H2, A, x11, x12)
-	aA1, aA2 := equalityVerifier1.DLog.Multiply(nym.A.X, nym.A.Y, A.X, A.Y)
-	aA := types.NewECGroupElement(aA1, aA2)
+	aA := equalityVerifier1.Group.Mul(nym.A, A)
 	challenge2 := equalityVerifier2.GetChallenge(g, aA, orgPubKeys.H1, B, x21, x22)
 
 	msg = &pb.Message{
@@ -242,8 +237,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	verified1, transcript1, bToGamma, AToGamma := equalityVerifier1.Verify(z1)
 	verified2, transcript2, aAToGamma, BToGamma := equalityVerifier2.Verify(z2)
 
-	aToGamma1, aToGamma2 := equalityVerifier1.DLog.Exponentiate(nym.A.X, nym.A.Y, gamma)
-	aToGamma := types.NewECGroupElement(aToGamma1, aToGamma2)
+	aToGamma := equalityVerifier1.Group.Exp(nym.A, gamma)
 	if verified1 && verified2 {
 		valid1 := dlogproofs.VerifyBlindedTranscriptEC(transcript1, c.curve, g, orgPubKeys.H2,
 			bToGamma, AToGamma)
