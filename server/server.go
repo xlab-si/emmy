@@ -81,8 +81,8 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 			grpc.MaxConcurrentStreams(math.MaxUint32),
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		),
-		logger:         logger,
-		sessionManager: sessionManager,
+		logger:              logger,
+		sessionManager:      sessionManager,
 		registrationManager: registrationManager,
 	}
 

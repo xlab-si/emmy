@@ -82,14 +82,14 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	// g1 = nymA, g2 = blindedA
 	x1, x2 := prover.GetProofRandomData(userSecret, nymA, caCertificate.BlindedA)
 	pRandomData := pb.PseudonymsysNymGenProofRandomDataEC{
-		X1: types.ToPbECGroupElement(x1),
-		A1: types.ToPbECGroupElement(nymA),
-		B1: types.ToPbECGroupElement(nymB),
-		X2: types.ToPbECGroupElement(x2),
-		A2: types.ToPbECGroupElement(caCertificate.BlindedA),
-		B2: types.ToPbECGroupElement(caCertificate.BlindedB),
-		R:  caCertificate.R.Bytes(),
-		S:  caCertificate.S.Bytes(),
+		X1:     types.ToPbECGroupElement(x1),
+		A1:     types.ToPbECGroupElement(nymA),
+		B1:     types.ToPbECGroupElement(nymB),
+		X2:     types.ToPbECGroupElement(x2),
+		A2:     types.ToPbECGroupElement(caCertificate.BlindedA),
+		B2:     types.ToPbECGroupElement(caCertificate.BlindedB),
+		R:      caCertificate.R.Bytes(),
+		S:      caCertificate.S.Bytes(),
 		RegKey: regKey,
 	}
 

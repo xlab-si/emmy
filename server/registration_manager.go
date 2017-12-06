@@ -44,7 +44,7 @@ func (rm *registrationManager) CheckRegistrationKey(key string) (bool, error) {
 
 	err := resp.Err()
 
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
 
