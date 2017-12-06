@@ -41,9 +41,8 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 	blindedB := types.ToECGroupElement(proofRandData.B2)
 	signatureR := new(big.Int).SetBytes(proofRandData.R)
 	signatureS := new(big.Int).SetBytes(proofRandData.S)
-	regKey := proofRandData.RegKey
 
-	regKeyOk, err := s.registrationManager.CheckRegistrationKey(regKey)
+	regKeyOk, err := s.registrationManager.CheckRegistrationKey(proofRandData.RegKey)
 
 	var resp *pb.Message
 
