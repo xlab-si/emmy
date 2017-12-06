@@ -46,7 +46,7 @@ func (s *Server) PseudonymsysGenerateNym(req *pb.Message, stream pb.Protocol_Run
 
 	if !regKeyOk || err != nil {
 		resp = &pb.Message{
-			Content: nil,
+			Content:       nil,
 			ProtocolError: "Registration key verification failed",
 		}
 

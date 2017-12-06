@@ -79,14 +79,14 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	// g1 = nymA, g2 = blindedA
 	x1, x2 := prover.GetProofRandomData(userSecret, nymA, caCertificate.BlindedA)
 	pRandomData := pb.PseudonymsysNymGenProofRandomData{
-		X1: x1.Bytes(),
-		A1: nymA.Bytes(),
-		B1: nymB.Bytes(),
-		X2: x2.Bytes(),
-		A2: caCertificate.BlindedA.Bytes(),
-		B2: caCertificate.BlindedB.Bytes(),
-		R:  caCertificate.R.Bytes(),
-		S:  caCertificate.S.Bytes(),
+		X1:     x1.Bytes(),
+		A1:     nymA.Bytes(),
+		B1:     nymB.Bytes(),
+		X2:     x2.Bytes(),
+		A2:     caCertificate.BlindedA.Bytes(),
+		B2:     caCertificate.BlindedB.Bytes(),
+		R:      caCertificate.R.Bytes(),
+		S:      caCertificate.S.Bytes(),
 		RegKey: regKey,
 	}
 

@@ -18,17 +18,17 @@
 package test
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	"github.com/xlab-si/emmy/server"
+	"io"
 	"math/big"
 	"testing"
-	"io"
-	"fmt"
-	"encoding/base64"
-	"crypto/rand"
 	"time"
 )
 
