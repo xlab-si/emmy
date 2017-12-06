@@ -36,12 +36,17 @@ func NewRegistrationManager(address string) (*registrationManager, error) {
 	return &registrationManager{redisClient}, nil
 }
 
+// CheckRegistrationKey checks whether provided key is present in registration database and deletes it,
+// preventing another registration with the same key.
+// Returns true if key was present (registration allowed), false otherwise.
 func (rm *registrationManager) CheckRegistrationKey(key string) (bool, error) {
 	resp := rm.Del(key)
 
-	if resp.Err() != nil{
-		return false, resp.Err()
-	} else {
-		return resp.Val() == 1, nil
+	err := resp.Err()
+
+	if err != nil{
+		return false, err
 	}
+
+	return resp.Val() == 1, nil // one deleted entry indicates that the key was present in the DB
 }
