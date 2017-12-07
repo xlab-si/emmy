@@ -18,15 +18,11 @@
 package test
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	"github.com/xlab-si/emmy/server"
-	"io"
 	"math/big"
 	"testing"
 	"time"
@@ -51,22 +47,22 @@ func TestPseudonymsys(t *testing.T) {
 		t.Errorf("Error when registering with CA")
 	}
 
-	//nym generation should fail with invalid registration key
-	_, err = c1.GenerateNym(userSecret, caCertificate, "029uywfh9udni")
-	assert.NotNil(t, err, "Should produce an error")
-
-	regKey, err := getRegistrationKey()
+	err = insertTestRegistrationKeys()
 	if err != nil {
 		t.Errorf("Error getting registration key: %s", err.Error())
 	}
 
-	nym1, err := c1.GenerateNym(userSecret, caCertificate, regKey)
+	//nym generation should fail with invalid registration key
+	_, err = c1.GenerateNym(userSecret, caCertificate, "029uywfh9udni")
+	assert.NotNil(t, err, "Should produce an error")
+
+	nym1, err := c1.GenerateNym(userSecret, caCertificate, "testRegKey1")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	//nym generation should fail the second time with the same registration key
-	_, err = c1.GenerateNym(userSecret, caCertificate, regKey)
+	_, err = c1.GenerateNym(userSecret, caCertificate, "testRegKey1")
 	assert.NotNil(t, err, "Should produce an error")
 
 	orgName := "org1"
@@ -85,16 +81,11 @@ func TestPseudonymsys(t *testing.T) {
 		t.Errorf("Error when registering with CA")
 	}
 
-	regKey, err = getRegistrationKey()
-	if err != nil {
-		t.Errorf("Error getting registration key: %s", err.Error())
-	}
-
 	// c2 connects to the same server as c1, so what we're really testing here is
 	// using transferCredential to authenticate with the same organization and not
 	// transferring credentials to another organization
 	c2, err := client.NewPseudonymsysClient(testGrpcClientConn)
-	nym2, err := c2.GenerateNym(userSecret, caCertificate1, regKey)
+	nym2, err := c2.GenerateNym(userSecret, caCertificate1, "testRegKey2")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -111,18 +102,20 @@ func TestPseudonymsys(t *testing.T) {
 	assert.NotNil(t, err, "Should produce an error")
 }
 
-func getRegistrationKey() (string, error) {
+func insertTestRegistrationKeys() error {
 	registrationManager, err := server.NewRegistrationManager(config.LoadRegistrationDBAddress())
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	buffer := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, buffer); err != nil {
-		return "", fmt.Errorf("Error reading random bytes: %v", err)
-	}
-	regKey := base64.StdEncoding.EncodeToString(buffer)
-	err = registrationManager.Set(regKey, regKey, time.Minute).Err()
+	testRegKeys := [...]string{"testRegKey1", "testRegKey2"}
+	for _, regKey := range testRegKeys {
+		err = registrationManager.Set(regKey, regKey, time.Minute).Err()
 
-	return regKey, nil
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
