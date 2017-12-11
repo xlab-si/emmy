@@ -54,42 +54,6 @@ func TestGetSafePrime(t *testing.T) {
 	assert.Equal(t, p1.ProbablyPrime(20), true, "p1 should be prime")
 }
 
-func TestGeneratorOfCompositeQR(t *testing.T) {
-	p, _ := common.GetSafePrime(512)
-	q, _ := common.GetSafePrime(512)
-	g, _ := common.GetGeneratorOfCompositeQR(p, q)
-	n := new(big.Int).Mul(p, q)
-
-	p1 := new(big.Int)
-	p1.Sub(p, big.NewInt(1))
-	p1.Div(p1, big.NewInt(2))
-	q1 := new(big.Int)
-	q1.Sub(q, big.NewInt(1))
-	q1.Div(q1, big.NewInt(2))
-
-	// order of g should be 2*p1*q1
-	order := new(big.Int).Mul(p1, q1)
-	order.Mul(order, big.NewInt(2))
-	tmp := new(big.Int).Exp(g, order, n)
-
-	assert.Equal(t, tmp, big.NewInt(1), "g is not a generator")
-	// other possible orders in this group are: 2, p1, q1, 2 * p1, and 2 * q1.
-	tmp = new(big.Int).Exp(g, big.NewInt(2), n)
-	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
-
-	tmp = new(big.Int).Exp(g, p1, n)
-	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
-
-	tmp = new(big.Int).Exp(g, q1, n)
-	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
-
-	tmp = new(big.Int).Exp(g, q1.Mul(p1, big.NewInt(2)), n)
-	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
-
-	tmp = new(big.Int).Exp(g, q1.Mul(q1, big.NewInt(2)), n)
-	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
-}
-
 func TestGetGeneratorOfZnSubgroup(t *testing.T) {
 	p, err := common.GetSafePrime(512)
 	if err != nil {
