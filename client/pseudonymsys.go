@@ -58,7 +58,7 @@ func (c *PseudonymsysClient) GenerateMasterKey() *big.Int {
 // GenerateNym generates a nym and registers it to the organization. Do not use
 // the same CACertificate for different organizations - use it only once!
 func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
-	caCertificate *pseudonymsys.CACertificate) (
+	caCertificate *pseudonymsys.CACertificate, regKey string) (
 	*pseudonymsys.Pseudonym, error) {
 	c.openStream()
 	defer c.closeStream()
@@ -79,14 +79,15 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	// g1 = nymA, g2 = blindedA
 	x1, x2 := prover.GetProofRandomData(userSecret, nymA, caCertificate.BlindedA)
 	pRandomData := pb.PseudonymsysNymGenProofRandomData{
-		X1: x1.Bytes(),
-		A1: nymA.Bytes(),
-		B1: nymB.Bytes(),
-		X2: x2.Bytes(),
-		A2: caCertificate.BlindedA.Bytes(),
-		B2: caCertificate.BlindedB.Bytes(),
-		R:  caCertificate.R.Bytes(),
-		S:  caCertificate.S.Bytes(),
+		X1:     x1.Bytes(),
+		A1:     nymA.Bytes(),
+		B1:     nymB.Bytes(),
+		X2:     x2.Bytes(),
+		A2:     caCertificate.BlindedA.Bytes(),
+		B2:     caCertificate.BlindedB.Bytes(),
+		R:      caCertificate.R.Bytes(),
+		S:      caCertificate.S.Bytes(),
+		RegKey: regKey,
 	}
 
 	initMsg := &pb.Message{
@@ -102,10 +103,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 		return nil, err
 	}
 
-	pedersenDecommitment, err := resp.GetPedersenDecommitment(), nil
-	if err != nil {
-		return nil, err
-	}
+	pedersenDecommitment := resp.GetPedersenDecommitment()
 	challenge := new(big.Int).SetBytes(pedersenDecommitment.X)
 
 	z := prover.GetProofData(challenge)

@@ -28,7 +28,9 @@ To install emmy, run
 $ go get github.com/xlab-si/emmy
 ```
 
-This should give you the `emmy` executable in your `$GOBIN`. Afterwards you can run the unit tests to see if everything is working properly with:
+This should give you the `emmy` executable in your `$GOBIN`.
+To successfully run unit tests, a [redis](https://redis.io/) instance is required to listen on the address given in [defaults.yml](config/defaults.yml), with the default value of *localhost:6379*.
+You can run the unit tests to see if everything is working properly with:
 
 ```
 $ go test -v test/*.go
@@ -73,7 +75,7 @@ Emmy CLI offers two commands:
 
 ## Emmy server
 
-Emmy server waits for requests from clients (provers) and starts verifying them.
+Emmy server waits for requests from clients (provers) and starts verifying them. Note that Emmy server connects to a redis database in order to verify the registration keys, provided in the nym generation process. Redis is expected to run at localhost:6379 (or as defined in [defaults.yml](config/defaults.yml)).
 
 ```bash
 $ emmy server              # prints available subcommands
@@ -124,6 +126,10 @@ Line 1 indicates that the emmy server is being instantiated. Line 2 informs us a
 When a client establishes a connection to emmy server and starts communicating with it, the server will log additional information. How much gets logged depends on the desired log level. 
 
 You can stop emmy server by hitting `Ctrl+C` in the same terminal window.
+
+#### Registration keys
+
+Emmy server verifies registration keys provided by clients when initiating the nym generation procedure. A separate server is expected to provide registration keys to clients via another channel (e.g. QR codes on physical person identification) and save the generated keys to a registration database, read by the Emmy server.
 
 
 ## Emmy clients
