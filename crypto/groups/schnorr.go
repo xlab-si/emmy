@@ -122,9 +122,9 @@ func (group *SchnorrGroup) Mul(x, y *big.Int) *big.Int {
 	return r.Mod(r, group.P)
 }
 
-// Exp computes x^exponent in SchnorrGroup. This means x^exponent mod group.P.
-func (group *SchnorrGroup) Exp(x, exponent *big.Int) *big.Int {
-	return new(big.Int).Exp(x, exponent, group.P)
+// Exp computes base^exponent in SchnorrGroup. This means base^exponent mod group.P.
+func (group *SchnorrGroup) Exp(base, exponent *big.Int) *big.Int {
+	return new(big.Int).Exp(base, exponent, group.P)
 }
 
 // Inv computes inverse of x in SchnorrGroup. This means xInv such that x * xInv = 1 mod group.P.

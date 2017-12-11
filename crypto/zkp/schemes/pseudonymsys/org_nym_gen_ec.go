@@ -21,7 +21,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -43,10 +43,10 @@ type OrgNymGenEC struct {
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
 	x                *big.Int
 	y                *big.Int
-	curveType        dlog.Curve
+	curveType        groups.ECurve
 }
 
-func NewOrgNymGenEC(x, y *big.Int, curveType dlog.Curve) *OrgNymGenEC {
+func NewOrgNymGenEC(x, y *big.Int, curveType groups.ECurve) *OrgNymGenEC {
 	verifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgNymGenEC{
 		EqualityVerifier: verifier,
@@ -59,7 +59,7 @@ func NewOrgNymGenEC(x, y *big.Int, curveType dlog.Curve) *OrgNymGenEC {
 
 func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
 	x1, x2 *types.ECGroupElement, r, s *big.Int) (*big.Int, error) {
-	c := dlog.GetEllipticCurve(org.curveType)
+	c := groups.GetEllipticCurve(org.curveType)
 	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
 
 	hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)

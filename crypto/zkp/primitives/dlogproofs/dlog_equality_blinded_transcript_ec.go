@@ -19,7 +19,7 @@ package dlogproofs
 
 import (
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
@@ -27,9 +27,9 @@ import (
 // Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
 // and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
 // by verifier.
-func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve dlog.Curve,
+func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve groups.ECurve,
 	g1, t1, G2, T2 *types.ECGroupElement) bool {
-	dlog := dlog.NewECDLog(curve)
+	group := groups.NewECGroup(curve)
 
 	// check hash:
 	hashNum := common.Hash(transcript.Alpha_1, transcript.Alpha_2,
@@ -41,20 +41,17 @@ func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve dlog.Curve,
 	// We need to verify (note that c-beta = hash(alpha11, alpha12, beta11, beta12))
 	// g1^(z+alpha) = (alpha11, alpha12) * t1^(c-beta)
 	// G2^(z+alpha) = (beta11, beta12) * T2^(c-beta)
-	left11, left12 := dlog.Exponentiate(g1.X, g1.Y, transcript.ZAlpha)
-	right11, right12 := dlog.Exponentiate(t1.X, t1.Y, transcript.Hash)
-	right11, right12 = dlog.Multiply(transcript.Alpha_1, transcript.Alpha_2, right11, right12)
+	left1 := group.Exp(g1, transcript.ZAlpha)
+	right1 := group.Exp(t1, transcript.Hash)
+	Alpha := types.NewECGroupElement(transcript.Alpha_1, transcript.Alpha_2)
+	right1 = group.Mul(Alpha, right1)
 
-	left21, left22 := dlog.Exponentiate(G2.X, G2.Y, transcript.ZAlpha)
-	right21, right22 := dlog.Exponentiate(T2.X, T2.Y, transcript.Hash)
-	right21, right22 = dlog.Multiply(transcript.Beta_1, transcript.Beta_2, right21, right22)
+	left2 := group.Exp(G2, transcript.ZAlpha)
+	right2 := group.Exp(T2, transcript.Hash)
+	Beta := types.NewECGroupElement(transcript.Beta_1, transcript.Beta_2)
+	right2 = group.Mul(Beta, right2)
 
-	if left11.Cmp(right11) == 0 && left12.Cmp(right12) == 0 &&
-		left21.Cmp(right21) == 0 && left22.Cmp(right22) == 0 {
-		return true
-	} else {
-		return false
-	}
+	return types.CmpECGroupElements(left1, right1) && types.CmpECGroupElements(left2, right2)
 }
 
 type TranscriptEC struct {
@@ -78,17 +75,17 @@ func NewTranscriptEC(alpha_1, alpha_2, beta_1, beta_2, hash, zAlpha *big.Int) *T
 }
 
 type ECDLogEqualityBTranscriptProver struct {
-	DLog   *dlog.ECDLog
+	Group  *groups.ECGroup
 	r      *big.Int
 	secret *big.Int
 	g1     *types.ECGroupElement
 	g2     *types.ECGroupElement
 }
 
-func NewECDLogEqualityBTranscriptProver(curve dlog.Curve) *ECDLogEqualityBTranscriptProver {
-	dlog := dlog.NewECDLog(curve)
+func NewECDLogEqualityBTranscriptProver(curve groups.ECurve) *ECDLogEqualityBTranscriptProver {
+	group := groups.NewECGroup(curve)
 	prover := ECDLogEqualityBTranscriptProver{
-		DLog: dlog,
+		Group: group,
 	}
 	return &prover
 }
@@ -103,11 +100,11 @@ func (prover *ECDLogEqualityBTranscriptProver) GetProofRandomData(secret *big.In
 	prover.g1 = g1
 	prover.g2 = g2
 
-	r := common.GetRandomInt(prover.DLog.GetOrderOfSubgroup())
+	r := common.GetRandomInt(prover.Group.Q)
 	prover.r = r
-	x1, y1 := prover.DLog.Exponentiate(prover.g1.X, prover.g1.Y, r)
-	x2, y2 := prover.DLog.Exponentiate(prover.g2.X, prover.g2.Y, r)
-	return types.NewECGroupElement(x1, y1), types.NewECGroupElement(x2, y2)
+	a := prover.Group.Exp(prover.g1, r)
+	b := prover.Group.Exp(prover.g2, r)
+	return a, b
 }
 
 func (prover *ECDLogEqualityBTranscriptProver) GetProofData(challenge *big.Int) *big.Int {
@@ -115,12 +112,12 @@ func (prover *ECDLogEqualityBTranscriptProver) GetProofData(challenge *big.Int) 
 	z := new(big.Int)
 	z.Mul(challenge, prover.secret)
 	z.Add(z, prover.r)
-	z.Mod(z, prover.DLog.GetOrderOfSubgroup())
+	z.Mod(z, prover.Group.Q)
 	return z
 }
 
 type ECDLogEqualityBTranscriptVerifier struct {
-	DLog       *dlog.ECDLog
+	Group      *groups.ECGroup
 	gamma      *big.Int
 	challenge  *big.Int
 	g1         *types.ECGroupElement
@@ -133,14 +130,14 @@ type ECDLogEqualityBTranscriptVerifier struct {
 	transcript *TranscriptEC
 }
 
-func NewECDLogEqualityBTranscriptVerifier(curve dlog.Curve,
+func NewECDLogEqualityBTranscriptVerifier(curve groups.ECurve,
 	gamma *big.Int) *ECDLogEqualityBTranscriptVerifier {
-	dlog := dlog.NewECDLog(curve)
+	group := groups.NewECGroup(curve)
 	if gamma == nil {
-		gamma = common.GetRandomInt(dlog.GetOrderOfSubgroup())
+		gamma = common.GetRandomInt(group.Q)
 	}
 	verifier := ECDLogEqualityBTranscriptVerifier{
-		DLog:  dlog,
+		Group: group,
 		gamma: gamma,
 	}
 
@@ -161,29 +158,29 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, 
 	verifier.x1 = x1
 	verifier.x2 = x2
 
-	alpha := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
-	beta := common.GetRandomInt(verifier.DLog.GetOrderOfSubgroup())
+	alpha := common.GetRandomInt(verifier.Group.Q)
+	beta := common.GetRandomInt(verifier.Group.Q)
 
 	// alpha1 = g1^r * g1^alpha * t1^beta
 	// beta1 = (g2^r * g2^alpha * t2^beta)^gamma
-	alpha11, alpha12 := verifier.DLog.Exponentiate(verifier.g1.X, verifier.g1.Y, alpha)
-	alpha11, alpha12 = verifier.DLog.Multiply(verifier.x1.X, verifier.x1.Y, alpha11, alpha12)
-	tmp1, tmp2 := verifier.DLog.Exponentiate(verifier.t1.X, verifier.t1.Y, beta)
-	alpha11, alpha12 = verifier.DLog.Multiply(alpha11, alpha12, tmp1, tmp2)
+	alpha1 := verifier.Group.Exp(verifier.g1, alpha)
+	alpha1 = verifier.Group.Mul(verifier.x1, alpha1)
+	tmp := verifier.Group.Exp(verifier.t1, beta)
+	alpha1 = verifier.Group.Mul(alpha1, tmp)
 
-	beta11, beta12 := verifier.DLog.Exponentiate(verifier.g2.X, verifier.g2.Y, alpha)
-	beta11, beta12 = verifier.DLog.Multiply(verifier.x2.X, verifier.x2.Y, beta11, beta12)
-	tmp1, tmp2 = verifier.DLog.Exponentiate(verifier.t2.X, verifier.t2.Y, beta)
-	beta11, beta12 = verifier.DLog.Multiply(beta11, beta12, tmp1, tmp2)
-	beta11, beta12 = verifier.DLog.Exponentiate(beta11, beta12, verifier.gamma)
+	beta1 := verifier.Group.Exp(verifier.g2, alpha)
+	beta1 = verifier.Group.Mul(verifier.x2, beta1)
+	tmp = verifier.Group.Exp(verifier.t2, beta)
+	beta1 = verifier.Group.Mul(beta1, tmp)
+	beta1 = verifier.Group.Exp(beta1, verifier.gamma)
 
 	// c = hash(alpha1, beta) + beta mod q
-	hashNum := common.Hash(alpha11, alpha12, beta11, beta12)
+	hashNum := common.Hash(alpha1.X, alpha1.Y, beta1.X, beta1.Y)
 	challenge := new(big.Int).Add(hashNum, beta)
-	challenge.Mod(challenge, verifier.DLog.OrderOfSubgroup)
+	challenge.Mod(challenge, verifier.Group.Q)
 
 	verifier.challenge = challenge
-	verifier.transcript = NewTranscriptEC(alpha11, alpha12, beta11, beta12, hashNum, nil)
+	verifier.transcript = NewTranscriptEC(alpha1.X, alpha1.Y, beta1.X, beta1.Y, hashNum, nil)
 	verifier.alpha = alpha
 
 	return challenge
@@ -193,13 +190,13 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, 
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
 func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *TranscriptEC,
 	*types.ECGroupElement, *types.ECGroupElement) {
-	left11, left12 := verifier.DLog.Exponentiate(verifier.g1.X, verifier.g1.Y, z)
-	left21, left22 := verifier.DLog.Exponentiate(verifier.g2.X, verifier.g2.Y, z)
+	left1 := verifier.Group.Exp(verifier.g1, z)
+	left2 := verifier.Group.Exp(verifier.g2, z)
 
-	r11, r12 := verifier.DLog.Exponentiate(verifier.t1.X, verifier.t1.Y, verifier.challenge)
-	r21, r22 := verifier.DLog.Exponentiate(verifier.t2.X, verifier.t2.Y, verifier.challenge)
-	right11, right12 := verifier.DLog.Multiply(r11, r12, verifier.x1.X, verifier.x1.Y)
-	right21, right22 := verifier.DLog.Multiply(r21, r22, verifier.x2.X, verifier.x2.Y)
+	r1 := verifier.Group.Exp(verifier.t1, verifier.challenge)
+	r2 := verifier.Group.Exp(verifier.t2, verifier.challenge)
+	right1 := verifier.Group.Mul(r1, verifier.x1)
+	right2 := verifier.Group.Mul(r2, verifier.x2)
 
 	// transcript [(alpha11, alpha12, beta11, beta12), hash(alpha11, alpha12, beta11, beta12), z+alpha]
 	// however, we are actually returning:
@@ -207,13 +204,11 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *Tr
 	z1 := new(big.Int).Add(z, verifier.alpha)
 	verifier.transcript.ZAlpha = z1
 
-	G21, G22 := verifier.DLog.Exponentiate(verifier.g2.X, verifier.g2.Y, verifier.gamma)
-	T21, T22 := verifier.DLog.Exponentiate(verifier.t2.X, verifier.t2.Y, verifier.gamma)
+	G2 := verifier.Group.Exp(verifier.g2, verifier.gamma)
+	T2 := verifier.Group.Exp(verifier.t2, verifier.gamma)
 
-	if left11.Cmp(right11) == 0 && left12.Cmp(right12) == 0 &&
-		left21.Cmp(right21) == 0 && left22.Cmp(right22) == 0 {
-		return true, verifier.transcript, types.NewECGroupElement(G21, G22),
-			types.NewECGroupElement(T21, T22)
+	if types.CmpECGroupElements(left1, right1) && types.CmpECGroupElements(left2, right2) {
+		return true, verifier.transcript, G2, T2
 	} else {
 		return false, nil, nil, nil
 	}

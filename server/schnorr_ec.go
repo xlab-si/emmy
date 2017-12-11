@@ -18,7 +18,7 @@
 package server
 
 import (
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
@@ -26,7 +26,7 @@ import (
 )
 
 func (s *Server) SchnorrEC(req *pb.Message, protocolType types.ProtocolType,
-	stream pb.Protocol_RunServer, curve dlog.Curve) error {
+	stream pb.Protocol_RunServer, curve groups.ECurve) error {
 	verifier := dlogproofs.NewSchnorrECVerifier(curve, protocolType)
 	var err error
 

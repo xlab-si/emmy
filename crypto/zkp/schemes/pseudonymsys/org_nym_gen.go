@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"math/big"
@@ -57,7 +56,7 @@ func NewOrgNymGen(group *groups.SchnorrGroup, x, y *big.Int) *OrgNymGen {
 
 func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
 	r, s *big.Int) (*big.Int, error) {
-	c := dlog.GetEllipticCurve(dlog.P256)
+	c := groups.GetEllipticCurve(groups.P256)
 	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
 
 	hashed := common.HashIntoBytes(blindedA, blindedB)
