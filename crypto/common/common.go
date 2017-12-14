@@ -71,7 +71,7 @@ func LCM(x, y *big.Int) *big.Int {
 	return t
 }
 
-// IsQuadraticResidue returns true if a is quadratic residue in Z_n and false otherwise.
+// IsQuadraticResidue returns true if a is quadratic residue in Z_p and false otherwise.
 // It works only when p is prime.
 func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 	if !p.ProbablyPrime(20) {

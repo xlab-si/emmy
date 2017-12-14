@@ -20,7 +20,6 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"github.com/xlab-si/emmy/crypto/dlog"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -84,12 +83,15 @@ func LoadGroup(scheme string) *groups.SchnorrGroup {
 	return groups.NewSchnorrGroupFromParams(p, g, q)
 }
 
-func LoadQR(name string) *dlog.QR {
+func LoadQRRSA(name string) *groups.QRRSA {
 	x := viper.GetStringMap(name)
 	p, _ := new(big.Int).SetString(x["p"].(string), 10)
 	q, _ := new(big.Int).SetString(x["q"].(string), 10)
-	factors := []*big.Int{p, q}
-	return dlog.NewQR(factors)
+	qr, err := groups.NewQRRSA(p, q)
+	if err != nil {
+		panic(fmt.Errorf("Error when loading QRRSA RSA group: %s\n", err))
+	}
+	return qr
 }
 
 func LoadPseudonymsysOrgSecrets(orgName, dlogType string) (*big.Int, *big.Int) {

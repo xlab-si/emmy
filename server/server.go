@@ -228,7 +228,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		group := config.LoadGroup("pseudonymsys")
 		err = s.QR(req, group, stream)
 	case pb.SchemaType_QNR:
-		qr := config.LoadQR("qrsmall") // only for testing
+		qr := config.LoadQRRSA("qrsmall") // only for testing
 		err = s.QNR(req, qr, stream)
 	}
 
