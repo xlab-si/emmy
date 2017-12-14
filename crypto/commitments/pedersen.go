@@ -136,13 +136,5 @@ func (s *PedersenReceiver) CheckDecommitment(r, val *big.Int) bool {
 	t1 := s.group.Exp(s.group.G, val) // g^x
 	t2 := s.group.Exp(s.h, r)         // h^r
 	c := s.group.Mul(t1, t2)          // g^x * h^r
-
-	var success bool
-	if c.Cmp(s.commitment) == 0 {
-		success = true
-	} else {
-		success = false
-	}
-
-	return success
+	return c.Cmp(s.commitment) == 0
 }

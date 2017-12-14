@@ -101,7 +101,10 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength int) (*DamgardFujisakiReceive
 		return nil, err
 	}
 
-	h := qr.GetRandomGenerator()
+	h, err := qr.GetRandomGenerator()
+	if err != nil {
+		return nil, err
+	}
 
 	alpha := common.GetRandomInt(qr.Order)
 	g := qr.Exp(h, alpha)

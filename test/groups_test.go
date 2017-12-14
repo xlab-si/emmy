@@ -31,17 +31,20 @@ func TestGeneratorOfCompositeQR(t *testing.T) {
 		fmt.Errorf("Error when instantiating QRSpecialRSA: %v", err)
 	}
 
-	g := rsa.GetRandomGenerator()
+	g, err := rsa.GetRandomGenerator()
+	if err != nil {
+		fmt.Errorf("Error when searching for QRSpecialRSA generator: %v", err)
+	}
 
 	// order of g should be p1*q1
-	order := new(big.Int).Mul(rsa.SmallP, rsa.SmallQ)
+	order := new(big.Int).Mul(rsa.P1, rsa.Q1)
 	tmp := new(big.Int).Exp(g, order, rsa.N)
 
 	assert.Equal(t, tmp, big.NewInt(1), "g is not a generator")
 	// other possible orders in this group are: p1, q1
-	tmp = new(big.Int).Exp(g, rsa.SmallP, rsa.N)
+	tmp = new(big.Int).Exp(g, rsa.P1, rsa.N)
 	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
 
-	tmp = new(big.Int).Exp(g, rsa.SmallQ, rsa.N)
+	tmp = new(big.Int).Exp(g, rsa.Q1, rsa.N)
 	assert.NotEqual(t, tmp, big.NewInt(1), "g is not a generator")
 }

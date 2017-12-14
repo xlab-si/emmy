@@ -17,23 +17,25 @@
 
 package groups
 
-// TODO: move qr.go into groups package, make QR parent of QRSpecialRSA
 // TODO: check group_generators.go and move the content into groups
 
 import (
+	"errors"
 	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
 )
 
-// QRSpecialRSA presents group of quadratic residues modulo N where N is a product
-// of two safe primes.
+// QRSpecialRSA presents QR_N - group of quadratic residues modulo N where N is a product
+// of two SAFE primes. This group is cyclic and a generator is easy to find.
+// The group QR_N is isomorphic to QR_P x QR_Q.
 type QRSpecialRSA struct {
-	N      *big.Int // N = P * Q, P = 2*p + 1, Q = 2*q + 1
-	P      *big.Int
-	Q      *big.Int
-	SmallP *big.Int
-	SmallQ *big.Int
-	Order  *big.Int // order of group QR_N (it is SmallP * SmallQ)
+	QRRSA          // make QRRSA a parent to have an access to Mul, Exp, Inv, IsQR
+	N     *big.Int // N = P * Q, P = 2*P1 + 1, Q = 2*Q1 + 1
+	P     *big.Int
+	Q     *big.Int
+	P1    *big.Int
+	Q1    *big.Int
+	Order *big.Int // order of group QR_N (it is P1 * Q1)
 }
 
 func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
@@ -41,81 +43,80 @@ func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	qrRSA, err := NewQRRSA(specialRSAPrimes.P, specialRSAPrimes.Q)
+	if err != nil {
+		return nil, err
+	}
 	return &QRSpecialRSA{
-		N:      new(big.Int).Mul(specialRSAPrimes.P, specialRSAPrimes.Q),
-		P:      specialRSAPrimes.P,
-		Q:      specialRSAPrimes.Q,
-		SmallP: specialRSAPrimes.P1,
-		SmallQ: specialRSAPrimes.Q1,
-		Order:  new(big.Int).Mul(specialRSAPrimes.P1, specialRSAPrimes.Q1),
+		N:     qrRSA.N,
+		P:     specialRSAPrimes.P,
+		Q:     specialRSAPrimes.Q,
+		P1:    specialRSAPrimes.P1,
+		Q1:    specialRSAPrimes.Q1,
+		Order: qrRSA.Order,
+		QRRSA: *qrRSA,
 	}, nil
 }
 
 func NewQRSpecialRSAPublic(N *big.Int) *QRSpecialRSA {
 	return &QRSpecialRSA{
-		N: N,
+		N:     N,
+		QRRSA: *NewQRRSAPublic(N),
 	}
 }
 
-// GetRandomGenerator returns a generator of a group of quadratic residues QR_N.
-func (group *QRSpecialRSA) GetRandomGenerator() *big.Int {
-	// The order of QR_n is p1 * q1 (we know Z_n* = Z_p* x Z_q*, it can be shown
-	// that QR_n = QR_p x QR_q, the order of QR_p is (p-1)/2 = p1,
-	// the order of QR_q is (q-1)/2 = q1).
+// GetRandomGenerator returns a random generator of a group of quadratic residues QR_N.
+func (group *QRSpecialRSA) GetRandomGenerator() (*big.Int, error) {
+	// We know Z_n* and Z_p* x Z_q* are isomorphic (Chinese Remainder Theorem).
+	// Let's take x from Z_n* and its counterpart from (x mod p, x mod q) from Z_p* x Z_q*.
+	// Because of the isomorphism, if we compute x^2 mod n, the counterpart of this
+	// element in Z_p* x Z_q* is (x^2 mod p, x^2 mod q).
+	// Thus QR_n = QR_p x QR_q.
+	// The order of QR_p is (p-1)/2 = p1 and the order of QR_q is (q-1)/2 = q1.
+	// Because p1 and q1 are primes, QR_p and QR_q are cyclic. Thus, also QR_n is cyclic
+	// and of order p1 * q1.
 	// Thus the possible orders of elements in QR_n are: p1, q1, p1 * q1.
-	// We need find element of order p1 * q1 (we rule out elements of order p1 and q1).
+	// We need to find an element of order p1 * q1 (we rule out elements of order p1 and q1).
+
+	if group.P == nil {
+		return nil,
+			errors.New("GetRandomGenerator not available for QRSpecialRSA with only public parameters")
+	}
 
 	for {
 		a := common.GetRandomZnInvertibleElement(group.N)
 		a.Exp(a, big.NewInt(2), group.N) // make it quadratic residue
 
 		// check if the order is p1
-		check1 := group.Exp(a, group.SmallP)
+		check1 := group.Exp(a, group.P1)
 		if check1.Cmp(big.NewInt(1)) == 0 {
 			continue
 		}
 
 		// check if the order is q1
-		check2 := group.Exp(a, group.SmallQ)
+		check2 := group.Exp(a, group.Q1)
 		if check2.Cmp(big.NewInt(1)) == 0 {
 			continue
 		}
 
-		return a
+		return a, nil
 	}
 }
 
 // GetRandomElement returns a random element from this group. First a random generator
 // is chosen and then it is exponentiated to the random int between 0 and order
-// of QR_N (SmallP * SmallQ).
+// of QR_N (P1 * Q1).
 func (group *QRSpecialRSA) GetRandomElement() (*big.Int, error) {
-	g := group.GetRandomGenerator()
+	if group.P == nil {
+		return nil,
+			errors.New("GetRandomElement not available for QRSpecialRSA with only public parameters")
+	}
+	g, err := group.GetRandomGenerator()
+	if err != nil {
+		return nil, err
+	}
 	r := common.GetRandomInt(group.Order)
 	el := group.Exp(g, r)
 	return el, nil
 }
-
-// Mul computes x * y in QR_N. This means x * y mod N.
-func (group *QRSpecialRSA) Mul(x, y *big.Int) *big.Int {
-	r := new(big.Int)
-	r.Mul(x, y)
-	return r.Mod(r, group.N)
-}
-
-// Inv computes inverse of x in QR_N. This means xInv such that x * xInv = 1 mod N.
-func (group *QRSpecialRSA) Inv(x *big.Int) *big.Int {
-	return new(big.Int).ModInverse(x, group.N)
-}
-
-// Exp computes base^exponent in QR_N. This means base^exponent mod rsa.N.
-func (group *QRSpecialRSA) Exp(base, exponent *big.Int) *big.Int {
-	return new(big.Int).Exp(base, exponent, group.N)
-}
-
-/*
-TODO: use QR method when QR will be made parent
-// IsElementInGroup returns true if x is in QR_N and false otherwise.
-func (group *QRSpecialRSA) IsElementInGroup(x *big.Int) bool {
-
-}
-*/

@@ -20,7 +20,7 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
@@ -34,7 +34,7 @@ type QNRClient struct {
 	variant pb.SchemaVariant
 }
 
-func NewQNRClient(conn *grpc.ClientConn, qr *dlog.QR, y *big.Int) (*QNRClient, error) {
+func NewQNRClient(conn *grpc.ClientConn, qr *groups.QRRSA, y *big.Int) (*QNRClient, error) {
 	genericClient, err := newGenericClient(conn)
 	if err != nil {
 		return nil, err

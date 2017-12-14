@@ -22,14 +22,14 @@ package qrproofs
 import (
 	"errors"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
 // ProveQNR demonstrates how the prover can prove that y is not quadratic residue (there does
-// not exist element y1 such that y1^2 = y in group QR.
-func ProveQNR(y *big.Int, qr *dlog.QR) (bool, error) {
+// not exist element y1 such that y1^2 = y in group QRRSA.
+func ProveQNR(y *big.Int, qr *groups.QRRSA) (bool, error) {
 	prover := NewQNRProver(qr, y)
 	verifier := NewQNRVerifier(qr, y)
 	m := qr.N.BitLen()
@@ -62,12 +62,12 @@ func ProveQNR(y *big.Int, qr *dlog.QR) (bool, error) {
 }
 
 type QNRProver struct {
-	QR *dlog.QR
+	QR *groups.QRRSA
 	Y  *big.Int
 	w  *big.Int
 }
 
-func NewQNRProver(qr *dlog.QR, y *big.Int) *QNRProver {
+func NewQNRProver(qr *groups.QRRSA, y *big.Int) *QNRProver {
 	return &QNRProver{
 		QR: qr,
 		Y:  y,
@@ -96,7 +96,7 @@ func (prover *QNRProver) SetProofRandomData(w *big.Int) {
 }
 
 func (prover *QNRProver) GetProofData(challenge *big.Int) (int, error) {
-	isQR, err := prover.QR.IsQR(challenge)
+	isQR, err := prover.QR.IsElementInGroup(challenge)
 	if err != nil {
 		return 0, err
 	}
@@ -112,17 +112,17 @@ func (prover *QNRProver) GetProofData(challenge *big.Int) (int, error) {
 func (prover *QNRProver) Verify(pairs, verProof []*types.Pair) bool {
 	for ind, proofPair := range verProof {
 		if proofPair.B.Cmp(big.NewInt(0)) == 0 {
-			t := prover.QR.Multiply(proofPair.A, proofPair.A)
-			Aw := prover.QR.Multiply(pairs[ind].A, prover.w)
-			Bw := prover.QR.Multiply(pairs[ind].B, prover.w)
+			t := prover.QR.Mul(proofPair.A, proofPair.A)
+			Aw := prover.QR.Mul(pairs[ind].A, prover.w)
+			Bw := prover.QR.Mul(pairs[ind].B, prover.w)
 
 			if (t.Cmp(Aw) != 0) && (t.Cmp(Bw) != 0) {
 				return false
 			}
 		} else {
-			r1Squared := prover.QR.Multiply(proofPair.A, proofPair.A)
-			r2Squared := prover.QR.Multiply(proofPair.B, proofPair.B)
-			r2Squaredy := prover.QR.Multiply(r2Squared, prover.Y)
+			r1Squared := prover.QR.Mul(proofPair.A, proofPair.A)
+			r2Squared := prover.QR.Mul(proofPair.B, proofPair.B)
+			r2Squaredy := prover.QR.Mul(r2Squared, prover.Y)
 			pair := pairs[ind]
 
 			if !((r1Squared.Cmp(pair.A) == 0 && r2Squaredy.Cmp(pair.B) == 0) ||
@@ -135,7 +135,7 @@ func (prover *QNRProver) Verify(pairs, verProof []*types.Pair) bool {
 }
 
 type QNRVerifier struct {
-	QR    *dlog.QR
+	QR    *groups.QRRSA
 	x     *big.Int
 	y     *big.Int
 	typ   int
@@ -143,7 +143,7 @@ type QNRVerifier struct {
 	pairs []*types.Pair
 }
 
-func NewQNRVerifier(qr *dlog.QR, y *big.Int) *QNRVerifier {
+func NewQNRVerifier(qr *groups.QRRSA, y *big.Int) *QNRVerifier {
 	return &QNRVerifier{
 		QR: qr,
 		y:  y,
@@ -155,7 +155,7 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
 	// checking that gcd(r, N) = 1 is not needed as the probability is low
 	verifier.r = r
 	verifier.pairs = verifier.pairs[:0] // clear verifier.pairs
-	r2 := verifier.QR.Multiply(r, r)
+	r2 := verifier.QR.Mul(r, r)
 
 	b := common.GetRandomInt(big.NewInt(2)) // 0 or 1
 	var w *big.Int
@@ -164,7 +164,7 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
 		w = r2
 		verifier.typ = 1
 	} else {
-		w = verifier.QR.Multiply(r2, verifier.y)
+		w = verifier.QR.Mul(r2, verifier.y)
 		verifier.typ = 2
 	}
 
@@ -173,9 +173,9 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
 	for i := 0; i < m; i++ {
 		r1 := common.GetRandomInt(verifier.QR.N)
 		r2 := common.GetRandomInt(verifier.QR.N)
-		aj := verifier.QR.Multiply(r1, r1) // r1^2
-		bj := verifier.QR.Multiply(r2, r2)
-		bj = verifier.QR.Multiply(bj, verifier.y) // r2^2 * y
+		aj := verifier.QR.Mul(r1, r1) // r1^2
+		bj := verifier.QR.Mul(r2, r2)
+		bj = verifier.QR.Mul(bj, verifier.y) // r2^2 * y
 
 		bitj := common.GetRandomInt(big.NewInt(2)) // 0 or 1
 
@@ -211,13 +211,13 @@ func (verifier *QNRVerifier) GetProofData(randVector []int) []*types.Pair {
 		} else {
 			if verifier.typ == 1 { // w = r^2
 				r1 := verifier.pairs[ind].A
-				t := verifier.QR.Multiply(verifier.r, r1)
+				t := verifier.QR.Mul(verifier.r, r1)
 				// t = r * r1
 				pairs = append(pairs, &types.Pair{A: t, B: big.NewInt(0)})
 			} else { // w = r^2 * y
 				r2 := verifier.pairs[ind].B
-				t := verifier.QR.Multiply(verifier.r, r2)
-				t = verifier.QR.Multiply(t, verifier.y)
+				t := verifier.QR.Mul(verifier.r, r2)
+				t = verifier.QR.Mul(t, verifier.y)
 				// t = r * r2 * y
 				pairs = append(pairs, &types.Pair{A: t, B: big.NewInt(0)})
 			}
@@ -227,9 +227,5 @@ func (verifier *QNRVerifier) GetProofData(randVector []int) []*types.Pair {
 }
 
 func (verifier *QNRVerifier) Verify(typ int) bool {
-	if verifier.typ == typ {
-		return true
-	} else {
-		return false
-	}
+	return verifier.typ == typ
 }

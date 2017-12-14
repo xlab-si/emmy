@@ -19,14 +19,14 @@ package server
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/dlog"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
 )
 
-func (s *Server) QNR(req *pb.Message, qr *dlog.QR,
+func (s *Server) QNR(req *pb.Message, qr *groups.QRRSA,
 	stream pb.Protocol_RunServer) error {
 
 	initMsg := req.GetBigint()
