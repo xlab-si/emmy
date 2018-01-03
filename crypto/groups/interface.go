@@ -15,24 +15,21 @@
  *
  */
 
-package test
+package groups
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
-	"testing"
+	"math/big"
 )
 
-func TestHomomorphismPreimage(t *testing.T) {
-	homomorphism, _, H, _, err := commitments.GenerateRSABasedQOneWay(1024)
-	if err != nil {
-		t.Errorf("Error when generating RSABasedQOneWay homomorphism")
-	}
-	v := H.GetRandomElement()
-	u := homomorphism(v)
-
-	proved := preimage.ProveHomomorphismPreimageKnowledge(homomorphism, H, u, v, 80)
-
-	assert.Equal(t, true, proved, "HomomorphismPreimage proof does not work correctly")
+// Group interface is used to enable the usage of different groups in some schemes.
+// For example when we have a homomorphism f between two groups and
+// we are proving that we know an f-preimage of an element - meaning that for a given v we
+// know u such that f(u) = v.
+// Note that this is an interface for modular arithmetic groups. For elliptic curve
+// groups at the moment there is no need for an interface.
+type Group interface {
+	GetRandomElement() *big.Int
+	Mul(*big.Int, *big.Int) *big.Int
+	Exp(*big.Int, *big.Int) *big.Int
+	Inv(*big.Int) *big.Int
 }

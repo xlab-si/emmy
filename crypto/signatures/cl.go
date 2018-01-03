@@ -195,12 +195,7 @@ func (cl *CL) Verify(m_Ls []*big.Int, signature *CLSignature) (bool, error) {
 
 	ve := new(big.Int).Exp(signature.v, signature.e, cl.pubKey.n) // v^e
 	ve = new(big.Int).Mod(ve, cl.pubKey.n)                        // v^e % n
-
-	if ve.Cmp(t) == 0 {
-		return true, nil
-	} else {
-		return false, nil
-	}
+	return ve.Cmp(t) == 0, nil
 }
 
 func (cl *CL) GetPubKey() *CLPubKey {

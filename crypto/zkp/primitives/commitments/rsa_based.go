@@ -20,6 +20,7 @@ package commitmentzkp
 import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
 	"github.com/xlab-si/emmy/types"
 	"math/big"
@@ -48,10 +49,9 @@ func ProveBitCommitment() (bool, error) {
 	// receiver.RSA.E is Q
 	u2 := committer.H.GetRandomElement()
 
-	prover := preimage.NewPartialPreimageProver(committer.Homomorphism, committer.H,
-		committer.Q, v1, u1, u2)
-	verifier := preimage.NewPartialPreimageVerifier(receiver.Homomorphism, receiver.H,
-		receiver.Q)
+	prover := preimage.NewHomomorphismPartialPreimageProver(committer.Homomorphism, committer.H,
+		v1, u1, u2)
+	verifier := preimage.NewHomomorphismPartialPreimageVerifier(receiver.Homomorphism, receiver.H)
 
 	pair1, pair2 := prover.GetProofRandomData()
 
@@ -121,7 +121,7 @@ func ProveCommitmentMultiplication() (bool, error) {
 type QOneWayMultiplicationProver struct {
 	QOneWayHomomorphism    func(*big.Int) *big.Int
 	QOneWayHomomorphismInv func(*big.Int) *big.Int // works only for y^Q, takes y as input
-	H                      common.Group
+	H                      groups.Group
 	Q                      *big.Int
 	Y                      *big.Int
 	A                      *big.Int // commitments to a
@@ -144,7 +144,7 @@ type QOneWayMultiplicationProver struct {
 
 func NewQOneWayMultiplicationProver(homomorphism func(*big.Int) *big.Int,
 	homomorphismInv func(*big.Int) *big.Int,
-	H common.Group, Q, Y *big.Int, commitments *types.Triple, committedValues *types.Pair,
+	H groups.Group, Q, Y *big.Int, commitments *types.Triple, committedValues *types.Pair,
 	randomValues *types.Triple, t *big.Int) *QOneWayMultiplicationProver {
 	return &QOneWayMultiplicationProver{
 		QOneWayHomomorphism:    homomorphism,
@@ -235,7 +235,7 @@ func (prover *QOneWayMultiplicationProver) GetProofData(challenge *big.Int) (*bi
 
 type QOneWayMultiplicationVerifier struct {
 	QOneWayHomomorphism func(*big.Int) *big.Int
-	H                   common.Group
+	H                   groups.Group
 	Q                   *big.Int
 	Y                   *big.Int
 	A                   *big.Int
@@ -247,7 +247,7 @@ type QOneWayMultiplicationVerifier struct {
 	m3                  *big.Int
 }
 
-func NewQOneWayMultiplicationVerifier(homomorphism func(*big.Int) *big.Int, H common.Group,
+func NewQOneWayMultiplicationVerifier(homomorphism func(*big.Int) *big.Int, H groups.Group,
 	Q, Y *big.Int, commitments *types.Triple) *QOneWayMultiplicationVerifier {
 	return &QOneWayMultiplicationVerifier{
 		QOneWayHomomorphism: homomorphism,
@@ -293,7 +293,7 @@ func (verifier *QOneWayMultiplicationVerifier) Verify(z1, w1, w2, z2, w3 *big.In
 }
 
 // Returns x^y * f(s) computed in group H.
-func helper(f func(*big.Int) *big.Int, H common.Group, x, y, s *big.Int) *big.Int {
+func helper(f func(*big.Int) *big.Int, H groups.Group, x, y, s *big.Int) *big.Int {
 	t1 := H.Exp(x, y)
 	t2 := f(s)
 	return H.Mul(t1, t2)

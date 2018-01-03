@@ -15,7 +15,7 @@
  *
  */
 
-package dlog
+package groups
 
 import (
 	"crypto/rand"
@@ -23,13 +23,14 @@ import (
 	"math/big"
 )
 
-// TODO: dlog will be renamed into cproblems (as computational problems). EDIT: now that I
-// am adding Group interface (currently in common/groups.go), we might simply name this package as groups.
-
+// RSA presents Z_n* - group of all integers smaller than n and coprime with n,
+// where n is a product of two distinct large primes. Note that this group
+// is NOT cyclic (as opposed for example to QRRSA which is a subgroup of RSA group).
 type RSA struct {
-	N  *big.Int // N = P1 * P2
-	P1 *big.Int
-	P2 *big.Int
+	Zn          // make Zn a parent (RSA is a special case of Zn where n = P * Q)
+	N  *big.Int // N = P * Q
+	P  *big.Int
+	Q  *big.Int
 	E  *big.Int
 }
 
@@ -38,24 +39,18 @@ func NewRSA(nBitLength int) (*RSA, error) {
 	if err != nil {
 		return nil, err
 	}
-	p1 := priv.Primes[0]
-	p2 := priv.Primes[1]
-	n := new(big.Int).Mul(p1, p2)
+	p := priv.Primes[0]
+	q := priv.Primes[1]
+	n := new(big.Int).Mul(p, q)
 	return &RSA{
-		P1: p1,
-		P2: p2,
+		P:  p,
+		Q:  q,
 		N:  n,
+		Zn: *NewZn(n),
 	}, nil
 }
 
-func NewPublicRSA(n, e *big.Int) *RSA {
-	return &RSA{
-		N: n,
-		E: e,
-	}
-}
-
-// Exp returns x^E mod N (it is not called Encrypt, because there is no padding).
-func (rsa *RSA) Exp(x *big.Int) *big.Int {
-	return new(big.Int).Exp(x, rsa.E, rsa.N)
+// Homomorphism returns x^E mod N (it is not called Encrypt, because there is no padding).
+func (group *RSA) Homomorphism(x *big.Int) *big.Int {
+	return new(big.Int).Exp(x, group.E, group.N)
 }
