@@ -20,7 +20,7 @@ package secretsharing
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/xlab-si/emmy/common"
+	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
 )
 

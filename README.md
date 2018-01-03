@@ -241,6 +241,13 @@ On the other hand, we can provide `emmy client` with the following flags:
 * [A short overview of the theory Emmy is based on](./docs/theory.md) 
 * [Developing Emmy (draft)](./docs/develop.md) 
 
+# TODO
+
+ * primitives required for Camenisch Lysyanskaya anonymous credentials [2], like range proofs [11] and proofs for Damgard-Fujisaki commitment scheme [12]
+ * for all proofs use Damgard technique [13] to turn sigma protocol in ZKP (Schnorr protocol actually already contains a technique to turn sigma protocol into ZKP, but other technique will be used and applied for all proofs)
+ * refactor proofs to set all parameters in a constructor (see comment in Schnorr prover)
+ * optional: generator of communication layer code (automatic generation of code in client and server packages)
+
 # References
 
 [1] J. Camenisch and V. Shoup, Practical verifiable encryption and decryption of discrete logarithms, http://eprint.iacr.org/2002/161, 2002.
@@ -262,4 +269,10 @@ On the other hand, we can provide `emmy client` with the following flags:
 [9] Cramer, Ronald, and Ivan Damgård. "Zero-knowledge proofs for finite field arithmetic, or: Can zero-knowledge be for free?." Advances in Cryptology—CRYPTO'98. Springer Berlin/Heidelberg, 1998.
 
 [10] Brands, Stefan A. "An efficient off-line electronic cash system based on the representation problem." (1993): 01-16.
+
+[11] F. Boudot. Efficient proofs that a committed number lies in an interval. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
+
+[12] I. Damgard and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
+
+[13] I. Damgard. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
 

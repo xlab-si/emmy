@@ -27,7 +27,8 @@ import (
 
 // QRSpecialRSA presents QR_N - group of quadratic residues modulo N where N is a product
 // of two SAFE primes. This group is cyclic and a generator is easy to find.
-// The group QR_N is isomorphic to QR_P x QR_Q.
+// The group QR_N is isomorphic to QR_P x QR_Q. The order of QR_P and QR_Q are
+// P1 and Q1 respectively. Because gcd(P1, Q1) = 1, QR_P x QR_Q is cyclic as well.
 type QRSpecialRSA struct {
 	QRRSA          // make QRRSA a parent to have an access to Mul, Exp, Inv, IsQR
 	N     *big.Int // N = P * Q, P = 2*P1 + 1, Q = 2*Q1 + 1
@@ -75,6 +76,7 @@ func (group *QRSpecialRSA) GetRandomGenerator() (*big.Int, error) {
 	// Thus QR_n = QR_p x QR_q.
 	// The order of QR_p is (p-1)/2 = p1 and the order of QR_q is (q-1)/2 = q1.
 	// Because p1 and q1 are primes, QR_p and QR_q are cyclic. Thus, also QR_n is cyclic
+	// (because the product of two cyclic groups is cyclic iff the two orders are coprime)
 	// and of order p1 * q1.
 	// Thus the possible orders of elements in QR_n are: p1, q1, p1 * q1.
 	// We need to find an element of order p1 * q1 (we rule out elements of order p1 and q1).
