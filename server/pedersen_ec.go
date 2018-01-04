@@ -18,11 +18,12 @@
 package server
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 func (s *Server) PedersenEC(curveType groups.ECurve, stream pb.Protocol_RunServer) error {

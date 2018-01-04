@@ -19,9 +19,10 @@ package representationproofs
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // ProveKnowledgeOfRepresentation demonstrates how the prover proves that it knows (x_1,...,x_k)

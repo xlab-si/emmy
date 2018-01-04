@@ -18,13 +18,14 @@
 package test
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/log"
-	"math/big"
-	"testing"
 )
 
 func TestQRProof(t *testing.T) {

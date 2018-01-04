@@ -18,10 +18,11 @@
 package server
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"math/big"
 )
 
 func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) error {

@@ -19,9 +19,10 @@ package commitments
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // DamgardFujisaki demonstrates how a value can be committed and later opened (decommitted).

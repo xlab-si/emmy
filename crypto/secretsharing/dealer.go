@@ -20,8 +20,9 @@ package secretsharing
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // Shamir's secret sharing scheme

@@ -19,6 +19,11 @@ package cli
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
@@ -27,10 +32,6 @@ import (
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
-	"math/big"
-	"strings"
-	"sync"
-	"time"
 )
 
 var ClientCmd = cli.Command{

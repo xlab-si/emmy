@@ -18,11 +18,12 @@
 package client
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
-	"math/big"
 )
 
 type QRClient struct {

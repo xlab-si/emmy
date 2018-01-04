@@ -1,8 +1,9 @@
 package log
 
 import (
-	"github.com/op/go-logging"
 	"io"
+
+	"github.com/op/go-logging"
 )
 
 // Logger is a convenience interface that makes use of all functionality from go-logging's

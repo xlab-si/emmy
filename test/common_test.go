@@ -18,11 +18,12 @@
 package test
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/common"
 	"log"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 func TestLCM(t *testing.T) {

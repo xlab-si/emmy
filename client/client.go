@@ -19,14 +19,15 @@ package client
 
 import (
 	"fmt"
+	"io"
+	"math/rand"
+	"time"
+
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"io"
-	"math/rand"
-	"time"
 )
 
 var logger log.Logger

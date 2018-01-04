@@ -18,10 +18,11 @@
 package dlogproofs
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 // Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)

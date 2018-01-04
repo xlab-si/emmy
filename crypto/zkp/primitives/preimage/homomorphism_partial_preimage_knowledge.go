@@ -18,10 +18,11 @@
 package preimage
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 // ProvePartialPreimageKnowledge demonstrates how prover can prove that he knows f^(-1)(u1) and

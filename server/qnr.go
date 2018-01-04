@@ -19,11 +19,12 @@ package server
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 func (s *Server) QNR(req *pb.Message, qr *groups.QRRSA,

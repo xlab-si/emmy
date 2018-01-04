@@ -18,8 +18,9 @@
 package groups
 
 import (
-	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // Zn presents Z_n* - group of all integers smaller than n and coprime with n.

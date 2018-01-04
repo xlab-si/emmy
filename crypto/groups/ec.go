@@ -19,9 +19,10 @@ package groups
 
 import (
 	"crypto/elliptic"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 type ECurve int

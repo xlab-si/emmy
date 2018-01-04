@@ -20,9 +20,10 @@ package signatures
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/xlab-si/emmy/crypto/common"
 	"log"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 type CL struct {

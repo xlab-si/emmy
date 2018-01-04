@@ -18,11 +18,12 @@
 package server
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 func (s *Server) Schnorr(req *pb.Message, group *groups.SchnorrGroup,

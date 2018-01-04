@@ -18,11 +18,12 @@
 package test
 
 import (
-	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/signatures"
 	"log"
 	"math/big"
 	"testing"
+
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/signatures"
 )
 
 func TestCL(t *testing.T) {

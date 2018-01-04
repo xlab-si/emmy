@@ -19,8 +19,9 @@ package groups
 
 import (
 	"errors"
-	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // QRRSA presents QR_N - group of quadratic residues modulo N where N is a product

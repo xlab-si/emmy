@@ -19,12 +19,13 @@ package client
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
-	"math/big"
 )
 
 type SchnorrClient struct {

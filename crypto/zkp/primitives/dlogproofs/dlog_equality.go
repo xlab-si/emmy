@@ -18,9 +18,10 @@
 package dlogproofs
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // ProveDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and

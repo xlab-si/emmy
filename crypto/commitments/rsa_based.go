@@ -21,8 +21,9 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 // GenerateRSABasedQOneWay generates RSA group rsa_group,

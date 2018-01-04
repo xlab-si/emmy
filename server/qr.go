@@ -18,10 +18,11 @@
 package server
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"math/big"
 )
 
 func (s *Server) QR(req *pb.Message, group *groups.SchnorrGroup,

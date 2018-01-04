@@ -18,9 +18,10 @@
 package test
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/representationproofs"
-	"testing"
 )
 
 func TestRepresentationProof(t *testing.T) {

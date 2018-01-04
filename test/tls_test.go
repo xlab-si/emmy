@@ -18,9 +18,10 @@
 package test
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
-	"testing"
 )
 
 func TestInsecureConn(t *testing.T) {
