@@ -18,14 +18,15 @@
 package test
 
 import (
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	"github.com/xlab-si/emmy/server"
-	"math/big"
-	"testing"
-	"time"
 )
 
 // TestPseudonymsys requires a running server (it is started in communication_test.go).

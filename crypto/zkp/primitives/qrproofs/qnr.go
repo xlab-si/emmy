@@ -21,10 +21,11 @@ package qrproofs
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 // ProveQNR demonstrates how the prover can prove that y is not quadratic residue (there does

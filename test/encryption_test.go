@@ -18,13 +18,14 @@
 package test
 
 import (
+	"math/big"
+	"path/filepath"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/encryption"
-	"math/big"
-	"path/filepath"
-	"testing"
 )
 
 func TestPaillier(t *testing.T) {

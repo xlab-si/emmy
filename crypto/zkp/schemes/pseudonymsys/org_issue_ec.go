@@ -19,10 +19,11 @@ package pseudonymsys
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 type CredentialEC struct {

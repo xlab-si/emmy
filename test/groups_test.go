@@ -19,10 +19,11 @@ package test
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 func TestGeneratorOfCompositeQR(t *testing.T) {

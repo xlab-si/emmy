@@ -21,8 +21,9 @@ import (
 	"crypto/dsa"
 	"crypto/rand"
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // SchnorrGroup is a cyclic group in modular arithmetic. It holds P = Q * R + 1 for some R.

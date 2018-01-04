@@ -20,10 +20,11 @@ package pseudonymsys
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"math/big"
 )
 
 type Pseudonym struct {

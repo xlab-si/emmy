@@ -1,8 +1,9 @@
 package log
 
 import (
-	"github.com/op/go-logging"
 	"os"
+
+	"github.com/op/go-logging"
 )
 
 // StdoutLogger outputs logs to standard output.

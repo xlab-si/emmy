@@ -1,9 +1,10 @@
 package test
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/log"
-	"testing"
 )
 
 func TestInvalidLogLevel(t *testing.T) {

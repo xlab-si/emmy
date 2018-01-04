@@ -18,10 +18,11 @@
 package test
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
-	"testing"
 )
 
 func TestHomomorphismPreimage(t *testing.T) {

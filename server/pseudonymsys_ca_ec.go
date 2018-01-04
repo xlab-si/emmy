@@ -18,12 +18,13 @@
 package server
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,

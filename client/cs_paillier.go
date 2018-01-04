@@ -18,10 +18,11 @@
 package client
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/encryption"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
-	"math/big"
 )
 
 type CSPaillierClient struct {

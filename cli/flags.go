@@ -21,9 +21,10 @@ package cli
 // or subcommands of the emmy CLI.
 
 import (
+	"path/filepath"
+
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/config"
-	"path/filepath"
 )
 
 // logLevelFlag indicates the log level applied to client/server loggers.

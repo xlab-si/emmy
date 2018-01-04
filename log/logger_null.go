@@ -1,8 +1,9 @@
 package log
 
 import (
-	"github.com/op/go-logging"
 	"io/ioutil"
+
+	"github.com/op/go-logging"
 )
 
 // NullLogger suppresses logging output

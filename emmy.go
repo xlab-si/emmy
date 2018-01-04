@@ -18,9 +18,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/urfave/cli"
 	emmy "github.com/xlab-si/emmy/cli"
-	"os"
 )
 
 // main runs the emmy CLI app.

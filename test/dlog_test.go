@@ -19,13 +19,14 @@ package test
 
 import (
 	"fmt"
+	"math/big"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"math/big"
-	"testing"
 )
 
 func TestDLogKnowledge(t *testing.T) {

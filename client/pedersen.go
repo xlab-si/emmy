@@ -18,11 +18,12 @@
 package client
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
-	"math/big"
 )
 
 type PedersenClient struct {

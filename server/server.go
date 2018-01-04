@@ -19,6 +19,12 @@ package server
 
 import (
 	"fmt"
+	"io"
+	"math"
+	"net"
+	"net/http"
+	"path/filepath"
+
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/config"
@@ -28,11 +34,6 @@ import (
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"io"
-	"math"
-	"net"
-	"net/http"
-	"path/filepath"
 )
 
 var _ pb.ProtocolServer = (*Server)(nil)

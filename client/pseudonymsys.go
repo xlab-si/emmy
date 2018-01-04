@@ -20,6 +20,8 @@ package client
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
@@ -28,7 +30,6 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
-	"math/big"
 )
 
 type PseudonymsysClient struct {

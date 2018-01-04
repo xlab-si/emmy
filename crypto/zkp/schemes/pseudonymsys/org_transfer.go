@@ -18,9 +18,10 @@
 package pseudonymsys
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"math/big"
 )
 
 type OrgCredentialVerifier struct {

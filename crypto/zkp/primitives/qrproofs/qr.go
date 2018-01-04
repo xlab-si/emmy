@@ -21,9 +21,10 @@ package qrproofs
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // ProveQR demonstrates how the prover can prove that y1^2 is QR.

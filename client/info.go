@@ -19,6 +19,7 @@ package client
 
 import (
 	"fmt"
+
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/types"
 	"golang.org/x/net/context"

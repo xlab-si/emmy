@@ -19,11 +19,12 @@ package test
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
-	"testing"
 )
 
 func TestRSABasedCommitment(t *testing.T) {

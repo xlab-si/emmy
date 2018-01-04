@@ -18,9 +18,10 @@
 package preimage
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // ProvePreimageKnowledge demonstrates how given homomorphism f:H->G and element u from G

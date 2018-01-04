@@ -19,6 +19,10 @@ package test
 
 import (
 	"fmt"
+	"math/big"
+	"os"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
@@ -28,9 +32,6 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
-	"math/big"
-	"os"
-	"testing"
 )
 
 var testGrpcServerEndpoint = "localhost:7008"

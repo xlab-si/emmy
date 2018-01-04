@@ -18,9 +18,10 @@
 package dlogproofs
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 type Transcript struct {

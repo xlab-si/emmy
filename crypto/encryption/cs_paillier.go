@@ -19,13 +19,14 @@ package encryption
 
 import (
 	"errors"
+	"log"
+	"math/big"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"github.com/xlab-si/emmy/storage"
-	"log"
-	"math/big"
 )
 
 // todo: does hash really need to be into [0, 2^l]?

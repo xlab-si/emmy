@@ -18,9 +18,10 @@
 package server
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/encryption"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"math/big"
 )
 
 func (s *Server) CSPaillier(req *pb.Message, secKeyPath string, stream pb.Protocol_RunServer) error {

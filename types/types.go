@@ -18,8 +18,9 @@
 package types
 
 import (
-	pb "github.com/xlab-si/emmy/protobuf"
 	"math/big"
+
+	pb "github.com/xlab-si/emmy/protobuf"
 )
 
 type ProtocolType uint8

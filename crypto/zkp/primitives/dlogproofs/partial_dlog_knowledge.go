@@ -18,10 +18,11 @@
 package dlogproofs
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 // ProvePartialDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and

@@ -18,11 +18,12 @@
 package dlogproofs
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 // ProveDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that

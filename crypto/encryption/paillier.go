@@ -20,8 +20,9 @@ package encryption
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // https://pirk.incubator.apache.org/papers/1999_asiacrypt_paillier_paper.pdf

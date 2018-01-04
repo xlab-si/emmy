@@ -19,9 +19,10 @@ package commitments
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // TODO: might be better to have only one method (like GetCommitment) instead of

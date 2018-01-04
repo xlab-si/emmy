@@ -19,10 +19,11 @@ package commitments
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/types"
-	"math/big"
 )
 
 // Committer first needs to know H (it gets it from the receiver).
