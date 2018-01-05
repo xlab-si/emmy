@@ -123,13 +123,13 @@ func (c *SchnorrECClient) runZeroKnowledge() error {
 }
 
 func (c *SchnorrECClient) open() (*groups.ECGroupElement, error) {
-	h := c.prover.GetOpeningMsg()
-	ecge := pb.ToPbECGroupElement(h)
+	myH := c.prover.GetOpeningMsg()
+	h := pb.ToPbECGroupElement(myH)
 	openMsg := &pb.Message{
 		ClientId:      c.id,
 		Schema:        pb.SchemaType_SCHNORR_EC,
 		SchemaVariant: c.variant,
-		Content:       &pb.Message_EcGroupElement{ecge},
+		Content:       &pb.Message_EcGroupElement{h},
 	}
 
 	resp, err := c.getResponseTo(openMsg)
@@ -137,8 +137,8 @@ func (c *SchnorrECClient) open() (*groups.ECGroupElement, error) {
 		return nil, err
 	}
 
-	ecge = resp.GetEcGroupElement()
-	return ecge.GetNativeType(), nil
+	h = resp.GetEcGroupElement()
+	return h.GetNativeType(), nil
 }
 
 func (c *SchnorrECClient) getProofRandomData(isFirstMsg bool) (*pb.PedersenDecommitment, error) {

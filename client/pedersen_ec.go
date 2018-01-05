@@ -51,12 +51,12 @@ func (c *PedersenECClient) Run() error {
 	c.openStream()
 	defer c.closeStream()
 
-	ecge, err := c.getH()
+	h, err := c.getH()
 	if err != nil {
 		return err
 	}
-	my_ecge := ecge.GetNativeType()
-	c.committer.SetH(my_ecge)
+	myH := h.GetNativeType()
+	c.committer.SetH(myH)
 
 	commitment, err := c.committer.GetCommitMsg(c.val)
 	if err != nil {

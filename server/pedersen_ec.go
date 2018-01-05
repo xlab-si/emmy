@@ -44,14 +44,14 @@ func (s *Server) PedersenEC(curveType groups.ECurve, stream pb.Protocol_RunServe
 		return err
 	}
 
-	ecgrop := req.GetEcGroupElement()
-	if ecgrop == nil {
+	el := req.GetEcGroupElement()
+	if el == nil {
 		s.logger.Critical("Got a nil EC group element")
 		return err
 	}
 
-	el := ecgrop.GetNativeType()
-	pedersenECReceiver.SetCommitment(el)
+	myEl := el.GetNativeType()
+	pedersenECReceiver.SetCommitment(myEl)
 	resp = &pb.Message{Content: &pb.Message_Empty{&pb.EmptyMsg{}}}
 	if err = s.send(resp, stream); err != nil {
 		return err
