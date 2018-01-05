@@ -142,7 +142,7 @@ func (s *Server) EnableTracing() {
 
 func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
 	if err := stream.Send(msg); err != nil {
-		return fmt.Errorf("Error sending message:", err)
+		return fmt.Errorf("Error sending message: %v", err)
 	}
 	s.logger.Infof("Successfully sent response of type %T", msg.Content)
 	s.logger.Debugf("%+v", msg)
@@ -178,13 +178,13 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	// Check whether the client requested a valid schema
 	reqSchemaTypeStr, schemaValid := pb.SchemaType_name[int32(reqSchemaType)]
 	if !schemaValid {
-		return fmt.Errorf("Client [", reqClientId, "] requested invalid schema: %v", reqSchemaType)
+		return fmt.Errorf("Client [ %d ] requested invalid schema: %v", reqClientId, reqSchemaType)
 	}
 
 	// Check whether the client requested a valid schema variant
 	reqSchemaVariantStr, variantValid := pb.SchemaVariant_name[int32(reqSchemaVariant)]
 	if !variantValid {
-		return fmt.Errorf("Client [ %v ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
+		return fmt.Errorf("Client [ %d ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
 	}
 
 	s.logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
