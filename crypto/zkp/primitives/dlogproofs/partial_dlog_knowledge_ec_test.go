@@ -15,25 +15,32 @@
  *
  */
 
-package test
+package dlogproofs
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/groups"
 )
 
-func TestHomomorphismPreimage(t *testing.T) {
-	homomorphism, _, H, _, err := commitments.GenerateRSABasedQOneWay(1024)
-	if err != nil {
-		t.Errorf("Error when generating RSABasedQOneWay homomorphism")
-	}
-	v := H.GetRandomElement()
-	u := homomorphism(v)
+func TestPartialDLogKnowledgeEC(t *testing.T) {
+	group := groups.NewECGroup(groups.P256)
 
-	proved := preimage.ProveHomomorphismPreimageKnowledge(homomorphism, H, u, v, 80)
+	exp1 := common.GetRandomInt(group.Q)
+	exp2 := common.GetRandomInt(group.Q)
+	a1 := group.ExpBaseG(exp1)
+	a2 := group.ExpBaseG(exp2)
 
-	assert.Equal(t, true, proved, "HomomorphismPreimage proof does not work correctly")
+	secret1 := common.GetRandomInt(group.Q)
+	x := common.GetRandomInt(group.Q)
+
+	//b1X, b1Y := dlog.ExponentiateBaseG(secret1)
+	// we pretend that we don't know x:
+	b2 := group.ExpBaseG(x)
+
+	proved := ProvePartialECDLogKnowledge(group, secret1, a1, a2, b2)
+
+	assert.Equal(t, proved, true, "ProvePartialECDLogKnowledge does not work correctly")
 }

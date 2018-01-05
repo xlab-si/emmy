@@ -25,28 +25,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 )
 
-// DamgardFujisaki demonstrates how a value can be committed and later opened (decommitted).
-func DamgardFujisaki() (bool, error) {
-	safePrimeBitLength := 1024
-	receiver, err := NewDamgardFujisakiReceiver(safePrimeBitLength)
-	if err != nil {
-		return false, err
-	}
-	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.H, receiver.G)
-
-	a := common.GetRandomInt(receiver.QRSpecialRSA.N)
-	c, err := committer.GetCommitMsg(a)
-	if err != nil {
-		return false, err
-	}
-
-	receiver.SetCommitment(c)
-	committedVal, r := committer.GetDecommitMsg()
-	success := receiver.CheckDecommitment(r, committedVal)
-
-	return success, nil
-}
-
 type DamgardFujisakiCommitter struct {
 	QRSpecialRSA   *groups.QRSpecialRSA
 	H              *big.Int

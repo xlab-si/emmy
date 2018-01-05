@@ -15,36 +15,28 @@
  *
  */
 
-package test
+package dlogproofs
 
 import (
-	"log"
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/signatures"
 )
 
-func TestCL(t *testing.T) {
-	numOfBlocks := 2
-	cl := signatures.NewCL(numOfBlocks)
-	n := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(160)), nil)
-	//n, _ := new(big.Int).SetString("26959946667150639794667015087019630673557916260026308143510066298881", 10)
+func TestDLogEquality(t *testing.T) {
+	group := config.LoadGroup("pseudonymsys")
 
-	m1 := common.GetRandomInt(n)
-	m2 := common.GetRandomInt(n)
-	var m_Ls []*big.Int
-	m_Ls = append(m_Ls, m1)
-	m_Ls = append(m_Ls, m2)
+	secret := common.GetRandomInt(group.Q)
+	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))
+	g1, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
+	g2, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
 
-	signature, err := cl.Sign(m_Ls)
-	if err != nil {
-		log.Println(err)
-	}
+	t1 := group.Exp(g1, secret)
+	t2 := group.Exp(g2, secret)
+	proved := ProveDLogEquality(secret, g1, g2, t1, t2, group)
 
-	pubKey := cl.GetPubKey()
-	pubCL := signatures.NewPubCL(pubKey)
-	ok, _ := pubCL.Verify(m_Ls, signature)
-	log.Println(ok)
+	assert.Equal(t, proved, true, "DLogEquality does not work correctly")
 }

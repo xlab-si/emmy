@@ -19,7 +19,7 @@ install:
   - go get -u -t github.com/$TRAVIS_REPO_SLUG
   
 script: 
-  - go test -v test/*.go
+  - go test -v ./...
 
 after_script:
   - docker stop emmy-redis

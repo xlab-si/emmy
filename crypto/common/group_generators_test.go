@@ -15,58 +15,27 @@
  *
  */
 
-package test
+package common
 
 import (
-	"log"
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/common"
 )
 
-func TestLCM(t *testing.T) {
-	a := big.NewInt(8)
-	b := big.NewInt(6)
-	lcm := common.LCM(a, b)
-	assert.Equal(t, lcm, big.NewInt(24), "LCM returned wrong value")
-}
-
-func TestGetGermainPrime(t *testing.T) {
-	p := common.GetGermainPrime(512)
-	p1 := new(big.Int).Add(p, p)
-	p1.Add(p1, big.NewInt(1))
-
-	assert.Equal(t, p.ProbablyPrime(20), true, "p should be prime")
-	assert.Equal(t, p1.ProbablyPrime(20), true, "p1 should be prime")
-}
-
-func TestGetSafePrime(t *testing.T) {
-	p, err := common.GetSafePrime(512)
-	if err != nil {
-		log.Println(err)
-	}
-	p1 := new(big.Int)
-	p1.Sub(p, big.NewInt(1))
-	p1.Div(p1, big.NewInt(2))
-
-	assert.Equal(t, p.ProbablyPrime(20), true, "p should be prime")
-	assert.Equal(t, p1.ProbablyPrime(20), true, "p1 should be prime")
-}
-
 func TestGetGeneratorOfZnSubgroup(t *testing.T) {
-	p, err := common.GetSafePrime(512)
+	p, err := GetSafePrime(512)
 	if err != nil {
-		log.Println(err)
+		t.Errorf("Error in GetSafePrime: %v", err)
 	}
 	pMin := new(big.Int)
 	pMin.Sub(p, big.NewInt(1))
 	p1 := new(big.Int).Div(pMin, big.NewInt(2))
 
-	g, err := common.GetGeneratorOfZnSubgroup(p, pMin, p1)
+	g, err := GetGeneratorOfZnSubgroup(p, pMin, p1)
 	if err != nil {
-		log.Println(err)
+		t.Errorf("Error in GetGeneratorOfZnSubgroup: %v", err)
 	}
 	g.Exp(g, big.NewInt(0).Sub(p1, big.NewInt(1)), p1) // g^(p1-1) % p1 should be 1
 
