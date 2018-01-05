@@ -24,7 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -47,7 +46,7 @@ func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, group *gr
 	return &SchnorrClient{
 		genericClient: *genericClient,
 		variant:       variant,
-		prover:        dlogproofs.NewSchnorrProver(group, types.ToProtocolType(variant)),
+		prover:        dlogproofs.NewSchnorrProver(group, variant.GetNativeType()),
 		secret:        s,
 		a:             group.G,
 	}, nil

@@ -22,9 +22,9 @@ import (
 
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -42,7 +42,7 @@ func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, erro
 
 	return &PseudonymsysCAClient{
 		genericClient: *genericClient,
-		prover:        dlogproofs.NewSchnorrProver(group, types.Sigma),
+		prover:        dlogproofs.NewSchnorrProver(group, protocoltypes.Sigma),
 	}, nil
 }
 

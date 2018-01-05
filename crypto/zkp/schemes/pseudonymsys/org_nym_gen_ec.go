@@ -25,15 +25,14 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/types"
 )
 
 type PseudonymEC struct {
-	A *types.ECGroupElement
-	B *types.ECGroupElement
+	A *groups.ECGroupElement
+	B *groups.ECGroupElement
 }
 
-func NewPseudonymEC(a, b *types.ECGroupElement) *PseudonymEC {
+func NewPseudonymEC(a, b *groups.ECGroupElement) *PseudonymEC {
 	return &PseudonymEC{
 		A: a,
 		B: b,
@@ -59,7 +58,7 @@ func NewOrgNymGenEC(x, y *big.Int, curveType groups.ECurve) *OrgNymGenEC {
 }
 
 func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
-	x1, x2 *types.ECGroupElement, r, s *big.Int) (*big.Int, error) {
+	x1, x2 *groups.ECGroupElement, r, s *big.Int) (*big.Int, error) {
 	c := groups.GetEllipticCurve(org.curveType)
 	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
 

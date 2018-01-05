@@ -24,7 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 )
 
 func (s *Server) QNR(req *pb.Message, qr *groups.QRRSA,
@@ -59,7 +58,7 @@ func (s *Server) QNR(req *pb.Message, qr *groups.QRRSA,
 		pbPairs := []*pb.Pair{}
 
 		for j := 0; j < m; j++ {
-			pbPairs = append(pbPairs, types.ToPbPair(pairs[j]))
+			pbPairs = append(pbPairs, pb.ToPbPair(pairs[j]))
 		}
 
 		resp := &pb.Message{
@@ -89,7 +88,7 @@ func (s *Server) QNR(req *pb.Message, qr *groups.QRRSA,
 		verProofPairs := verifier.GetProofData(randVector)
 		var verProofPbPairs []*pb.Pair
 		for _, p := range verProofPairs {
-			pbPair := types.ToPbPair(p)
+			pbPair := pb.ToPbPair(p)
 			verProofPbPairs = append(verProofPbPairs, pbPair)
 		}
 

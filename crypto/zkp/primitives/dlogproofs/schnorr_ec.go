@@ -23,17 +23,17 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 // ProveECDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
 // means g1^secret = t1 in EC group.
-func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve groups.ECurve) (bool, error) {
-	prover, err := NewSchnorrECProver(curve, types.Sigma)
+func ProveECDLogKnowledge(secret *big.Int, g1, t1 *groups.ECGroupElement, curve groups.ECurve) (bool, error) {
+	prover, err := NewSchnorrECProver(curve, protocoltypes.Sigma)
 	if err != nil {
 		return false, err
 	}
-	verifier := NewSchnorrECVerifier(curve, types.Sigma)
+	verifier := NewSchnorrECVerifier(curve, protocoltypes.Sigma)
 
 	x := prover.GetProofRandomData(secret, g1)
 	verifier.SetProofRandomData(x, g1, t1)
@@ -65,21 +65,21 @@ func ProveECDLogKnowledge(secret *big.Int, g1, t1 *types.ECGroupElement, curve g
 // z = r2 + secret * e -->  (if ZKPOK, trapdoor is sent as well)
 type SchnorrECProver struct {
 	Group            *groups.ECGroup
-	a                *types.ECGroupElement
+	a                *groups.ECGroupElement
 	secret           *big.Int
 	r                *big.Int                        // ProofRandomData
 	PedersenReceiver *commitments.PedersenECReceiver // only needed for ZKP and ZKPOK, not for sigma
-	protocolType     types.ProtocolType
+	protocolType     protocoltypes.ProtocolType
 }
 
-func NewSchnorrECProver(curveType groups.ECurve, protocolType types.ProtocolType) (*SchnorrECProver, error) {
+func NewSchnorrECProver(curveType groups.ECurve, protocolType protocoltypes.ProtocolType) (*SchnorrECProver, error) {
 	group := groups.NewECGroup(curveType)
 	prover := SchnorrECProver{
 		Group:        group,
 		protocolType: protocolType,
 	}
 
-	if protocolType != types.Sigma {
+	if protocolType != protocoltypes.Sigma {
 		prover.PedersenReceiver = commitments.NewPedersenECReceiver(curveType)
 	}
 
@@ -87,13 +87,13 @@ func NewSchnorrECProver(curveType groups.ECurve, protocolType types.ProtocolType
 }
 
 // Returns pedersenReceiver's h. Verifier needs h to prepare a commitment.
-func (prover *SchnorrECProver) GetOpeningMsg() *types.ECGroupElement {
+func (prover *SchnorrECProver) GetOpeningMsg() *groups.ECGroupElement {
 	return prover.PedersenReceiver.GetH()
 }
 
 // It contains also value b = a^secret.
 func (prover *SchnorrECProver) GetProofRandomData(secret *big.Int,
-	a *types.ECGroupElement) *types.ECGroupElement {
+	a *groups.ECGroupElement) *groups.ECGroupElement {
 	r := common.GetRandomInt(prover.Group.Q)
 	prover.r = r
 	prover.a = a
@@ -111,7 +111,7 @@ func (prover *SchnorrECProver) GetProofData(challenge *big.Int) (*big.Int, *big.
 	z.Add(z, prover.r)
 	z.Mod(z, prover.Group.Q)
 
-	if prover.protocolType != types.ZKPOK {
+	if prover.protocolType != protocoltypes.ZKPOK {
 		return z, nil
 	} else {
 		trapdoor := prover.PedersenReceiver.GetTrapdoor()
@@ -121,22 +121,22 @@ func (prover *SchnorrECProver) GetProofData(challenge *big.Int) (*big.Int, *big.
 
 type SchnorrECVerifier struct {
 	Group             *groups.ECGroup
-	x                 *types.ECGroupElement
-	a                 *types.ECGroupElement
-	b                 *types.ECGroupElement
+	x                 *groups.ECGroupElement
+	a                 *groups.ECGroupElement
+	b                 *groups.ECGroupElement
 	challenge         *big.Int
 	pedersenCommitter *commitments.PedersenECCommitter // not needed in sigma protocol, only in ZKP and ZKPOK
-	protocolType      types.ProtocolType
+	protocolType      protocoltypes.ProtocolType
 }
 
-func NewSchnorrECVerifier(curveType groups.ECurve, protocolType types.ProtocolType) *SchnorrECVerifier {
+func NewSchnorrECVerifier(curveType groups.ECurve, protocolType protocoltypes.ProtocolType) *SchnorrECVerifier {
 	group := groups.NewECGroup(curveType)
 	verifier := SchnorrECVerifier{
 		Group:        group,
 		protocolType: protocolType,
 	}
 
-	if protocolType != types.Sigma {
+	if protocolType != protocoltypes.Sigma {
 		verifier.pedersenCommitter = commitments.NewPedersenECCommitter(curveType)
 	}
 
@@ -151,7 +151,7 @@ func (verifier *SchnorrECVerifier) GenerateChallenge() *big.Int {
 	return challenge
 }
 
-func (verifier *SchnorrECVerifier) GetOpeningMsgReply(h *types.ECGroupElement) *types.ECGroupElement {
+func (verifier *SchnorrECVerifier) GetOpeningMsgReply(h *groups.ECGroupElement) *groups.ECGroupElement {
 	verifier.pedersenCommitter.SetH(h) // h = g^a where a is a trapdoor
 	challenge := verifier.GenerateChallenge()
 	commitment, _ := verifier.pedersenCommitter.GetCommitMsg(challenge)
@@ -159,7 +159,7 @@ func (verifier *SchnorrECVerifier) GetOpeningMsgReply(h *types.ECGroupElement) *
 }
 
 // TODO: t transferred at some other stage?
-func (verifier *SchnorrECVerifier) SetProofRandomData(x, a, b *types.ECGroupElement) {
+func (verifier *SchnorrECVerifier) SetProofRandomData(x, a, b *groups.ECGroupElement) {
 	verifier.x = x
 	verifier.a = a
 	verifier.b = b
@@ -167,7 +167,7 @@ func (verifier *SchnorrECVerifier) SetProofRandomData(x, a, b *types.ECGroupElem
 
 // It returns a challenge and commitment to challenge (this latter only for ZKP and ZKPOK).
 func (verifier *SchnorrECVerifier) GetChallenge() (*big.Int, *big.Int) {
-	if verifier.protocolType == types.Sigma {
+	if verifier.protocolType == protocoltypes.Sigma {
 		challenge := verifier.GenerateChallenge()
 		return challenge, nil
 	} else {
@@ -177,7 +177,7 @@ func (verifier *SchnorrECVerifier) GetChallenge() (*big.Int, *big.Int) {
 }
 
 func (verifier *SchnorrECVerifier) Verify(z *big.Int, trapdoor *big.Int) bool {
-	if verifier.protocolType == types.ZKPOK {
+	if verifier.protocolType == protocoltypes.ZKPOK {
 		valid := verifier.pedersenCommitter.VerifyTrapdoor(trapdoor)
 		if !valid {
 			return false
@@ -187,5 +187,5 @@ func (verifier *SchnorrECVerifier) Verify(z *big.Int, trapdoor *big.Int) bool {
 	r := verifier.Group.Exp(verifier.b, verifier.challenge)
 	right := verifier.Group.Mul(r, verifier.x)
 
-	return types.CmpECGroupElements(left, right)
+	return left.Cmp(right)
 }

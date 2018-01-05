@@ -22,21 +22,21 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 )
 
-func (s *Server) SchnorrEC(req *pb.Message, protocolType types.ProtocolType,
+func (s *Server) SchnorrEC(req *pb.Message, protocolType protocoltypes.ProtocolType,
 	stream pb.Protocol_RunServer, curve groups.ECurve) error {
 	verifier := dlogproofs.NewSchnorrECVerifier(curve, protocolType)
 	var err error
 
-	if protocolType != types.Sigma {
+	if protocolType != protocoltypes.Sigma {
 		// ZKP, ZKPOK
 		ecge := req.GetEcGroupElement()
-		h := types.ToECGroupElement(ecge)
+		h := ecge.GetNativeType()
 		commitment := verifier.GetOpeningMsgReply(h)
-		pb_ecge := types.ToPbECGroupElement(commitment)
+		pb_ecge := pb.ToPbECGroupElement(commitment)
 
 		resp := &pb.Message{
 			Content: &pb.Message_EcGroupElement{
@@ -56,9 +56,9 @@ func (s *Server) SchnorrEC(req *pb.Message, protocolType types.ProtocolType,
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
 
-	x := types.ToECGroupElement(sProofRandData.X)
-	a := types.ToECGroupElement(sProofRandData.A)
-	b := types.ToECGroupElement(sProofRandData.B)
+	x := sProofRandData.X.GetNativeType()
+	a := sProofRandData.A.GetNativeType()
+	b := sProofRandData.B.GetNativeType()
 	verifier.SetProofRandomData(x, a, b)
 
 	challenge, r2 := verifier.GetChallenge() // r2 is nil in sigma protocol

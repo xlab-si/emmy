@@ -15,23 +15,12 @@
  *
  */
 
-package server
+package protocoltypes
 
-import (
-	"github.com/xlab-si/emmy/config"
-	pb "github.com/xlab-si/emmy/protobuf"
-	"golang.org/x/net/context"
+type ProtocolType uint8
+
+const (
+	Sigma ProtocolType = iota + 1 // sigma protocol
+	ZKP                           // zero knowledge proof
+	ZKPOK                         // zero knowledge proof of knowledge
 )
-
-func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
-	s.logger.Info("Client requested service information")
-
-	name, provider, description := config.LoadServiceInfo()
-	info := &pb.ServiceInfo{
-		Name:        name,
-		Provider:    provider,
-		Description: description,
-	}
-
-	return info, nil
-}

@@ -24,7 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 )
 
 func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,
@@ -36,9 +35,9 @@ func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,
 	ca := pseudonymsys.NewCAEC(d, pubKeyX, pubKeyY, curveType)
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
-	x := types.ToECGroupElement(sProofRandData.X)
-	a := types.ToECGroupElement(sProofRandData.A)
-	b := types.ToECGroupElement(sProofRandData.B)
+	x := sProofRandData.X.GetNativeType()
+	a := sProofRandData.A.GetNativeType()
+	b := sProofRandData.B.GetNativeType()
 
 	challenge := ca.GetChallenge(a, b, x)
 	resp := &pb.Message{
@@ -66,8 +65,8 @@ func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,
 		resp = &pb.Message{
 			Content: &pb.Message_PseudonymsysCaCertificateEc{
 				&pb.PseudonymsysCACertificateEC{
-					BlindedA: types.ToPbECGroupElement(cert.BlindedA),
-					BlindedB: types.ToPbECGroupElement(cert.BlindedB),
+					BlindedA: pb.ToPbECGroupElement(cert.BlindedA),
+					BlindedB: pb.ToPbECGroupElement(cert.BlindedB),
 					R:        cert.R.Bytes(),
 					S:        cert.S.Bytes(),
 				},

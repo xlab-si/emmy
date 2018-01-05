@@ -26,7 +26,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type CA struct {
@@ -57,7 +57,7 @@ func NewCA(group *groups.SchnorrGroup, d, x, y *big.Int) *CA {
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, types.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, protocoltypes.Sigma)
 	ca := CA{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,

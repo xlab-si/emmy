@@ -23,7 +23,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 )
 
 func (s *Server) PedersenEC(curveType groups.ECurve, stream pb.Protocol_RunServer) error {
@@ -51,7 +50,7 @@ func (s *Server) PedersenEC(curveType groups.ECurve, stream pb.Protocol_RunServe
 		return err
 	}
 
-	el := types.ToECGroupElement(ecgrop)
+	el := ecgrop.GetNativeType()
 	pedersenECReceiver.SetCommitment(el)
 	resp = &pb.Message{Content: &pb.Message_Empty{&pb.EmptyMsg{}}}
 	if err = s.send(resp, stream); err != nil {

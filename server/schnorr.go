@@ -22,16 +22,16 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 )
 
 func (s *Server) Schnorr(req *pb.Message, group *groups.SchnorrGroup,
-	protocolType types.ProtocolType, stream pb.Protocol_RunServer) error {
+	protocolType protocoltypes.ProtocolType, stream pb.Protocol_RunServer) error {
 	verifier := dlogproofs.NewSchnorrVerifier(group, protocolType)
 	var err error
 
-	if protocolType != types.Sigma {
+	if protocolType != protocoltypes.Sigma {
 		// ZKP, ZKPOK
 		pedersenFirst := req.GetPedersenFirst()
 		h := new(big.Int).SetBytes(pedersenFirst.H)

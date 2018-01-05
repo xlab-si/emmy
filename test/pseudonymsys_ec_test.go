@@ -26,7 +26,6 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
-	"github.com/xlab-si/emmy/types"
 )
 
 func TestPseudonymsysEC(t *testing.T) {
@@ -41,7 +40,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	userSecret := c1.GenerateMasterKey()
 
-	nymA := types.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
+	nymA := groups.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
 	nymB := group.Exp(nymA, userSecret) // this is user's public key
 
 	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
@@ -70,8 +69,8 @@ func TestPseudonymsysEC(t *testing.T) {
 
 	orgName := "org1"
 	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
-	h1 := types.NewECGroupElement(h1X, h1Y)
-	h2 := types.NewECGroupElement(h2X, h2Y)
+	h1 := groups.NewECGroupElement(h1X, h1Y)
+	h2 := groups.NewECGroupElement(h2X, h2Y)
 	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
 	credential, err := c1.ObtainCredential(userSecret, nym1, orgPubKeys)
 	if err != nil {

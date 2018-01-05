@@ -31,7 +31,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -190,7 +189,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	s.logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
 
 	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
-	protocolType := types.ToProtocolType(reqSchemaVariant)
+	protocolType := reqSchemaVariant.GetNativeType()
 	// This curve will be used for all schemes
 	curve := groups.P256
 

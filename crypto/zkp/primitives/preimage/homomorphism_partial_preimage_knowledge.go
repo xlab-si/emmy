@@ -22,7 +22,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
 )
 
 // ProvePartialPreimageKnowledge demonstrates how prover can prove that he knows f^(-1)(u1) and
@@ -77,7 +76,7 @@ func NewHomomorphismPartialPreimageProver(homomorphism func(*big.Int) *big.Int, 
 
 // GetProofRandomData returns Homomorphism(r1) and Homomorphism(z2)/(u2^c2)
 // in random order and where r1, z2, c2 are random from H.
-func (prover *HomomorphismPartialPreimageProver) GetProofRandomData() (*types.Pair, *types.Pair) {
+func (prover *HomomorphismPartialPreimageProver) GetProofRandomData() (*common.Pair, *common.Pair) {
 	r1 := prover.H.GetRandomElement()
 	c2 := common.GetRandomInt(big.NewInt(2)) // challenges need to be binary
 	z2 := prover.H.GetRandomElement()
@@ -92,8 +91,8 @@ func (prover *HomomorphismPartialPreimageProver) GetProofRandomData() (*types.Pa
 
 	// we need to make sure that the order does not reveal which secret we do know:
 	ord := common.GetRandomInt(big.NewInt(2))
-	pair1 := types.NewPair(x1, prover.u1)
-	pair2 := types.NewPair(x2, prover.u2)
+	pair1 := common.NewPair(x1, prover.u1)
+	pair2 := common.NewPair(x2, prover.u2)
 
 	if ord.Cmp(big.NewInt(0)) == 0 {
 		prover.ord = 0
@@ -121,8 +120,8 @@ func (prover *HomomorphismPartialPreimageProver) GetProofData(challenge *big.Int
 type HomomorphismPartialPreimageVerifier struct {
 	Homomorphism func(*big.Int) *big.Int
 	H            groups.Group
-	pair1        *types.Pair
-	pair2        *types.Pair
+	pair1        *common.Pair
+	pair2        *common.Pair
 	challenge    *big.Int
 }
 
@@ -134,7 +133,7 @@ func NewHomomorphismPartialPreimageVerifier(homomorphism func(*big.Int) *big.Int
 	}
 }
 
-func (verifier *HomomorphismPartialPreimageVerifier) SetProofRandomData(pair1, pair2 *types.Pair) {
+func (verifier *HomomorphismPartialPreimageVerifier) SetProofRandomData(pair1, pair2 *common.Pair) {
 	verifier.pair1 = pair1
 	verifier.pair2 = pair2
 }
@@ -145,7 +144,7 @@ func (verifier *HomomorphismPartialPreimageVerifier) GetChallenge() *big.Int {
 	return challenge
 }
 
-func (verifier *HomomorphismPartialPreimageVerifier) verifyPair(pair *types.Pair,
+func (verifier *HomomorphismPartialPreimageVerifier) verifyPair(pair *common.Pair,
 	challenge, z *big.Int) bool {
 	left := verifier.Homomorphism(z)
 	r1 := verifier.H.Exp(pair.B, challenge)

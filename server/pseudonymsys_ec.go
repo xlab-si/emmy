@@ -25,7 +25,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 )
 
 func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Message,
@@ -34,12 +33,12 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY, curveType)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
-	x1 := types.ToECGroupElement(proofRandData.X1)
-	nymA := types.ToECGroupElement(proofRandData.A1)
-	nymB := types.ToECGroupElement(proofRandData.B1)
-	x2 := types.ToECGroupElement(proofRandData.X2)
-	blindedA := types.ToECGroupElement(proofRandData.A2)
-	blindedB := types.ToECGroupElement(proofRandData.B2)
+	x1 := proofRandData.X1.GetNativeType()
+	nymA := proofRandData.A1.GetNativeType()
+	nymB := proofRandData.B1.GetNativeType()
+	x2 := proofRandData.X2.GetNativeType()
+	blindedA := proofRandData.A2.GetNativeType()
+	blindedB := proofRandData.B2.GetNativeType()
 	signatureR := new(big.Int).SetBytes(proofRandData.R)
 	signatureS := new(big.Int).SetBytes(proofRandData.S)
 
@@ -103,9 +102,9 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 func (s *Server) PseudonymsysIssueCredentialEC(curveType groups.ECurve, req *pb.Message,
 	stream pb.Protocol_RunServer) error {
 	proofRandData := req.GetSchnorrEcProofRandomData()
-	x := types.ToECGroupElement(proofRandData.X)
-	a := types.ToECGroupElement(proofRandData.A)
-	b := types.ToECGroupElement(proofRandData.B)
+	x := proofRandData.X.GetNativeType()
+	a := proofRandData.A.GetNativeType()
+	b := proofRandData.B.GetNativeType()
 
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
 	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2, curveType)
@@ -144,12 +143,12 @@ func (s *Server) PseudonymsysIssueCredentialEC(curveType groups.ECurve, req *pb.
 		resp = &pb.Message{
 			Content: &pb.Message_PseudonymsysIssueProofRandomDataEc{
 				&pb.PseudonymsysIssueProofRandomDataEC{
-					X11: types.ToPbECGroupElement(x11),
-					X12: types.ToPbECGroupElement(x12),
-					X21: types.ToPbECGroupElement(x21),
-					X22: types.ToPbECGroupElement(x22),
-					A:   types.ToPbECGroupElement(A),
-					B:   types.ToPbECGroupElement(B),
+					X11: pb.ToPbECGroupElement(x11),
+					X12: pb.ToPbECGroupElement(x12),
+					X21: pb.ToPbECGroupElement(x21),
+					X22: pb.ToPbECGroupElement(x22),
+					A:   pb.ToPbECGroupElement(A),
+					B:   pb.ToPbECGroupElement(B),
 				},
 			},
 		}
@@ -192,10 +191,10 @@ func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *
 
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
-	x1 := types.ToECGroupElement(data.X1)
-	x2 := types.ToECGroupElement(data.X2)
-	nymA := types.ToECGroupElement(data.NymA)
-	nymB := types.ToECGroupElement(data.NymB)
+	x1 := data.X1.GetNativeType()
+	x2 := data.X2.GetNativeType()
+	nymA := data.NymA.GetNativeType()
+	nymB := data.NymB.GetNativeType()
 
 	t1 := dlogproofs.NewTranscriptEC(
 		new(big.Int).SetBytes(data.Credential.T1.A.X),
@@ -214,10 +213,10 @@ func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *
 		new(big.Int).SetBytes(data.Credential.T2.ZAlpha))
 
 	credential := pseudonymsys.NewCredentialEC(
-		types.ToECGroupElement(data.Credential.SmallAToGamma),
-		types.ToECGroupElement(data.Credential.SmallBToGamma),
-		types.ToECGroupElement(data.Credential.AToGamma),
-		types.ToECGroupElement(data.Credential.BToGamma),
+		data.Credential.SmallAToGamma.GetNativeType(),
+		data.Credential.SmallBToGamma.GetNativeType(),
+		data.Credential.AToGamma.GetNativeType(),
+		data.Credential.BToGamma.GetNativeType(),
 		t1, t2,
 	)
 
@@ -243,8 +242,8 @@ func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *
 
 	// PubKeys of the organization that issue a credential:
 	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
-	h1 := types.NewECGroupElement(h1X, h1Y)
-	h2 := types.NewECGroupElement(h2X, h2Y)
+	h1 := groups.NewECGroupElement(h1X, h1Y)
+	h2 := groups.NewECGroupElement(h2X, h2Y)
 	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
 
 	proofData := req.GetBigint()
