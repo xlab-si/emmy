@@ -23,7 +23,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -52,12 +51,12 @@ func (c *PedersenECClient) Run() error {
 	c.openStream()
 	defer c.closeStream()
 
-	ecge, err := c.getH()
+	h, err := c.getH()
 	if err != nil {
 		return err
 	}
-	my_ecge := types.ToECGroupElement(ecge)
-	c.committer.SetH(my_ecge)
+	myH := h.GetNativeType()
+	c.committer.SetH(myH)
 
 	commitment, err := c.committer.GetCommitMsg(c.val)
 	if err != nil {
@@ -91,10 +90,10 @@ func (c *PedersenECClient) getH() (*pb.ECGroupElement, error) {
 	return resp.GetEcGroupElement(), nil
 }
 
-func (c *PedersenECClient) commit(commitVal *types.ECGroupElement) error {
+func (c *PedersenECClient) commit(commitVal *groups.ECGroupElement) error {
 	commitmentMsg := &pb.Message{
 		Content: &pb.Message_EcGroupElement{
-			types.ToPbECGroupElement(commitVal),
+			pb.ToPbECGroupElement(commitVal),
 		},
 	}
 

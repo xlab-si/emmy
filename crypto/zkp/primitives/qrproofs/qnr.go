@@ -25,7 +25,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
 )
 
 // ProveQNR demonstrates how the prover can prove that y is not quadratic residue (there does
@@ -110,7 +109,7 @@ func (prover *QNRProver) GetProofData(challenge *big.Int) (int, error) {
 	return typ, nil
 }
 
-func (prover *QNRProver) Verify(pairs, verProof []*types.Pair) bool {
+func (prover *QNRProver) Verify(pairs, verProof []*common.Pair) bool {
 	for ind, proofPair := range verProof {
 		if proofPair.B.Cmp(big.NewInt(0)) == 0 {
 			t := prover.QR.Mul(proofPair.A, proofPair.A)
@@ -141,7 +140,7 @@ type QNRVerifier struct {
 	y     *big.Int
 	typ   int
 	r     *big.Int
-	pairs []*types.Pair
+	pairs []*common.Pair
 }
 
 func NewQNRVerifier(qr *groups.QRRSA, y *big.Int) *QNRVerifier {
@@ -151,7 +150,7 @@ func NewQNRVerifier(qr *groups.QRRSA, y *big.Int) *QNRVerifier {
 	}
 }
 
-func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
+func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*common.Pair) {
 	r := common.GetRandomInt(verifier.QR.N)
 	// checking that gcd(r, N) = 1 is not needed as the probability is low
 	verifier.r = r
@@ -170,7 +169,7 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
 	}
 
 	m := verifier.QR.N.BitLen()
-	var pairs []*types.Pair
+	var pairs []*common.Pair
 	for i := 0; i < m; i++ {
 		r1 := common.GetRandomInt(verifier.QR.N)
 		r2 := common.GetRandomInt(verifier.QR.N)
@@ -180,16 +179,16 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
 
 		bitj := common.GetRandomInt(big.NewInt(2)) // 0 or 1
 
-		verifier.pairs = append(verifier.pairs, &types.Pair{A: r1, B: r2})
+		verifier.pairs = append(verifier.pairs, &common.Pair{A: r1, B: r2})
 
-		var pair *types.Pair
+		var pair *common.Pair
 		if bitj.Cmp(big.NewInt(1)) == 0 {
-			pair = &types.Pair{
+			pair = &common.Pair{
 				A: aj,
 				B: bj,
 			}
 		} else {
-			pair = &types.Pair{
+			pair = &common.Pair{
 				A: bj,
 				B: aj,
 			}
@@ -200,11 +199,11 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*types.Pair) {
 	return w, pairs
 }
 
-func (verifier *QNRVerifier) GetProofData(randVector []int) []*types.Pair {
-	var pairs []*types.Pair
+func (verifier *QNRVerifier) GetProofData(randVector []int) []*common.Pair {
+	var pairs []*common.Pair
 	for ind, i := range randVector {
 		if i == 0 {
-			pair := &types.Pair{
+			pair := &common.Pair{
 				A: verifier.pairs[ind].A,
 				B: verifier.pairs[ind].B,
 			}
@@ -214,13 +213,13 @@ func (verifier *QNRVerifier) GetProofData(randVector []int) []*types.Pair {
 				r1 := verifier.pairs[ind].A
 				t := verifier.QR.Mul(verifier.r, r1)
 				// t = r * r1
-				pairs = append(pairs, &types.Pair{A: t, B: big.NewInt(0)})
+				pairs = append(pairs, &common.Pair{A: t, B: big.NewInt(0)})
 			} else { // w = r^2 * y
 				r2 := verifier.pairs[ind].B
 				t := verifier.QR.Mul(verifier.r, r2)
 				t = verifier.QR.Mul(t, verifier.y)
 				// t = r * r2 * y
-				pairs = append(pairs, &types.Pair{A: t, B: big.NewInt(0)})
+				pairs = append(pairs, &common.Pair{A: t, B: big.NewInt(0)})
 			}
 		}
 	}

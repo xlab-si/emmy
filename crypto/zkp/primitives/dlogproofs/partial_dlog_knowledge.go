@@ -22,7 +22,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
 )
 
 // ProvePartialDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
@@ -62,7 +61,7 @@ func NewPartialDLogProver(group *groups.SchnorrGroup) *PartialDLogProver {
 }
 
 func (prover *PartialDLogProver) GetProofRandomData(secret1, a1, b1, a2,
-	b2 *big.Int) (*types.Triple, *types.Triple) {
+	b2 *big.Int) (*common.Triple, *common.Triple) {
 	prover.a1 = a1
 	prover.a2 = a2
 	prover.secret1 = secret1
@@ -80,8 +79,8 @@ func (prover *PartialDLogProver) GetProofRandomData(secret1, a1, b1, a2,
 
 	// we need to make sure that the order does not reveal which secret we do know:
 	ord := common.GetRandomInt(big.NewInt(2))
-	triple1 := types.NewTriple(x1, a1, b1)
-	triple2 := types.NewTriple(x2, a2, b2)
+	triple1 := common.NewTriple(x1, a1, b1)
+	triple2 := common.NewTriple(x2, a2, b2)
 
 	if ord.Cmp(big.NewInt(0)) == 0 {
 		prover.ord = 0
@@ -110,8 +109,8 @@ func (prover *PartialDLogProver) GetProofData(challenge *big.Int) (*big.Int, *bi
 
 type PartialDLogVerifier struct {
 	Group     *groups.SchnorrGroup
-	triple1   *types.Triple // contains x1, a1, b1
-	triple2   *types.Triple // contains x2, a2, b2
+	triple1   *common.Triple // contains x1, a1, b1
+	triple2   *common.Triple // contains x2, a2, b2
 	challenge *big.Int
 }
 
@@ -121,7 +120,7 @@ func NewPartialDLogVerifier(group *groups.SchnorrGroup) *PartialDLogVerifier {
 	}
 }
 
-func (verifier *PartialDLogVerifier) SetProofRandomData(triple1, triple2 *types.Triple) {
+func (verifier *PartialDLogVerifier) SetProofRandomData(triple1, triple2 *common.Triple) {
 	verifier.triple1 = triple1
 	verifier.triple2 = triple2
 }
@@ -132,7 +131,7 @@ func (verifier *PartialDLogVerifier) GetChallenge() *big.Int {
 	return challenge
 }
 
-func (verifier *PartialDLogVerifier) verifyTriple(triple *types.Triple,
+func (verifier *PartialDLogVerifier) verifyTriple(triple *common.Triple,
 	challenge, z *big.Int) bool {
 	left := verifier.Group.Exp(triple.B, z)       // (a, z)
 	r1 := verifier.Group.Exp(triple.C, challenge) // (b, challenge)

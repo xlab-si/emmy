@@ -23,7 +23,7 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type Credential struct {
@@ -76,7 +76,7 @@ type OrgCredentialIssuer struct {
 func NewOrgCredentialIssuer(group *groups.SchnorrGroup, s1, s2 *big.Int) *OrgCredentialIssuer {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, types.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, protocoltypes.Sigma)
 	equalityProver1 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	org := OrgCredentialIssuer{

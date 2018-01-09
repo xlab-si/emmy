@@ -22,9 +22,9 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -39,7 +39,7 @@ func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*Pse
 		return nil, err
 	}
 
-	prover, err := dlogproofs.NewSchnorrECProver(curve, types.Sigma)
+	prover, err := dlogproofs.NewSchnorrECProver(curve, protocoltypes.Sigma)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +60,9 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
 	pRandomData := pb.SchnorrECProofRandomData{
-		X: types.ToPbECGroupElement(x),
-		A: types.ToPbECGroupElement(nym.A),
-		B: types.ToPbECGroupElement(nym.B),
+		X: pb.ToPbECGroupElement(x),
+		A: pb.ToPbECGroupElement(nym.A),
+		B: pb.ToPbECGroupElement(nym.B),
 	}
 
 	initMsg := &pb.Message{
@@ -99,8 +99,8 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 
 	cert := resp.GetPseudonymsysCaCertificateEc()
 	certificate := pseudonymsys.NewCACertificateEC(
-		types.ToECGroupElement(cert.BlindedA),
-		types.ToECGroupElement(cert.BlindedB),
+		cert.BlindedA.GetNativeType(),
+		cert.BlindedB.GetNativeType(),
 		new(big.Int).SetBytes(cert.R), new(big.Int).SetBytes(cert.S))
 
 	if err := c.stream.CloseSend(); err != nil {

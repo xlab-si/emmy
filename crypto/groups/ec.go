@@ -22,7 +22,6 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/types"
 )
 
 type ECurve int
@@ -33,6 +32,23 @@ const (
 	P384
 	P521
 )
+
+// TODO Insert appropriate comment with description of this struct
+type ECGroupElement struct {
+	X *big.Int
+	Y *big.Int
+}
+
+func NewECGroupElement(x, y *big.Int) *ECGroupElement {
+	return &ECGroupElement{
+		X: x,
+		Y: y,
+	}
+}
+
+func (a *ECGroupElement) Equals(b *ECGroupElement) bool {
+	return a.X.Cmp(b.X) == 0 && a.Y.Cmp(b.Y) == 0
+}
 
 // ECGroup is a wrapper around elliptic.Curve. It is a cyclic group with generator
 // (c.Params().Gx, c.Params().Gy) and order c.Params().N (which is exposed as Q in a wrapper).
@@ -66,39 +82,39 @@ func NewECGroup(curveType ECurve) *ECGroup {
 }
 
 // GetRandomElement returns a random element from this group.
-func (group *ECGroup) GetRandomElement() *types.ECGroupElement {
+func (group *ECGroup) GetRandomElement() *ECGroupElement {
 	r := common.GetRandomInt(group.Q)
 	el := group.ExpBaseG(r)
 	return el
 }
 
 // Mul computes a * b in ECGroup. This actually means a + b as this is additive group.
-func (group *ECGroup) Mul(a, b *types.ECGroupElement) *types.ECGroupElement {
+func (group *ECGroup) Mul(a, b *ECGroupElement) *ECGroupElement {
 	// computes (x1, y1) + (x2, y2) as this is group on elliptic curves
 	x, y := group.Curve.Add(a.X, a.Y, b.X, b.Y)
-	return types.NewECGroupElement(x, y)
+	return NewECGroupElement(x, y)
 }
 
 // Exp computes base^exponent in ECGroup. This actually means exponent * base as this is
 // additive group.
-func (group *ECGroup) Exp(base *types.ECGroupElement, exponent *big.Int) *types.ECGroupElement {
+func (group *ECGroup) Exp(base *ECGroupElement, exponent *big.Int) *ECGroupElement {
 	// computes (x, y) * exponent
 	hx, hy := group.Curve.ScalarMult(base.X, base.Y, exponent.Bytes())
-	return types.NewECGroupElement(hx, hy)
+	return NewECGroupElement(hx, hy)
 }
 
 // Exp computes base^exponent in ECGroup where base is the generator.
 // This actually means exponent * G as this is additive group.
-func (group *ECGroup) ExpBaseG(exponent *big.Int) *types.ECGroupElement {
+func (group *ECGroup) ExpBaseG(exponent *big.Int) *ECGroupElement {
 	// computes g ^^ exponent or better to say g * exponent as this is elliptic ((gx, gy) * exponent)
 	hx, hy := group.Curve.ScalarBaseMult(exponent.Bytes())
-	return types.NewECGroupElement(hx, hy)
+	return NewECGroupElement(hx, hy)
 }
 
 // Inv computes inverse of x in ECGroup. This is done by computing x^(order-1) as:
 // x * x^(order-1) = x^order = 1. Note that this actually means x * (order-1) as this is
 // additive group.
-func (group *ECGroup) Inv(x *types.ECGroupElement) *types.ECGroupElement {
+func (group *ECGroup) Inv(x *ECGroupElement) *ECGroupElement {
 	orderMinOne := new(big.Int).Sub(group.Q, big.NewInt(1))
 	inv := group.Exp(x, orderMinOne)
 	return inv

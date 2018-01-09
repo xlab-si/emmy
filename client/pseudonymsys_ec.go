@@ -25,9 +25,9 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -71,7 +71,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	// Note that as there is very little logic needed (besides what is in DLog equality
 	// prover), everything is implemented here (no pseudoynymsys nym gen client).
 
-	masterNymA := types.NewECGroupElement(prover.Group.Curve.Params().Gx,
+	masterNymA := groups.NewECGroupElement(prover.Group.Curve.Params().Gx,
 		prover.Group.Curve.Params().Gy)
 	masterNymB := prover.Group.Exp(masterNymA, userSecret)
 
@@ -83,12 +83,12 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	// g1 = nymA, g2 = blindedA
 	x1, x2 := prover.GetProofRandomData(userSecret, nymA, caCertificate.BlindedA)
 	pRandomData := pb.PseudonymsysNymGenProofRandomDataEC{
-		X1:     types.ToPbECGroupElement(x1),
-		A1:     types.ToPbECGroupElement(nymA),
-		B1:     types.ToPbECGroupElement(nymB),
-		X2:     types.ToPbECGroupElement(x2),
-		A2:     types.ToPbECGroupElement(caCertificate.BlindedA),
-		B2:     types.ToPbECGroupElement(caCertificate.BlindedB),
+		X1:     pb.ToPbECGroupElement(x1),
+		A1:     pb.ToPbECGroupElement(nymA),
+		B1:     pb.ToPbECGroupElement(nymB),
+		X2:     pb.ToPbECGroupElement(x2),
+		A2:     pb.ToPbECGroupElement(caCertificate.BlindedA),
+		B2:     pb.ToPbECGroupElement(caCertificate.BlindedB),
 		R:      caCertificate.R.Bytes(),
 		S:      caCertificate.S.Bytes(),
 		RegKey: regKey,
@@ -149,7 +149,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver, err := dlogproofs.NewSchnorrECProver(c.curve, types.Sigma)
+	schnorrProver, err := dlogproofs.NewSchnorrECProver(c.curve, protocoltypes.Sigma)
 	if err != nil {
 		return nil, err
 	}
@@ -157,9 +157,9 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	x := schnorrProver.GetProofRandomData(userSecret, nym.A)
 
 	pRandomData := pb.SchnorrECProofRandomData{
-		X: types.ToPbECGroupElement(x),
-		A: types.ToPbECGroupElement(nym.A),
-		B: types.ToPbECGroupElement(nym.B),
+		X: pb.ToPbECGroupElement(x),
+		A: pb.ToPbECGroupElement(nym.A),
+		B: pb.ToPbECGroupElement(nym.B),
 	}
 
 	initMsg := &pb.Message{
@@ -197,18 +197,18 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	// And to prove that it knows log_aA(B), log_g(h1) and log_aA(B) = log_g(h1).
 	// g1 = dlog.G, g2 = nym.B, t1 = A, t2 = orgPubKeys.H2
 
-	x11 := types.ToECGroupElement(randomData.X11)
-	x12 := types.ToECGroupElement(randomData.X12)
-	x21 := types.ToECGroupElement(randomData.X21)
-	x22 := types.ToECGroupElement(randomData.X22)
-	A := types.ToECGroupElement(randomData.A)
-	B := types.ToECGroupElement(randomData.B)
+	x11 := randomData.X11.GetNativeType()
+	x12 := randomData.X12.GetNativeType()
+	x21 := randomData.X21.GetNativeType()
+	x22 := randomData.X22.GetNativeType()
+	A := randomData.A.GetNativeType()
+	B := randomData.B.GetNativeType()
 
 	gamma := common.GetRandomInt(schnorrProver.Group.Q)
 	equalityVerifier1 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 	equalityVerifier2 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 
-	g := types.NewECGroupElement(equalityVerifier1.Group.Curve.Params().Gx,
+	g := groups.NewECGroupElement(equalityVerifier1.Group.Curve.Params().Gx,
 		equalityVerifier1.Group.Curve.Params().Gy)
 
 	challenge1 := equalityVerifier1.GetChallenge(g, nym.B, orgPubKeys.H2, A, x11, x12)
@@ -273,26 +273,26 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscriptEC{
-		A: types.ToPbECGroupElement(types.NewECGroupElement(credential.T1.Alpha_1,
+		A: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T1.Alpha_1,
 			credential.T1.Alpha_2)),
-		B: types.ToPbECGroupElement(types.NewECGroupElement(credential.T1.Beta_1,
+		B: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T1.Beta_1,
 			credential.T1.Beta_2)),
 		Hash:   credential.T1.Hash.Bytes(),
 		ZAlpha: credential.T1.ZAlpha.Bytes(),
 	}
 	transcript2 := &pb.PseudonymsysTranscriptEC{
-		A: types.ToPbECGroupElement(types.NewECGroupElement(credential.T2.Alpha_1,
+		A: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T2.Alpha_1,
 			credential.T2.Alpha_2)),
-		B: types.ToPbECGroupElement(types.NewECGroupElement(credential.T2.Beta_1,
+		B: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T2.Beta_1,
 			credential.T2.Beta_2)),
 		Hash:   credential.T2.Hash.Bytes(),
 		ZAlpha: credential.T2.ZAlpha.Bytes(),
 	}
 	pbCredential := &pb.PseudonymsysCredentialEC{
-		SmallAToGamma: types.ToPbECGroupElement(credential.SmallAToGamma),
-		SmallBToGamma: types.ToPbECGroupElement(credential.SmallBToGamma),
-		AToGamma:      types.ToPbECGroupElement(credential.AToGamma),
-		BToGamma:      types.ToPbECGroupElement(credential.BToGamma),
+		SmallAToGamma: pb.ToPbECGroupElement(credential.SmallAToGamma),
+		SmallBToGamma: pb.ToPbECGroupElement(credential.SmallBToGamma),
+		AToGamma:      pb.ToPbECGroupElement(credential.AToGamma),
+		BToGamma:      pb.ToPbECGroupElement(credential.BToGamma),
 		T1:            transcript1,
 		T2:            transcript2,
 	}
@@ -303,10 +303,10 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 		Content: &pb.Message_PseudonymsysTransferCredentialDataEc{
 			&pb.PseudonymsysTransferCredentialDataEC{
 				OrgName:    orgName,
-				X1:         types.ToPbECGroupElement(x1),
-				X2:         types.ToPbECGroupElement(x2),
-				NymA:       types.ToPbECGroupElement(nym.A),
-				NymB:       types.ToPbECGroupElement(nym.B),
+				X1:         pb.ToPbECGroupElement(x1),
+				X2:         pb.ToPbECGroupElement(x2),
+				NymA:       pb.ToPbECGroupElement(nym.A),
+				NymB:       pb.ToPbECGroupElement(nym.B),
 				Credential: pbCredential,
 			},
 		},

@@ -24,7 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -32,7 +31,7 @@ type SchnorrECClient struct {
 	genericClient
 	prover  *dlogproofs.SchnorrECProver
 	secret  *big.Int
-	a       *types.ECGroupElement
+	a       *groups.ECGroupElement
 	variant pb.SchemaVariant
 }
 
@@ -44,7 +43,7 @@ func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve g
 		return nil, err
 	}
 
-	prover, err := dlogproofs.NewSchnorrECProver(curve, types.ToProtocolType(variant))
+	prover, err := dlogproofs.NewSchnorrECProver(curve, variant.GetNativeType())
 	if err != nil {
 		return nil, fmt.Errorf("Could not create schnorr EC prover: %v", err)
 	}
@@ -54,7 +53,7 @@ func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve g
 		prover:        prover,
 		variant:       variant,
 		secret:        s,
-		a: &types.ECGroupElement{
+		a: &groups.ECGroupElement{
 			X: prover.Group.Curve.Params().Gx,
 			Y: prover.Group.Curve.Params().Gy,
 		},
@@ -123,14 +122,14 @@ func (c *SchnorrECClient) runZeroKnowledge() error {
 	return nil
 }
 
-func (c *SchnorrECClient) open() (*types.ECGroupElement, error) {
-	h := c.prover.GetOpeningMsg()
-	ecge := types.ToPbECGroupElement(h)
+func (c *SchnorrECClient) open() (*groups.ECGroupElement, error) {
+	myH := c.prover.GetOpeningMsg()
+	h := pb.ToPbECGroupElement(myH)
 	openMsg := &pb.Message{
 		ClientId:      c.id,
 		Schema:        pb.SchemaType_SCHNORR_EC,
 		SchemaVariant: c.variant,
-		Content:       &pb.Message_EcGroupElement{ecge},
+		Content:       &pb.Message_EcGroupElement{h},
 	}
 
 	resp, err := c.getResponseTo(openMsg)
@@ -138,8 +137,8 @@ func (c *SchnorrECClient) open() (*types.ECGroupElement, error) {
 		return nil, err
 	}
 
-	ecge = resp.GetEcGroupElement()
-	return types.ToECGroupElement(ecge), nil
+	h = resp.GetEcGroupElement()
+	return h.GetNativeType(), nil
 }
 
 func (c *SchnorrECClient) getProofRandomData(isFirstMsg bool) (*pb.PedersenDecommitment, error) {
@@ -147,9 +146,9 @@ func (c *SchnorrECClient) getProofRandomData(isFirstMsg bool) (*pb.PedersenDecom
 	b := c.prover.Group.Exp(c.a, c.secret)
 
 	pRandomData := pb.SchnorrECProofRandomData{
-		X: types.ToPbECGroupElement(x),
-		A: types.ToPbECGroupElement(c.a),
-		B: types.ToPbECGroupElement(b),
+		X: pb.ToPbECGroupElement(x),
+		A: pb.ToPbECGroupElement(c.a),
+		B: pb.ToPbECGroupElement(b),
 	}
 
 	req := &pb.Message{}

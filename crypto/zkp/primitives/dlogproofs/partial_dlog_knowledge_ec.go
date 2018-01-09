@@ -22,13 +22,23 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
 )
+
+type ECTriple struct {
+	A *groups.ECGroupElement
+	B *groups.ECGroupElement
+	C *groups.ECGroupElement
+}
+
+func NewECTriple(a, b, c *groups.ECGroupElement) *ECTriple {
+	triple := ECTriple{A: a, B: b, C: c}
+	return &triple
+}
 
 // ProvePartialECDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
 // the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
 func ProvePartialECDLogKnowledge(group *groups.ECGroup, secret1 *big.Int,
-	a1, a2, b2 *types.ECGroupElement) bool {
+	a1, a2, b2 *groups.ECGroupElement) bool {
 	prover := NewPartialECDLogProver(group)
 	verifier := NewPartialECDLogVerifier(group)
 
@@ -49,8 +59,8 @@ func ProvePartialECDLogKnowledge(group *groups.ECGroup, secret1 *big.Int,
 type PartialECDLogProver struct {
 	Group   *groups.ECGroup
 	secret1 *big.Int
-	a1      *types.ECGroupElement
-	a2      *types.ECGroupElement
+	a1      *groups.ECGroupElement
+	a2      *groups.ECGroupElement
 	r1      *big.Int
 	c2      *big.Int
 	z2      *big.Int
@@ -64,7 +74,7 @@ func NewPartialECDLogProver(group *groups.ECGroup) *PartialECDLogProver {
 }
 
 func (prover *PartialECDLogProver) GetProofRandomData(secret1 *big.Int, a1, b1, a2,
-	b2 *types.ECGroupElement) (*types.ECTriple, *types.ECTriple) {
+	b2 *groups.ECGroupElement) (*ECTriple, *ECTriple) {
 	prover.a1 = a1
 	prover.a2 = a2
 	prover.secret1 = secret1
@@ -82,8 +92,8 @@ func (prover *PartialECDLogProver) GetProofRandomData(secret1 *big.Int, a1, b1, 
 
 	// we need to make sure that the order does not reveal which secret we do know:
 	ord := common.GetRandomInt(big.NewInt(2))
-	triple1 := types.NewECTriple(x1, a1, b1)
-	triple2 := types.NewECTriple(x2, a2, b2)
+	triple1 := NewECTriple(x1, a1, b1)
+	triple2 := NewECTriple(x2, a2, b2)
 
 	if ord.Cmp(big.NewInt(0)) == 0 {
 		prover.ord = 0
@@ -112,8 +122,8 @@ func (prover *PartialECDLogProver) GetProofData(challenge *big.Int) (*big.Int, *
 
 type PartialECDLogVerifier struct {
 	Group     *groups.ECGroup
-	triple1   *types.ECTriple // contains x1, a1, b1
-	triple2   *types.ECTriple // contains x2, a2, b2
+	triple1   *ECTriple // contains x1, a1, b1
+	triple2   *ECTriple // contains x2, a2, b2
 	challenge *big.Int
 }
 
@@ -123,7 +133,7 @@ func NewPartialECDLogVerifier(group *groups.ECGroup) *PartialECDLogVerifier {
 	}
 }
 
-func (verifier *PartialECDLogVerifier) SetProofRandomData(triple1, triple2 *types.ECTriple) {
+func (verifier *PartialECDLogVerifier) SetProofRandomData(triple1, triple2 *ECTriple) {
 	verifier.triple1 = triple1
 	verifier.triple2 = triple2
 }
@@ -134,13 +144,13 @@ func (verifier *PartialECDLogVerifier) GetChallenge() *big.Int {
 	return challenge
 }
 
-func (verifier *PartialECDLogVerifier) verifyTriple(triple *types.ECTriple,
+func (verifier *PartialECDLogVerifier) verifyTriple(triple *ECTriple,
 	challenge, z *big.Int) bool {
 	left := verifier.Group.Exp(triple.B, z)      // a.X, a.Y, z
 	r := verifier.Group.Exp(triple.C, challenge) // b.X, b.Y, challenge
 	right := verifier.Group.Mul(r, triple.A)     // r1, r2, x.X, x.Y
 
-	return types.CmpECGroupElements(left, right)
+	return left.Equals(right)
 }
 
 func (verifier *PartialECDLogVerifier) Verify(c1, z1, c2, z2 *big.Int) bool {

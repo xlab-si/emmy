@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrproofs"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -117,7 +117,7 @@ func (c *QNRClient) Run() (bool, error) {
 	return proved, nil
 }
 
-func (c *QNRClient) getVerifierChallenge() (*big.Int, []*types.Pair, error) {
+func (c *QNRClient) getVerifierChallenge() (*big.Int, []*common.Pair, error) {
 	msg := &pb.Message{
 		Content: &pb.Message_Empty{&pb.EmptyMsg{}},
 	}
@@ -128,9 +128,9 @@ func (c *QNRClient) getVerifierChallenge() (*big.Int, []*types.Pair, error) {
 
 	ch := resp.GetQnrVerifierChallenge()
 	w := new(big.Int).SetBytes(ch.W)
-	var pairs []*types.Pair
+	var pairs []*common.Pair
 	for _, p := range ch.Pairs {
-		pair := types.ToPair(p)
+		pair := p.GetNativeType()
 		pairs = append(pairs, pair)
 	}
 	return w, pairs, nil
@@ -155,16 +155,16 @@ func (c *QNRClient) sendProverChallenge() error {
 	return nil
 }
 
-func (c *QNRClient) getVerifierProof() ([]*types.Pair, error) {
+func (c *QNRClient) getVerifierProof() ([]*common.Pair, error) {
 	resp, err := c.receive()
 	if err != nil {
 		return nil, err
 	}
 
 	verProof := resp.GetRepeatedPair()
-	var verProofPairs []*types.Pair
+	var verProofPairs []*common.Pair
 	for _, p := range verProof.Pairs {
-		pair := types.ToPair(p)
+		pair := p.GetNativeType()
 		verProofPairs = append(verProofPairs, pair)
 	}
 	return verProofPairs, nil

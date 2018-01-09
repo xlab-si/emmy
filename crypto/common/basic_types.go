@@ -15,23 +15,29 @@
  *
  */
 
-package server
+package common
 
-import (
-	"github.com/xlab-si/emmy/config"
-	pb "github.com/xlab-si/emmy/protobuf"
-	"golang.org/x/net/context"
-)
+import "math/big"
 
-func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
-	s.logger.Info("Client requested service information")
+// Pair is the same as ECGroupElement, but to be used in non EC schemes when a pair of
+// *big.Int is needed.
+type Pair struct {
+	A *big.Int
+	B *big.Int
+}
 
-	name, provider, description := config.LoadServiceInfo()
-	info := &pb.ServiceInfo{
-		Name:        name,
-		Provider:    provider,
-		Description: description,
-	}
+func NewPair(a, b *big.Int) *Pair {
+	pair := Pair{A: a, B: b}
+	return &pair
+}
 
-	return info, nil
+type Triple struct {
+	A *big.Int
+	B *big.Int
+	C *big.Int
+}
+
+func NewTriple(a, b, c *big.Int) *Triple {
+	triple := Triple{A: a, B: b, C: c}
+	return &triple
 }

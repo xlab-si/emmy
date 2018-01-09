@@ -22,7 +22,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/types"
 )
 
 type OrgCredentialVerifierEC struct {
@@ -30,8 +29,8 @@ type OrgCredentialVerifierEC struct {
 	s2 *big.Int
 
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
-	a                *types.ECGroupElement
-	b                *types.ECGroupElement
+	a                *groups.ECGroupElement
+	b                *groups.ECGroupElement
 	curveType        groups.ECurve
 }
 
@@ -48,7 +47,7 @@ func NewOrgCredentialVerifierEC(s1, s2 *big.Int, curveType groups.ECurve) *OrgCr
 }
 
 func (org *OrgCredentialVerifierEC) GetAuthenticationChallenge(a, b, a1, b1,
-	x1, x2 *types.ECGroupElement) *big.Int {
+	x1, x2 *groups.ECGroupElement) *big.Int {
 	// TODO: check if (a, b) is registered; if not, close the session
 
 	org.a = a
@@ -64,7 +63,7 @@ func (org *OrgCredentialVerifierEC) VerifyAuthentication(z *big.Int,
 		return false
 	}
 
-	g := types.NewECGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
+	g := groups.NewECGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
 		org.EqualityVerifier.Group.Curve.Params().Gy)
 
 	valid1 := dlogproofs.VerifyBlindedTranscriptEC(credential.T1, groups.P256, g, orgPubKeys.H2,

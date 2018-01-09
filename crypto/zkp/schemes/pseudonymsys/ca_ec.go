@@ -26,25 +26,25 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type CAEC struct {
 	Group           *groups.ECGroup
 	SchnorrVerifier *dlogproofs.SchnorrECVerifier
-	a               *types.ECGroupElement
-	b               *types.ECGroupElement
+	a               *groups.ECGroupElement
+	b               *groups.ECGroupElement
 	privateKey      *ecdsa.PrivateKey
 }
 
 type CACertificateEC struct {
-	BlindedA *types.ECGroupElement
-	BlindedB *types.ECGroupElement
+	BlindedA *groups.ECGroupElement
+	BlindedB *groups.ECGroupElement
 	R        *big.Int
 	S        *big.Int
 }
 
-func NewCACertificateEC(blindedA, blindedB *types.ECGroupElement, r, s *big.Int) *CACertificateEC {
+func NewCACertificateEC(blindedA, blindedB *groups.ECGroupElement, r, s *big.Int) *CACertificateEC {
 	return &CACertificateEC{
 		BlindedA: blindedA,
 		BlindedB: blindedB,
@@ -58,7 +58,7 @@ func NewCAEC(d, x, y *big.Int, curveType groups.ECurve) *CAEC {
 	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, types.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, protocoltypes.Sigma)
 	ca := CAEC{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,
@@ -67,7 +67,7 @@ func NewCAEC(d, x, y *big.Int, curveType groups.ECurve) *CAEC {
 	return &ca
 }
 
-func (ca *CAEC) GetChallenge(a, b, x *types.ECGroupElement) *big.Int {
+func (ca *CAEC) GetChallenge(a, b, x *groups.ECGroupElement) *big.Int {
 	// TODO: check if b is really a valuable external user's public master key; if not, close the session
 
 	ca.a = a

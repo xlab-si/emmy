@@ -23,19 +23,19 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type CredentialEC struct {
-	SmallAToGamma *types.ECGroupElement
-	SmallBToGamma *types.ECGroupElement
-	AToGamma      *types.ECGroupElement
-	BToGamma      *types.ECGroupElement
+	SmallAToGamma *groups.ECGroupElement
+	SmallBToGamma *groups.ECGroupElement
+	AToGamma      *groups.ECGroupElement
+	BToGamma      *groups.ECGroupElement
 	T1            *dlogproofs.TranscriptEC
 	T2            *dlogproofs.TranscriptEC
 }
 
-func NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma *types.ECGroupElement,
+func NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma *groups.ECGroupElement,
 	t1, t2 *dlogproofs.TranscriptEC) *CredentialEC {
 	credential := &CredentialEC{
 		SmallAToGamma: aToGamma,
@@ -49,11 +49,11 @@ func NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma *types.ECGroupElemen
 }
 
 type OrgPubKeysEC struct {
-	H1 *types.ECGroupElement
-	H2 *types.ECGroupElement
+	H1 *groups.ECGroupElement
+	H2 *groups.ECGroupElement
 }
 
-func NewOrgPubKeysEC(h1, h2 *types.ECGroupElement) *OrgPubKeysEC {
+func NewOrgPubKeysEC(h1, h2 *groups.ECGroupElement) *OrgPubKeysEC {
 	return &OrgPubKeysEC{
 		H1: h1,
 		H2: h2,
@@ -68,14 +68,14 @@ type OrgCredentialIssuerEC struct {
 	SchnorrVerifier *dlogproofs.SchnorrECVerifier
 	EqualityProver1 *dlogproofs.ECDLogEqualityBTranscriptProver
 	EqualityProver2 *dlogproofs.ECDLogEqualityBTranscriptProver
-	a               *types.ECGroupElement
-	b               *types.ECGroupElement
+	a               *groups.ECGroupElement
+	b               *groups.ECGroupElement
 }
 
 func NewOrgCredentialIssuerEC(s1, s2 *big.Int, curveType groups.ECurve) *OrgCredentialIssuerEC {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, types.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, protocoltypes.Sigma)
 	equalityProver1 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
 	equalityProver2 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
 	org := OrgCredentialIssuerEC{
@@ -89,7 +89,7 @@ func NewOrgCredentialIssuerEC(s1, s2 *big.Int, curveType groups.ECurve) *OrgCred
 	return &org
 }
 
-func (org *OrgCredentialIssuerEC) GetAuthenticationChallenge(a, b, x *types.ECGroupElement) *big.Int {
+func (org *OrgCredentialIssuerEC) GetAuthenticationChallenge(a, b, x *groups.ECGroupElement) *big.Int {
 	// TODO: check if (a, b) is registered; if not, close the session
 
 	org.a = a
@@ -101,17 +101,17 @@ func (org *OrgCredentialIssuerEC) GetAuthenticationChallenge(a, b, x *types.ECGr
 
 // Verifies that user knows log_a(b). Sends back proof random data (g1^r, g2^r) for both equality proofs.
 func (org *OrgCredentialIssuerEC) VerifyAuthentication(z *big.Int) (
-	*types.ECGroupElement, *types.ECGroupElement, *types.ECGroupElement,
-	*types.ECGroupElement, *types.ECGroupElement, *types.ECGroupElement, error) {
+	*groups.ECGroupElement, *groups.ECGroupElement, *groups.ECGroupElement,
+	*groups.ECGroupElement, *groups.ECGroupElement, *groups.ECGroupElement, error) {
 	verified := org.SchnorrVerifier.Verify(z, nil)
 	if verified {
 		A := org.SchnorrVerifier.Group.Exp(org.b, org.s2)
 		aA := org.SchnorrVerifier.Group.Mul(org.a, A)
 		B := org.SchnorrVerifier.Group.Exp(aA, org.s1)
 
-		g1 := types.NewECGroupElement(org.SchnorrVerifier.Group.Curve.Params().Gx,
+		g1 := groups.NewECGroupElement(org.SchnorrVerifier.Group.Curve.Params().Gx,
 			org.SchnorrVerifier.Group.Curve.Params().Gy)
-		g2 := types.NewECGroupElement(org.b.X, org.b.Y)
+		g2 := groups.NewECGroupElement(org.b.X, org.b.Y)
 
 		x11, x12 := org.EqualityProver1.GetProofRandomData(org.s2, g1, g2)
 		x21, x22 := org.EqualityProver2.GetProofRandomData(org.s1, g1, aA)

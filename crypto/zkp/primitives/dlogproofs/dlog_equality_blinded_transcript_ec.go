@@ -22,14 +22,13 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
 )
 
 // Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
 // and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
 // by verifier.
 func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve groups.ECurve,
-	g1, t1, G2, T2 *types.ECGroupElement) bool {
+	g1, t1, G2, T2 *groups.ECGroupElement) bool {
 	group := groups.NewECGroup(curve)
 
 	// check hash:
@@ -44,15 +43,15 @@ func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve groups.ECurve,
 	// G2^(z+alpha) = (beta11, beta12) * T2^(c-beta)
 	left1 := group.Exp(g1, transcript.ZAlpha)
 	right1 := group.Exp(t1, transcript.Hash)
-	Alpha := types.NewECGroupElement(transcript.Alpha_1, transcript.Alpha_2)
+	Alpha := groups.NewECGroupElement(transcript.Alpha_1, transcript.Alpha_2)
 	right1 = group.Mul(Alpha, right1)
 
 	left2 := group.Exp(G2, transcript.ZAlpha)
 	right2 := group.Exp(T2, transcript.Hash)
-	Beta := types.NewECGroupElement(transcript.Beta_1, transcript.Beta_2)
+	Beta := groups.NewECGroupElement(transcript.Beta_1, transcript.Beta_2)
 	right2 = group.Mul(Beta, right2)
 
-	return types.CmpECGroupElements(left1, right1) && types.CmpECGroupElements(left2, right2)
+	return left1.Equals(right1) && left2.Equals(right2)
 }
 
 type TranscriptEC struct {
@@ -79,8 +78,8 @@ type ECDLogEqualityBTranscriptProver struct {
 	Group  *groups.ECGroup
 	r      *big.Int
 	secret *big.Int
-	g1     *types.ECGroupElement
-	g2     *types.ECGroupElement
+	g1     *groups.ECGroupElement
+	g2     *groups.ECGroupElement
 }
 
 func NewECDLogEqualityBTranscriptProver(curve groups.ECurve) *ECDLogEqualityBTranscriptProver {
@@ -93,7 +92,7 @@ func NewECDLogEqualityBTranscriptProver(curve groups.ECurve) *ECDLogEqualityBTra
 
 // Prove that you know dlog_g1(h1), dlog_g2(h2) and that dlog_g1(h1) = dlog_g2(h2).
 func (prover *ECDLogEqualityBTranscriptProver) GetProofRandomData(secret *big.Int,
-	g1, g2 *types.ECGroupElement) (*types.ECGroupElement, *types.ECGroupElement) {
+	g1, g2 *groups.ECGroupElement) (*groups.ECGroupElement, *groups.ECGroupElement) {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -121,12 +120,12 @@ type ECDLogEqualityBTranscriptVerifier struct {
 	Group      *groups.ECGroup
 	gamma      *big.Int
 	challenge  *big.Int
-	g1         *types.ECGroupElement
-	g2         *types.ECGroupElement
-	x1         *types.ECGroupElement
-	x2         *types.ECGroupElement
-	t1         *types.ECGroupElement
-	t2         *types.ECGroupElement
+	g1         *groups.ECGroupElement
+	g2         *groups.ECGroupElement
+	x1         *groups.ECGroupElement
+	x2         *groups.ECGroupElement
+	t1         *groups.ECGroupElement
+	t2         *groups.ECGroupElement
 	alpha      *big.Int
 	transcript *TranscriptEC
 }
@@ -146,7 +145,7 @@ func NewECDLogEqualityBTranscriptVerifier(curve groups.ECurve,
 }
 
 func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1,
-	x2 *types.ECGroupElement) *big.Int {
+	x2 *groups.ECGroupElement) *big.Int {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -190,7 +189,7 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, 
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
 func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *TranscriptEC,
-	*types.ECGroupElement, *types.ECGroupElement) {
+	*groups.ECGroupElement, *groups.ECGroupElement) {
 	left1 := verifier.Group.Exp(verifier.g1, z)
 	left2 := verifier.Group.Exp(verifier.g2, z)
 
@@ -208,7 +207,7 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *Tr
 	G2 := verifier.Group.Exp(verifier.g2, verifier.gamma)
 	T2 := verifier.Group.Exp(verifier.t2, verifier.gamma)
 
-	if types.CmpECGroupElements(left1, right1) && types.CmpECGroupElements(left2, right2) {
+	if left1.Equals(right1) && left2.Equals(right2) {
 		return true, verifier.transcript, G2, T2
 	} else {
 		return false, nil, nil, nil

@@ -176,8 +176,8 @@ func (cl *CL) Verify(m_Ls []*big.Int, signature *CLSignature) (bool, error) {
 	// and check: 2^l_e - 1 < e < 2^l_e, where l_e = l_m + 2
 
 	/*
-		b1 := signature.e.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cl.config.l_m+1)), nil))
-		b2 := signature.e.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cl.config.l_m+2)), nil))
+		b1 := signature.e.Equals(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cl.config.l_m+1)), nil))
+		b2 := signature.e.Equals(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cl.config.l_m+2)), nil))
 		if (b1 != 1) || (b2 != -1) {
 			return false, nil
 		}

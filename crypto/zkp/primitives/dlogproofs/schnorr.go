@@ -23,14 +23,14 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 // ProveDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
 // means g1^secret = t1.
 func ProveDLogKnowledge(secret, g1, t1 *big.Int, group *groups.SchnorrGroup) bool {
-	prover := NewSchnorrProver(group, types.Sigma)
-	verifier := NewSchnorrVerifier(group, types.Sigma)
+	prover := NewSchnorrProver(group, protocoltypes.Sigma)
+	verifier := NewSchnorrVerifier(group, protocoltypes.Sigma)
 
 	x := prover.GetProofRandomData(secret, g1)
 	verifier.SetProofRandomData(x, g1, t1)
@@ -50,17 +50,17 @@ type SchnorrProver struct {
 	a                *big.Int
 	r                *big.Int
 	PedersenReceiver *commitments.PedersenReceiver // only needed for ZKP and ZKPOK, not for sigma
-	protocolType     types.ProtocolType
+	protocolType     protocoltypes.ProtocolType
 }
 
-func NewSchnorrProver(group *groups.SchnorrGroup, protocolType types.ProtocolType) *SchnorrProver {
+func NewSchnorrProver(group *groups.SchnorrGroup, protocolType protocoltypes.ProtocolType) *SchnorrProver {
 	var prover SchnorrProver
 	prover = SchnorrProver{
 		Group:        group,
 		protocolType: protocolType,
 	}
 
-	if protocolType != types.Sigma {
+	if protocolType != protocoltypes.Sigma {
 		// TODO: currently Pedersen is using the same dlog as SchnorrProver, this
 		// is because SchnorrVerifier for ZKP/ZKPOK needs to know Pedersen's dlog
 		// to generate a challenge and create a commitment
@@ -109,7 +109,7 @@ func (prover *SchnorrProver) GetProofData(challenge *big.Int) (*big.Int, *big.In
 	z.Add(z, prover.r)
 	z.Mod(z, prover.Group.Q)
 
-	if prover.protocolType != types.ZKPOK {
+	if prover.protocolType != protocoltypes.ZKPOK {
 		return z, nil
 	} else {
 		trapdoor := prover.PedersenReceiver.GetTrapdoor()
@@ -124,15 +124,15 @@ type SchnorrVerifier struct {
 	b                 *big.Int
 	challenge         *big.Int
 	pedersenCommitter *commitments.PedersenCommitter // not needed in sigma protocol, only in ZKP and ZKPOK
-	protocolType      types.ProtocolType
+	protocolType      protocoltypes.ProtocolType
 }
 
-func NewSchnorrVerifier(group *groups.SchnorrGroup, protocolType types.ProtocolType) *SchnorrVerifier {
+func NewSchnorrVerifier(group *groups.SchnorrGroup, protocolType protocoltypes.ProtocolType) *SchnorrVerifier {
 	verifier := SchnorrVerifier{
 		Group:        group,
 		protocolType: protocolType,
 	}
-	if protocolType != types.Sigma {
+	if protocolType != protocoltypes.Sigma {
 		verifier.pedersenCommitter = commitments.NewPedersenCommitter(group)
 	}
 	return &verifier
@@ -163,7 +163,7 @@ func (verifier *SchnorrVerifier) SetProofRandomData(x, a, b *big.Int) {
 
 // It returns a challenge and commitment to challenge (this latter only for ZKP and ZKPOK).
 func (verifier *SchnorrVerifier) GetChallenge() (*big.Int, *big.Int) {
-	if verifier.protocolType == types.Sigma {
+	if verifier.protocolType == protocoltypes.Sigma {
 		challenge := verifier.GenerateChallenge()
 		return challenge, nil
 	} else {
@@ -174,7 +174,7 @@ func (verifier *SchnorrVerifier) GetChallenge() (*big.Int, *big.Int) {
 
 // It receives y = r + w * challenge. It returns true if a^y = a^r * (a^secret) ^ challenge, otherwise false.
 func (verifier *SchnorrVerifier) Verify(z *big.Int, trapdoor *big.Int) bool {
-	if verifier.protocolType == types.ZKPOK {
+	if verifier.protocolType == protocoltypes.ZKPOK {
 		valid := verifier.pedersenCommitter.VerifyTrapdoor(trapdoor)
 		if !valid {
 			return false

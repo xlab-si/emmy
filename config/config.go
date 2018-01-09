@@ -23,7 +23,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/types"
 )
 
 // init loads the default config file
@@ -131,11 +130,11 @@ func LoadPseudonymsysCAPubKey() (*big.Int, *big.Int) {
 	return x, y
 }
 
-func LoadServiceInfo() *types.ServiceInfo {
+func LoadServiceInfo() (string, string, string) {
 	serviceName := viper.GetString("service_info.name")
 	serviceProvider := viper.GetString("service_info.provider")
 	serviceDescription := viper.GetString("service_info.description")
-	return types.NewServiceInfo(serviceName, serviceDescription, serviceProvider)
+	return serviceName, serviceProvider, serviceDescription
 }
 
 func LoadSessionKeyMinByteLen() int {

@@ -24,7 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/preimage"
-	"github.com/xlab-si/emmy/types"
 )
 
 // ProveBitCommitment demonstrates how committer can prove that a commitment contains
@@ -101,9 +100,9 @@ func ProveCommitmentMultiplication() (bool, error) {
 	H := committer.H
 	Q := committer.Q
 	Y := committer.Y
-	commitments := types.NewTriple(A, B, C)
-	committedValues := types.NewPair(a, b)
-	randomValues := types.NewTriple(r, u, o)
+	commitments := common.NewTriple(A, B, C)
+	committedValues := common.NewPair(a, b)
+	randomValues := common.NewTriple(r, u, o)
 
 	prover := NewQOneWayMultiplicationProver(homomorphism, homomorphismInv, H, Q, Y,
 		commitments, committedValues, randomValues, t)
@@ -145,8 +144,8 @@ type QOneWayMultiplicationProver struct {
 
 func NewQOneWayMultiplicationProver(homomorphism func(*big.Int) *big.Int,
 	homomorphismInv func(*big.Int) *big.Int,
-	H groups.Group, Q, Y *big.Int, commitments *types.Triple, committedValues *types.Pair,
-	randomValues *types.Triple, t *big.Int) *QOneWayMultiplicationProver {
+	H groups.Group, Q, Y *big.Int, commitments *common.Triple, committedValues *common.Pair,
+	randomValues *common.Triple, t *big.Int) *QOneWayMultiplicationProver {
 	return &QOneWayMultiplicationProver{
 		QOneWayHomomorphism:    homomorphism,
 		QOneWayHomomorphismInv: homomorphismInv,
@@ -249,7 +248,7 @@ type QOneWayMultiplicationVerifier struct {
 }
 
 func NewQOneWayMultiplicationVerifier(homomorphism func(*big.Int) *big.Int, H groups.Group,
-	Q, Y *big.Int, commitments *types.Triple) *QOneWayMultiplicationVerifier {
+	Q, Y *big.Int, commitments *common.Triple) *QOneWayMultiplicationVerifier {
 	return &QOneWayMultiplicationVerifier{
 		QOneWayHomomorphism: homomorphism,
 		H:                   H,

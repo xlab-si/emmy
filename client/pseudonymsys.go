@@ -26,9 +26,9 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"github.com/xlab-si/emmy/types"
 	"google.golang.org/grpc"
 )
 
@@ -145,7 +145,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver := dlogproofs.NewSchnorrProver(c.group, types.Sigma)
+	schnorrProver := dlogproofs.NewSchnorrProver(c.group, protocoltypes.Sigma)
 	x := schnorrProver.GetProofRandomData(userSecret, nym.A)
 
 	pRandomData := pb.SchnorrProofRandomData{
