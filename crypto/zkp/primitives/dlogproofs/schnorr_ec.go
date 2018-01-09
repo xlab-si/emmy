@@ -187,5 +187,5 @@ func (verifier *SchnorrECVerifier) Verify(z *big.Int, trapdoor *big.Int) bool {
 	r := verifier.Group.Exp(verifier.b, verifier.challenge)
 	right := verifier.Group.Mul(r, verifier.x)
 
-	return left.Cmp(right)
+	return left.Equals(right)
 }

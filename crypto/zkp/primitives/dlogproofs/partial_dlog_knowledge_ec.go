@@ -150,7 +150,7 @@ func (verifier *PartialECDLogVerifier) verifyTriple(triple *ECTriple,
 	r := verifier.Group.Exp(triple.C, challenge) // b.X, b.Y, challenge
 	right := verifier.Group.Mul(r, triple.A)     // r1, r2, x.X, x.Y
 
-	return left.Cmp(right)
+	return left.Equals(right)
 }
 
 func (verifier *PartialECDLogVerifier) Verify(c1, z1, c2, z2 *big.Int) bool {

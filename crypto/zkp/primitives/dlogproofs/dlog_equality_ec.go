@@ -129,5 +129,5 @@ func (verifier *ECDLogEqualityVerifier) Verify(z *big.Int) bool {
 	right1 := verifier.Group.Mul(r1, verifier.x1)
 	right2 := verifier.Group.Mul(r2, verifier.x2)
 
-	return left1.Cmp(right1) && left2.Cmp(right2)
+	return left1.Equals(right1) && left2.Equals(right2)
 }

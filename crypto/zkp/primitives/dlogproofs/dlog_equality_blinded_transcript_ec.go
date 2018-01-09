@@ -51,7 +51,7 @@ func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve groups.ECurve,
 	Beta := groups.NewECGroupElement(transcript.Beta_1, transcript.Beta_2)
 	right2 = group.Mul(Beta, right2)
 
-	return left1.Cmp(right1) && left2.Cmp(right2)
+	return left1.Equals(right1) && left2.Equals(right2)
 }
 
 type TranscriptEC struct {
@@ -207,7 +207,7 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *Tr
 	G2 := verifier.Group.Exp(verifier.g2, verifier.gamma)
 	T2 := verifier.Group.Exp(verifier.t2, verifier.gamma)
 
-	if left1.Cmp(right1) && left2.Cmp(right2) {
+	if left1.Equals(right1) && left2.Equals(right2) {
 		return true, verifier.transcript, G2, T2
 	} else {
 		return false, nil, nil, nil

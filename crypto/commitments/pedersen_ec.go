@@ -77,7 +77,7 @@ func (committer *PedersenECCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
 
 func (committer *PedersenECCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
 	h := committer.group.ExpBaseG(trapdoor)
-	return h.Cmp(committer.h)
+	return h.Equals(committer.h)
 }
 
 type PedersenECReceiver struct {
@@ -121,5 +121,5 @@ func (s *PedersenECReceiver) CheckDecommitment(r, val *big.Int) bool {
 	b := s.group.Exp(s.h, r)   // h^r
 	c := s.group.Mul(a, b)     // g^x * h^r
 
-	return c.Cmp(s.commitment)
+	return c.Equals(s.commitment)
 }

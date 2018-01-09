@@ -46,8 +46,7 @@ func NewECGroupElement(x, y *big.Int) *ECGroupElement {
 	}
 }
 
-//TODO Is this name appropriate? Perhaps 'Equals' would be better?
-func (a *ECGroupElement) Cmp(b *ECGroupElement) bool {
+func (a *ECGroupElement) Equals(b *ECGroupElement) bool {
 	return a.X.Cmp(b.X) == 0 && a.Y.Cmp(b.Y) == 0
 }
 
