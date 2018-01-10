@@ -8,7 +8,7 @@ port: 7007
 timeout: 5
 
 # Path to directory with test files
-testdata_dir: ./test/testdata
+testdata_dir: ./client/testdata
 
 # Absolute path to the folder where secret and public keys are serialized to
 # This is used for CSPaillier protocol
