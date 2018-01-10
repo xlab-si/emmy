@@ -15,16 +15,15 @@
  *
  */
 
-package test
+package client
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/client"
 )
 
 func TestInsecureConn(t *testing.T) {
-	_, err := client.GetConnection(testGrpcServerEndpoint, "", true)
+	_, err := GetConnection(testGrpcServerEndpoint, "", true)
 	assert.Nil(t, err, "should finish without errors")
 }

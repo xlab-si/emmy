@@ -205,8 +205,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	case pb.SchemaType_SCHNORR_EC:
 		err = s.SchnorrEC(req, protocolType, stream, curve)
 	case pb.SchemaType_CSPAILLIER:
-		keyDir := config.LoadKeyDirFromConfig()
-		secKeyPath := filepath.Join(keyDir, "cspaillierseckey.txt")
+		secKeyPath := filepath.Join(config.LoadTestdataDir(), "cspaillierseckey.txt")
 		err = s.CSPaillier(req, secKeyPath, stream)
 	case pb.SchemaType_PSEUDONYMSYS_CA:
 		err = s.PseudonymsysCA(req, stream)

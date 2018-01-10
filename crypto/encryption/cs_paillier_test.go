@@ -35,7 +35,7 @@ func TestCSPaillier(t *testing.T) {
 		K1:       158,
 	}
 
-	dir := config.LoadTestKeyDirFromConfig()
+	dir := config.LoadTestdataDir()
 	secKeyPath := filepath.Join(dir, "cspaillierseckey.txt")
 	pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
 
