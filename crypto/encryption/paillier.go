@@ -19,7 +19,7 @@ package encryption
 
 import (
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
@@ -61,7 +61,7 @@ func NewPubPaillier(pubKey *PaillierPubKey) *Paillier {
 
 func (paillier *Paillier) Encrypt(m *big.Int) (*big.Int, error) {
 	if m.Cmp(paillier.pubKey.n) >= 0 {
-		err := errors.New("msg is too big")
+		err := fmt.Errorf("msg is too big")
 		return nil, err
 	}
 
@@ -79,7 +79,7 @@ func (paillier *Paillier) Encrypt(m *big.Int) (*big.Int, error) {
 
 func (paillier *Paillier) Decrypt(c *big.Int) (*big.Int, error) {
 	if c.Cmp(paillier.pubKey.n2) >= 0 {
-		err := errors.New("cipertext is too big")
+		err := fmt.Errorf("cipertext is too big")
 		return nil, err
 	}
 

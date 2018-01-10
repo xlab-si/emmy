@@ -47,7 +47,7 @@ func GetServiceInfo(conn *grpc.ClientConn) (*ServiceInfo, error) {
 
 	info, err := client.GetServiceInfo(context.Background(), &pb.EmptyMsg{})
 	if err != nil {
-		return nil, fmt.Errorf("Unable to retrieve service info: %v", err)
+		return nil, fmt.Errorf("unable to retrieve service info: %v", err)
 	}
 
 	serviceInfo := NewServiceInfo(info.GetName(), info.GetDescription(), info.GetProvider())

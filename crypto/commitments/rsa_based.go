@@ -19,7 +19,6 @@ package commitments
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -78,7 +77,7 @@ func NewRSABasedCommitter(homomorphism func(*big.Int) *big.Int, homomorphismInv 
 	// Note that for other q-one-way homomorphisms this validation would be different:
 	yIsValid := H.IsElementInGroup(y)
 	if !yIsValid {
-		return nil, fmt.Errorf("Y is not valid")
+		return nil, fmt.Errorf("y is not valid")
 	}
 	return &RSABasedCommitter{
 		Homomorphism:    homomorphism,
@@ -91,7 +90,7 @@ func NewRSABasedCommitter(homomorphism func(*big.Int) *big.Int, homomorphismInv 
 
 func (committer *RSABasedCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
 	if a.Cmp(committer.Q) != -1 {
-		err := errors.New("the committed value needs to be < Q")
+		err := fmt.Errorf("the committed value needs to be < Q")
 		return nil, err
 	}
 	c, r := committer.computeCommitment(a)

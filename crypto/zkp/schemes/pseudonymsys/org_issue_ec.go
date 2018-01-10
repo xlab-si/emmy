@@ -18,8 +18,9 @@
 package pseudonymsys
 
 import (
-	"errors"
 	"math/big"
+
+	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
@@ -118,7 +119,7 @@ func (org *OrgCredentialIssuerEC) VerifyAuthentication(z *big.Int) (
 
 		return x11, x12, x21, x22, A, B, nil
 	} else {
-		err := errors.New("Authentication with organization failed")
+		err := fmt.Errorf("authentication with organization failed")
 		return nil, nil, nil, nil, nil, nil, err
 	}
 }

@@ -19,9 +19,10 @@ package signatures
 
 import (
 	"crypto/rand"
-	"errors"
 	"log"
 	"math/big"
+
+	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/common"
 )
@@ -105,14 +106,14 @@ func (cl *CL) getQuadraticResidues(n *big.Int) ([]*big.Int, *big.Int, *big.Int) 
 
 func (cl *CL) Sign(m_Ls []*big.Int) (*CLSignature, error) {
 	if cl.numOfBlocks != len(m_Ls) {
-		err := errors.New("the number of message blocks is not correct")
+		err := fmt.Errorf("number of message blocks is not correct")
 		return nil, err
 	}
 
 	// each m should be in [0, 2^l_m)
 	for _, m_L := range m_Ls {
 		if m_L.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cl.config.l_m)), nil)) > -1 {
-			err := errors.New("msg is too big")
+			err := fmt.Errorf("msg is too big")
 			return nil, err
 		}
 	}
@@ -167,7 +168,7 @@ func (cl *CL) Verify(m_Ls []*big.Int, signature *CLSignature) (bool, error) {
 	// each m should be in [0, 2^l_m)
 	for _, m_L := range m_Ls {
 		if m_L.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(cl.config.l_m)), nil)) > -1 {
-			err := errors.New("msg is too big")
+			err := fmt.Errorf("msg is too big")
 			return false, err
 		}
 	}

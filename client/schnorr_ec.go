@@ -45,7 +45,7 @@ func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve g
 
 	prover, err := dlogproofs.NewSchnorrECProver(curve, variant.GetNativeType())
 	if err != nil {
-		return nil, fmt.Errorf("Could not create schnorr EC prover: %v", err)
+		return nil, fmt.Errorf("could not create schnorr EC prover: %v", err)
 	}
 
 	return &SchnorrECClient{
@@ -111,12 +111,12 @@ func (c *SchnorrECClient) runZeroKnowledge() error {
 	success := c.prover.PedersenReceiver.CheckDecommitment(r, challenge)
 	if success {
 		proved, err := c.getProofData(challenge)
-		logger.Noticef("Decommitment successful, proved: %v", proved)
+		logger.Noticef("decommitment successful, proved: %v", proved)
 		if err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Decommitment failed")
+		return fmt.Errorf("decommitment failed")
 	}
 
 	return nil

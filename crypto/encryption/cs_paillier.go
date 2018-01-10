@@ -18,7 +18,7 @@
 package encryption
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"math/big"
 
@@ -270,7 +270,7 @@ func (cspaillier *CSPaillier) StorePubKey(path string) error {
 // Returns (u, e, v).
 func (cspaillier *CSPaillier) Encrypt(m, label *big.Int) (*big.Int, *big.Int, *big.Int, error) {
 	if m.Cmp(cspaillier.PubKey.N) >= 0 {
-		err := errors.New("msg is too big")
+		err := fmt.Errorf("msg is too big")
 		return nil, nil, nil, err
 	}
 
@@ -310,7 +310,7 @@ func (cspaillier *CSPaillier) Decrypt(u, e, v, label *big.Int) (*big.Int, error)
 	// check whether Abs(v) = v:
 	vAbs, _ := cspaillier.Abs(v)
 	if v.Cmp(vAbs) != 0 {
-		err := errors.New("v != abs(v)")
+		err := fmt.Errorf("v != abs(v)")
 		return nil, err
 	}
 
@@ -333,7 +333,7 @@ func (cspaillier *CSPaillier) Decrypt(u, e, v, label *big.Int) (*big.Int, error)
 	v2.Mod(v2, n2)
 
 	if t.Cmp(v2) != 0 {
-		err := errors.New("CSPaillier decryption failed 1")
+		err := fmt.Errorf("CSPaillier decryption failed 1")
 		return nil, err
 	}
 
@@ -348,7 +348,7 @@ func (cspaillier *CSPaillier) Decrypt(u, e, v, label *big.Int) (*big.Int, error)
 	m1minModulo := new(big.Int).Mod(m1min, cspaillier.PubKey.N)
 
 	if m1minModulo.Cmp(big.NewInt(0)) != 0 {
-		err := errors.New("CSPaillier decryption failed 2")
+		err := fmt.Errorf("CSPaillier decryption failed 2")
 		return nil, err
 	}
 
@@ -360,7 +360,7 @@ func (cspaillier *CSPaillier) Decrypt(u, e, v, label *big.Int) (*big.Int, error)
 func (cspaillier *CSPaillier) Abs(a *big.Int) (*big.Int, error) {
 	n2 := new(big.Int).Mul(cspaillier.PubKey.N, cspaillier.PubKey.N)
 	if a.Cmp(n2) >= 0 {
-		err := errors.New("value is too big for abs function")
+		err := fmt.Errorf("value is too big for abs function")
 		return nil, err
 	}
 	b := new(big.Int).Div(n2, big.NewInt(2))

@@ -93,6 +93,6 @@ func (ca *CA) Verify(z *big.Int) (*CACertificate, error) {
 			return NewCACertificate(blindedA, blindedB, r, s), nil
 		}
 	} else {
-		return nil, fmt.Errorf("The knowledge of secret was not verified.")
+		return nil, fmt.Errorf("knowledge of secret was not verified")
 	}
 }

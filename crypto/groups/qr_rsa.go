@@ -18,8 +18,9 @@
 package groups
 
 import (
-	"errors"
 	"math/big"
+
+	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/common"
 )
@@ -36,7 +37,7 @@ type QRRSA struct {
 
 func NewQRRSA(P, Q *big.Int) (*QRRSA, error) {
 	if !P.ProbablyPrime(20) || !Q.ProbablyPrime(20) {
-		return nil, errors.New("P and Q must be primes")
+		return nil, fmt.Errorf("P and Q must be primes")
 	}
 	pMin := new(big.Int).Sub(P, big.NewInt(1))
 	pMinHalf := new(big.Int).Div(pMin, big.NewInt(2))
@@ -78,7 +79,7 @@ func (group *QRRSA) Exp(base, exponent *big.Int) *big.Int {
 func (group *QRRSA) IsElementInGroup(a *big.Int) (bool, error) {
 	if group.P == nil {
 		return false,
-			errors.New("IsElementInGroup not available for QRRSA with only public parameters")
+			fmt.Errorf("IsElementInGroup not available for QRRSA with only public parameters")
 	}
 
 	factors := []*big.Int{group.P, group.Q}

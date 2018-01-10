@@ -19,7 +19,7 @@ type sessionKey string
 func newSessionManager(n int) (*sessionManager, error) {
 	var err error
 	if n < MIN_SESSION_KEY_BYTE_LEN {
-		err = fmt.Errorf("The desired length of the session key (%d B) is too short. Falling back to %d B.",
+		err = fmt.Errorf("desired length of the session key (%d B) is too short, falling back to %d B",
 			n, MIN_SESSION_KEY_BYTE_LEN)
 		n = MIN_SESSION_KEY_BYTE_LEN
 	}

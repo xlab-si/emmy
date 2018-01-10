@@ -18,7 +18,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -127,7 +126,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 		// todo: store in some DB: (orgName, nymA, nymB)
 		return pseudonymsys.NewPseudonym(nymA, nymB), nil
 	} else {
-		err := errors.New("The proof for nym registration failed.")
+		err := fmt.Errorf("proof for nym registration failed")
 		return nil, err
 	}
 }
@@ -234,7 +233,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 		}
 	}
 
-	err = errors.New("Organization failed to prove that a credential is valid.")
+	err = fmt.Errorf("organization failed to prove that a credential is valid")
 	return nil, err
 }
 
