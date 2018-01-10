@@ -20,7 +20,7 @@ package qrproofs
 // Statistical zero-knowledge proof of quadratic non-residousity.
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
@@ -44,7 +44,7 @@ func ProveQNR(y *big.Int, qr *groups.QRRSA) (bool, error) {
 
 		verifierIsHonest := prover.Verify(pairs, verProof)
 		if !verifierIsHonest {
-			err := errors.New("verifier is not honest")
+			err := fmt.Errorf("verifier is not honest")
 			return false, err
 		}
 

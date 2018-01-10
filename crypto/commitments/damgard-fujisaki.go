@@ -18,7 +18,7 @@
 package commitments
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
@@ -44,7 +44,7 @@ func NewDamgardFujisakiCommitter(n, h, g *big.Int) *DamgardFujisakiCommitter {
 func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
 	group := committer.QRSpecialRSA
 	if a.Cmp(group.N) != -1 {
-		err := errors.New("the committed value needs to be < N") // TODO: boundary to be checked
+		err := fmt.Errorf("the committed value needs to be < N") // TODO: boundary to be checked
 		return nil, err
 	}
 	// c = g^a * h^r % group.N

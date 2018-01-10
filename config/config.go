@@ -39,7 +39,7 @@ func LoadConfig(configName string, configType string) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Cannot read configuration file: %s\n", err))
+		panic(fmt.Errorf("cannot read configuration file: %s\n", err))
 	}
 }
 
@@ -89,7 +89,7 @@ func LoadQRRSA(name string) *groups.QRRSA {
 	q, _ := new(big.Int).SetString(x["q"].(string), 10)
 	qr, err := groups.NewQRRSA(p, q)
 	if err != nil {
-		panic(fmt.Errorf("Error when loading QRRSA RSA group: %s\n", err))
+		panic(fmt.Errorf("error when loading QRRSA RSA group: %s\n", err))
 	}
 	return qr
 }

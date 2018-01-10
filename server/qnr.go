@@ -51,7 +51,7 @@ func (s *Server) QNR(req *pb.Message, qr *groups.QRRSA,
 		}
 
 		if req.GetEmpty() == nil {
-			return fmt.Errorf("Shoud receive empty message at this point")
+			return fmt.Errorf("should receive empty message at this point")
 		}
 
 		w, pairs := verifier.GetChallenge()

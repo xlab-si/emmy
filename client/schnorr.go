@@ -109,12 +109,12 @@ func (c *SchnorrClient) runZeroKnowledge() error {
 
 	if success := c.prover.PedersenReceiver.CheckDecommitment(r, challenge); success {
 		proved, err := c.getProofData(challenge)
-		logger.Noticef("Decommitment successful, proved: %v", proved)
+		logger.Noticef("decommitment successful, proved: %v", proved)
 		if err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Decommitment failed")
+		return fmt.Errorf("decommitment failed")
 	}
 
 	return nil

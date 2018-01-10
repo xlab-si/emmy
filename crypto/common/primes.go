@@ -19,7 +19,7 @@ package common
 
 import (
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"io"
 	"math/big"
 )
@@ -34,7 +34,7 @@ func GetSafePrime(bits int) (p *big.Int, err error) {
 	if p.BitLen() == bits {
 		return p, nil
 	} else {
-		err := errors.New("bit length not correct")
+		err := fmt.Errorf("bit length not correct")
 		return nil, err
 	}
 }
@@ -70,7 +70,7 @@ func GetSpecialRSAPrimes(bits int) (*SpecialRSAPrimes, error) {
 	if p.BitLen() == bits && q.BitLen() == bits {
 		return NewSpecialRSAPrimes(p, q, p1, q1), nil
 	} else {
-		err := errors.New("bit length not correct")
+		err := fmt.Errorf("bit length not correct")
 		return NewSpecialRSAPrimes(nil, nil, nil, nil), err
 	}
 }
@@ -110,7 +110,7 @@ func germainPrime(bits int, c chan *big.Int, quit chan int) (p *big.Int, err err
 	rand := rand.Reader
 
 	if bits < 2 {
-		err = errors.New("crypto/rand: prime size must be at least 2-bit")
+		err = fmt.Errorf("crypto/rand: prime size must be at least 2-bit")
 		return
 	}
 

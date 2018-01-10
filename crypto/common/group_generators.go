@@ -18,7 +18,7 @@
 package common
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -26,7 +26,7 @@ import (
 // Parameter groupOrder is order of Z_n (if n is prime, order is n-1).
 func GetGeneratorOfZnSubgroup(n, groupOrder, subgroupOrder *big.Int) (*big.Int, error) {
 	if big.NewInt(0).Mod(groupOrder, subgroupOrder).Cmp(big.NewInt(0)) != 0 {
-		err := errors.New("subgroupOrder does not divide groupOrder")
+		err := fmt.Errorf("subgroupOrder does not divide groupOrder")
 		return nil, err
 	}
 	r := new(big.Int).Div(groupOrder, subgroupOrder)

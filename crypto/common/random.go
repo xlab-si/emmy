@@ -19,7 +19,7 @@ package common
 
 import (
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"log"
 	"math/big"
 )
@@ -36,7 +36,7 @@ func GetRandomInt(max *big.Int) *big.Int {
 // Returns random integer from [min, max).
 func GetRandomIntFromRange(min, max *big.Int) (*big.Int, error) {
 	if min.Cmp(max) >= 0 {
-		err := errors.New("GetRandomIntFromRange: max has to be bigger than min")
+		err := fmt.Errorf("GetRandomIntFromRange: max has to be bigger than min")
 		return nil, err
 	}
 	if min.Cmp(big.NewInt(0)) < 0 && max.Cmp(big.NewInt(0)) < 0 {

@@ -19,7 +19,7 @@ package secretsharing
 
 import (
 	"crypto/rand"
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
@@ -38,11 +38,11 @@ func NewDealer() (*Dealer, error) {
 func (dealer *Dealer) SplitSecret(secret string, threshold int,
 	numberOfShares int) (map[*big.Int]*big.Int, *big.Int, error) {
 	if threshold < 2 {
-		err := errors.New("the threshold should be at least 2")
+		err := fmt.Errorf("the threshold should be at least 2")
 		return nil, nil, err
 	}
 	if threshold > numberOfShares {
-		err := errors.New("the threshold should be smaller than the number of shares")
+		err := fmt.Errorf("the threshold should be smaller than the number of shares")
 		return nil, nil, err
 	}
 
@@ -51,7 +51,7 @@ func (dealer *Dealer) SplitSecret(secret string, threshold int,
 
 	// generate some random prime which will be bigger than numberOfShares and secretNum
 	if secretNum.Cmp(big.NewInt(int64(numberOfShares))) < 0 {
-		err := errors.New("the number of shares (participants) is too high")
+		err := fmt.Errorf("the number of shares (participants) is too high")
 		return nil, nil, err
 	}
 
@@ -61,7 +61,7 @@ func (dealer *Dealer) SplitSecret(secret string, threshold int,
 	}
 
 	if prime.Cmp(big.NewInt(int64(numberOfShares))) < 0 {
-		err := errors.New("the number of shares (participants) is too high")
+		err := fmt.Errorf("the number of shares (participants) is too high")
 		return nil, nil, err
 	}
 

@@ -48,7 +48,7 @@ func NewSchnorrGroup(qBitLength int) (*SchnorrGroup, error) {
 	} else if qBitLength == 256 {
 		sizes = dsa.L2048N256
 	} else {
-		err := fmt.Errorf("Generating Schnorr primes for bit length %d is not supported", qBitLength)
+		err := fmt.Errorf("generating Schnorr primes for bit length %d is not supported", qBitLength)
 		return nil, err
 	}
 

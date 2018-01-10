@@ -66,7 +66,7 @@ func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
 		challenge := org.EqualityVerifier.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2)
 		return challenge, nil
 	} else {
-		return nil, fmt.Errorf("The signature is not valid.")
+		return nil, fmt.Errorf("signature is not valid")
 	}
 }
 

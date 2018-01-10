@@ -20,8 +20,9 @@ package qrproofs
 // Zero-knowledge proof	of quadratic residousity (implemented for historical reasons)
 
 import (
-	"errors"
 	"math/big"
+
+	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
@@ -79,7 +80,7 @@ func (prover *QRProver) GetProofData(challenge *big.Int) (*big.Int, error) {
 		z.Mod(z, prover.Group.P)
 		return z, nil
 	} else {
-		err := errors.New("The challenge is not valid.")
+		err := fmt.Errorf("challenge is not valid")
 		return nil, err
 	}
 }

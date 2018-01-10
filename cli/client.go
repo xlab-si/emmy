@@ -58,7 +58,7 @@ var clientSubcommands = []cli.Command{
 				secret := big.NewInt(ctx.Int64("secret"))
 				client, err := client.NewPedersenClient(conn, pbVariant, group, secret)
 				if err != nil {
-					return fmt.Errorf("Error creating client: %v", err)
+					return fmt.Errorf("error creating client: %v", err)
 				}
 				return client.Run()
 			})
@@ -75,7 +75,7 @@ var clientSubcommands = []cli.Command{
 				curve := groups.P256
 				client, err := client.NewPedersenECClient(conn, secret, curve)
 				if err != nil {
-					return fmt.Errorf("Error creating client: %v", err)
+					return fmt.Errorf("error creating client: %v", err)
 				}
 				return client.Run()
 			})
@@ -96,7 +96,7 @@ var clientSubcommands = []cli.Command{
 				secret := big.NewInt(ctx.Int64("secret"))
 				client, err := client.NewSchnorrClient(conn, pbVariant, group, secret)
 				if err != nil {
-					return fmt.Errorf("Error creating client: %v", err)
+					return fmt.Errorf("error creating client: %v", err)
 				}
 				return client.Run()
 			})
@@ -117,7 +117,7 @@ var clientSubcommands = []cli.Command{
 				secret := big.NewInt(ctx.Int64("secret"))
 				client, err := client.NewSchnorrClient(conn, pbVariant, group, secret)
 				if err != nil {
-					return fmt.Errorf("Error creating client: %v", err)
+					return fmt.Errorf("error creating client: %v", err)
 				}
 				return client.Run()
 			})
@@ -135,7 +135,7 @@ var clientSubcommands = []cli.Command{
 				pubKey := ctx.String("pubkey")
 				client, err := client.NewCSPaillierClient(conn, pubKey, secret, label)
 				if err != nil {
-					return fmt.Errorf("Error creating client: %v", err)
+					return fmt.Errorf("error creating client: %v", err)
 				}
 				return client.Run()
 			})

@@ -69,7 +69,7 @@ func GetConnection(serverEndpoint, caCert string, insecure bool) (*grpc.ClientCo
 	// Create client TLS credentials
 	creds, err := getTLSClientCredentials(caCert, insecure)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating TLS client credentials: %v", err)
+		return nil, fmt.Errorf("error creating TLS client credentials: %v", err)
 	}
 
 	dialOptions := []grpc.DialOption{
@@ -79,7 +79,7 @@ func GetConnection(serverEndpoint, caCert string, insecure bool) (*grpc.ClientCo
 	}
 	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
 	if err != nil {
-		return nil, fmt.Errorf("Could not connect to server %v (%v)", serverEndpoint, err)
+		return nil, fmt.Errorf("could not connect to server %v (%v)", serverEndpoint, err)
 	}
 	logger.Notice("Established connection to gRPC server")
 	return conn, nil
@@ -108,9 +108,9 @@ func newGenericClient(conn *grpc.ClientConn) (*genericClient, error) {
 
 func (c *genericClient) send(msg *pb.Message) error {
 	if err := c.stream.Send(msg); err != nil {
-		return fmt.Errorf("[Client %v] Error sending message: %v", c.id, err)
+		return fmt.Errorf("[client %v] Error sending message: %v", c.id, err)
 	}
-	logger.Infof("[Client %v] Successfully sent request of type %T", c.id, msg.Content)
+	logger.Infof("[client %v] Successfully sent request of type %T", c.id, msg.Content)
 	logger.Debugf("%+v", msg)
 
 	return nil
@@ -119,14 +119,14 @@ func (c *genericClient) send(msg *pb.Message) error {
 func (c *genericClient) receive() (*pb.Message, error) {
 	resp, err := c.stream.Recv()
 	if err == io.EOF {
-		return nil, fmt.Errorf("[Client %v] EOF error", c.id)
+		return nil, fmt.Errorf("[client %v] EOF error", c.id)
 	} else if err != nil {
-		return nil, fmt.Errorf("[Client %v] An error ocurred: %v", c.id, err)
+		return nil, fmt.Errorf("[client %v] An error ocurred: %v", c.id, err)
 	}
 	if resp.ProtocolError != "" {
 		return nil, fmt.Errorf(resp.ProtocolError)
 	}
-	logger.Infof("[Client %v] Received response of type %T from the stream", c.id, resp.Content)
+	logger.Infof("[client %v] Received response of type %T from the stream", c.id, resp.Content)
 	logger.Debugf("%+v", resp)
 
 	return resp, nil
@@ -146,7 +146,7 @@ func (c *genericClient) getResponseTo(msg *pb.Message) (*pb.Message, error) {
 func (c *genericClient) openStream() error {
 	stream, err := c.protocolClient.Run(context.Background())
 	if err != nil {
-		return fmt.Errorf("[Client %v] Error opening stream: %v", c.id, err)
+		return fmt.Errorf("[client %v] Error opening stream: %v", c.id, err)
 	}
 
 	c.stream = stream

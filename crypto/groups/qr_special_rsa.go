@@ -20,7 +20,7 @@ package groups
 // TODO: check group_generators.go and move the content into groups
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
@@ -84,7 +84,7 @@ func (group *QRSpecialRSA) GetRandomGenerator() (*big.Int, error) {
 
 	if group.P == nil {
 		return nil,
-			errors.New("GetRandomGenerator not available for QRSpecialRSA with only public parameters")
+			fmt.Errorf("GetRandomGenerator not available for QRSpecialRSA with only public parameters")
 	}
 
 	for {
@@ -113,7 +113,7 @@ func (group *QRSpecialRSA) GetRandomGenerator() (*big.Int, error) {
 func (group *QRSpecialRSA) GetRandomElement() (*big.Int, error) {
 	if group.P == nil {
 		return nil,
-			errors.New("GetRandomElement not available for QRSpecialRSA with only public parameters")
+			fmt.Errorf("GetRandomElement not available for QRSpecialRSA with only public parameters")
 	}
 	g, err := group.GetRandomGenerator()
 	if err != nil {

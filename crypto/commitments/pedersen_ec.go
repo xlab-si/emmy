@@ -18,7 +18,7 @@
 package commitments
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
@@ -51,7 +51,7 @@ func (committer *PedersenECCommitter) SetH(h *groups.ECGroupElement) {
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
 func (committer *PedersenECCommitter) GetCommitMsg(val *big.Int) (*groups.ECGroupElement, error) {
 	if val.Cmp(committer.group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
-		err := errors.New("the committed value needs to be in Z_q (order of a base point)")
+		err := fmt.Errorf("the committed value needs to be in Z_q (order of a base point)")
 		return nil, err
 	}
 

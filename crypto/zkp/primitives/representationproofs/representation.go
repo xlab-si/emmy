@@ -82,7 +82,7 @@ type RepresentationProver struct {
 func NewRepresentationProver(group *groups.SchnorrGroup, secrets,
 	bases []*big.Int, y *big.Int) (*RepresentationProver, error) {
 	if len(secrets) != len(bases) {
-		return nil, fmt.Errorf("Number of secrets and representation bases shoud be the same.")
+		return nil, fmt.Errorf("number of secrets and representation bases shoud be the same")
 	}
 
 	return &RepresentationProver{

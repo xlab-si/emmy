@@ -18,7 +18,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -95,7 +94,7 @@ func (c *QNRClient) Run() (bool, error) {
 
 		verifierIsHonest := c.prover.Verify(pairs, verProofPairs)
 		if !verifierIsHonest {
-			err := errors.New("verifier is not honest")
+			err := fmt.Errorf("verifier is not honest")
 			return false, err
 		}
 

@@ -19,7 +19,7 @@ package common
 
 import (
 	"crypto/sha512"
-	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -75,7 +75,7 @@ func LCM(x, y *big.Int) *big.Int {
 // It works only when p is prime.
 func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 	if !p.ProbablyPrime(20) {
-		err := errors.New("p is not prime")
+		err := fmt.Errorf("p is not a prime")
 		return false, err
 	}
 
@@ -89,7 +89,7 @@ func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 	} else if cr.Cmp(new(big.Int).Sub(p, big.NewInt(1))) == 0 {
 		return false, nil
 	} else {
-		err := errors.New("seems that p is not prime")
+		err := fmt.Errorf("it seems that p is not a prime")
 		return false, err
 	}
 }

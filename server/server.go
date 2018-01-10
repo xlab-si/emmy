@@ -106,7 +106,7 @@ func (s *Server) Start(port int) error {
 	connStr := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", connStr)
 	if err != nil {
-		return fmt.Errorf("Could not connect: %v", err)
+		return fmt.Errorf("could not connect: %v", err)
 	}
 
 	// Register Prometheus metrics handler and serve metrics page on the desired endpoint.
@@ -141,7 +141,7 @@ func (s *Server) EnableTracing() {
 
 func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
 	if err := stream.Send(msg); err != nil {
-		return fmt.Errorf("Error sending message: %v", err)
+		return fmt.Errorf("error sending message: %v", err)
 	}
 	s.logger.Infof("Successfully sent response of type %T", msg.Content)
 	s.logger.Debugf("%+v", msg)
@@ -154,7 +154,7 @@ func (s *Server) receive(stream pb.Protocol_RunServer) (*pb.Message, error) {
 	if err == io.EOF {
 		return nil, err
 	} else if err != nil {
-		return nil, fmt.Errorf("An error ocurred: %v", err)
+		return nil, fmt.Errorf("an error ocurred: %v", err)
 	}
 	s.logger.Infof("Received request of type %T from the stream", resp.Content)
 	s.logger.Debugf("%+v", resp)
@@ -177,13 +177,13 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	// Check whether the client requested a valid schema
 	reqSchemaTypeStr, schemaValid := pb.SchemaType_name[int32(reqSchemaType)]
 	if !schemaValid {
-		return fmt.Errorf("Client [ %d ] requested invalid schema: %v", reqClientId, reqSchemaType)
+		return fmt.Errorf("client [ %d ] requested invalid schema: %v", reqClientId, reqSchemaType)
 	}
 
 	// Check whether the client requested a valid schema variant
 	reqSchemaVariantStr, variantValid := pb.SchemaVariant_name[int32(reqSchemaVariant)]
 	if !variantValid {
-		return fmt.Errorf("Client [ %d ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
+		return fmt.Errorf("client [ %d ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
 	}
 
 	s.logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
@@ -234,7 +234,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 
 	if err != nil {
 		s.logger.Error("Closing RPC due to previous errors")
-		return fmt.Errorf("FAIL: %v", err)
+		return fmt.Errorf("RPC call failed: %v", err)
 	}
 
 	s.logger.Notice("RPC finished successfully")
