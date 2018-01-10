@@ -15,14 +15,13 @@
  *
  */
 
-package test
+package client
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
@@ -31,13 +30,13 @@ import (
 func TestPseudonymsysEC(t *testing.T) {
 	curveType := groups.P256
 	group := groups.NewECGroup(curveType)
-	caClient, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
+	caClient, err := NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")
 	}
 
 	// usually the endpoint is different from the one used for CA:
-	c1, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
+	c1, err := NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	userSecret := c1.GenerateMasterKey()
 
 	nymA := groups.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
@@ -79,7 +78,7 @@ func TestPseudonymsysEC(t *testing.T) {
 
 	// register with org2
 	// create a client to communicate with org2
-	caClient1, err := client.NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
+	caClient1, err := NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	caCertificate1, err := caClient1.ObtainCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
@@ -88,7 +87,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	// c2 connects to the same server as c1, so what we're really testing here is
 	// using transferCredential to authenticate with the same organization and not
 	// transferring credentials to another organization
-	c2, err := client.NewPseudonymsysClientEC(testGrpcClientConn, curveType)
+	c2, err := NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	nym2, err := c2.GenerateNym(userSecret, caCertificate1, "testRegKey2")
 	if err != nil {
 		t.Errorf(err.Error())

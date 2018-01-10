@@ -15,16 +15,28 @@
  *
  */
 
-package test
+package client
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/client"
+	"github.com/xlab-si/emmy/config"
+	pb "github.com/xlab-si/emmy/protobuf"
 )
 
-func TestGetServiceInfo(t *testing.T) {
-	info, _ := client.GetServiceInfo(testGrpcClientConn)
-	assert.NotNil(t, info, "expected non-nil service info")
+func testPedersen(n *big.Int) error {
+	group := config.LoadGroup("pedersen")
+	c, err := NewPedersenClient(testGrpcClientConn, pb.SchemaVariant_SIGMA, group, n)
+	if err != nil {
+		return err
+	}
+	return c.Run()
+}
+
+func TestPedersen(t *testing.T) {
+	commitVal := big.NewInt(121212121)
+
+	assert.Nil(t, testPedersen(commitVal), "should finish without errors")
 }
