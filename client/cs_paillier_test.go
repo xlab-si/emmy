@@ -21,7 +21,10 @@ import (
 	"math/big"
 	"testing"
 
+	"path/filepath"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
@@ -36,6 +39,7 @@ func testCSPaillier(m, l *big.Int, pubKeyPath string) error {
 func TestCSPaillier(t *testing.T) {
 	m := common.GetRandomInt(big.NewInt(8685849))
 	l := common.GetRandomInt(big.NewInt(340002223232))
+	pubKeyPath := filepath.Join(config.LoadTestdataDir(), "cspaillierpubkey.txt")
 
-	assert.Nil(t, testCSPaillier(m, l, "testdata/cspaillierpubkey.txt"), "should finish without error")
+	assert.Nil(t, testCSPaillier(m, l, pubKeyPath), "should finish without error")
 }

@@ -23,6 +23,8 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"path/filepath"
+	"os"
 )
 
 // init loads the default config file
@@ -67,7 +69,8 @@ func LoadKeyDirFromConfig() string {
 }
 
 func LoadTestdataDir() string {
-	return viper.GetString("testdata_dir")
+	prefix := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "xlab-si", "emmy")
+	return filepath.Join(prefix, viper.GetString("testdata_dir"))
 }
 
 func LoadTestKeyDirFromConfig() string {
