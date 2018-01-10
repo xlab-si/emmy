@@ -15,16 +15,28 @@
  *
  */
 
-package test
+package commitmentzkp
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/representationproofs"
 )
 
-func TestRepresentationProof(t *testing.T) {
-	proved := representationproofs.ProveKnowledgeOfRepresentation()
-	assert.Equal(t, true, proved, "Proof of knowledge of representation does not work correctly")
+func TestBitCommitmentProof(t *testing.T) {
+	verified, err := ProveBitCommitment()
+	if err != nil {
+		t.Errorf("Error in bit commitment proof: %v", err)
+	}
+
+	assert.Equal(t, true, verified, "Bit commitment does not work correctly")
+}
+
+func TestCommitmentMultiplicationProof(t *testing.T) {
+	proved, err := ProveCommitmentMultiplication()
+	if err != nil {
+		t.Errorf("Error in multiplication proof: %v", err)
+	}
+
+	assert.Equal(t, true, proved, "Commitments multiplication proof failed.")
 }

@@ -139,5 +139,5 @@ func TestGRPC_Encryption(t *testing.T) {
 	m := common.GetRandomInt(big.NewInt(8685849))
 	l := common.GetRandomInt(big.NewInt(340002223232))
 
-	assert.NotNil(t, testCSPaillier(m, l, "testdata/cspaillierpubkey.txt"), "should finish with error")
+	assert.Nil(t, testCSPaillier(m, l, "testdata/cspaillierpubkey.txt"), "should finish without error")
 }

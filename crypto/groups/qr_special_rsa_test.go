@@ -15,26 +15,24 @@
  *
  */
 
-package test
+package groups
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 func TestGeneratorOfCompositeQR(t *testing.T) {
-	rsa, err := groups.NewQRSpecialRSA(512)
+	rsa, err := NewQRSpecialRSA(512)
 	if err != nil {
-		fmt.Errorf("Error when instantiating QRSpecialRSA: %v", err)
+		t.Errorf("Error when instantiating QRSpecialRSA: %v", err)
 	}
 
 	g, err := rsa.GetRandomGenerator()
 	if err != nil {
-		fmt.Errorf("Error when searching for QRSpecialRSA generator: %v", err)
+		t.Errorf("Error when searching for QRSpecialRSA generator: %v", err)
 	}
 
 	// order of g should be p1*q1
