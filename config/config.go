@@ -23,8 +23,8 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"path/filepath"
 	"os"
+	"path/filepath"
 )
 
 // init loads the default config file

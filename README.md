@@ -33,7 +33,7 @@ To successfully run unit tests, a [redis](https://redis.io/) instance is require
 You can run the unit tests to see if everything is working properly with:
 
 ```
-$ go test -v test/*.go
+$ go test ./...
 ```
 
 # Currently supported crypto primitives
