@@ -60,6 +60,7 @@ Primitives are meant to be used in schemes (like Schnorr, DLogEquality and other
 | [✗] Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
 | [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
+| [✗] Damgard-Fujisaki commitment scheme for groups with hidden order and associated proofs [11] |
 | [✗] Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
 | [✗] Proof of knowledge of representation (generalized Schnorr for multiple bases) [10] |
 | [✗] Shamir's secret sharing scheme |
@@ -243,7 +244,7 @@ On the other hand, we can provide `emmy client` with the following flags:
 
 # TODO
 
- * primitives required for Camenisch Lysyanskaya anonymous credentials [2], like range proofs [11] and proofs for Damgard-Fujisaki commitment scheme [12]
+ * primitives required for Camenisch Lysyanskaya anonymous credentials [2], like range proofs [11]
  * for all proofs use Damgard technique [13] to turn sigma protocol in ZKP (Schnorr protocol actually already contains a technique to turn sigma protocol into ZKP, but other technique will be used and applied for all proofs)
  * refactor proofs to set all parameters in a constructor (see comment in Schnorr prover)
  * optional: generator of communication layer code (automatic generation of code in client and server packages)
@@ -258,7 +259,7 @@ On the other hand, we can provide `emmy client` with the following flags:
 
 [4] A. Lysyanskaya, R. Rivest, A. Sahai, and S. Wolf. Pseudonym systems. In Selected Areas in Cryptography, vol. 1758 of LNCS. Springer Verlag, 1999.
 
-[5] C. P. Schnorr. Efficient Identification and Signatures for Smart Cards. In Crypto ’89, LNCS 435, pages 235–251. Springer-Verlag, Berlin, 1990. [2] P. Paillier, Public-key cryptosystems based on composite residuosity classes, Advances in Cryptology — EUROCRYPT ’99, LNCS, vol. 1592, Springer Verlag, 1999, pp. 223–239. [3] K. IRELAND AND M. ROSEN, A Classical Introduction to Modern Number Theory, Springer-Verlag, New York, 2nd edition, 1990.
+[5] C. P. Schnorr. Efficient Identification and Signatures for Smart Cards. In Crypto ’89, LNCS 435, pages 235–251. Springer-Verlag, Berlin, 1990. 
 
 [6] Goldwasser, Shafi, Silvio Micali, and Charles Rackoff. "The knowledge complexity of interactive proof systems." SIAM Journal on computing 18.1 (1989): 186-208.
 

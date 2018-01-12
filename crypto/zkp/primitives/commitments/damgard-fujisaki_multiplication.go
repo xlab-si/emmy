@@ -18,7 +18,6 @@
 package commitmentzkp
 
 import (
-	"fmt"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"math/big"
@@ -82,8 +81,12 @@ func (prover *DFCommitmentMultiplicationProver) GetProofRandomData() (*big.Int, 
 	// d3 = c1^y * h^s3
 	d1 := prover.committer1.ComputeCommit(y1, s1) // ComputeCommit can be called on any of the committers
 	d2 := prover.committer1.ComputeCommit(y, s2)
-	c1, _ := prover.committer1.GetDecommitMsg()
-	d3 := prover.committer1.ComputeCommit(c1, s3)
+	a1, r1 := prover.committer1.GetDecommitMsg()
+	c1 := prover.committer1.ComputeCommit(a1, r1)
+
+	l := prover.committer1.QRSpecialRSA.Exp(c1, y)
+	r := prover.committer1.QRSpecialRSA.Exp(prover.committer1.H, s3)
+	d3 := prover.committer1.QRSpecialRSA.Mul(l, r)
 	return d1, d2, d3
 }
 
@@ -96,7 +99,7 @@ func (prover *DFCommitmentMultiplicationProver) GetProofData(challenge *big.Int)
 	// v3 = s3 + challenge*(r3 - a2 * r1) (in Z, not modulo)
 	a1, r1 := prover.committer1.GetDecommitMsg()
 	a2, r2 := prover.committer2.GetDecommitMsg()
-	_, r3 := prover.committer2.GetDecommitMsg()
+	_, r3 := prover.committer3.GetDecommitMsg()
 
 	u1 := new(big.Int).Mul(challenge, a1)
 	u1.Add(u1, prover.y1)
@@ -112,6 +115,7 @@ func (prover *DFCommitmentMultiplicationProver) GetProofData(challenge *big.Int)
 
 	r := new(big.Int).Mul(a2, r1)
 	r.Sub(r3, r)
+
 	v3 := new(big.Int).Mul(challenge, r)
 	v3.Add(v3, prover.s3)
 
@@ -166,25 +170,20 @@ func (verifier *DFCommitmentMultiplicationVerifier) Verify(u1, u, v1, v2, v3 *bi
 	right2 := verifier.receiver1.QRSpecialRSA.Exp(verifier.receiver2.Commitment, verifier.challenge)
 	right2 = verifier.receiver1.QRSpecialRSA.Mul(verifier.d2, right2)
 
-	tmp1 := verifier.receiver3.QRSpecialRSA.Exp(verifier.receiver1.Commitment, u)
+	tmp1 := verifier.receiver3.QRSpecialRSA.Exp(verifier.receiver1.Commitment, u) // c1^u
 
 	// TODO
-	v3Abs := v3.Abs(v3)
-	var tmp2 *big.Int
-	if v3Abs.Cmp(v3) != 0 {
+	v3Abs := new(big.Int).Abs(v3)
+	var tmp2 *big.Int // h^v3
+	if v3Abs.Cmp(v3) == 0 {
 		tmp2 = verifier.receiver3.QRSpecialRSA.Exp(verifier.receiver3.H, v3)
 	} else {
-		tmp2 = verifier.receiver3.QRSpecialRSA.Exp(verifier.receiver3.H, v3)
+		tmp2 = verifier.receiver3.QRSpecialRSA.Exp(verifier.receiver3.H, v3Abs)
 		tmp2 = verifier.receiver3.QRSpecialRSA.Inv(tmp2)
 	}
 
 	left3 := verifier.receiver3.QRSpecialRSA.Mul(tmp1, tmp2)
 	right3 := verifier.receiver1.QRSpecialRSA.Exp(verifier.receiver3.Commitment, verifier.challenge)
 	right3 = verifier.receiver1.QRSpecialRSA.Mul(verifier.d3, right3)
-
-	fmt.Println("=============================")
-	fmt.Println(left1.Cmp(right1))
-	fmt.Println(left2.Cmp(right2))
-	fmt.Println(left3.Cmp(right3))
 	return left1.Cmp(right1) == 0 && left2.Cmp(right2) == 0 && left3.Cmp(right3) == 0
 }

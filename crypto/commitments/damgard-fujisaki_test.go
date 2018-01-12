@@ -32,7 +32,10 @@ func TestDamgardFujisaki(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
-	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.H, receiver.G, receiver.K)
+
+	// n is used for T - but any other value can be used as well
+	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.H, receiver.G,
+		receiver.QRSpecialRSA.N, receiver.K)
 
 	a := common.GetRandomInt(receiver.QRSpecialRSA.N)
 	c, err := committer.GetCommitMsg(a)

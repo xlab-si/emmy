@@ -27,13 +27,15 @@ import (
 
 // TestProveDFCommitmentOpening demonstrates how to prove that you can open DamgardFujisaki commitment.
 func TestProveDFCommitmentOpening(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
+	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 
+	// n^2 is used for T - but any other value can be used as well
+	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
 	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
-		receiver.H, receiver.G, receiver.K)
+		receiver.H, receiver.G, T, receiver.K)
 
 	x := common.GetRandomInt(committer.T)
 	c, err := committer.GetCommitMsg(x)
@@ -59,28 +61,33 @@ func TestProveDFCommitmentOpening(t *testing.T) {
 // TestProveDFCommitmentMultiplication demonstrates how to prove that for given commitments
 // c1 = g^x1 * h^r1, c2 = g^x2 * h^r2, c3 = g^x3 * h^r3, it holds x3 = x1 * x2
 func TestProveDFCommitmentMultiplication(t *testing.T) {
-	receiver1, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
+	receiver1, err := commitments.NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
+
+	// n^2 is used for T - but any other value can be used as well
+	T := new(big.Int).Mul(receiver1.QRSpecialRSA.N, receiver1.QRSpecialRSA.N)
+
 	committer1 := commitments.NewDamgardFujisakiCommitter(receiver1.QRSpecialRSA.N,
-		receiver1.H, receiver1.G, receiver1.K)
+		receiver1.H, receiver1.G, T, receiver1.K)
 
 	receiver2, err := commitments.NewDamgardFujisakiReceiverFromExisting(receiver1)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 	committer2 := commitments.NewDamgardFujisakiCommitter(receiver2.QRSpecialRSA.N,
-		receiver2.H, receiver2.G, receiver2.K)
+		receiver2.H, receiver2.G, T, receiver2.K)
 
 	receiver3, err := commitments.NewDamgardFujisakiReceiverFromExisting(receiver1)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 	committer3 := commitments.NewDamgardFujisakiCommitter(receiver3.QRSpecialRSA.N,
-		receiver3.H, receiver3.G, receiver3.K)
+		receiver3.H, receiver3.G, T, receiver3.K)
 
 	x1 := common.GetRandomInt(committer1.QRSpecialRSA.N)
+	x1.Neg(x1) // test with negative
 	x2 := common.GetRandomInt(committer2.QRSpecialRSA.N)
 	x3 := new(big.Int).Mul(x1, x2)
 	c1, err := committer1.GetCommitMsg(x1)

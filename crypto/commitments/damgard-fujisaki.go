@@ -59,17 +59,14 @@ type DamgardFujisakiCommitter struct {
 	r               *big.Int
 }
 
-func NewDamgardFujisakiCommitter(n, h, g *big.Int, k int) *DamgardFujisakiCommitter {
+func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCommitter {
 	// n.BitLen() - 2 is used as B
-	// n^2 is used for T - but any other value can be used as well
-	t := new(big.Int).Mul(n, n)
 	return &DamgardFujisakiCommitter{DamgardFujisaki{
 		groups.NewQRSpecialRSAPublic(n), h, g, k}, n.BitLen() - 2, t,
 		big.NewInt(0), big.NewInt(0)}
 }
 
 func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
-	// TODO: for negative a
 	abs := new(big.Int).Abs(a)
 	if abs.Cmp(committer.T) != -1 {
 		return nil, fmt.Errorf("the committed value needs to be in (-T, T)")
