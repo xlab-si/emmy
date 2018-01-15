@@ -18,9 +18,10 @@
 package commitmentzkp
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"math/big"
 )
 
 type DFCommitmentOpeningProver struct {
@@ -41,11 +42,12 @@ func NewDFCommitmentOpeningProver(committer *commitments.DamgardFujisakiCommitte
 func (prover *DFCommitmentOpeningProver) GetProofRandomData() *big.Int {
 	// r1 from [0, T * 2^(NLength + ChallengeSpaceSize))
 	nLen := prover.committer.QRSpecialRSA.N.BitLen()
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(nLen+prover.challengeSpaceSize)), nil)
+	exp := big.NewInt(int64(nLen + prover.challengeSpaceSize))
+	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	b.Mul(b, prover.committer.T)
 	r1 := common.GetRandomInt(b)
 	prover.r1 = r1
-	// r1 from [0, 2^(B + 2*NLength + ChallengeSpaceSize))
+	// r2 from [0, 2^(B + 2*NLength + ChallengeSpaceSize))
 	b = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(
 		prover.committer.B+2*nLen+prover.challengeSpaceSize)), nil)
 	r2 := common.GetRandomInt(b)
@@ -86,7 +88,8 @@ func (verifier *DFCommitmentOpeningVerifier) SetProofRandomData(proofRandomData 
 }
 
 func (verifier *DFCommitmentOpeningVerifier) GetChallenge() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(verifier.challengeSpaceSize)), nil)
+	exp := big.NewInt(int64(verifier.challengeSpaceSize))
+	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	challenge := common.GetRandomInt(b)
 	verifier.challenge = challenge
 	return challenge

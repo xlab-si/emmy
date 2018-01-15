@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/spf13/viper"
-	"github.com/xlab-si/emmy/crypto/groups"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/viper"
+	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 // init loads the default config file

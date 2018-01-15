@@ -18,16 +18,17 @@
 package commitmentzkp
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"math/big"
-	"testing"
 )
 
 // TestProveDFCommitmentOpening demonstrates how to prove that you can open DamgardFujisaki commitment.
-func TestProveDFCommitmentOpening(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestProveDamgardFujisakiCommitmentOpening(t *testing.T) {
+	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
@@ -60,8 +61,8 @@ func TestProveDFCommitmentOpening(t *testing.T) {
 
 // TestProveDFCommitmentMultiplication demonstrates how to prove that for given commitments
 // c1 = g^x1 * h^r1, c2 = g^x2 * h^r2, c3 = g^x3 * h^r3, it holds x3 = x1 * x2
-func TestProveDFCommitmentMultiplication(t *testing.T) {
-	receiver1, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
+	receiver1, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}

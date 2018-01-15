@@ -32,9 +32,9 @@ import (
 // P1 and Q1 respectively. Because gcd(P1, Q1) = 1, QR_P x QR_Q is cyclic as well.
 // The order of QRSpecialRSA is P1 * Q1.
 type QRSpecialRSA struct {
-	QRRSA          // make QRRSA a parent to have an access to Mul, Exp, Inv, IsQR
-	P1    *big.Int
-	Q1    *big.Int
+	QRRSA
+	P1 *big.Int
+	Q1 *big.Int
 }
 
 func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
@@ -47,12 +47,15 @@ func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &QRSpecialRSA{*qrRSA, specialRSAPrimes.P1, specialRSAPrimes.Q1,
-	}, nil
+	return &QRSpecialRSA{
+		QRRSA: *qrRSA,
+		P1:    specialRSAPrimes.P1,
+		Q1:    specialRSAPrimes.Q1}, nil
 }
 
 func NewQRSpecialRSAPublic(N *big.Int) *QRSpecialRSA {
-	return &QRSpecialRSA{*NewQRRSAPublic(N), big.NewInt(0), big.NewInt(0),
+	return &QRSpecialRSA{
+		QRRSA: *NewQRRSAPublic(N),
 	}
 }
 

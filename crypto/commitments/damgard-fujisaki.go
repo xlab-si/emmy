@@ -19,9 +19,10 @@ package commitments
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"math/big"
 )
 
 // Based on:
@@ -34,17 +35,17 @@ import (
 // for the associated proofs.
 
 // DamgardFujisaki presents what is common in DamgardFujisakiCommitter and DamgardFujisakiReceiver.
-type DamgardFujisaki struct {
+type damgardFujisaki struct {
 	QRSpecialRSA *groups.QRSpecialRSA
 	H            *big.Int
-	G            *big.Int // G = H^alpha % N
+	G            *big.Int // G = H^alpha % QRSpecialRSA.N, where alpha is chosen when Receiver is created (Committer does not know alpha)
 	K            int
 }
 
 // ComputeCommit returns g^a * h^r % group.N for a given a and r. Note that this is exactly
 // the commitment, but with a given a and r. It serves as a helper function for
 // associated proofs where g^x * h^y % group.N needs to be computed several times.
-func (df *DamgardFujisaki) ComputeCommit(a, r *big.Int) *big.Int {
+func (df *damgardFujisaki) ComputeCommit(a, r *big.Int) *big.Int {
 	tmp1 := df.QRSpecialRSA.Exp(df.G, a)
 	tmp2 := df.QRSpecialRSA.Exp(df.H, r)
 	c := df.QRSpecialRSA.Mul(tmp1, tmp2)
@@ -52,24 +53,28 @@ func (df *DamgardFujisaki) ComputeCommit(a, r *big.Int) *big.Int {
 }
 
 type DamgardFujisakiCommitter struct {
-	DamgardFujisaki          // make DamgardFujisaki a parent
-	B               int      // 2^B is upper bound estimation for group order, it can be len(N) - 2
-	T               *big.Int // we can commit to values between -T and T
-	committedValue  *big.Int
-	r               *big.Int
+	damgardFujisaki
+	B              int      // 2^B is upper bound estimation for group order, it can be len(QRSpecialRSA.N) - 2
+	T              *big.Int // we can commit to values between -T and T
+	committedValue *big.Int
+	r              *big.Int
 }
 
 func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCommitter {
 	// n.BitLen() - 2 is used as B
-	return &DamgardFujisakiCommitter{DamgardFujisaki{
-		groups.NewQRSpecialRSAPublic(n), h, g, k}, n.BitLen() - 2, t,
-		big.NewInt(0), big.NewInt(0)}
+	return &DamgardFujisakiCommitter{damgardFujisaki: damgardFujisaki{
+		QRSpecialRSA: groups.NewQRSpecialRSAPublic(n),
+		H:            h,
+		G:            g,
+		K:            k},
+		B: n.BitLen() - 2,
+		T: t}
 }
 
 func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
 	abs := new(big.Int).Abs(a)
 	if abs.Cmp(committer.T) != -1 {
-		return nil, fmt.Errorf("the committed value needs to be in (-T, T)")
+		return nil, fmt.Errorf("committed value needs to be in (-T, T)")
 	}
 	// c = g^a * h^r % group.N
 	// choose r from 2^(B + k)
@@ -87,8 +92,8 @@ func (committer *DamgardFujisakiCommitter) GetDecommitMsg() (*big.Int, *big.Int)
 }
 
 type DamgardFujisakiReceiver struct {
-	DamgardFujisaki // make DamgardFujisaki a parent
-	Commitment      *big.Int
+	damgardFujisaki
+	Commitment *big.Int
 }
 
 // NewDamgardFujisakiReceiver receives two parameters: safePrimeBitLength tells the length of the
@@ -96,6 +101,10 @@ type DamgardFujisakiReceiver struct {
 // (commitment c = g^a * h^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
 // c is statistically close to uniform, 2^B is upper bound estimation for group order).
 func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiReceiver, error) {
+	// TODO: check if there are some other places where such errors should be raised
+	if safePrimeBitLength < 1024 {
+		return nil, fmt.Errorf("safe prime bit length is too small")
+	}
 	qr, err := groups.NewQRSpecialRSA(safePrimeBitLength)
 	if err != nil {
 		return nil, err
@@ -112,8 +121,12 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 		return nil, err
 	}
 
-	return &DamgardFujisakiReceiver{DamgardFujisaki{qr, h, g, k},
-		big.NewInt(0)}, nil
+	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
+			QRSpecialRSA: qr,
+			H:            h,
+			G:            g,
+			K:            k}},
+		nil
 }
 
 // NewDamgardFujisakiReceiverFromExisting returns an instance of receiver with the same
@@ -121,8 +134,12 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 // each sets its own Commitment value.
 func NewDamgardFujisakiReceiverFromExisting(receiver *DamgardFujisakiReceiver) (
 	*DamgardFujisakiReceiver, error) {
-	return &DamgardFujisakiReceiver{DamgardFujisaki{receiver.QRSpecialRSA,
-		receiver.H, receiver.G, receiver.K}, big.NewInt(0)}, nil
+	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
+		QRSpecialRSA: receiver.QRSpecialRSA,
+		H:            receiver.H,
+		G:            receiver.G,
+		K:            receiver.K},
+	}, nil
 }
 
 // When receiver receives a commitment, it stores the value using SetCommitment method.

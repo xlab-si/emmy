@@ -18,9 +18,10 @@
 package commitmentzkp
 
 import (
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"math/big"
 )
 
 // DFCommitmentMultiplicationProver proves for given commitments
