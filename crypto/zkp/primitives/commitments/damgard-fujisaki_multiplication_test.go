@@ -26,40 +26,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDFCommitmentOpening demonstrates how to prove that you can open DamgardFujisaki commitment.
-func TestProveDamgardFujisakiCommitmentOpening(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
-	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
-	}
-
-	// n^2 is used for T - but any other value can be used as well
-	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
-	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
-		receiver.H, receiver.G, T, receiver.K)
-
-	x := common.GetRandomInt(committer.T)
-	c, err := committer.GetCommitMsg(x)
-	if err != nil {
-		t.Errorf("Error in computing commit msg: %v", err)
-	}
-	receiver.SetCommitment(c)
-
-	challengeSpaceSize := 80
-	prover := NewDFCommitmentOpeningProver(committer, challengeSpaceSize)
-	verifier := NewDFCommitmentOpeningVerifier(receiver, challengeSpaceSize)
-
-	proofRandomData := prover.GetProofRandomData()
-	verifier.SetProofRandomData(proofRandomData)
-
-	challenge := verifier.GetChallenge()
-	s1, s2 := prover.GetProofData(challenge)
-	proved := verifier.Verify(s1, s2)
-
-	assert.Equal(t, true, proved, "DamgardFujisaki opening proof failed.")
-}
-
-// TestProveDFCommitmentMultiplication demonstrates how to prove that for given commitments
+// TestProveDamgardFujisakiCommitmentMultiplication demonstrates how to prove that for given commitments
 // c1 = g^x1 * h^r1, c2 = g^x2 * h^r2, c3 = g^x3 * h^r3, it holds x3 = x1 * x2
 func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
 	receiver1, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
