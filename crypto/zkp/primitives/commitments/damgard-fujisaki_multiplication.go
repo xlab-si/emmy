@@ -30,8 +30,8 @@ import (
 // (1) proof that we can open c1
 // (2) proof that we can open c2
 // (3) proof that we can open c3, where c3 is seen as
-// c3 = g^x3 * h^r3 = g^(x1*x2) * h^r1*x2 * h^(r3 - r1*x2) = c1^x2 * h^(r3 - r1*x2),
-// thus a new "g" is c1, "x" is x2, and "r3" is r3 - r1*x2.
+// c3 = G^x3 * H^r3 = G^(x1*x2) * H^r1*x2 * H^(r3 - r1*x2) = c1^x2 * H^(r3 - r1*x2),
+// thus a new "G" is c1, "x" is x2, and "r3" is r3 - r1*x2.
 type DFCommitmentMultiplicationProver struct {
 	committer1         *commitments.DamgardFujisakiCommitter
 	committer2         *commitments.DamgardFujisakiCommitter
@@ -77,9 +77,9 @@ func (prover *DFCommitmentMultiplicationProver) GetProofRandomData() (*big.Int, 
 	prover.s2 = s2
 	prover.s3 = s3
 
-	// d1 = g^y1 * h^s1
-	// d2 = g^y * h^s2
-	// d3 = c1^y * h^s3
+	// d1 = G^y1 * H^s1
+	// d2 = G^y * H^s2
+	// d3 = c1^y * H^s3
 	d1 := prover.committer1.ComputeCommit(y1, s1) // ComputeCommit can be called on any of the committers
 	d2 := prover.committer1.ComputeCommit(y, s2)
 	a1, r1 := prover.committer1.GetDecommitMsg()
@@ -175,7 +175,7 @@ func (verifier *DFCommitmentMultiplicationVerifier) Verify(u1, u, v1, v2, v3 *bi
 
 	// TODO
 	v3Abs := new(big.Int).Abs(v3)
-	var tmp2 *big.Int // h^v3
+	var tmp2 *big.Int // H^v3
 	if v3Abs.Cmp(v3) == 0 {
 		tmp2 = verifier.receiver3.QRSpecialRSA.Exp(verifier.receiver3.H, v3)
 	} else {

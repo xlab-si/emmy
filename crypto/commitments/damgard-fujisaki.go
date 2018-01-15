@@ -42,7 +42,7 @@ type damgardFujisaki struct {
 	K            int
 }
 
-// ComputeCommit returns g^a * h^r % group.N for a given a and r. Note that this is exactly
+// ComputeCommit returns G^a * H^r % group.N for a given a and r. Note that this is exactly
 // the commitment, but with a given a and r. It serves as a helper function for
 // associated proofs where g^x * h^y % group.N needs to be computed several times.
 func (df *damgardFujisaki) ComputeCommit(a, r *big.Int) *big.Int {
@@ -76,9 +76,10 @@ func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, e
 	if abs.Cmp(committer.T) != -1 {
 		return nil, fmt.Errorf("committed value needs to be in (-T, T)")
 	}
-	// c = g^a * h^r % group.N
+	// c = G^a * H^r % group.N
 	// choose r from 2^(B + k)
-	boundary := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(committer.B+committer.K)), nil)
+	exp := big.NewInt(int64(committer.B + committer.K))
+	boundary := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	r := common.GetRandomInt(boundary)
 	c := committer.ComputeCommit(a, r)
 
@@ -98,7 +99,7 @@ type DamgardFujisakiReceiver struct {
 
 // NewDamgardFujisakiReceiver receives two parameters: safePrimeBitLength tells the length of the
 // primes in QRSpecialRSA group, k is security parameter on which it depends the hiding property
-// (commitment c = g^a * h^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
+// (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
 // c is statistically close to uniform, 2^B is upper bound estimation for group order).
 func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiReceiver, error) {
 	// TODO: check if there are some other places where such errors should be raised

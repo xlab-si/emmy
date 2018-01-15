@@ -52,7 +52,7 @@ func (prover *DFCommitmentOpeningProver) GetProofRandomData() *big.Int {
 		prover.committer.B+2*nLen+prover.challengeSpaceSize)), nil)
 	r2 := common.GetRandomInt(b)
 	prover.r2 = r2
-	// g^r1 * h^r2
+	// G^r1 * H^r2
 	proofRandomData := prover.committer.ComputeCommit(r1, r2)
 	return proofRandomData
 }
