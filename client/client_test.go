@@ -22,6 +22,8 @@ import (
 	"os"
 	"testing"
 
+	"io/ioutil"
+
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
@@ -51,8 +53,13 @@ func TestMain(m *testing.M) {
 	go server.Start(7008)
 
 	// Establish a connection to previously started server
-	testGrpcClientConn, err = GetConnection(testGrpcServerEndpoint,
-		"testdata/server.pem", false)
+	testCert, err := ioutil.ReadFile("testdata/server.pem")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	testGrpcClientConn, err = GetConnection(NewConnectionConfig(testGrpcServerEndpoint,
+		testCert, false))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

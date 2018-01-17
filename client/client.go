@@ -52,22 +52,38 @@ func SetLogger(lgr log.Logger) {
 	logger = lgr
 }
 
-// GetConnection attempts to return a secure connection to a gRPC server at a given endpoint.
-// Note that several clients can be passed the same connection object, as the gRPC framework
-// is able to multiplex several RPCs on the same connection, thus reducing the overhead
-func GetConnection(serverEndpoint, caCert string, insecure bool) (*grpc.ClientConn, error) {
+// ConnectionConfig holds all the details required for establishing a connection to the server.
+type ConnectionConfig struct {
+	Endpoint      string // Server's Endpoint
+	CACertificate []byte // CA certificate for validating the server
+	Insecure      bool   // Whether to skip validation of server
+}
+
+func NewConnectionConfig(endpoint string, certificate []byte, insecure bool) *ConnectionConfig {
+	return &ConnectionConfig{
+		Endpoint:      endpoint,
+		CACertificate: certificate,
+		Insecure:      insecure,
+	}
+}
+
+// GetConnection attempts to return a connection to a gRPC server based on the provided
+// configuration of connection details. Note that several clients can be passed the same
+// connection, as the gRPC framework is able to multiplex several RPCs on the same connection,
+// thus reducing the overhead.
+func GetConnection(connConfig *ConnectionConfig) (*grpc.ClientConn, error) {
 	logger.Info("Getting the connection")
 	timeoutSec := config.LoadTimeout()
 
 	// Notify the end user about security implications when running in insecure mode
-	if insecure {
+	if connConfig.Insecure {
 		logger.Warning("######## You requested an **insecure** channel! ########")
 		logger.Warning("As a consequence, server's identity will *NOT* be validated!")
 		logger.Warning("Please consider using a secure connection instead")
 	}
 
 	// Create client TLS credentials
-	creds, err := getTLSClientCredentials(caCert, insecure)
+	creds, err := getTLSClientCredentials(connConfig.CACertificate, connConfig.Insecure)
 	if err != nil {
 		return nil, fmt.Errorf("error creating TLS client credentials: %v", err)
 	}
@@ -77,9 +93,9 @@ func GetConnection(serverEndpoint, caCert string, insecure bool) (*grpc.ClientCo
 		grpc.WithBlock(),
 		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
 	}
-	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
+	conn, err := grpc.Dial(connConfig.Endpoint, dialOptions...)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to server %v (%v)", serverEndpoint, err)
+		return nil, fmt.Errorf("could not connect to server %v (%v)", connConfig.Endpoint, err)
 	}
 	logger.Notice("Established connection to gRPC server")
 	return conn, nil

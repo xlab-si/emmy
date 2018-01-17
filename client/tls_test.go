@@ -20,10 +20,32 @@ package client
 import (
 	"testing"
 
+	"io/ioutil"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInsecureConn(t *testing.T) {
-	_, err := GetConnection(testGrpcServerEndpoint, "", true)
-	assert.Nil(t, err, "should finish without errors")
+// TestInsecureConnection tests whether an insecure connection to the server can be successfully
+// established.
+func TestInsecureConnection(t *testing.T) {
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, make([]byte, 0), true)
+	_, err := GetConnection(cfg)
+	assert.Nil(t, err, "Insecure connection should be established without errors")
+}
+
+// TestValidCertificate tests whether a secure connection to the server is successfully established,
+// given that we have a valid CA certificate.
+func TestValidCertificate(t *testing.T) {
+	caCert, _ := ioutil.ReadFile("testdata/server.pem")
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, caCert, false)
+	_, err := GetConnection(cfg)
+	assert.Nil(t, err, "should finish without error")
+}
+
+//TestInvalidFormatCertificate tests client's behavior in case secure connection cannot be
+// established due to improper formatting of the provided CA certificate.
+func TestInvalidFormatCertificate(t *testing.T) {
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, make([]byte, 0), false)
+	_, err := GetConnection(cfg)
+	assert.NotNil(t, err, "should finish with error because of PEM format issue")
 }

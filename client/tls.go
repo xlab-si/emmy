@@ -19,6 +19,8 @@ package client
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 
 	"google.golang.org/grpc/credentials"
 )
@@ -26,10 +28,10 @@ import (
 // getTLSClientCredentials generates appropriate TLS credentials that the client can use to
 // contact the server via TLS.
 // Client credentials are constructed either for secure (in production) or insecure (during
-// development) communication with the server
-func getTLSClientCredentials(caCertFile string,
+// development) communication with the server.
+func getTLSClientCredentials(caCert []byte,
 	insecure bool) (credentials.TransportCredentials, error) {
-	// Do not check server's hostname or CA certificate chain
+	// Do not check server's hostname or CA CACertificate chain
 	// This should only be used for testing & development, when the server uses a self-signed cert
 	if insecure {
 		return credentials.NewTLS(&tls.Config{
@@ -37,10 +39,12 @@ func getTLSClientCredentials(caCertFile string,
 		}), nil
 	}
 
-	creds, err := credentials.NewClientTLSFromFile(caCertFile, "")
-	if err != nil {
-		return nil, err
+	// When server's hostname or CA certificate chain is to be validated,
+	// the client needs to provide the CA certificate in PEM format
+	certPool := x509.NewCertPool()
+	if success := certPool.AppendCertsFromPEM(caCert); !success {
+		return nil, fmt.Errorf("cannot append certs from PEM")
 	}
 
-	return creds, err
+	return credentials.NewClientTLSFromCert(certPool, ""), nil
 }
