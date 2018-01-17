@@ -24,14 +24,17 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
+// TestDamgardFujisaki demonstrates how a value can be committed and later opened (decommitted).
 func TestDamgardFujisaki(t *testing.T) {
-	safePrimeBitLength := 1024
-	receiver, err := NewDamgardFujisakiReceiver(safePrimeBitLength)
+	receiver, err := NewDamgardFujisakiReceiver(1024, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 
-	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.H, receiver.G)
+	// n is used for T - but any other value can be used as well
+	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.H, receiver.G,
+		receiver.QRSpecialRSA.N, receiver.K)
+
 	a := common.GetRandomInt(receiver.QRSpecialRSA.N)
 	c, err := committer.GetCommitMsg(a)
 	if err != nil {

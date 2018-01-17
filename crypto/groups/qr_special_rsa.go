@@ -30,14 +30,11 @@ import (
 // of two SAFE primes. This group is cyclic and a generator is easy to find.
 // The group QR_N is isomorphic to QR_P x QR_Q. The order of QR_P and QR_Q are
 // P1 and Q1 respectively. Because gcd(P1, Q1) = 1, QR_P x QR_Q is cyclic as well.
+// The order of QRSpecialRSA is P1 * Q1.
 type QRSpecialRSA struct {
-	QRRSA          // make QRRSA a parent to have an access to Mul, Exp, Inv, IsQR
-	N     *big.Int // N = P * Q, P = 2*P1 + 1, Q = 2*Q1 + 1
-	P     *big.Int
-	Q     *big.Int
-	P1    *big.Int
-	Q1    *big.Int
-	Order *big.Int // order of group QR_N (it is P1 * Q1)
+	QRRSA
+	P1 *big.Int
+	Q1 *big.Int
 }
 
 func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
@@ -51,19 +48,13 @@ func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
 		return nil, err
 	}
 	return &QRSpecialRSA{
-		N:     qrRSA.N,
-		P:     specialRSAPrimes.P,
-		Q:     specialRSAPrimes.Q,
-		P1:    specialRSAPrimes.P1,
-		Q1:    specialRSAPrimes.Q1,
-		Order: qrRSA.Order,
 		QRRSA: *qrRSA,
-	}, nil
+		P1:    specialRSAPrimes.P1,
+		Q1:    specialRSAPrimes.Q1}, nil
 }
 
 func NewQRSpecialRSAPublic(N *big.Int) *QRSpecialRSA {
 	return &QRSpecialRSA{
-		N:     N,
 		QRRSA: *NewQRRSAPublic(N),
 	}
 }

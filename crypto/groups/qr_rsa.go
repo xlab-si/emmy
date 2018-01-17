@@ -72,7 +72,13 @@ func (group *QRRSA) Inv(x *big.Int) *big.Int {
 
 // Exp computes base^exponent in QR_N. This means base^exponent mod rsa.N.
 func (group *QRRSA) Exp(base, exponent *big.Int) *big.Int {
-	return new(big.Int).Exp(base, exponent, group.N)
+	expAbs := new(big.Int).Abs(exponent)
+	if expAbs.Cmp(exponent) == 0 {
+		return new(big.Int).Exp(base, exponent, group.N)
+	} else {
+		t := new(big.Int).Exp(base, expAbs, group.N)
+		return group.Inv(t)
+	}
 }
 
 // IsElementInGroup returns true if a is in QR_N and false otherwise.
