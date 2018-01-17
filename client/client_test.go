@@ -22,6 +22,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
 	"google.golang.org/grpc"
@@ -38,7 +39,8 @@ var testGrpcClientConn *grpc.ClientConn
 // Once all the tests run, we close the connection to the server and stop the server.
 func TestMain(m *testing.M) {
 	logger, _ := log.NewStdoutLogger("testServer", log.NOTICE, log.FORMAT_LONG)
-	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key", logger)
+	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key",
+		config.LoadRegistrationDBAddress(), logger)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

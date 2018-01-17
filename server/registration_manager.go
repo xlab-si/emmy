@@ -18,6 +18,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/go-redis/redis"
 )
 
@@ -31,7 +33,7 @@ func NewRegistrationManager(address string) (*registrationManager, error) {
 	})
 	err := redisClient.Ping().Err()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to connect to redis database (%s)", err)
 	}
 	return &registrationManager{redisClient}, nil
 }
