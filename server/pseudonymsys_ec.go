@@ -47,9 +47,10 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 	var resp *pb.Message
 
 	if !regKeyOk || err != nil {
+		s.logger.Errorf("Registration key %s ok=%t, error=%v",
+			proofRandData.RegKey, regKeyOk, err)
 		resp = &pb.Message{
-			Content:       nil,
-			ProtocolError: "Registration key verification failed",
+			ProtocolError: "registration key verification failed",
 		}
 
 		if err = s.send(resp, stream); err != nil {
@@ -58,10 +59,8 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 	} else {
 		challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, signatureR, signatureS)
 		if err != nil {
+			s.logger.Error(err)
 			resp = &pb.Message{
-				Content: &pb.Message_PedersenDecommitment{
-					&pb.PedersenDecommitment{},
-				},
 				ProtocolError: err.Error(),
 			}
 		} else {
@@ -133,10 +132,8 @@ func (s *Server) PseudonymsysIssueCredentialEC(curveType groups.ECurve, req *pb.
 	x11, x12, x21, x22, A, B, err := org.VerifyAuthentication(z)
 
 	if err != nil {
+		s.logger.Error(err)
 		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysIssueProofRandomDataEc{
-				&pb.PseudonymsysIssueProofRandomDataEC{},
-			},
 			ProtocolError: err.Error(),
 		}
 	} else {
@@ -257,8 +254,8 @@ func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *
 	if verified {
 		sessionKey, err := s.generateSessionKey()
 		if err != nil {
-			resp.ProtocolError = err.Error()
-			s.logger.Notice(err)
+			s.logger.Error(err)
+			resp.ProtocolError = "failed to obtain session key"
 		} else {
 			resp.Content = &pb.Message_SessionKey{
 				SessionKey: &pb.SessionKey{
@@ -267,7 +264,8 @@ func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *
 			}
 		}
 	} else {
-		resp.ProtocolError = "User authentication failed"
+		s.logger.Error("User authentication failed")
+		resp.ProtocolError = "user authentication failed"
 	}
 
 	if err = s.send(resp, stream); err != nil {

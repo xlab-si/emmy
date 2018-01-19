@@ -73,10 +73,8 @@ func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,
 			},
 		}
 	} else {
+		s.logger.Error(err)
 		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysCaCertificateEc{
-				&pb.PseudonymsysCACertificateEC{},
-			},
 			ProtocolError: err.Error(),
 		}
 	}
