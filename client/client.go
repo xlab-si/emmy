@@ -28,6 +28,7 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var logger log.Logger
@@ -54,16 +55,16 @@ func SetLogger(lgr log.Logger) {
 
 // ConnectionConfig holds all the details required for establishing a connection to the server.
 type ConnectionConfig struct {
-	Endpoint      string // Server's Endpoint
-	CACertificate []byte // CA certificate for validating the server
-	Insecure      bool   // Whether to skip validation of server
+	Endpoint           string // Server's Endpoint
+	ServerNameOverride string // Name of the remote server. TODO
+	CACertificate      []byte // CA certificate for validating the server
 }
 
-func NewConnectionConfig(endpoint string, certificate []byte, insecure bool) *ConnectionConfig {
+func NewConnectionConfig(endpoint, serverNameOverride string, certificate []byte) *ConnectionConfig {
 	return &ConnectionConfig{
-		Endpoint:      endpoint,
-		CACertificate: certificate,
-		Insecure:      insecure,
+		Endpoint:           endpoint,
+		ServerNameOverride: serverNameOverride,
+		CACertificate:      certificate,
 	}
 }
 
@@ -73,21 +74,34 @@ func NewConnectionConfig(endpoint string, certificate []byte, insecure bool) *Co
 // thus reducing the overhead.
 func GetConnection(connConfig *ConnectionConfig) (*grpc.ClientConn, error) {
 	logger.Info("Getting the connection")
+
 	timeoutSec := config.LoadTimeout()
 
-	// Notify the end user about security implications when running in insecure mode
-	if connConfig.Insecure {
-		logger.Warning("######## You requested an **insecure** channel! ########")
-		logger.Warning("As a consequence, server's identity will *NOT* be validated!")
-		logger.Warning("Please consider using a secure connection instead")
-	}
+	var creds credentials.TransportCredentials
+	var err error
 
-	// Create client TLS credentials
-	creds, err := getTLSClientCredentials(connConfig.CACertificate, connConfig.Insecure)
-	if err != nil {
-		return nil, fmt.Errorf("error creating TLS client credentials: %v", err)
+	// If the client doesn't explicitly provide a CA certificate, build TLS credentials with
+	// the hosts' system certificate pool
+	if connConfig.CACertificate == nil {
+		logger.Warning("######## No CA certificate was provided ########")
+		logger.Warning("Host system's certificate pool will be used to validate the server")
+		creds, err = getTLSCredentialsFromSysCertPool()
+		if err != nil {
+			return nil, fmt.Errorf("error creating TLS client credentials: %s", err)
+		}
+	} else {
+		// If the client provided a CA certificate, he can still allow a mismatch in the server's
+		// name and server's CN in certificate
+		if connConfig.ServerNameOverride != "" {
+			logger.Warning("######## Skipping server's hostname validation ########")
+			logger.Warningf("Expecting to find '%s' in the server certificate's CN",
+				connConfig.ServerNameOverride)
+		}
+		creds, err = getTLSCredentials(connConfig.CACertificate, connConfig.ServerNameOverride)
+		if err != nil {
+			return nil, fmt.Errorf("error creating TLS client credentials: %s", err)
+		}
 	}
-
 	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
 		grpc.WithBlock(),

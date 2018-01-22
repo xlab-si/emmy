@@ -40,7 +40,8 @@ var testGrpcClientConn *grpc.ClientConn
 // Once all the tests run, we close the connection to the server and stop the server.
 func TestMain(m *testing.M) {
 	logger, _ := log.NewStdoutLogger("testServer", log.NOTICE, log.FORMAT_LONG)
-	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key", logger)
+	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key",
+		logger)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -58,8 +59,7 @@ func TestMain(m *testing.M) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	testGrpcClientConn, err = GetConnection(NewConnectionConfig(testGrpcServerEndpoint,
-		testCert, false))
+	testGrpcClientConn, err = GetConnection(NewConnectionConfig(testGrpcServerEndpoint, "", testCert))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
