@@ -56,8 +56,10 @@ func SetLogger(lgr log.Logger) {
 // ConnectionConfig holds all the details required for establishing a connection to the server.
 type ConnectionConfig struct {
 	Endpoint           string // Server's Endpoint
-	ServerNameOverride string // Name of the remote server. TODO
-	CACertificate      []byte // CA certificate for validating the server
+	ServerNameOverride string // When ServerNameOverride != "",
+	// server cert's CN will be compared with the provided ServerNameOverride instead of server's
+	// hostname
+	CACertificate []byte // CA certificate for validating the server
 }
 
 func NewConnectionConfig(endpoint, serverNameOverride string, certificate []byte) *ConnectionConfig {
