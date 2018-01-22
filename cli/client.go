@@ -168,12 +168,17 @@ func run(ctx, subCmdCtx *cli.Context, f func(ctx *cli.Context, conn *grpc.Client
 	}
 	client.SetLogger(logger)
 
-	caCert, err := ioutil.ReadFile(ctx.String("cacert"))
-	if err != nil {
-		return cli.NewExitError(err.Error(), 2)
+	// configure how clients will access emmy server via TLS.
+	var connCfg *client.ConnectionConfig
+	if ctx.Bool("syscertpool") {
+		connCfg = client.NewConnectionConfig(ctx.String("server"), "", nil)
+	} else {
+		caCert, err := ioutil.ReadFile(ctx.String("cacert"))
+		if err != nil {
+			return cli.NewExitError(err.Error(), 2)
+		}
+		connCfg = client.NewConnectionConfig(ctx.String("server"), ctx.String("servername"), caCert)
 	}
-
-	connCfg := client.NewConnectionConfig(ctx.String("server"), caCert, ctx.Bool("insecure"))
 
 	// conn is a connection to emmy server.
 	// In case we are running more than one client, conn will be shared among all the clients.

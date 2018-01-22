@@ -150,9 +150,15 @@ where *commonClientFlags* control the following aspects:
 3. **Logging level**: flag *--loglevel* (shorthand *-l*), which must be one of `debug|info|notice|error|critical`. Defaults to `ìnfo`.
 4. **URI of the emmy server**: flag *--server*, defaults to *localhost:7007*.
 5. **CA certificate**: flag *--cacert*, points to a path to a certificate of the CA that issued emmy server's certificate, in PEM format. This will be used to secure communication channel with the server. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
-6. **Allowing insecure connections**: flag *--insecure*. In the absence of this flag clients will check emmy server's hostname and CA certificate chain. If you include this flag, none of these checks will be performed.
-  
-    > This should only be used for connecting clients to emmy development server, where self-signed certificate is used.
+6. **Server name override**: flag *--servername*. This will instruct clients to check server 
+certificate's common name (CN) against the value of the provided flag, instead of server's 
+hostname. Allows certificate validation to pass even when server's hostname does not 
+match the CN specified in server's certificate. 
+
+    > This should only be used for connecting clients to emmy development server, for instance
+    where self-signed certificate is used, or when the CN in server's certificate is not resolvable.
+7. **Whether to use system's certificate pool**: flag *--syscertpool*. When present, the 
+values of `--cacert` and `--servername` will be ignored. 
 
 Moreover, the *protocolSubcommand* corresponds to a concrete protocol that we want to demonstrate between emmy client and emmy server. You can list valid *protocolSubcommand* values by running 
 
@@ -214,8 +220,17 @@ To control keys and certificates used for TLS, emmy CLI programs use several fla
 * `--key` which expects the path to server's private key file.
 
 On the other hand, we can provide `emmy client` with the following flags:
-* `--cacert`, which expects the certificate of the CA that issued emmy server's certificate (in PEM format). Again, if this flag is omitted, the certificate in `test/testdata` directory is used.
-* `--insecure`, which tells the client not to check the CA certificate chain or emmy server's hostname. This option is meant for development purposes only, for instance when we have deployed emmy server with a self-signed certificate to a host whose hostname does not match the hostname specified in the server's certificate (for instance, *localhost*).
+* `--cacert`, which expects the path to certificate of the CA that issued emmy server's certificate 
+(in PEM format). Again, if this flag is omitted, the certificate in `test/testdata` directory is used.
+* `--servername`, which instructs the client to skip validation of the server's hostname. In the 
+absence of this flag, client will always check whether the server's hostname matches 
+the common name (CN) specified in the server's certificate as a part of certificate validation. For 
+development purposes, hostname and server's CN will likely not match, and thus it is convenient to 
+provide a `--servername` flag with the value matching the CN specified in the server's certificate.
+* `--syscertpool`, which tells the client to look for the CA certificate in the host system's 
+certificate pool. If this flag is provided, the presence of `--cacert` or `--servername` flags 
+will be ignored. In addition, the CA certificate needs to be put in the system's default 
+certificate store location beforehand.
   
   To give you an example, let's try to run an emmy client against an instance of emmy server that uses the self-signed certificate shipped with this repository. The hostname in the certificate is *localhost*, but the server is deployed on a host other than localhost (for instance, *10.12.13.45*). When we try to contact the server withour the *--insecure* flag, here's what happens:
 
