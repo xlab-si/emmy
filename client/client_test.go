@@ -19,9 +19,10 @@ package client
 
 import (
 	"fmt"
-
 	"os"
 	"testing"
+
+	"io/ioutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
@@ -43,7 +44,7 @@ func TestMain(m *testing.M) {
 	logger, _ := log.NewStdoutLogger("testServer", log.NOTICE, log.FORMAT_LONG)
 	server, err := server.NewServer("testdata/server.pem", "testdata/server.key",
 		config.LoadRegistrationDBAddress(), logger)
-	if err != nil {
+  if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -55,8 +56,12 @@ func TestMain(m *testing.M) {
 	go server.Start(7008)
 
 	// Establish a connection to previously started server
-	testGrpcClientConn, err = GetConnection(testGrpcServerEndpoint,
-		"testdata/server.pem", false)
+	testCert, err := ioutil.ReadFile("testdata/server.pem")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	testGrpcClientConn, err = GetConnection(NewConnectionConfig(testGrpcServerEndpoint, "", testCert))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

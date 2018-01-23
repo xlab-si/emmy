@@ -18,29 +18,39 @@
 package client
 
 import (
-	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 
 	"google.golang.org/grpc/credentials"
 )
 
-// getTLSClientCredentials generates appropriate TLS credentials that the client can use to
-// contact the server via TLS.
-// Client credentials are constructed either for secure (in production) or insecure (during
-// development) communication with the server
-func getTLSClientCredentials(caCertFile string,
-	insecure bool) (credentials.TransportCredentials, error) {
-	// Do not check server's hostname or CA certificate chain
-	// This should only be used for testing & development, when the server uses a self-signed cert
-	if insecure {
-		return credentials.NewTLS(&tls.Config{
-			InsecureSkipVerify: true,
-		}), nil
+// getTLSCredentials generates TLS credentials that the client can use to contact the
+// server via TLS. Server's certificate (in PEM format) will always be validated against the
+// provided caCert.
+// If serverNameOverride == "", certificate validation will include a check that server's hostname
+// 	matches the common name (CN) in server's certificate.
+// If serverNameOverride != "", the provided serverNameOverride must match server certificate's
+//	CN in order for certificate validation to succeed. This can be used for testing and development
+//	purposes, where server's CN does not resolve to a real domain and doesn't.
+func getTLSCredentials(caCert []byte, serverNameOverride string) (credentials.TransportCredentials,
+	error) {
+	certPool := x509.NewCertPool()
+	// Try to append the provided caCert to the cert pool
+	if success := certPool.AppendCertsFromPEM(caCert); !success {
+		return nil, fmt.Errorf("cannot append certs from PEM")
 	}
 
-	creds, err := credentials.NewClientTLSFromFile(caCertFile, "")
+	return credentials.NewClientTLSFromCert(certPool, serverNameOverride), nil
+}
+
+// getTLSCredentialsFromSysCertPool retrieves TLS credentials based on host's system certificate
+// pool. This function should be used when the client does not provide a specific CA certificate
+// for validation of the target server.
+func getTLSCredentialsFromSysCertPool() (credentials.TransportCredentials, error) {
+	certPool, err := x509.SystemCertPool()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve system cert pool (%s)", err)
 	}
 
-	return creds, err
+	return credentials.NewClientTLSFromCert(certPool, ""), nil
 }

@@ -24,6 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"io/ioutil"
+
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
@@ -166,13 +168,25 @@ func run(ctx, subCmdCtx *cli.Context, f func(ctx *cli.Context, conn *grpc.Client
 	}
 	client.SetLogger(logger)
 
+	// configure how clients will access emmy server via TLS.
+	var connCfg *client.ConnectionConfig
+	if ctx.Bool("syscertpool") {
+		connCfg = client.NewConnectionConfig(ctx.String("server"), "", nil)
+	} else {
+		caCert, err := ioutil.ReadFile(ctx.String("cacert"))
+		if err != nil {
+			return cli.NewExitError(err.Error(), 2)
+		}
+		connCfg = client.NewConnectionConfig(ctx.String("server"), ctx.String("servername"), caCert)
+	}
+
 	// conn is a connection to emmy server.
 	// In case we are running more than one client, conn will be shared among all the clients.
 	// We made it global because it is needed in both 'Before' and 'After' actions of the clientCmd.
 	var conn *grpc.ClientConn
 
 	// Establish a connection to emmy server
-	conn, err = client.GetConnection(ctx.String("server"), ctx.String("cacert"), ctx.Bool("insecure"))
+	conn, err = client.GetConnection(connCfg)
 	if err != nil {
 		return cli.NewExitError(fmt.Sprintf("Cannot connect to gRPC server: %v", err), 2)
 	}

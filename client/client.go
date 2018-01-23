@@ -30,6 +30,7 @@ import (
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var logger log.Logger
@@ -54,34 +55,65 @@ func SetLogger(lgr log.Logger) {
 	logger = lgr
 }
 
-// GetConnection attempts to return a secure connection to a gRPC server at a given endpoint.
-// Note that several clients can be passed the same connection object, as the gRPC framework
-// is able to multiplex several RPCs on the same connection, thus reducing the overhead
-func GetConnection(serverEndpoint, caCert string, insecure bool) (*grpc.ClientConn, error) {
+// ConnectionConfig holds all the details required for establishing a connection to the server.
+type ConnectionConfig struct {
+	Endpoint           string // Server's Endpoint
+	ServerNameOverride string // When ServerNameOverride != "",
+	// server cert's CN will be compared with the provided ServerNameOverride instead of server's
+	// hostname
+	CACertificate []byte // CA certificate for validating the server
+}
+
+func NewConnectionConfig(endpoint, serverNameOverride string, certificate []byte) *ConnectionConfig {
+	return &ConnectionConfig{
+		Endpoint:           endpoint,
+		ServerNameOverride: serverNameOverride,
+		CACertificate:      certificate,
+	}
+}
+
+// GetConnection attempts to return a connection to a gRPC server based on the provided
+// configuration of connection details. Note that several clients can be passed the same
+// connection, as the gRPC framework is able to multiplex several RPCs on the same connection,
+// thus reducing the overhead.
+func GetConnection(connConfig *ConnectionConfig) (*grpc.ClientConn, error) {
 	logger.Info("Getting the connection")
+
 	timeoutSec := config.LoadTimeout()
 
-	// Notify the end user about security implications when running in insecure mode
-	if insecure {
-		logger.Warning("######## You requested an **insecure** channel! ########")
-		logger.Warning("As a consequence, server's identity will *NOT* be validated!")
-		logger.Warning("Please consider using a secure connection instead")
-	}
+	var creds credentials.TransportCredentials
+	var err error
 
-	// Create client TLS credentials
-	creds, err := getTLSClientCredentials(caCert, insecure)
-	if err != nil {
-		return nil, fmt.Errorf("error creating TLS client credentials: %v", err)
+	// If the client doesn't explicitly provide a CA certificate, build TLS credentials with
+	// the hosts' system certificate pool
+	if connConfig.CACertificate == nil {
+		logger.Warning("######## No CA certificate was provided ########")
+		logger.Warning("Host system's certificate pool will be used to validate the server")
+		creds, err = getTLSCredentialsFromSysCertPool()
+		if err != nil {
+			return nil, fmt.Errorf("error creating TLS client credentials: %s", err)
+		}
+	} else {
+		// If the client provided a CA certificate, he can still allow a mismatch in the server's
+		// name and server's CN in certificate
+		if connConfig.ServerNameOverride != "" {
+			logger.Warning("######## Skipping server's hostname validation ########")
+			logger.Warningf("Expecting to find '%s' in the server certificate's CN",
+				connConfig.ServerNameOverride)
+		}
+		creds, err = getTLSCredentials(connConfig.CACertificate, connConfig.ServerNameOverride)
+		if err != nil {
+			return nil, fmt.Errorf("error creating TLS client credentials: %s", err)
+		}
 	}
-
 	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
 		grpc.WithBlock(),
 		grpc.WithTimeout(time.Duration(timeoutSec) * time.Second),
 	}
-	conn, err := grpc.Dial(serverEndpoint, dialOptions...)
+	conn, err := grpc.Dial(connConfig.Endpoint, dialOptions...)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to server %v (%v)", serverEndpoint, err)
+		return nil, fmt.Errorf("could not connect to server %v (%v)", connConfig.Endpoint, err)
 	}
 	logger.Notice("Established connection to gRPC server")
 	return conn, nil

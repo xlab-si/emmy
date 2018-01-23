@@ -65,11 +65,20 @@ var caCertFlag = cli.StringFlag{
 	Usage: "`PATH` to certificate file of the CA that issued emmy server's certificate",
 }
 
-// insecureFlag indicates whether a client should use an insecure connection to connect to
-// the server, meaning that server's certificate and hostname will not be checked by the client.
-var insecureFlag = cli.BoolFlag{
-	Name:  "insecure",
-	Usage: "Whether to disable checking server's hostname and certificate chain",
+// sysCertPoolFlag indicates whether a client should use system's certificate pool to validate
+// the server's certificate..
+var sysCertPoolFlag = cli.BoolFlag{
+	Name:  "syscertpool",
+	Usage: "Whether to use host system's certificate pool to validate the server",
+}
+
+// serverNameOverrideFlag allows the client to skip validation of the server's hostname when
+// checking its CN. Instead, CN from the server's certificate must match the value provided by
+// serverNameOverride flag.
+var serverNameOverrideFlag = cli.StringFlag{
+	Name:  "servername",
+	Value: "",
+	Usage: "Name of emmy server for overriding the server name stated in cert's CN",
 }
 
 // portFlag indicates the port where emmy server will listen.
@@ -148,7 +157,8 @@ var clientFlags = []cli.Flag{
 	nClientsFlag,
 	concurrencyFlag,
 	serverEndpointFlag,
+	serverNameOverrideFlag,
 	caCertFlag,
-	insecureFlag,
+	sysCertPoolFlag,
 	logLevelFlag,
 }
