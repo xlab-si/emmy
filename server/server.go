@@ -22,6 +22,7 @@ import (
 	"io"
 	"math"
 	"net"
+
 	"net/http"
 	"path/filepath"
 
@@ -35,7 +36,22 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var _ pb.ProtocolServer = (*Server)(nil)
+const (
+	// Curve to be used in all schemes using elliptic curve arithmetic.
+	curve = groups.P256
+)
+
+// EmmyServer is an interface composed of all the auto-generated server interfaces that
+// declare gRPC handler functions for emmy protocols and schemes.
+type EmmyServer interface {
+	pb.ProtocolServer
+	pb.PseudonymSystemServer
+	pb.PseudonymSystemCAServer
+	pb.InfoServer
+}
+
+// Server struct implements the EmmyServer interface.
+var _ EmmyServer = (*Server)(nil)
 
 type Server struct {
 	grpcServer *grpc.Server
@@ -44,15 +60,12 @@ type Server struct {
 	*registrationManager
 }
 
-// NewProtocolServer initializes an instance of the Server struct and returns a pointer.
+// NewServer initializes an instance of the Server struct and returns a pointer.
 // It performs some default configuration (tracing of gRPC communication and interceptors)
-// and registers RPC protocol server with gRPC server. It requires TLS cert and keyfile
+// and registers RPC server handlers with gRPC server. It requires TLS cert and keyfile
 // in order to establish a secure channel with clients.
-func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, error) {
-	logger.Info("Instantiating new protocol server")
-
-	// Register our generic service
-	logger.Info("Registering services")
+func NewServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server, error) {
+	logger.Info("Instantiating new server")
 
 	// Obtain TLS credentials
 	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
@@ -67,9 +80,9 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 		logger.Warning(err)
 	}
 
-	registrationManager, err := NewRegistrationManager(config.LoadRegistrationDBAddress())
+	registrationManager, err := NewRegistrationManager(dbAddress)
 	if err != nil {
-		logger.Error(err)
+		logger.Critical(err)
 		return nil, err
 	}
 
@@ -91,13 +104,11 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 	grpc.EnableTracing = false
 
 	// Register our services with the supporting gRPC server
-	pb.RegisterProtocolServer(server.grpcServer, server)
-	pb.RegisterInfoServer(server.grpcServer, server)
+	server.registerServices()
 
 	// Initialize gRPC metrics offered by Prometheus package
 	grpc_prometheus.Register(server.grpcServer)
 
-	logger.Notice("gRPC Services registered")
 	return server, nil
 }
 
@@ -139,7 +150,18 @@ func (s *Server) EnableTracing() {
 	s.logger.Notice("Enabled gRPC tracing")
 }
 
-func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
+// registerServices binds gRPC server interfaces to the server instance itself, as the server
+// provides implementations of these interfaces.
+func (s *Server) registerServices() {
+	pb.RegisterProtocolServer(s.grpcServer, s)
+	pb.RegisterInfoServer(s.grpcServer, s)
+	pb.RegisterPseudonymSystemServer(s.grpcServer, s)
+	pb.RegisterPseudonymSystemCAServer(s.grpcServer, s)
+
+	s.logger.Notice("Registered gRPC Services")
+}
+
+func (s *Server) send(msg *pb.Message, stream pb.ServerStream) error {
 	if err := stream.Send(msg); err != nil {
 		return fmt.Errorf("error sending message: %v", err)
 	}
@@ -149,7 +171,7 @@ func (s *Server) send(msg *pb.Message, stream pb.Protocol_RunServer) error {
 	return nil
 }
 
-func (s *Server) receive(stream pb.Protocol_RunServer) (*pb.Message, error) {
+func (s *Server) receive(stream pb.ServerStream) (*pb.Message, error) {
 	resp, err := stream.Recv()
 	if err == io.EOF {
 		return nil, err
@@ -190,8 +212,6 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 
 	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
 	protocolType := reqSchemaVariant.GetNativeType()
-	// This curve will be used for all schemes
-	curve := groups.P256
 
 	switch reqSchemaType {
 	case pb.SchemaType_PEDERSEN_EC:
@@ -207,22 +227,6 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	case pb.SchemaType_CSPAILLIER:
 		secKeyPath := filepath.Join(config.LoadTestdataDir(), "cspaillierseckey.txt")
 		err = s.CSPaillier(req, secKeyPath, stream)
-	case pb.SchemaType_PSEUDONYMSYS_CA:
-		err = s.PseudonymsysCA(req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_NYM_GEN:
-		err = s.PseudonymsysGenerateNym(req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL:
-		err = s.PseudonymsysIssueCredential(req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL:
-		err = s.PseudonymsysTransferCredential(req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_CA_EC:
-		err = s.PseudonymsysCAEC(curve, req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_NYM_GEN_EC:
-		err = s.PseudonymsysGenerateNymEC(curve, req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL_EC:
-		err = s.PseudonymsysIssueCredentialEC(curve, req, stream)
-	case pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC:
-		err = s.PseudonymsysTransferCredentialEC(curve, req, stream)
 	case pb.SchemaType_QR:
 		group := config.LoadGroup("pseudonymsys")
 		err = s.QR(req, group, stream)

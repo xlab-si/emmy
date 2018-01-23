@@ -112,6 +112,10 @@ Alternatively, you can control emmy server's behavior with the following options
 
 4. **Certificate and private key**: flags *--cert* and *--key*, whose value is a path to a valid certificate and private key in PEM format. These will be used to secure communication channel with clients. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
 
+5. **Address of the redis database**: flag *--db* of the form *redisHost:redisPort*, which points
+ to a running instance of redis database that holds [registration keys](#registration-keys). 
+ Defaults to *localhost:6379*.
+
 Starting the server should produce an output similar to the one below:
 
 ```

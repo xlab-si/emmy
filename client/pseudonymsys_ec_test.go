@@ -43,9 +43,9 @@ func TestPseudonymsysEC(t *testing.T) {
 	nymB := group.Exp(nymA, userSecret) // this is user's public key
 
 	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
-	caCertificate, err := caClient.ObtainCertificate(userSecret, masterNym)
+	caCertificate, err := caClient.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
-		t.Errorf("Error when registering with CA")
+		t.Errorf("Error when registering with CA: %s", err.Error())
 	}
 
 	err = insertTestRegistrationKeys()
@@ -79,7 +79,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	// register with org2
 	// create a client to communicate with org2
 	caClient1, err := NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
-	caCertificate1, err := caClient1.ObtainCertificate(userSecret, masterNym)
+	caCertificate1, err := caClient1.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
 	}

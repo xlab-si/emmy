@@ -18,15 +18,17 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math/rand"
 	"time"
 
+	"reflect"
+
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/protobuf"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -118,28 +120,24 @@ func GetConnection(connConfig *ConnectionConfig) (*grpc.ClientConn, error) {
 }
 
 type genericClient struct {
-	id             int32
-	protocolClient pb.ProtocolClient
-	stream         pb.Protocol_RunClient
+	id int32
+	pb.ClientStream
 }
 
-func newGenericClient(conn *grpc.ClientConn) (*genericClient, error) {
-	logger.Debug("Creating the client")
-	client := pb.NewProtocolClient(conn)
+func newGenericClient() genericClient {
+	logger.Debug("Creating genericClient")
 
 	rand.Seed(time.Now().UTC().UnixNano())
-
-	genClient := genericClient{
-		id:             rand.Int31(),
-		protocolClient: client,
+	client := genericClient{
+		id: rand.Int31(),
 	}
 
-	logger.Debugf("New GenericClient spawned (%v)", genClient.id)
-	return &genClient, nil
+	logger.Debugf("New genericClient created (%v)", client.id)
+	return client
 }
 
 func (c *genericClient) send(msg *pb.Message) error {
-	if err := c.stream.Send(msg); err != nil {
+	if err := c.Send(msg); err != nil {
 		return fmt.Errorf("[client %v] Error sending message: %v", c.id, err)
 	}
 	logger.Infof("[client %v] Successfully sent request of type %T", c.id, msg.Content)
@@ -149,7 +147,7 @@ func (c *genericClient) send(msg *pb.Message) error {
 }
 
 func (c *genericClient) receive() (*pb.Message, error) {
-	resp, err := c.stream.Recv()
+	resp, err := c.Recv()
 	if err == io.EOF {
 		return nil, fmt.Errorf("[client %v] EOF error", c.id)
 	} else if err != nil {
@@ -158,7 +156,7 @@ func (c *genericClient) receive() (*pb.Message, error) {
 	if resp.ProtocolError != "" {
 		return nil, fmt.Errorf(resp.ProtocolError)
 	}
-	logger.Infof("[client %v] Received response of type %T from the stream", c.id, resp.Content)
+	logger.Infof("[client %v] Received response of type %T from the genericClient", c.id, resp.Content)
 	logger.Debugf("%+v", resp)
 
 	return resp, nil
@@ -172,27 +170,56 @@ func (c *genericClient) getResponseTo(msg *pb.Message) (*pb.Message, error) {
 	return c.receive()
 }
 
-// openStream opens the gRPC communication stream with the server prior to actual execution of
-// the protocol client.
+// openStream is a generic function for opening a pb.ClientStream.
+// A pb.ClientStream is generated as a result of the function call of the form
+// stream, err := grpcClient.streamGenFunc(context.Background()). As we have different
+// grpcClients (each generated from its own RPC service), each has its own streamGenFunc(s)
+// (generated from the appropriate RPC within the service), it is the caller's responsibility
+// to provide appropriate grpcClient and streamGenFunc.
 // This function has to be called explicitly at the beginning of the protocol execution function.
-func (c *genericClient) openStream() error {
-	stream, err := c.protocolClient.Run(context.Background())
+func (c *genericClient) openStream(grpcClient interface{}, streamGenFunc string) error {
+	// Create structs compatible with reflect package
+	client := reflect.ValueOf(grpcClient)                            // we want to call streamGenFunc on this struct
+	params := []reflect.Value{reflect.ValueOf(context.Background())} // we want to pass these params to streamGenFunc
+
+	// Safety check for existence of the requested stream generation method on a given grpc client
+	f := client.MethodByName(streamGenFunc)
+	if !f.IsValid() {
+		return fmt.Errorf("stream generation function '%s' not defined for %v", streamGenFunc, reflect.TypeOf(grpcClient))
+	}
+
+	// Call the client stream generation function
+	res := f.Call(params)
+
+	// First, check if an error occurred during creation of the client stream
+	var err error
+	if v := res[1].Interface(); v != nil {
+		err = v.(error)
+	}
 	if err != nil {
 		return fmt.Errorf("[client %v] Error opening stream: %v", c.id, err)
 	}
 
-	c.stream = stream
+	// creation of the client stream was successful, make type assertion
+	var stream pb.ClientStream
+	if v := res[0].Interface(); v != nil {
+		stream = v.(pb.ClientStream)
+	}
+
+	// assign this client stream to our generic client, so that the stream can be
+	// used for communication with the server in subsequent send(), receive() calls
+	c.ClientStream = stream
 	return nil
 }
 
-// closeStream closes the gRPC communication stream with the server, indicating the end of
+// closeStream closes the gRPC communication genericClient with the server, indicating the end of
 // a protocol execution.
 // This function has to be called explicitly at the end of protocol execution function.
-// Note that closing the stream does not close the corresponding connection to the server,
+// Note that closing the genericClient does not closeStream the corresponding connection to the server,
 // as it should be done externally.
 func (c *genericClient) closeStream() error {
-	if err := c.stream.CloseSend(); err != nil {
-		return fmt.Errorf("[Client %v] Error closing stream: %v", c.id, err)
+	if err := c.CloseSend(); err != nil {
+		return fmt.Errorf("[client %v] Error closing genericClient: %v", c.id, err)
 	}
 	return nil
 }

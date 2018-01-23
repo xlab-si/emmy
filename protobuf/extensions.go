@@ -15,24 +15,24 @@
  *
  */
 
-package server
+package protobuf
 
 import (
-	"golang.org/x/net/context"
-
-	"github.com/xlab-si/emmy/config"
-	pb "github.com/xlab-si/emmy/protobuf"
+	"google.golang.org/grpc"
 )
 
-func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
-	s.logger.Info("Client requested service information")
+// ServerStream is an interface that fits all the auto-generated server
+// stream interfaces declared within this package.
+type ServerStream interface {
+	Send(*Message) error
+	Recv() (*Message, error)
+	grpc.ServerStream
+}
 
-	name, provider, description := config.LoadServiceInfo()
-	info := &pb.ServiceInfo{
-		Name:        name,
-		Provider:    provider,
-		Description: description,
-	}
-
-	return info, nil
+// ClientStream is an interface that fits all the auto-generated client
+// stream interfaces declared within this package.
+type ClientStream interface {
+	Send(*Message) error
+	Recv() (*Message, error)
+	grpc.ClientStream
 }

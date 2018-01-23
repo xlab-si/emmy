@@ -27,10 +27,14 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 )
 
-func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Message,
-	stream pb.Protocol_RunServer) error {
+func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
-	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY, curveType)
+	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY, curve)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
 	x1 := proofRandData.X1.GetNativeType()
@@ -99,15 +103,19 @@ func (s *Server) PseudonymsysGenerateNymEC(curveType groups.ECurve, req *pb.Mess
 	return nil
 }
 
-func (s *Server) PseudonymsysIssueCredentialEC(curveType groups.ECurve, req *pb.Message,
-	stream pb.Protocol_RunServer) error {
+func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_ECServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	proofRandData := req.GetSchnorrEcProofRandomData()
 	x := proofRandData.X.GetNativeType()
 	a := proofRandData.A.GetNativeType()
 	b := proofRandData.B.GetNativeType()
 
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2, curveType)
+	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2, curve)
 	challenge := org.GetAuthenticationChallenge(a, b, x)
 
 	resp := &pb.Message{
@@ -122,7 +130,7 @@ func (s *Server) PseudonymsysIssueCredentialEC(curveType groups.ECurve, req *pb.
 		return err
 	}
 
-	req, err := s.receive(stream)
+	req, err = s.receive(stream)
 	if err != nil {
 		return err
 	}
@@ -184,10 +192,14 @@ func (s *Server) PseudonymsysIssueCredentialEC(curveType groups.ECurve, req *pb.
 	return nil
 }
 
-func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *pb.Message,
-	stream pb.Protocol_RunServer) error {
+func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredential_ECServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialVerifierEC(s1, s2, curveType)
+	org := pseudonymsys.NewOrgCredentialVerifierEC(s1, s2, curve)
 
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
@@ -235,7 +247,7 @@ func (s *Server) PseudonymsysTransferCredentialEC(curveType groups.ECurve, req *
 		return err
 	}
 
-	req, err := s.receive(stream)
+	req, err = s.receive(stream)
 	if err != nil {
 		return err
 	}

@@ -34,21 +34,21 @@ type PedersenECClient struct {
 
 // NewPedersenECClient returns an initialized struct of type PedersenECClient.
 func NewPedersenECClient(conn *grpc.ClientConn, v *big.Int, curveType groups.ECurve) (*PedersenECClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &PedersenECClient{
-		pedersenCommonClient: pedersenCommonClient{genericClient: *genericClient},
-		committer:            commitments.NewPedersenECCommitter(curveType),
-		val:                  v,
+		pedersenCommonClient: pedersenCommonClient{
+			genericClient: newGenericClient(),
+			grpcClient:    pb.NewProtocolClient(conn),
+		},
+		committer: commitments.NewPedersenECCommitter(curveType),
+		val:       v,
 	}, nil
 }
 
 // Run runs Pedersen commitment protocol in the eliptic curve group.
 func (c *PedersenECClient) Run() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	h, err := c.getH()

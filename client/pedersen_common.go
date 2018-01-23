@@ -25,6 +25,7 @@ import (
 
 type pedersenCommonClient struct {
 	genericClient
+	grpcClient pb.ProtocolClient
 }
 
 func (c *pedersenCommonClient) decommit(decommitVal, r *big.Int) error {

@@ -25,8 +25,13 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 )
 
-func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) GenerateCertificate(stream pb.PseudonymSystemCA_GenerateCertificateServer) error {
 	var err error
+
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
 
 	group := config.LoadGroup("pseudonymsys")
 	d := config.LoadPseudonymsysCASecret()

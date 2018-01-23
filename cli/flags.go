@@ -95,6 +95,13 @@ var serverEndpointFlag = cli.StringFlag{
 	Usage: "`URI` of emmy server in the form serverHost:serverPort",
 }
 
+// dbEndpointFlag points to the endpoint at which emmy server will contact redis database.
+var dbEndpointFlag = cli.StringFlag{
+	Name:  "db",
+	Value: config.LoadRegistrationDBAddress(),
+	Usage: "`URI` of redis database to hold registration keys, in the form redisHost:redisPort",
+}
+
 // nClientsFlag indicates the number of (either concurrent or sequential) clients to run.
 var nClientsFlag = cli.IntFlag{
 	Name:  "nclients, n",
@@ -140,6 +147,7 @@ var serverFlags = []cli.Flag{
 	portFlag,
 	certFlag,
 	keyFlag,
+	dbEndpointFlag,
 	logFilePathFlag,
 	logLevelFlag,
 }

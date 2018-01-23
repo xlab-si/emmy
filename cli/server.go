@@ -36,6 +36,7 @@ var ServerCmd = cli.Command{
 					ctx.Int("port"),
 					ctx.String("cert"),
 					ctx.String("key"),
+					ctx.String("db"),
 					ctx.String("logfile"),
 					ctx.String("loglevel"))
 				if err != nil {
@@ -48,7 +49,7 @@ var ServerCmd = cli.Command{
 }
 
 // startEmmyServer configures and starts the gRPC server at the desired port
-func startEmmyServer(port int, certPath, keyPath, logFilePath, logLevel string) error {
+func startEmmyServer(port int, certPath, keyPath, dbAddress, logFilePath, logLevel string) error {
 	var err error
 	var logger log.Logger
 
@@ -62,7 +63,7 @@ func startEmmyServer(port int, certPath, keyPath, logFilePath, logLevel string) 
 		return err
 	}
 
-	srv, err := server.NewProtocolServer(certPath, keyPath, logger)
+	srv, err := server.NewServer(certPath, keyPath, dbAddress, logger)
 	if err != nil {
 		return err
 	}

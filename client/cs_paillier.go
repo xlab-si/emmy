@@ -27,24 +27,21 @@ import (
 
 type CSPaillierClient struct {
 	genericClient
-	encryptor *encryption.CSPaillier
-	label, m  *big.Int
+	grpcClient pb.ProtocolClient
+	encryptor  *encryption.CSPaillier
+	label, m   *big.Int
 }
 
 // NewCSPaillierClient returns an initialized struct of type CSPaillierClient.
 func NewCSPaillierClient(conn *grpc.ClientConn, pubKeyPath string, m, l *big.Int) (*CSPaillierClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	encryptor, err := encryption.NewCSPaillierFromPubKeyFile(pubKeyPath)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CSPaillierClient{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewProtocolClient(conn),
 		encryptor:     encryptor,
 		m:             m,
 		label:         l,
@@ -54,7 +51,9 @@ func NewCSPaillierClient(conn *grpc.ClientConn, pubKeyPath string, m, l *big.Int
 // Run runs the Camenisch-Shoup sigma protocol for verifiable encryption and decryption
 // of discrete logatirhms.
 func (c *CSPaillierClient) Run() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	u, e, v, _ := c.encryptor.Encrypt(c.m, c.label)
