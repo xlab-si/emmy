@@ -72,7 +72,7 @@ func (s *Server) PseudonymsysCA(req *pb.Message, stream pb.Protocol_RunServer) e
 			},
 		}
 	} else {
-		s.logger.Error(err)
+		s.logger.Debug(err)
 		resp = &pb.Message{
 			ProtocolError: err.Error(),
 		}

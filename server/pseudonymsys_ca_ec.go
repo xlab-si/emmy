@@ -73,7 +73,7 @@ func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,
 			},
 		}
 	} else {
-		s.logger.Error(err)
+		s.logger.Debug(err)
 		resp = &pb.Message{
 			ProtocolError: err.Error(),
 		}
