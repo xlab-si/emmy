@@ -165,7 +165,11 @@ func (s *Server) send(msg *pb.Message, stream pb.ServerStream) error {
 	if err := stream.Send(msg); err != nil {
 		return fmt.Errorf("error sending message: %v", err)
 	}
-	s.logger.Infof("Successfully sent response of type %T", msg.Content)
+	if msg.ProtocolError != "" {
+		s.logger.Infof("Successfully sent response of type %T", msg.ProtocolError)
+	} else {
+		s.logger.Infof("Successfully sent response of type %T", msg.Content)
+	}
 	s.logger.Debugf("%+v", msg)
 
 	return nil

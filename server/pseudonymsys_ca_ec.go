@@ -74,10 +74,8 @@ func (s *Server) GenerateCertificate_EC(stream pb.PseudonymSystemCA_GenerateCert
 			},
 		}
 	} else {
+		s.logger.Debug(err)
 		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysCaCertificateEc{
-				&pb.PseudonymsysCACertificateEC{},
-			},
 			ProtocolError: err.Error(),
 		}
 	}
