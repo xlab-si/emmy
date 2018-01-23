@@ -63,7 +63,7 @@ func startEmmyServer(port int, certPath, keyPath, dbAddress, logFilePath, logLev
 		return err
 	}
 
-	srv, err := server.NewProtocolServer(certPath, keyPath, dbAddress, logger)
+	srv, err := server.NewServer(certPath, keyPath, dbAddress, logger)
 	if err != nil {
 		return err
 	}

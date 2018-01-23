@@ -29,27 +29,24 @@ import (
 
 type SchnorrECClient struct {
 	genericClient
-	prover  *dlogproofs.SchnorrECProver
-	secret  *big.Int
-	a       *groups.ECGroupElement
-	variant pb.SchemaVariant
+	grpcClient pb.ProtocolClient
+	prover     *dlogproofs.SchnorrECProver
+	secret     *big.Int
+	a          *groups.ECGroupElement
+	variant    pb.SchemaVariant
 }
 
 // NewSchnorrECClient returns an initialized struct of type SchnorrECClient.
 func NewSchnorrECClient(conn *grpc.ClientConn, variant pb.SchemaVariant, curve groups.ECurve,
 	s *big.Int) (*SchnorrECClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	prover, err := dlogproofs.NewSchnorrECProver(curve, variant.GetNativeType())
 	if err != nil {
 		return nil, fmt.Errorf("could not create schnorr EC prover: %v", err)
 	}
 
 	return &SchnorrECClient{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewProtocolClient(conn),
 		prover:        prover,
 		variant:       variant,
 		secret:        s,
@@ -71,7 +68,9 @@ func (c *SchnorrECClient) Run() error {
 
 // RunSigma runs the sigma version of the Schnorr protocol in the elliptic curve group
 func (c *SchnorrECClient) runSigma() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	pedersenDecommitment, err := c.getProofRandomData(true)
@@ -91,7 +90,9 @@ func (c *SchnorrECClient) runSigma() error {
 // runZeroKnowledge runs the ZKP or ZKPOK version of Schnorr protocol in the elliptic curve group,
 // depending on the value of SchnorrClient's variant field.
 func (c *SchnorrECClient) runZeroKnowledge() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	commitment, err := c.open()

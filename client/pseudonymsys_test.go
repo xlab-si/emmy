@@ -42,7 +42,7 @@ func TestPseudonymsys(t *testing.T) {
 
 	p := group.Exp(group.G, userSecret) // this is user's public key
 	masterNym := pseudonymsys.NewPseudonym(group.G, p)
-	caCertificate, err := caClient.ObtainCertificate(userSecret, masterNym)
+	caCertificate, err := caClient.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
 	}
@@ -76,9 +76,9 @@ func TestPseudonymsys(t *testing.T) {
 	// register with org2
 	// create a client to communicate with org2
 	caClient1, err := NewPseudonymsysCAClient(testGrpcClientConn)
-	caCertificate1, err := caClient1.ObtainCertificate(userSecret, masterNym)
+	caCertificate1, err := caClient1.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
-		t.Errorf("Error when registering with CA")
+		t.Errorf("Error when registering with CA: %s", err.Error())
 	}
 
 	// c2 connects to the same server as c1, so what we're really testing here is

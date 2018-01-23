@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"

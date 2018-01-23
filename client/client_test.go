@@ -19,9 +19,11 @@ package client
 
 import (
 	"fmt"
+
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
@@ -39,7 +41,7 @@ var testGrpcClientConn *grpc.ClientConn
 // Once all the tests run, we close the connection to the server and stop the server.
 func TestMain(m *testing.M) {
 	logger, _ := log.NewStdoutLogger("testServer", log.NOTICE, log.FORMAT_LONG)
-	server, err := server.NewProtocolServer("testdata/server.pem", "testdata/server.key",
+	server, err := server.NewServer("testdata/server.pem", "testdata/server.key",
 		config.LoadRegistrationDBAddress(), logger)
 	if err != nil {
 		fmt.Println(err)
@@ -67,4 +69,17 @@ func TestMain(m *testing.M) {
 	server.Teardown()
 	testGrpcClientConn.Close()
 	os.Exit(returnCode)
+}
+
+// TestInvalidStreamGenerationFunction verifies that if clients using streaming RPCs to
+// communicate with the server try to open a client stream with an invalid stream generation
+// function, the error gets caught.
+func TestInvalidStreamGenerationFunction(t *testing.T) {
+	// We don't care about which client we instantiate here, or its arguments,
+	// since the underlying behavior we're testing is the same for all of them
+	c, _ := NewPedersenClient(testGrpcClientConn, 0, nil, nil)
+	// This is otherwise called implicitly at the beginning of any client's function
+	// for running a given cryptographic protocol
+	res := c.openStream(c.grpcClient, "InvalidFunc")
+	assert.NotNil(t, res, "stream generation function is invalid, error should be produced")
 }

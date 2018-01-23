@@ -33,19 +33,17 @@ import (
 
 type PseudonymsysClient struct {
 	genericClient
-	group *groups.SchnorrGroup
+	grpcClient pb.PseudonymSystemClient
+	group      *groups.SchnorrGroup
 }
 
 func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
 	group := config.LoadGroup("pseudonymsys")
 
 	return &PseudonymsysClient{
 		group:         group,
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewPseudonymSystemClient(conn),
 	}, nil
 }
 
@@ -60,7 +58,9 @@ func (c *PseudonymsysClient) GenerateMasterKey() *big.Int {
 func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	caCertificate *pseudonymsys.CACertificate, regKey string) (
 	*pseudonymsys.Pseudonym, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "GenerateNym"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	prover := dlogproofs.NewDLogEqualityProver(c.group)
@@ -91,9 +91,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	}
 
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_NYM_GEN,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_PseudonymsysNymGenProofRandomData{
 			&pRandomData,
 		},
@@ -135,7 +133,9 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	nym *pseudonymsys.Pseudonym, orgPubKeys *pseudonymsys.OrgPubKeys) (
 	*pseudonymsys.Credential, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "ObtainCredential"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	gamma := common.GetRandomInt(c.group.Q)
@@ -154,9 +154,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	}
 
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_SchnorrProofRandomData{
 			&pRandomData,
 		},
@@ -242,7 +240,9 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 // another organization).
 func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.Int,
 	nym *pseudonymsys.Pseudonym, credential *pseudonymsys.Credential) (*pb.SessionKey, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "TransferCredential"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
@@ -273,9 +273,7 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 		T2:            transcript2,
 	}
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_PseudonymsysTransferCredentialData{
 			&pb.PseudonymsysTransferCredentialData{
 				OrgName:    orgName,
@@ -313,7 +311,7 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 		return nil, fmt.Errorf(resp.GetProtocolError())
 	}
 
-	if err := c.stream.CloseSend(); err != nil {
+	if err := c.genericClient.CloseSend(); err != nil {
 		return nil, err
 	}
 
