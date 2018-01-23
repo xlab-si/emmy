@@ -48,7 +48,8 @@ type Server struct {
 // It performs some default configuration (tracing of gRPC communication and interceptors)
 // and registers RPC protocol server with gRPC server. It requires TLS cert and keyfile
 // in order to establish a secure channel with clients.
-func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, error) {
+func NewProtocolServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server,
+	error) {
 	logger.Info("Instantiating new protocol server")
 
 	// Register our generic service
@@ -67,9 +68,9 @@ func NewProtocolServer(certFile, keyFile string, logger log.Logger) (*Server, er
 		logger.Warning(err)
 	}
 
-	registrationManager, err := NewRegistrationManager(config.LoadRegistrationDBAddress())
+	registrationManager, err := NewRegistrationManager(dbAddress)
 	if err != nil {
-		logger.Error(err)
+		logger.Critical(err)
 		return nil, err
 	}
 
