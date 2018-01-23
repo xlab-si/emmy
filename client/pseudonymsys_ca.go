@@ -30,28 +30,29 @@ import (
 
 type PseudonymsysCAClient struct {
 	genericClient
-	prover *dlogproofs.SchnorrProver
+	grpcClient pb.PseudonymSystemCAClient
+	prover     *dlogproofs.SchnorrProver
 }
 
 func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, error) {
 	group := config.LoadGroup("pseudonymsys")
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
 
 	return &PseudonymsysCAClient{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
 		prover:        dlogproofs.NewSchnorrProver(group, protocoltypes.Sigma),
 	}, nil
 }
 
-// ObtainCertificate provides a certificate from trusted CA to the user. Note that CA
+// GenerateCertificate provides a certificate from trusted CA to the user. Note that CA
 // needs to know the user. The certificate is then used for registering pseudonym (nym).
 // The certificate contains blinded user's master key pair and a signature of it.
-func (c *PseudonymsysCAClient) ObtainCertificate(userSecret *big.Int, nym *pseudonymsys.Pseudonym) (
+func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pseudonymsys.Pseudonym) (
 	*pseudonymsys.CACertificate, error) {
-	c.openStream()
+
+	if err := c.openStream(c.grpcClient, "GenerateCertificate"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
@@ -63,9 +64,7 @@ func (c *PseudonymsysCAClient) ObtainCertificate(userSecret *big.Int, nym *pseud
 	}
 
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_CA,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_SchnorrProofRandomData{
 			&pRandomData,
 		},

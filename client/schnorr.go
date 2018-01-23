@@ -29,22 +29,19 @@ import (
 
 type SchnorrClient struct {
 	genericClient
-	prover  *dlogproofs.SchnorrProver
-	secret  *big.Int
-	a       *big.Int
-	variant pb.SchemaVariant
+	grpcClient pb.ProtocolClient
+	prover     *dlogproofs.SchnorrProver
+	secret     *big.Int
+	a          *big.Int
+	variant    pb.SchemaVariant
 }
 
 // NewSchnorrClient returns an initialized struct of type SchnorrClient.
 func NewSchnorrClient(conn *grpc.ClientConn, variant pb.SchemaVariant, group *groups.SchnorrGroup,
 	s *big.Int) (*SchnorrClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &SchnorrClient{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewProtocolClient(conn),
 		variant:       variant,
 		prover:        dlogproofs.NewSchnorrProver(group, variant.GetNativeType()),
 		secret:        s,
@@ -64,7 +61,9 @@ func (c *SchnorrClient) Run() error {
 
 // runSigma runs the sigma version of the Schnorr protocol
 func (c *SchnorrClient) runSigma() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	initMsg := &pb.Message{
@@ -90,7 +89,9 @@ func (c *SchnorrClient) runSigma() error {
 // runZeroKnowledge runs the ZKP or ZKPOK version of Schnorr protocol, depending on the value
 // of SchnorrClient's variant field.
 func (c *SchnorrClient) runZeroKnowledge() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	commitment, err := c.open() // sends pedersen's h=g^trapdoor

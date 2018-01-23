@@ -28,26 +28,25 @@ import (
 
 type QRClient struct {
 	genericClient
-	prover  *qrproofs.QRProver
-	variant pb.SchemaVariant
+	grpcClient pb.ProtocolClient
+	prover     *qrproofs.QRProver
+	variant    pb.SchemaVariant
 }
 
 // NewQRClient returns an initialized struct of type QRClient.
 func NewQRClient(conn *grpc.ClientConn, group *groups.SchnorrGroup, y1 *big.Int) (*QRClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &QRClient{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewProtocolClient(conn),
 		prover:        qrproofs.NewQRProver(group, y1),
 	}, nil
 }
 
 // Run starts protocol for proving knowledge of a square root.
 func (c *QRClient) Run() (bool, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return false, err
+	}
 	defer c.closeStream()
 
 	// proof requires as many rounds as is the bit length of modulo N

@@ -32,16 +32,14 @@ import (
 
 type PseudonymsysClientEC struct {
 	genericClient
-	curve groups.ECurve
+	grpcClient pb.PseudonymSystemClient
+	curve      groups.ECurve
 }
 
 func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*PseudonymsysClientEC, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
 	return &PseudonymsysClientEC{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewPseudonymSystemClient(conn),
 		curve:         curve,
 	}, nil
 }
@@ -58,7 +56,9 @@ func (c *PseudonymsysClientEC) GenerateMasterKey() *big.Int {
 func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	caCertificate *pseudonymsys.CACertificateEC, regKey string) (
 	*pseudonymsys.PseudonymEC, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "GenerateNym_EC"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	prover := dlogproofs.NewECDLogEqualityProver(c.curve)
@@ -94,9 +94,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	}
 
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_NYM_GEN_EC,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_PseudonymsysNymGenProofRandomDataEc{
 			&pRandomData,
 		},
@@ -126,7 +124,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	}
 	verified := resp.GetStatus().Success
 
-	if err := c.stream.CloseSend(); err != nil {
+	if err := c.genericClient.CloseSend(); err != nil {
 		return nil, err
 	}
 
@@ -143,7 +141,9 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	nym *pseudonymsys.PseudonymEC, orgPubKeys *pseudonymsys.OrgPubKeysEC) (
 	*pseudonymsys.CredentialEC, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "ObtainCredential_EC"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
@@ -162,9 +162,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	}
 
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_ISSUE_CREDENTIAL_EC,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_SchnorrEcProofRandomData{
 			&pRandomData,
 		},
@@ -248,7 +246,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 		}
 	}
 
-	if err := c.stream.CloseSend(); err != nil {
+	if err := c.genericClient.CloseSend(); err != nil {
 		return nil, err
 	}
 
@@ -261,7 +259,9 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 // another organization).
 func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *big.Int,
 	nym *pseudonymsys.PseudonymEC, credential *pseudonymsys.CredentialEC) (*pb.SessionKey, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "TransferCredential_EC"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
@@ -296,9 +296,7 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 		T2:            transcript2,
 	}
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_TRANSFER_CREDENTIAL_EC,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_PseudonymsysTransferCredentialDataEc{
 			&pb.PseudonymsysTransferCredentialDataEC{
 				OrgName:    orgName,
@@ -337,7 +335,7 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 		return nil, fmt.Errorf(resp.GetProtocolError())
 	}
 
-	if err := c.stream.CloseSend(); err != nil {
+	if err := c.genericClient.CloseSend(); err != nil {
 		return nil, err
 	}
 

@@ -35,23 +35,23 @@ type PedersenClient struct {
 // NewPedersenClient returns an initialized struct of type PedersenClient.
 func NewPedersenClient(conn *grpc.ClientConn, variant pb.SchemaVariant, dlog *groups.SchnorrGroup,
 	val *big.Int) (*PedersenClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	validateVariant(variant)
 
 	return &PedersenClient{
-		pedersenCommonClient: pedersenCommonClient{genericClient: *genericClient},
-		committer:            commitments.NewPedersenCommitter(dlog),
-		val:                  val,
+		pedersenCommonClient: pedersenCommonClient{
+			genericClient: newGenericClient(),
+			grpcClient:    pb.NewProtocolClient(conn),
+		},
+		committer: commitments.NewPedersenCommitter(dlog),
+		val:       val,
 	}, nil
 }
 
 // Run runs Pedersen commitment protocol in multiplicative group of integers modulo p.
 func (c *PedersenClient) Run() error {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return err
+	}
 	defer c.closeStream()
 
 	pf, err := c.getH()

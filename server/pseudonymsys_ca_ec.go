@@ -21,18 +21,19 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
 )
 
-func (s *Server) PseudonymsysCAEC(curveType groups.ECurve, req *pb.Message,
-	stream pb.Protocol_RunServer) error {
-	var err error
+func (s *Server) GenerateCertificate_EC(stream pb.PseudonymSystemCA_GenerateCertificate_ECServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
 
 	d := config.LoadPseudonymsysCASecret()
 	pubKeyX, pubKeyY := config.LoadPseudonymsysCAPubKey()
-	ca := pseudonymsys.NewCAEC(d, pubKeyX, pubKeyY, curveType)
+	ca := pseudonymsys.NewCAEC(d, pubKeyX, pubKeyY, curve)
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
 	x := sProofRandData.X.GetNativeType()

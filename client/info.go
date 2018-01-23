@@ -18,10 +18,10 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	pb "github.com/xlab-si/emmy/protobuf"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

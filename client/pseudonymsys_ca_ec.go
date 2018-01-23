@@ -30,32 +30,31 @@ import (
 
 type PseudonymsysCAClientEC struct {
 	genericClient
-	prover *dlogproofs.SchnorrECProver
+	grpcClient pb.PseudonymSystemCAClient
+	prover     *dlogproofs.SchnorrECProver
 }
 
 func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*PseudonymsysCAClientEC, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	prover, err := dlogproofs.NewSchnorrECProver(curve, protocoltypes.Sigma)
 	if err != nil {
 		return nil, err
 	}
 
 	return &PseudonymsysCAClientEC{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
 		prover:        prover,
 	}, nil
 }
 
-// ObtainCertificate provides a certificate from trusted CA to the user. Note that CA
+// GenerateCertificate provides a certificate from trusted CA to the user. Note that CA
 // needs to know the user. The certificate is then used for registering pseudonym (nym).
 // The certificate contains blinded user's master key pair and a signature of it.
-func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pseudonymsys.PseudonymEC) (
+func (c *PseudonymsysCAClientEC) GenerateCertificate(userSecret *big.Int, nym *pseudonymsys.PseudonymEC) (
 	*pseudonymsys.CACertificateEC, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "GenerateCertificate_EC"); err != nil {
+		return nil, err
+	}
 	defer c.closeStream()
 
 	x := c.prover.GetProofRandomData(userSecret, nym.A)
@@ -66,9 +65,7 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 	}
 
 	initMsg := &pb.Message{
-		ClientId:      c.id,
-		Schema:        pb.SchemaType_PSEUDONYMSYS_CA_EC,
-		SchemaVariant: pb.SchemaVariant_SIGMA,
+		ClientId: c.id,
 		Content: &pb.Message_SchnorrEcProofRandomData{
 			&pRandomData,
 		},
@@ -103,7 +100,7 @@ func (c *PseudonymsysCAClientEC) ObtainCertificate(userSecret *big.Int, nym *pse
 		cert.BlindedB.GetNativeType(),
 		new(big.Int).SetBytes(cert.R), new(big.Int).SetBytes(cert.S))
 
-	if err := c.stream.CloseSend(); err != nil {
+	if err := c.genericClient.CloseSend(); err != nil {
 		return nil, err
 	}
 

@@ -30,25 +30,24 @@ import (
 
 type QNRClient struct {
 	genericClient
-	prover  *qrproofs.QNRProver
-	variant pb.SchemaVariant
+	grpcClient pb.ProtocolClient
+	prover     *qrproofs.QNRProver
+	variant    pb.SchemaVariant
 }
 
 func NewQNRClient(conn *grpc.ClientConn, qr *groups.QRRSA, y *big.Int) (*QNRClient, error) {
-	genericClient, err := newGenericClient(conn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &QNRClient{
-		genericClient: *genericClient,
+		genericClient: newGenericClient(),
+		grpcClient:    pb.NewProtocolClient(conn),
 		prover:        qrproofs.NewQNRProver(qr, y),
 	}, nil
 }
 
 // Run starts protocol for proving that y is QNR.
 func (c *QNRClient) Run() (bool, error) {
-	c.openStream()
+	if err := c.openStream(c.grpcClient, "Run"); err != nil {
+		return false, err
+	}
 	defer c.closeStream()
 
 	// proof requires as many rounds as is the bit length of modulo N

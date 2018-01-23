@@ -26,7 +26,12 @@ import (
 	pb "github.com/xlab-si/emmy/protobuf"
 )
 
-func (s *Server) PseudonymsysGenerateNym(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) GenerateNym(stream pb.PseudonymSystem_GenerateNymServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	group := config.LoadGroup("pseudonymsys")
 	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
 	org := pseudonymsys.NewOrgNymGen(group, caPubKeyX, caPubKeyY)
@@ -98,7 +103,12 @@ func (s *Server) PseudonymsysGenerateNym(req *pb.Message, stream pb.Protocol_Run
 	return nil
 }
 
-func (s *Server) PseudonymsysIssueCredential(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) ObtainCredential(stream pb.PseudonymSystem_ObtainCredentialServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	group := config.LoadGroup("pseudonymsys")
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
 	org := pseudonymsys.NewOrgCredentialIssuer(group, s1, s2)
@@ -121,7 +131,7 @@ func (s *Server) PseudonymsysIssueCredential(req *pb.Message, stream pb.Protocol
 		return err
 	}
 
-	req, err := s.receive(stream)
+	req, err = s.receive(stream)
 	if err != nil {
 		return err
 	}
@@ -182,7 +192,12 @@ func (s *Server) PseudonymsysIssueCredential(req *pb.Message, stream pb.Protocol
 	return nil
 }
 
-func (s *Server) PseudonymsysTransferCredential(req *pb.Message, stream pb.Protocol_RunServer) error {
+func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredentialServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	group := config.LoadGroup("pseudonymsys")
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
 	org := pseudonymsys.NewOrgCredentialVerifier(group, s1, s2)
@@ -231,7 +246,7 @@ func (s *Server) PseudonymsysTransferCredential(req *pb.Message, stream pb.Proto
 		return err
 	}
 
-	req, err := s.receive(stream)
+	req, err = s.receive(stream)
 	if err != nil {
 		return err
 	}
