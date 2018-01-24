@@ -21,6 +21,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
@@ -31,6 +32,7 @@ import (
 type PseudonymsysCAClient struct {
 	genericClient
 	grpcClient pb.PseudonymSystemCAClient
+	group      *groups.SchnorrGroup
 	prover     *dlogproofs.SchnorrProver
 }
 
@@ -40,8 +42,15 @@ func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, erro
 	return &PseudonymsysCAClient{
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
+		group:         group,
 		prover:        dlogproofs.NewSchnorrProver(group, protocoltypes.Sigma),
 	}, nil
+}
+
+// GenerateMasterNym generates a master pseudonym to be used with GenerateCertificate.
+func (c *PseudonymsysCAClient) GenerateMasterNym(secret *big.Int) *pseudonymsys.Pseudonym {
+	p := c.group.Exp(c.group.G, secret)
+	return pseudonymsys.NewPseudonym(c.group.G, p)
 }
 
 // GenerateCertificate provides a certificate from trusted CA to the user. Note that CA

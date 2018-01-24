@@ -31,6 +31,7 @@ import (
 type PseudonymsysCAClientEC struct {
 	genericClient
 	grpcClient pb.PseudonymSystemCAClient
+	curve      groups.ECurve
 	prover     *dlogproofs.SchnorrECProver
 }
 
@@ -43,8 +44,17 @@ func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*Pse
 	return &PseudonymsysCAClientEC{
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
+		curve:         curve,
 		prover:        prover,
 	}, nil
+}
+
+// GenerateMasterNym generates a master pseudonym to be used with GenerateCertificate.
+func (c *PseudonymsysCAClientEC) GenerateMasterNym(secret *big.Int) *pseudonymsys.PseudonymEC {
+	group := groups.NewECGroup(c.curve)
+	a := groups.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
+	b := group.Exp(a, secret)
+	return pseudonymsys.NewPseudonymEC(a, b)
 }
 
 // GenerateCertificate provides a certificate from trusted CA to the user. Note that CA
