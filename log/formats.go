@@ -6,6 +6,10 @@ const (
 	// GetConnection ▶ INFO  Getting the connection
 	FORMAT_SHORT = `%{color}%{shortfunc} ▶ %{level} %{color:reset} %{message}`
 
+	// Same as FORMAT_SHORT but without the color information.
+	// Appropriate for logging to files or on mobile clients.
+	FORMAT_SHORT_COLORLESS = `%{shortfunc} ▶ %{level} %{message}`
+
 	// Convenient to use with server loggers, where we need more fine-grained info and readable
 	// output (includes color information, useful for console output)
 	// [server][Mon 25.Sep 2017,14:11:041] Start ▶ NOTI  Emmy server listening for connections on port 7007
