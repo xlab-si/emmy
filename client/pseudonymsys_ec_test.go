@@ -29,7 +29,6 @@ import (
 
 func TestPseudonymsysEC(t *testing.T) {
 	curveType := groups.P256
-	group := groups.NewECGroup(curveType)
 	caClient, err := NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")
@@ -39,10 +38,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	c1, err := NewPseudonymsysClientEC(testGrpcClientConn, curveType)
 	userSecret := c1.GenerateMasterKey()
 
-	nymA := groups.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
-	nymB := group.Exp(nymA, userSecret) // this is user's public key
-
-	masterNym := pseudonymsys.NewPseudonymEC(nymA, nymB)
+	masterNym := caClient.GenerateMasterNym(userSecret)
 	caCertificate, err := caClient.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA: %s", err.Error())
