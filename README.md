@@ -6,7 +6,12 @@ Communication between clients and the server is based on [Protobuffers](https://
 
 The library comes with a convenient CLI for running *emmy server* and *emmy client*s that demonstrates the execution of protocols between clients and the server.
 
-To get some more information about the theory behind zero knowledge proofs, please refer to additional documentation in the *docs* folder.
+In addition, Emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
+package providing client wrappers and types that can be used for generating language bindings for 
+Android or iOS mobile platforms. 
+
+To get some more information about the theory behind zero knowledge proofs or developing 
+various parts of Emmy library, please refer to additional documentation in the *docs* folder.
 
 #### What does emmy stand for?
 Emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
