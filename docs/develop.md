@@ -12,6 +12,27 @@ Go into the root project folder and execute:
 $ protoc -I protobuf/ protobuf/messages.proto protobuf/services.proto protobuf/enums.proto --go_out=plugins=grpc:protobuf
 ```
 
+# Using dockerized Emmy server and redis for development
+For testing and ease of development this repository comes with a *Dockerfile* that you can use to 
+spin up an instance of emmy server. 
+
+In addition, we provide a *docker-compose.yml* file you can use to start both emmy server as well as
+a redis database to hold registration keys. Note that registration keys need to exist in redis 
+beforehand; emmy server only checks for their existence, while a separate entity needs to insert
+them into redis (either you put them there manually, or some third party application has to).
+
+By default, emmy server will be started in debug mode, but you can modify `emmy-server` service in the
+*docker-compose.yml* and provide your own `command` to override the emmy server startup command.
+
+To start both emmy server and redis, run:
+````bash
+$ docker-compose up
+````
+Or, if you just want emmy server without redis, you can run:
+````bash
+$ docker-compose up emmy-server
+````
+
 # Mobile clients
 Emmy comes with compatibility layer that allows us to re-use some of the library's 
 functionality on mobile clients. Currently, we support running **pseudonym system (both modular and
