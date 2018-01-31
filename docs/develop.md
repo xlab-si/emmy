@@ -19,7 +19,18 @@ spin up an instance of emmy server.
 In addition, we provide a *docker-compose.yml* file you can use to start both emmy server as well as
 a redis database to hold registration keys. Note that registration keys need to exist in redis 
 beforehand; emmy server only checks for their existence, while a separate entity needs to insert
-them into redis (either you put them there manually, or some third party application has to).
+them into redis (either you put them there manually, or some third party application has to). The
+example below shows how a sample registration key can be inserted into the dockerized instance of
+the redis database:
+
+````bash
+$ docker exec -it emmy-redis redis-cli set testRegKey abcdef;
+OK
+````
+In the command above *emmy-redis* is the name of the redis container (as specified in the
+*docker-compose.yml* file), while *redis-cli set testRegKey abcdef* is the command that will be executed
+from within the redis container. The result of this command is insertion of a key *testRegKey* with the
+value *abcdef*, that has no expiration time set.
 
 By default, emmy server will be started in debug mode, but you can modify `emmy-server` service in the
 *docker-compose.yml* and provide your own `command` to override the emmy server startup command.
