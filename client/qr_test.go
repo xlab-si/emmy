@@ -30,7 +30,7 @@ func TestQRProof(t *testing.T) {
 	prevLogger := GetLogger()
 	SetLogger(log.NewNullLogger())
 
-	group := config.LoadGroup("pseudonymsys")
+	group := config.LoadSchnorrGroup()
 	y1 := common.GetRandomInt(group.P)
 
 	qrClient, err := NewQRClient(testGrpcClientConn, group, y1)
