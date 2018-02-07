@@ -22,12 +22,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 func TestPartialDLogKnowledge(t *testing.T) {
-	group := config.LoadGroup("pseudonymsys")
+	group, _ := groups.NewSchnorrGroup(256)
 
 	secret1 := common.GetRandomInt(group.Q)
 	x := common.GetRandomInt(group.Q)
