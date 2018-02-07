@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	logger, _ := log.NewStdoutLogger("testServer", log.NOTICE, log.FORMAT_LONG)
 	server, err := server.NewServer("testdata/server.pem", "testdata/server.key",
 		config.LoadRegistrationDBAddress(), logger)
-  if err != nil {
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -61,7 +61,8 @@ func TestMain(m *testing.M) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	testGrpcClientConn, err = GetConnection(NewConnectionConfig(testGrpcServerEndpoint, "", testCert))
+	testGrpcClientConn, err = GetConnection(NewConnectionConfig(testGrpcServerEndpoint, "",
+		testCert, 500))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -87,4 +88,12 @@ func TestInvalidStreamGenerationFunction(t *testing.T) {
 	// for running a given cryptographic protocol
 	res := c.openStream(c.grpcClient, "InvalidFunc")
 	assert.NotNil(t, res, "stream generation function is invalid, error should be produced")
+}
+
+// TestConnectionTimeout tests whether timeout of initial connection to the server is reached.
+func TestConnectionTimeout(t *testing.T) {
+	_, err := GetConnection(NewConnectionConfig("localhost:4321", "",
+		nil, 100))
+	assert.NotNil(t, err, "there is no emmy server listening on a given address, "+
+		"timeout should be reached")
 }

@@ -4,8 +4,8 @@
 ip: localhost
 port: 7007
 
-# Timeout (in seconds) for connections to emmy server
-timeout: 5
+# Timeout (in milliseconds) for connections to emmy server
+timeout: 5000
 
 # Path to directory with test files
 testdata_dir: ./client/testdata

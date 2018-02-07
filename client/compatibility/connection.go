@@ -32,9 +32,9 @@ type ConnectionConfig struct {
 // NewConnectionConfig constructs an instance of ConnectionConfig based on the provided server
 // endpoint, serverNameOverride and CA certificate.
 func NewConnectionConfig(endpoint, serverNameOverride string,
-	certificate []byte) *ConnectionConfig {
+	certificate []byte, timeout int) *ConnectionConfig {
 	return &ConnectionConfig{
-		*client.NewConnectionConfig(endpoint, serverNameOverride, certificate),
+		*client.NewConnectionConfig(endpoint, serverNameOverride, certificate, timeout),
 	}
 }
 
@@ -47,7 +47,8 @@ type Connection struct {
 // NewConnection accepts *ConnectionConfig and uses the provided configuration information to
 // establish connection to the server.
 func NewConnection(cfg *ConnectionConfig) (*Connection, error) {
-	connCfg := client.NewConnectionConfig(cfg.Endpoint, cfg.ServerNameOverride, cfg.CACertificate)
+	connCfg := client.NewConnectionConfig(cfg.Endpoint, cfg.ServerNameOverride,
+		cfg.CACertificate, cfg.TimeoutMillis)
 	conn, err := client.GetConnection(connCfg)
 	if err != nil {
 		return nil, err

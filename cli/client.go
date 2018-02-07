@@ -171,13 +171,15 @@ func run(ctx, subCmdCtx *cli.Context, f func(ctx *cli.Context, conn *grpc.Client
 	// configure how clients will access emmy server via TLS.
 	var connCfg *client.ConnectionConfig
 	if ctx.Bool("syscertpool") {
-		connCfg = client.NewConnectionConfig(ctx.String("server"), "", nil)
+		connCfg = client.NewConnectionConfig(ctx.String("server"), "", nil,
+			ctx.Int("t"))
 	} else {
 		caCert, err := ioutil.ReadFile(ctx.String("cacert"))
 		if err != nil {
 			return cli.NewExitError(err.Error(), 2)
 		}
-		connCfg = client.NewConnectionConfig(ctx.String("server"), ctx.String("servername"), caCert)
+		connCfg = client.NewConnectionConfig(ctx.String("server"), ctx.String("servername"),
+			caCert, ctx.Int("t"))
 	}
 
 	// conn is a connection to emmy server.
