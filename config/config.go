@@ -136,10 +136,10 @@ func LoadGroup(scheme string) *groups.SchnorrGroup {
 	return groups.NewSchnorrGroupFromParams(p, g, q)
 }
 
-func LoadQRRSA(name string) *groups.QRRSA {
-	x := viper.GetStringMap(name)
-	p, _ := new(big.Int).SetString(x["p"].(string), 10)
-	q, _ := new(big.Int).SetString(x["q"].(string), 10)
+func LoadQRRSA() *groups.QRRSA {
+	x := viper.GetStringMapString("qr")
+	p, _ := new(big.Int).SetString(x["p"], 10)
+	q, _ := new(big.Int).SetString(x["q"], 10)
 	qr, err := groups.NewQRRSA(p, q)
 	if err != nil {
 		panic(fmt.Errorf("error when loading QRRSA RSA group: %s\n", err))
