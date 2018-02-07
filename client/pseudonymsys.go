@@ -38,7 +38,7 @@ type PseudonymsysClient struct {
 }
 
 func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
-	group := config.LoadGroup("pseudonymsys")
+	group := config.LoadSchnorrGroup()
 
 	return &PseudonymsysClient{
 		group:         group,

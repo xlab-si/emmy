@@ -56,7 +56,7 @@ var clientSubcommands = []cli.Command{
 				if err != nil {
 					return err
 				}
-				group := config.LoadGroup("pedersen")
+				group := config.LoadSchnorrGroup()
 				secret := big.NewInt(ctx.Int64("secret"))
 				client, err := client.NewPedersenClient(conn, pbVariant, group, secret)
 				if err != nil {
@@ -94,7 +94,7 @@ var clientSubcommands = []cli.Command{
 				if err != nil {
 					return err
 				}
-				group := config.LoadGroup("schnorr")
+				group := config.LoadSchnorrGroup()
 				secret := big.NewInt(ctx.Int64("secret"))
 				client, err := client.NewSchnorrClient(conn, pbVariant, group, secret)
 				if err != nil {
@@ -111,7 +111,7 @@ var clientSubcommands = []cli.Command{
 		Flags:    []cli.Flag{protocolSecretFlag, protocolVariantFlag},
 		Action: func(ctx *cli.Context) error {
 			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
-				group := config.LoadGroup("schnorr")
+				group := config.LoadSchnorrGroup()
 				pbVariant, err := parseSchema(ctx.String("variant"))
 				if err != nil {
 					return err

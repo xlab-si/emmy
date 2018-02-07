@@ -36,7 +36,7 @@ func testSchnorr(n *big.Int, group *groups.SchnorrGroup, variant pb.SchemaVarian
 }
 
 func TestSchnorr(t *testing.T) {
-	group := config.LoadGroup("schnorr")
+	group := config.LoadSchnorrGroup()
 	n := big.NewInt(345345345334)
 
 	var tests = []struct {
