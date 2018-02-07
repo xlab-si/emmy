@@ -168,6 +168,9 @@ match the CN specified in server's certificate.
     where self-signed certificate is used, or when the CN in server's certificate is not resolvable.
 7. **Whether to use system's certificate pool**: flag *--syscertpool*. When present, the 
 values of `--cacert` and `--servername` will be ignored. 
+8. **Connection timeout**: flag *--timeout* (shorthand *-t*), indicating a timeout (in milliseconds)
+ for establishing connection with emmy server. Client fails if connection cannot be established before
+ the timeout. Defaults to *5000 milliseconds*.
 
 Moreover, the *protocolSubcommand* corresponds to a concrete protocol that we want to demonstrate between emmy client and emmy server. You can list valid *protocolSubcommand* values by running 
 
@@ -300,4 +303,3 @@ certificate store location beforehand.
 [12] I. Damgard and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
 
 [13] I. Damgard. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
-
