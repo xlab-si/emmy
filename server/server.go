@@ -235,7 +235,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		group := config.LoadSchnorrGroup()
 		err = s.QR(req, group, stream)
 	case pb.SchemaType_QNR:
-		qr := config.LoadQRRSA("qrsmall") // only for testing
+		qr := config.LoadQRRSA() // only for testing
 		err = s.QNR(req, qr, stream)
 	}
 
