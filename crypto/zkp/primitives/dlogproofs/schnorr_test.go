@@ -22,12 +22,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 func TestDLogKnowledge(t *testing.T) {
-	group := config.LoadGroup("pseudonymsys")
+	group, _ := groups.NewSchnorrGroup(256)
 
 	secret := common.GetRandomInt(group.Q)
 	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))

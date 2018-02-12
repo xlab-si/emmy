@@ -32,7 +32,7 @@ func (s *Server) GenerateNym(stream pb.PseudonymSystem_GenerateNymServer) error 
 		return err
 	}
 
-	group := config.LoadGroup("pseudonymsys")
+	group := config.LoadSchnorrGroup()
 	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
 	org := pseudonymsys.NewOrgNymGen(group, caPubKeyX, caPubKeyY)
 
@@ -108,7 +108,7 @@ func (s *Server) ObtainCredential(stream pb.PseudonymSystem_ObtainCredentialServ
 		return err
 	}
 
-	group := config.LoadGroup("pseudonymsys")
+	group := config.LoadSchnorrGroup()
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
 	org := pseudonymsys.NewOrgCredentialIssuer(group, s1, s2)
 
@@ -195,7 +195,7 @@ func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredential
 		return err
 	}
 
-	group := config.LoadGroup("pseudonymsys")
+	group := config.LoadSchnorrGroup()
 	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
 	org := pseudonymsys.NewOrgCredentialVerifier(group, s1, s2)
 

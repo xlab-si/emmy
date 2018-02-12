@@ -221,10 +221,10 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	case pb.SchemaType_PEDERSEN_EC:
 		err = s.PedersenEC(curve, stream)
 	case pb.SchemaType_PEDERSEN:
-		group := config.LoadGroup("pedersen")
+		group := config.LoadSchnorrGroup()
 		err = s.Pedersen(group, stream)
 	case pb.SchemaType_SCHNORR:
-		group := config.LoadGroup("schnorr")
+		group := config.LoadSchnorrGroup()
 		err = s.Schnorr(req, group, protocolType, stream)
 	case pb.SchemaType_SCHNORR_EC:
 		err = s.SchnorrEC(req, protocolType, stream, curve)
@@ -232,7 +232,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		secKeyPath := filepath.Join(config.LoadTestdataDir(), "cspaillierseckey.txt")
 		err = s.CSPaillier(req, secKeyPath, stream)
 	case pb.SchemaType_QR:
-		group := config.LoadGroup("pseudonymsys")
+		group := config.LoadSchnorrGroup()
 		err = s.QR(req, group, stream)
 	case pb.SchemaType_QNR:
 		qr := config.LoadQRRSA() // only for testing

@@ -29,7 +29,7 @@ import (
 // established despite byspassing the server hostname == server cert's CN check.
 func TestServerNameOverride(t *testing.T) {
 	caCert, _ := ioutil.ReadFile("testdata/server.pem")
-	cfg := NewConnectionConfig(testGrpcServerEndpoint, "localhost", caCert)
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, "localhost", caCert, 500)
 	_, err := GetConnection(cfg)
 
 	assert.Nil(t, err, "connection should be established without errors")
@@ -39,7 +39,7 @@ func TestServerNameOverride(t *testing.T) {
 // successfully established because serverNameOverride != server cert's CN.
 func TestWrongServerNameOverride(t *testing.T) {
 	caCert, _ := ioutil.ReadFile("testdata/server.pem")
-	cfg := NewConnectionConfig(testGrpcServerEndpoint, "test", caCert)
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, "test", caCert, 500)
 	_, err := GetConnection(cfg)
 
 	assert.NotNil(t, err, "connection should not be established without an error")
@@ -51,7 +51,7 @@ func TestWrongServerNameOverride(t *testing.T) {
 func TestValidCertificate(t *testing.T) {
 	// This caCert is different than the one used by the test server
 	caCert, _ := ioutil.ReadFile("testdata/server.pem")
-	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", caCert)
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", caCert, 500)
 	_, err := GetConnection(cfg)
 
 	assert.Nil(t, err, "should finish without error")
@@ -62,7 +62,7 @@ func TestValidCertificate(t *testing.T) {
 // server's certificate.
 func TestInvalidCertificate(t *testing.T) {
 	caCert, _ := ioutil.ReadFile("testdata/server2.pem")
-	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", caCert)
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", caCert, 500)
 	_, err := GetConnection(cfg)
 
 	assert.NotNil(t, err, "should finish with error due to invalid certificate")
@@ -73,7 +73,7 @@ func TestInvalidCertificate(t *testing.T) {
 func TestInvalidFormatCertificate(t *testing.T) {
 	// the caCert parameter to NewConnectionConfig will not be nil, but will be someting that
 	// does not conform to the PEM format
-	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", make([]byte, 0))
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", make([]byte, 0), 500)
 	_, err := GetConnection(cfg)
 
 	assert.NotNil(t, err, "should finish with error because of PEM format issue")
@@ -83,7 +83,7 @@ func TestInvalidFormatCertificate(t *testing.T) {
 // be established because certificate of the CA that signed test server's cert is not in the host
 // system's certificate pool.
 func TestNonexistingCertificateFromSysCertPool(t *testing.T) {
-	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", nil)
+	cfg := NewConnectionConfig(testGrpcServerEndpoint, "", nil, 500)
 	_, err := GetConnection(cfg)
 
 	assert.NotNil(t, err, "should finish with error because server's test cert should"+

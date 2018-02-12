@@ -115,6 +115,14 @@ var concurrencyFlag = cli.BoolFlag{
 	Usage: "Whether to run clients concurrently or not",
 }
 
+// timeoutFlag indicates the timeout (in seconds) for establishing connection to the server.
+// If connection cannot be established before the timeout, the client fails.
+var timeoutFlag = cli.IntFlag{
+	Name:  "timeout, t",
+	Value: config.LoadTimeout(),
+	Usage: "timeout (in seconds) for establishing connection with the server",
+}
+
 // protocolVariantFlag indicates which protocol variant to demonstrate.
 var protocolVariantFlag = cli.StringFlag{
 	Name:  "variant, v",
@@ -161,4 +169,5 @@ var clientFlags = []cli.Flag{
 	caCertFlag,
 	sysCertPoolFlag,
 	logLevelFlag,
+	timeoutFlag,
 }
