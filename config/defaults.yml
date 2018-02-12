@@ -15,8 +15,11 @@ testdata_dir: ./client/testdata
 # Must exist prior to execution of tests
 key_folder: /tmp
 
-# Below are some pre-configured values for bootstrapping specific portocols
+# Below are some pre-configured values for bootstrapping specific portocols.
+# Several of them are set to values that might not be safe in any real (production) setting.
+
 qr:
+  # For safety, you should consider using at least 1024-bit values for p and q.
   p: "109225465622713471254760277521351470678135997982392036687958353565687721648227"
   q: "97677263194688858676678458934032316999260513482681814794753295129431734941099"
 
