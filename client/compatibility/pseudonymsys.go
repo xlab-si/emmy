@@ -137,8 +137,14 @@ type PseudonymsysClient struct {
 	*client.PseudonymsysClient
 }
 
-func NewPseudonymsysClient(conn *Connection) (*PseudonymsysClient, error) {
-	c, err := client.NewPseudonymsysClient(conn.ClientConn)
+func NewPseudonymsysClient(conn *Connection, g *SchnorrGroup) (*PseudonymsysClient, error) {
+	// Translate SchnorrGroup
+	group, err := g.toNativeType()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := client.NewPseudonymsysClient(conn.ClientConn, group)
 	if err != nil {
 		return nil, err
 	}
