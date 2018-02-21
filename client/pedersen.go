@@ -64,7 +64,7 @@ func (c *PedersenClient) Run() error {
 
 	commitment, err := c.committer.GetCommitMsg(c.val)
 	if err != nil {
-		logger.Criticalf("could not generate committment message: %v", err)
+		logger.Criticalf("could not generate commitment message: %v", err)
 		return err
 	}
 

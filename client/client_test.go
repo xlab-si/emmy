@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Configure a custom logger for the client package
-	clientLogger, err := log.NewStdoutLogger("client", log.NOTICE, log.FORMAT_SHORT)
+	clientLogger, _ := log.NewStdoutLogger("client", log.NOTICE, log.FORMAT_SHORT)
 	SetLogger(clientLogger)
 
 	go server.Start(7008)

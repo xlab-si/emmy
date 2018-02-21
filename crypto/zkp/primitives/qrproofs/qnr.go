@@ -54,7 +54,7 @@ func ProveQNR(y *big.Int, qr *groups.QRRSA) (bool, error) {
 		}
 
 		proved := verifier.Verify(typ)
-		if proved == false {
+		if !proved {
 			return false, nil
 		}
 	}

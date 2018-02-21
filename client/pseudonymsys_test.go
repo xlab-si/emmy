@@ -36,7 +36,7 @@ func TestPseudonymsys(t *testing.T) {
 	}
 
 	// usually the endpoint is different from the one used for CA:
-	c1, err := NewPseudonymsysClient(testGrpcClientConn)
+	c1, _ := NewPseudonymsysClient(testGrpcClientConn)
 	userSecret := c1.GenerateMasterKey()
 
 	masterNym := caClient.GenerateMasterNym(userSecret)
@@ -73,7 +73,7 @@ func TestPseudonymsys(t *testing.T) {
 
 	// register with org2
 	// create a client to communicate with org2
-	caClient1, err := NewPseudonymsysCAClient(testGrpcClientConn)
+	caClient1, _ := NewPseudonymsysCAClient(testGrpcClientConn)
 	caCertificate1, err := caClient1.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA: %s", err.Error())
@@ -82,7 +82,7 @@ func TestPseudonymsys(t *testing.T) {
 	// c2 connects to the same server as c1, so what we're really testing here is
 	// using transferCredential to authenticate with the same organization and not
 	// transferring credentials to another organization
-	c2, err := NewPseudonymsysClient(testGrpcClientConn)
+	c2, _ := NewPseudonymsysClient(testGrpcClientConn)
 	nym2, err := c2.GenerateNym(userSecret, caCertificate1, "testRegKey2")
 	if err != nil {
 		t.Errorf(err.Error())

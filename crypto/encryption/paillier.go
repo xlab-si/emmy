@@ -39,9 +39,7 @@ type PaillierPubKey struct {
 }
 
 func NewPaillier(primeLength int) *Paillier {
-	var paillier Paillier
-
-	paillier = Paillier{
+	paillier := Paillier{
 		primeLength: primeLength,
 	}
 	paillier.generateKey()
@@ -50,13 +48,9 @@ func NewPaillier(primeLength int) *Paillier {
 }
 
 func NewPubPaillier(pubKey *PaillierPubKey) *Paillier {
-	var paillier Paillier
-
-	paillier = Paillier{
+	return &Paillier{
 		pubKey: pubKey,
 	}
-
-	return &paillier
 }
 
 func (paillier *Paillier) Encrypt(m *big.Int) (*big.Int, error) {

@@ -23,17 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/groups"
 	pb "github.com/xlab-si/emmy/protobuf"
 )
-
-func testSchnorr(n *big.Int, group *groups.SchnorrGroup, variant pb.SchemaVariant) error {
-	c, err := NewSchnorrClient(testGrpcClientConn, variant, group, n)
-	if err != nil {
-		return err
-	}
-	return c.Run()
-}
 
 func TestSchnorr(t *testing.T) {
 	group := config.LoadSchnorrGroup()

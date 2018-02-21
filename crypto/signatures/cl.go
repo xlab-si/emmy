@@ -207,10 +207,14 @@ func (cl *CL) GetPubKey() *CLPubKey {
 func (cl *CL) generateKey() (err error) {
 	// generate two primes of length 512
 	p, err := common.GetSafePrime(512)
+	if err != nil {
+		return err
+	}
 	q, err := common.GetSafePrime(512)
 	if err != nil {
 		return err
 	}
+
 	n := new(big.Int).Mul(p, q)
 	a_L, b, c := cl.getQuadraticResidues(n)
 	cl.p = p
