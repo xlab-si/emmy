@@ -4,9 +4,6 @@ services:
   - docker
 
 go:
-  #- 1.6
-  #- 1.7
-  #- 1.8
   - tip
 
 go_import_path: github.com/xlab-si/emmy
@@ -15,11 +12,11 @@ before_install:
   - docker run -d --rm -p 127.0.0.1:6379:6379 --name emmy-redis redis
 
 install:
-  - go get github.com/stretchr/testify/assert
+  - make setup_test
   - go get -u -t github.com/$TRAVIS_REPO_SLUG
   
 script: 
-  - go test -v ./...
+  - make test
 
 after_script:
   - docker stop emmy-redis
