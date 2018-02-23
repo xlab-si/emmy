@@ -12,6 +12,7 @@ setup_test:
 
 setup_mobile:
 	go get -u golang.org/x/mobile/cmd/gomobile
+	gomobile init
 
 setup_linter:
 	go get -u github.com/alecthomas/gometalinter
@@ -58,5 +59,6 @@ proto:
 clean:
 	-rm emmy.aar emmy-sources.jar
 
+# Rebuilds emmy server and starts emmy server and redis instance
 run:
 	docker-compose up --build
