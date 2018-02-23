@@ -151,7 +151,7 @@ func (c *genericClient) receive() (*pb.Message, error) {
 	if err == io.EOF {
 		return nil, fmt.Errorf("[client %v] EOF error", c.id)
 	} else if err != nil {
-		return nil, fmt.Errorf("[client %v] An error ocurred: %v", c.id, err)
+		return nil, fmt.Errorf("[client %v] An error occurred: %v", c.id, err)
 	}
 	if resp.ProtocolError != "" {
 		return nil, fmt.Errorf(resp.ProtocolError)

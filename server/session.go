@@ -14,8 +14,6 @@ type sessionManager struct {
 	sessionKeyByteLen int
 }
 
-type sessionKey string
-
 func newSessionManager(n int) (*sessionManager, error) {
 	var err error
 	if n < MIN_SESSION_KEY_BYTE_LEN {

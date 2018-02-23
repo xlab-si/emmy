@@ -69,7 +69,8 @@ type CSPaillierSecretKey struct {
 	K1                   int
 }
 
-// CSPaillierPubKey currently does not use auxilary parameters/primes - no additional n, p, q parameters
+// CSPaillierPubKey currently does not use auxiliary parameters/primes - no additional n, p,
+// q parameters
 // (as specified in a paper, original n, p, q can be used).
 type CSPaillierPubKey struct {
 	N  *big.Int
@@ -117,9 +118,7 @@ type CSPaillierVerifierEncData struct {
 }
 
 func NewCSPaillier(secParams *CSPaillierSecParams) *CSPaillier {
-	var cspaillier CSPaillier
-
-	cspaillier = CSPaillier{
+	cspaillier := CSPaillier{
 		SecParams: secParams,
 	}
 	cspaillier.generateKey()
@@ -154,27 +153,18 @@ func NewCSPaillierFromSecKey(path string) (*CSPaillier, error) {
 		K1:                   int(sKey.K1),
 	}
 
-	var cspaillier CSPaillier
-	cspaillier = CSPaillier{
+	return &CSPaillier{
 		SecretKey: &secKey,
-	}
-
-	pKey := &CSPaillierPubKey{
-		N: secKey.N,
-	}
-	cspaillier.PubKey = pKey // Abs is used also in decrypt where PubKey is called
-
-	return &cspaillier, nil
+		PubKey: &CSPaillierPubKey{ // Abs is used also in decrypt where PubKey is called
+			N: secKey.N,
+		},
+	}, nil
 }
 
 func NewCSPaillierFromPubKey(pubKey *CSPaillierPubKey) *CSPaillier {
-	var cspaillier CSPaillier
-
-	cspaillier = CSPaillier{
+	return &CSPaillier{
 		PubKey: pubKey,
 	}
-
-	return &cspaillier
 }
 
 func NewCSPaillierFromPubKeyFile(path string) (*CSPaillier, error) {
@@ -204,13 +194,9 @@ func NewCSPaillierFromPubKeyFile(path string) (*CSPaillier, error) {
 		K1:                   int(pKey.K1),
 	}
 
-	var cspaillier CSPaillier
-
-	cspaillier = CSPaillier{
+	return &CSPaillier{
 		PubKey: &pubKey,
-	}
-
-	return &cspaillier, nil
+	}, nil
 }
 
 func (cspaillier *CSPaillier) StoreSecKey(path string) error {
@@ -233,6 +219,7 @@ func (cspaillier *CSPaillier) StoreSecKey(path string) error {
 	if err != nil {
 		return err
 	}
+
 	err = storage.Store(data, path)
 	if err != nil {
 		return err
@@ -260,6 +247,7 @@ func (cspaillier *CSPaillier) StorePubKey(path string) error {
 	if err != nil {
 		return err
 	}
+
 	err = storage.Store(data, path)
 	if err != nil {
 		return err
@@ -688,6 +676,11 @@ type VerifiableEncGroup struct {
 
 func NewVerifiableEncGroup(n, orderOfZn, n1 *big.Int) (*VerifiableEncGroup, error) {
 	g1, err := common.GetGeneratorOfZnSubgroup(n, orderOfZn, n1)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
 	h1, err := common.GetGeneratorOfZnSubgroup(n, orderOfZn, n1)
 	if err != nil {
 		log.Fatal(err)

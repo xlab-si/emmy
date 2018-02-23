@@ -180,7 +180,7 @@ func (s *Server) receive(stream pb.ServerStream) (*pb.Message, error) {
 	if err == io.EOF {
 		return nil, err
 	} else if err != nil {
-		return nil, fmt.Errorf("an error ocurred: %v", err)
+		return nil, fmt.Errorf("an error occurred: %v", err)
 	}
 	s.logger.Infof("Received request of type %T from the stream", resp.Content)
 	s.logger.Debugf("%+v", resp)
