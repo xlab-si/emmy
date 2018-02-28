@@ -38,7 +38,7 @@ func TestPseudonymsys(t *testing.T) {
 	}
 
 	// usually the endpoint is different from the one used for CA:
-	c1, err := NewPseudonymsysClient(testGrpcClientConn, group)
+  c1, err := NewPseudonymsysClient(testGrpcClientConn, group)
 	userSecret := c1.GenerateMasterKey()
 
 	masterNym := caClient.GenerateMasterNym(userSecret)

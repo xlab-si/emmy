@@ -54,8 +54,7 @@ type SchnorrProver struct {
 }
 
 func NewSchnorrProver(group *groups.SchnorrGroup, protocolType protocoltypes.ProtocolType) *SchnorrProver {
-	var prover SchnorrProver
-	prover = SchnorrProver{
+	prover := SchnorrProver{
 		Group:        group,
 		protocolType: protocolType,
 	}
