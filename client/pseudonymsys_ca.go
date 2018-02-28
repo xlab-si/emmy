@@ -20,7 +20,6 @@ package client
 import (
 	"math/big"
 
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
@@ -36,9 +35,8 @@ type PseudonymsysCAClient struct {
 	prover     *dlogproofs.SchnorrProver
 }
 
-func NewPseudonymsysCAClient(conn *grpc.ClientConn) (*PseudonymsysCAClient, error) {
-	group := config.LoadSchnorrGroup()
-
+func NewPseudonymsysCAClient(conn *grpc.ClientConn,
+	group *groups.SchnorrGroup) (*PseudonymsysCAClient, error) {
 	return &PseudonymsysCAClient{
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemCAClient(conn),

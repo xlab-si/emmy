@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
@@ -37,9 +36,8 @@ type PseudonymsysClient struct {
 	group      *groups.SchnorrGroup
 }
 
-func NewPseudonymsysClient(conn *grpc.ClientConn) (*PseudonymsysClient, error) {
-	group := config.LoadSchnorrGroup()
-
+func NewPseudonymsysClient(conn *grpc.ClientConn,
+	group *groups.SchnorrGroup) (*PseudonymsysClient, error) {
 	return &PseudonymsysClient{
 		group:         group,
 		genericClient: newGenericClient(),

@@ -91,8 +91,14 @@ type PseudonymsysCAClient struct {
 	*client.PseudonymsysCAClient
 }
 
-func NewPseudonymsysCAClient(conn *Connection) (*PseudonymsysCAClient, error) {
-	c, err := client.NewPseudonymsysCAClient(conn.ClientConn)
+func NewPseudonymsysCAClient(conn *Connection, g *SchnorrGroup) (*PseudonymsysCAClient, error) {
+	// Translate SchnorrGroup
+	group, err := g.toNativeType()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := client.NewPseudonymsysCAClient(conn.ClientConn, group)
 	if err != nil {
 		return nil, err
 	}
