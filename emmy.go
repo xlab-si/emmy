@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
-	emmy "github.com/xlab-si/emmy/cli"
+	emmy "github.com/xlab-si/emmy/cmd"
 )
 
 // main runs the emmy CLI app.
