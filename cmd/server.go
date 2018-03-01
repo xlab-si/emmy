@@ -15,10 +15,13 @@
  *
  */
 
-package cli
+package cmd
 
 import (
+	"path/filepath"
+
 	"github.com/urfave/cli"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
 )
@@ -46,6 +49,43 @@ var ServerCmd = cli.Command{
 			},
 		},
 	},
+}
+
+// serverFlags are the flags used by the server CLI commands.
+var serverFlags = []cli.Flag{
+	// portFlag indicates the port where emmy server will listen.
+	cli.IntFlag{
+		Name:  "port, p",
+		Value: config.LoadServerPort(),
+		Usage: "`PORT` where emmy server will listen for client connections",
+	},
+	// certFlag keeps the path to server's certificate in PEM format
+	// (for establishing a secure channel with the server).
+	cli.StringFlag{
+		Name:  "cert",
+		Value: filepath.Join(config.LoadTestdataDir(), "server.pem"),
+		Usage: "`PATH` to servers certificate file",
+	},
+	// keyFlag keeps the path to server's private key in PEM format
+	// (for establishing a secure channel with the server).
+	cli.StringFlag{
+		Name:  "key",
+		Value: filepath.Join(config.LoadTestdataDir(), "server.key"),
+		Usage: "`PATH` to server key file",
+	},
+	// dbEndpointFlag points to the endpoint at which emmy server will contact redis database.
+	cli.StringFlag{
+		Name:  "db",
+		Value: config.LoadRegistrationDBAddress(),
+		Usage: "`URI` of redis database to hold registration keys, in the form redisHost:redisPort",
+	},
+	// logFilePathFlag indicates a path to the log file used by the server (optional).
+	cli.StringFlag{
+		Name:  "logfile",
+		Value: "",
+		Usage: "`PATH` to the file where server logs will be written (created if it doesn't exist)",
+	},
+	logLevelFlag,
 }
 
 // startEmmyServer configures and starts the gRPC server at the desired port

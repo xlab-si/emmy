@@ -15,7 +15,7 @@
  *
  */
 
-package cli
+package cmd
 
 import (
 	"fmt"
@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"io/ioutil"
+
+	"path/filepath"
 
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/client"
@@ -36,11 +38,91 @@ import (
 	"google.golang.org/grpc"
 )
 
+// logLevelFlag indicates the log level applied to client/server loggers.
+var logLevelFlag = cli.StringFlag{
+	Name:  "loglevel, l",
+	Value: "info",
+	Usage: "debug|info|notice|error|critical",
+}
+
 var ClientCmd = cli.Command{
-	Name:        "client",
-	Usage:       "A client (prover) that wants to prove something to the server (verifier)",
+	Name:  "client",
+	Usage: "A client (prover) that wants to prove something to the server (verifier)",
+	// clientFlags are flags common to all client CLI subcommands, regardless of the protocol.
 	Flags:       clientFlags,
 	Subcommands: clientSubcommands,
+}
+
+var clientFlags = []cli.Flag{
+	// nClientsFlag indicates the number of (either concurrent or sequential) clients to run.
+	cli.IntFlag{
+		Name:  "nclients, n",
+		Value: 1,
+		Usage: "How many clients to run",
+	},
+	// serverEndpointFlag points to the endpoint at which emmy clients will contact emmy server.
+	cli.StringFlag{
+		Name:  "server",
+		Value: config.LoadServerEndpoint(),
+		Usage: "`URI` of emmy server in the form serverHost:serverPort",
+	},
+	// serverNameOverrideFlag allows the client to skip validation of the server's hostname when
+	// checking its CN. Instead, CN from the server's certificate must match the value provided by
+	// serverNameOverride flag.
+	cli.StringFlag{
+		Name:  "servername",
+		Value: "",
+		Usage: "Name of emmy server for overriding the server name stated in cert's CN",
+	},
+	// caCertFlag keeps the path to CA's certificate in PEM format
+	// (for establishing a secure channel with the server).
+	cli.StringFlag{
+		Name:  "cacert",
+		Value: filepath.Join(config.LoadTestdataDir(), "server.pem"),
+		Usage: "`PATH` to certificate file of the CA that issued emmy server's certificate",
+	},
+
+	// sysCertPoolFlag indicates whether a client should use system's certificate pool to validate
+	// the server's certificate..
+	cli.BoolFlag{
+		Name:  "syscertpool",
+		Usage: "Whether to use host system's certificate pool to validate the server",
+	},
+	// timeoutFlag indicates the timeout (in seconds) for establishing connection to the server.
+	// If connection cannot be established before the timeout, the client fails.
+	cli.IntFlag{
+		Name:  "timeout, t",
+		Value: config.LoadTimeout(),
+		Usage: "timeout (in seconds) for establishing connection with the server",
+	},
+	logLevelFlag,
+}
+
+// protocolVariantFlag indicates which protocol variant to demonstrate.
+var protocolVariantFlag = cli.StringFlag{
+	Name:  "variant, v",
+	Value: "sigma",
+	Usage: "sigma|zkp|zkpok",
+}
+
+// protocolSecretFlag keeps the secret value used to bootstrap a given protocol.
+var protocolSecretFlag = cli.Int64Flag{
+	Name:  "secret",
+	Value: 121212121,
+}
+
+// protocolLabelFlag keeps the label used to bootstrap cspaillier verifiable encryption.
+var protocolLabelFlag = cli.Int64Flag{
+	Name:  "label",
+	Value: 340002223232,
+}
+
+// protocolPubKeyFlag keeps the path to the public key file of the verifier used in cspaillier
+// verifiable encryption protocol.
+var protocolPubKeyFlag = cli.StringFlag{
+	Name:  "pubkey",
+	Value: filepath.Join(config.LoadKeyDirFromConfig(), "cspaillierpubkey.txt"),
+	Usage: "`PATH` to the verifier's public key file",
 }
 
 // clientSubcommands represent different protocols that can be executed by clients.
