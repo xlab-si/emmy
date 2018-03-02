@@ -1,0 +1,14 @@
+# Emmy binary
+emmy
+
+# Vendor directory
+vendor/*/
+
+# IDE files
+.idea
+.vscode
+
+# Other
+*.swp
+*.swo
+.DS_Store
