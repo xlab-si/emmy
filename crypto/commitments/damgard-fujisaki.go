@@ -71,6 +71,7 @@ func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCom
 		T: t}
 }
 
+// TODO: the naming is not OK because it also sets committer.committedValue and committer.r
 func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
 	abs := new(big.Int).Abs(a)
 	if abs.Cmp(committer.T) != -1 {
@@ -83,6 +84,18 @@ func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, e
 	r := common.GetRandomInt(boundary)
 	c := committer.ComputeCommit(a, r)
 
+	committer.committedValue = a
+	committer.r = r
+	return c, nil
+}
+
+func (committer *DamgardFujisakiCommitter) GetCommitMsgWithGivenR(a, r *big.Int) (*big.Int, error) {
+	abs := new(big.Int).Abs(a)
+	if abs.Cmp(committer.T) != -1 {
+		return nil, fmt.Errorf("committed value needs to be in (-T, T)")
+	}
+	// c = G^a * H^r % group.N
+	c := committer.ComputeCommit(a, r)
 	committer.committedValue = a
 	committer.r = r
 	return c, nil
