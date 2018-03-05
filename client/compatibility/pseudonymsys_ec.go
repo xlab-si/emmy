@@ -28,7 +28,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
-// OrgPubKeysEC represents an equivalent of pseudonymsys.OrgPubKeysEC,
+// OrgPubKeysEC represents an equivalent of pseudonymsys.PubKeyEC,
 // but has field types compatible with Go language binding tools.
 type OrgPubKeysEC struct {
 	H1 *ECGroupElement
@@ -43,7 +43,7 @@ func NewOrgPubKeysEC(h1, h2 *ECGroupElement) *OrgPubKeysEC {
 }
 
 // getNativeType translates compatibility OrgPubKeysEC to emmy's native pseudonymsys.OrgPubKeysEC.
-func (k *OrgPubKeysEC) getNativeType() (*pseudonymsys.OrgPubKeysEC, error) {
+func (k *OrgPubKeysEC) getNativeType() (*pseudonymsys.PubKeyEC, error) {
 	h1, err := k.H1.getNativeType()
 	if err != nil {
 		return nil, fmt.Errorf("pubKeys.H1: %s", err)
@@ -53,7 +53,7 @@ func (k *OrgPubKeysEC) getNativeType() (*pseudonymsys.OrgPubKeysEC, error) {
 		return nil, fmt.Errorf("pubKeys.H2: %s", err)
 	}
 
-	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
+	orgPubKeys := pseudonymsys.NewPubKeyEC(h1, h2)
 	return orgPubKeys, nil
 }
 
