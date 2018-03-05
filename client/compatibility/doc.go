@@ -65,8 +65,8 @@
 //	Credential
 //	CredentialEC
 //	ECGroupElement
-//	OrgPubKeys
-//	OrgPubKeysEC
+//	PubKey
+//	PubKeyEC
 //	Transcript
 //	TranscriptEC
 // 	Pseudonym
