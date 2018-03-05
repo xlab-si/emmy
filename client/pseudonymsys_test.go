@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	"github.com/xlab-si/emmy/server"
 )
 
@@ -38,7 +37,7 @@ func TestPseudonymsys(t *testing.T) {
 	}
 
 	// usually the endpoint is different from the one used for CA:
-  c1, err := NewPseudonymsysClient(testGrpcClientConn, group)
+	c1, err := NewPseudonymsysClient(testGrpcClientConn, group)
 	userSecret := c1.GenerateMasterKey()
 
 	masterNym := caClient.GenerateMasterNym(userSecret)
@@ -66,8 +65,7 @@ func TestPseudonymsys(t *testing.T) {
 	assert.NotNil(t, err, "Should produce an error")
 
 	orgName := "org1"
-	h1, h2 := config.LoadPseudonymsysOrgPubKeys(orgName)
-	orgPubKeys := pseudonymsys.NewOrgPubKeys(h1, h2)
+	orgPubKeys := config.LoadPseudonymsysOrgPubKeys(orgName)
 	credential, err := c1.ObtainCredential(userSecret, nym1, orgPubKeys)
 	if err != nil {
 		t.Errorf(err.Error())

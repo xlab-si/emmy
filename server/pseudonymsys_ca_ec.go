@@ -32,8 +32,8 @@ func (s *Server) GenerateCertificate_EC(stream pb.PseudonymSystemCA_GenerateCert
 	}
 
 	d := config.LoadPseudonymsysCASecret()
-	pubKeyX, pubKeyY := config.LoadPseudonymsysCAPubKey()
-	ca := pseudonymsys.NewCAEC(d, pubKeyX, pubKeyY, curve)
+	pubKey := config.LoadPseudonymsysCAPubKey()
+	ca := pseudonymsys.NewCAEC(d, pubKey, curve)
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
 	x := sProofRandData.X.GetNativeType()

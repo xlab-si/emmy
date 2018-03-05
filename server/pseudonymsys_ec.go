@@ -21,7 +21,6 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/protobuf"
@@ -33,8 +32,8 @@ func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) 
 		return err
 	}
 
-	caPubKeyX, caPubKeyY := config.LoadPseudonymsysCAPubKey()
-	org := pseudonymsys.NewOrgNymGenEC(caPubKeyX, caPubKeyY, curve)
+	caPubKey := config.LoadPseudonymsysCAPubKey()
+	org := pseudonymsys.NewOrgNymGenEC(caPubKey, curve)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
 	x1 := proofRandData.X1.GetNativeType()
@@ -113,8 +112,8 @@ func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_
 	a := proofRandData.A.GetNativeType()
 	b := proofRandData.B.GetNativeType()
 
-	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialIssuerEC(s1, s2, curve)
+	secKey := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
+	org := pseudonymsys.NewOrgCredentialIssuerEC(secKey, curve)
 	challenge := org.GetAuthenticationChallenge(a, b, x)
 
 	resp := &pb.Message{
@@ -195,8 +194,8 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 		return err
 	}
 
-	s1, s2 := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialVerifierEC(s1, s2, curve)
+	secKey := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
+	org := pseudonymsys.NewOrgCredentialVerifierEC(secKey, curve)
 
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
@@ -250,10 +249,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 	}
 
 	// PubKeys of the organization that issue a credential:
-	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
-	h1 := groups.NewECGroupElement(h1X, h1Y)
-	h2 := groups.NewECGroupElement(h2X, h2Y)
-	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
+	orgPubKeys := config.LoadPseudonymsysOrgPubKeysEC(orgName)
 
 	proofData := req.GetBigint()
 	z := new(big.Int).SetBytes(proofData.X1)
