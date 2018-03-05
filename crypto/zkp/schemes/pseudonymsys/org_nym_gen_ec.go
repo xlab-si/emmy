@@ -41,17 +41,15 @@ func NewPseudonymEC(a, b *groups.ECGroupElement) *PseudonymEC {
 
 type OrgNymGenEC struct {
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
-	x                *big.Int
-	y                *big.Int
+	caPubKey         *PubKey
 	curveType        groups.ECurve
 }
 
-func NewOrgNymGenEC(x, y *big.Int, curveType groups.ECurve) *OrgNymGenEC {
+func NewOrgNymGenEC(pubKey *PubKey, curveType groups.ECurve) *OrgNymGenEC {
 	verifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgNymGenEC{
 		EqualityVerifier: verifier,
-		x:                x,
-		y:                y,
+		caPubKey:         pubKey,
 		curveType:        curveType,
 	}
 	return &org
@@ -60,7 +58,7 @@ func NewOrgNymGenEC(x, y *big.Int, curveType groups.ECurve) *OrgNymGenEC {
 func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
 	x1, x2 *groups.ECGroupElement, r, s *big.Int) (*big.Int, error) {
 	c := groups.GetEllipticCurve(org.curveType)
-	pubKey := ecdsa.PublicKey{Curve: c, X: org.x, Y: org.y}
+	pubKey := ecdsa.PublicKey{Curve: c, X: org.caPubKey.H1, Y: org.caPubKey.H2}
 
 	hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)
 	verified := ecdsa.Verify(&pubKey, hashed, r, s)

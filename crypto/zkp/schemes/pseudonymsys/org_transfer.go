@@ -25,21 +25,19 @@ import (
 )
 
 type OrgCredentialVerifier struct {
-	Group *groups.SchnorrGroup
-	s1    *big.Int
-	s2    *big.Int
+	Group  *groups.SchnorrGroup
+	secKey *SecKey
 
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
 	a                *big.Int
 	b                *big.Int
 }
 
-func NewOrgCredentialVerifier(group *groups.SchnorrGroup, s1, s2 *big.Int) *OrgCredentialVerifier {
+func NewOrgCredentialVerifier(group *groups.SchnorrGroup, secKey *SecKey) *OrgCredentialVerifier {
 	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(group)
 	org := OrgCredentialVerifier{
 		Group:            group,
-		s1:               s1,
-		s2:               s2,
+		secKey:           secKey,
 		EqualityVerifier: equalityVerifier,
 	}
 
@@ -56,7 +54,7 @@ func (org *OrgCredentialVerifier) GetAuthenticationChallenge(a, b, a1, b1, x1, x
 }
 
 func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
-	credential *Credential, orgPubKeys *OrgPubKeys) bool {
+	credential *Credential, orgPubKeys *PubKey) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if !verified {
 		return false
