@@ -62,7 +62,7 @@ func (s *Server) Pedersen(group *groups.SchnorrGroup, stream pb.Protocol_RunServ
 	r := new(big.Int).SetBytes(pedersenDecommitment.R)
 	valid := pedersenReceiver.CheckDecommitment(r, val)
 
-	s.logger.Noticef("Commitment scheme success: **%v**", valid)
+	s.Logger.Noticef("Commitment scheme success: **%v**", valid)
 
 	resp = &pb.Message{
 		Content: &pb.Message_Status{&pb.Status{Success: valid}},

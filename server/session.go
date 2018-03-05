@@ -10,18 +10,18 @@ import (
 // This is to prevent possible mistakes security reasons.
 const MIN_SESSION_KEY_BYTE_LEN = 24
 
-type sessionManager struct {
+type SessionManager struct {
 	sessionKeyByteLen int
 }
 
-func newSessionManager(n int) (*sessionManager, error) {
+func newSessionManager(n int) (*SessionManager, error) {
 	var err error
 	if n < MIN_SESSION_KEY_BYTE_LEN {
 		err = fmt.Errorf("desired length of the session key (%d B) is too short, falling back to %d B",
 			n, MIN_SESSION_KEY_BYTE_LEN)
 		n = MIN_SESSION_KEY_BYTE_LEN
 	}
-	return &sessionManager{
+	return &SessionManager{
 		sessionKeyByteLen: n,
 	}, err
 }
@@ -29,7 +29,7 @@ func newSessionManager(n int) (*sessionManager, error) {
 // generateSessionKey produces a secure random n-byte session key and returns its
 // base64-encoded representation that is URL-safe.
 // It reports an error if n is less than MIN_SESSION_KEY_BYTE_LEN.
-func (m *sessionManager) generateSessionKey() (*string, error) {
+func (m *SessionManager) generateSessionKey() (*string, error) {
 	randBytes := make([]byte, m.sessionKeyByteLen)
 
 	// reads m.sessionKeyByteLen random bytes (e.g. len(randBytes)) to randBytes array
