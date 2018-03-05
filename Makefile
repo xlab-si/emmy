@@ -22,6 +22,11 @@ setup_linter:
 install:
 	go install
 
+# Install to produce emmy binary, but also add version information
+# Use with "make release version=x.y.z"
+release:
+	go install -ldflags "-X main.version=$(version)" emmy.go
+
 # Run test for all packages and report test coverage status
 test:
 	go test -v -cover $(ALL)
