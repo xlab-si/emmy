@@ -42,7 +42,7 @@ func NewOrgPubKeysEC(h1, h2 *ECGroupElement) *OrgPubKeysEC {
 	}
 }
 
-// getNativeType translates compatibility OrgPubKeysEC to emmy's native pseudonymsys.OrgPubKeysEC.
+// getNativeType translates compatibility OrgPubKeysEC to emmy's native pseudonymsys.PubKeyEC.
 func (k *OrgPubKeysEC) getNativeType() (*pseudonymsys.PubKeyEC, error) {
 	h1, err := k.H1.getNativeType()
 	if err != nil {
