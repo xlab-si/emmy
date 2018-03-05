@@ -19,7 +19,6 @@ package main
 
 import (
 	"os"
-	"time"
 
 	"github.com/urfave/cli"
 	emmy "github.com/xlab-si/emmy/cmd"
@@ -38,7 +37,6 @@ func main() {
 	app.Copyright = `(c) 2017 XLAB d.o.o.
 		Licensed under Apache License, Version 2.0.`
 	app.Version = version
-	app.Compiled = time.Now()
 	app.Usage = `A CLI app for running emmy server, emmy clients 
 		and examples of proofs offered by the emmy library`
 	app.Commands = []cli.Command{emmy.ServerCmd, emmy.ClientCmd}
