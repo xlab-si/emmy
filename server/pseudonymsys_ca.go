@@ -35,8 +35,8 @@ func (s *Server) GenerateCertificate(stream pb.PseudonymSystemCA_GenerateCertifi
 
 	group := config.LoadSchnorrGroup()
 	d := config.LoadPseudonymsysCASecret()
-	pubKeyX, pubKeyY := config.LoadPseudonymsysCAPubKey()
-	ca := pseudonymsys.NewCA(group, d, pubKeyX, pubKeyY)
+	pubKey := config.LoadPseudonymsysCAPubKey()
+	ca := pseudonymsys.NewCA(group, d, pubKey)
 
 	sProofRandData := req.GetSchnorrProofRandomData()
 	x := new(big.Int).SetBytes(sProofRandData.X)

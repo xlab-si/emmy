@@ -26,6 +26,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
 // init loads the default config file
@@ -138,27 +139,30 @@ func LoadQRRSA() *groups.QRRSA {
 	return qr
 }
 
-func LoadPseudonymsysOrgSecrets(orgName, dlogType string) (*big.Int, *big.Int) {
+func LoadPseudonymsysOrgSecrets(orgName, dlogType string) *pseudonymsys.SecKey {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, dlogType))
 	s1, _ := new(big.Int).SetString(org["s1"].(string), 10)
 	s2, _ := new(big.Int).SetString(org["s2"].(string), 10)
-	return s1, s2
+	return pseudonymsys.NewSecKey(s1, s2)
 }
 
-func LoadPseudonymsysOrgPubKeys(orgName string) (*big.Int, *big.Int) {
+func LoadPseudonymsysOrgPubKeys(orgName string) *pseudonymsys.PubKey {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, "dlog"))
 	h1, _ := new(big.Int).SetString(org["h1"].(string), 10)
 	h2, _ := new(big.Int).SetString(org["h2"].(string), 10)
-	return h1, h2
+	return pseudonymsys.NewPubKey(h1, h2)
 }
 
-func LoadPseudonymsysOrgPubKeysEC(orgName string) (*big.Int, *big.Int, *big.Int, *big.Int) {
+func LoadPseudonymsysOrgPubKeysEC(orgName string) *pseudonymsys.PubKeyEC {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, "ecdlog"))
 	h1X, _ := new(big.Int).SetString(org["h1x"].(string), 10)
 	h1Y, _ := new(big.Int).SetString(org["h1y"].(string), 10)
 	h2X, _ := new(big.Int).SetString(org["h2x"].(string), 10)
 	h2Y, _ := new(big.Int).SetString(org["h2y"].(string), 10)
-	return h1X, h1Y, h2X, h2Y
+	return pseudonymsys.NewPubKeyEC(
+		groups.NewECGroupElement(h1X, h1Y),
+		groups.NewECGroupElement(h2X, h2Y),
+	)
 }
 
 func LoadPseudonymsysCASecret() *big.Int {
@@ -167,11 +171,11 @@ func LoadPseudonymsysCASecret() *big.Int {
 	return s
 }
 
-func LoadPseudonymsysCAPubKey() (*big.Int, *big.Int) {
+func LoadPseudonymsysCAPubKey() *pseudonymsys.PubKey {
 	ca := viper.GetStringMap("pseudonymsys.ca")
 	x, _ := new(big.Int).SetString(ca["x"].(string), 10)
 	y, _ := new(big.Int).SetString(ca["y1"].(string), 10)
-	return x, y
+	return pseudonymsys.NewPubKey(x, y)
 }
 
 func LoadServiceInfo() (string, string, string) {

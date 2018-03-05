@@ -28,33 +28,32 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
-// OrgPubKeysEC represents an equivalent of pseudonymsys.OrgPubKeysEC,
+// PubKeyEC represents an equivalent of pseudonymsys.PubKeyEC,
 // but has field types compatible with Go language binding tools.
-type OrgPubKeysEC struct {
+type PubKeyEC struct {
 	H1 *ECGroupElement
 	H2 *ECGroupElement
 }
 
-func NewOrgPubKeysEC(h1, h2 *ECGroupElement) *OrgPubKeysEC {
-	return &OrgPubKeysEC{
+func NewPubKeyEC(h1, h2 *ECGroupElement) *PubKeyEC {
+	return &PubKeyEC{
 		H1: h1,
 		H2: h2,
 	}
 }
 
-// getNativeType translates compatibility OrgPubKeysEC to emmy's native pseudonymsys.OrgPubKeysEC.
-func (k *OrgPubKeysEC) getNativeType() (*pseudonymsys.OrgPubKeysEC, error) {
+// getNativeType translates compatibility PubKeyEC to emmy's native pseudonymsys.PubKeyEC.
+func (k *PubKeyEC) getNativeType() (*pseudonymsys.PubKeyEC, error) {
 	h1, err := k.H1.getNativeType()
 	if err != nil {
-		return nil, fmt.Errorf("pubKeys.H1: %s", err)
+		return nil, fmt.Errorf("pubKey.H1: %s", err)
 	}
 	h2, err := k.H2.getNativeType()
 	if err != nil {
-		return nil, fmt.Errorf("pubKeys.H2: %s", err)
+		return nil, fmt.Errorf("pubKey.H2: %s", err)
 	}
 
-	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
-	return orgPubKeys, nil
+	return pseudonymsys.NewPubKeyEC(h1, h2), nil
 }
 
 // TranscriptEC represents an equivalent of dlogproofs.TranscriptEC, but has string
@@ -204,7 +203,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret string,
 }
 
 func (c *PseudonymsysClientEC) ObtainCredential(userSecret string,
-	nym *PseudonymEC, pubKeys *OrgPubKeysEC) (*CredentialEC, error) {
+	nym *PseudonymEC, publicKey *PubKeyEC) (*CredentialEC, error) {
 	// Translate secret
 	secret, secretOk := new(big.Int).SetString(userSecret, 10)
 	if !secretOk {
@@ -217,14 +216,14 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret string,
 		return nil, err
 	}
 
-	// Translate OrgPubKeysEC
-	orgPubKeys, err := pubKeys.getNativeType()
+	// Translate PubKeyEC
+	pubKey, err := publicKey.getNativeType()
 	if err != nil {
 		return nil, err
 	}
 
 	// Call PseudonymsysClientEC client with translated parameters
-	credential, err := c.PseudonymsysClientEC.ObtainCredential(secret, pseudonym, orgPubKeys)
+	credential, err := c.PseudonymsysClientEC.ObtainCredential(secret, pseudonym, pubKey)
 	if err != nil {
 		return nil, err
 	}

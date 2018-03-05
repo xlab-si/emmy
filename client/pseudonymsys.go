@@ -129,7 +129,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 
 // ObtainCredential returns anonymous credential.
 func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
-	nym *pseudonymsys.Pseudonym, orgPubKeys *pseudonymsys.OrgPubKeys) (
+	nym *pseudonymsys.Pseudonym, orgPubKeys *pseudonymsys.PubKey) (
 	*pseudonymsys.Credential, error) {
 	if err := c.openStream(c.grpcClient, "ObtainCredential"); err != nil {
 		return nil, err

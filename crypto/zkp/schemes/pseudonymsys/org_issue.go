@@ -49,22 +49,9 @@ func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int,
 	return credential
 }
 
-type OrgPubKeys struct {
-	H1 *big.Int
-	H2 *big.Int
-}
-
-func NewOrgPubKeys(h1, h2 *big.Int) *OrgPubKeys {
-	return &OrgPubKeys{
-		H1: h1,
-		H2: h2,
-	}
-}
-
 type OrgCredentialIssuer struct {
-	Group *groups.SchnorrGroup
-	s1    *big.Int
-	s2    *big.Int
+	Group  *groups.SchnorrGroup
+	secKey *SecKey
 
 	// the following fields are needed for issuing a credential
 	SchnorrVerifier *dlogproofs.SchnorrVerifier
@@ -74,7 +61,7 @@ type OrgCredentialIssuer struct {
 	b               *big.Int
 }
 
-func NewOrgCredentialIssuer(group *groups.SchnorrGroup, s1, s2 *big.Int) *OrgCredentialIssuer {
+func NewOrgCredentialIssuer(group *groups.SchnorrGroup, secKey *SecKey) *OrgCredentialIssuer {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
 	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, protocoltypes.Sigma)
@@ -82,8 +69,7 @@ func NewOrgCredentialIssuer(group *groups.SchnorrGroup, s1, s2 *big.Int) *OrgCre
 	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	org := OrgCredentialIssuer{
 		Group:           group,
-		s1:              s1,
-		s2:              s2,
+		secKey:          secKey,
 		SchnorrVerifier: schnorrVerifier,
 		EqualityProver1: equalityProver1,
 		EqualityProver2: equalityProver2,
@@ -107,12 +93,12 @@ func (org *OrgCredentialIssuer) VerifyAuthentication(z *big.Int) (
 	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, error) {
 	verified := org.SchnorrVerifier.Verify(z, nil)
 	if verified {
-		A := org.Group.Exp(org.b, org.s2)
+		A := org.Group.Exp(org.b, org.secKey.S2)
 		aA := org.Group.Mul(org.a, A)
-		B := org.Group.Exp(aA, org.s1)
+		B := org.Group.Exp(aA, org.secKey.S1)
 
-		x11, x12 := org.EqualityProver1.GetProofRandomData(org.s2, org.Group.G, org.b)
-		x21, x22 := org.EqualityProver2.GetProofRandomData(org.s1, org.Group.G, aA)
+		x11, x12 := org.EqualityProver1.GetProofRandomData(org.secKey.S2, org.Group.G, org.b)
+		x21, x22 := org.EqualityProver2.GetProofRandomData(org.secKey.S1, org.Group.G, aA)
 
 		return x11, x12, x21, x22, A, B, nil
 	} else {

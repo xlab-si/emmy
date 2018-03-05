@@ -72,30 +72,29 @@ func (c *Credential) getNativeType() (*pseudonymsys.Credential, error) {
 	return cred, nil
 }
 
-// OrgPubKeys represents an equivalent of pseudonymsys.OrgPubKeys, but has string
+// PubKey represents an equivalent of pseudonymsys.PubKey, but has string
 // field types to overcome type restrictions of Go language binding tools.
-type OrgPubKeys struct {
+type PubKey struct {
 	H1 string
 	H2 string
 }
 
-func NewOrgPubKeys(h1, h2 string) *OrgPubKeys {
-	return &OrgPubKeys{
+func NewPubKey(h1, h2 string) *PubKey {
+	return &PubKey{
 		H1: h1,
 		H2: h2,
 	}
 }
 
-// getNativeType translates compatibility OrgPubKeys to emmy's native pseudonymsys.OrgPubKeys.
-func (k *OrgPubKeys) getNativeType() (*pseudonymsys.OrgPubKeys, error) {
+// getNativeType translates compatibility PubKey to emmy's native pseudonymsys.PubKey.
+func (k *PubKey) getNativeType() (*pseudonymsys.PubKey, error) {
 	h1, h1Ok := new(big.Int).SetString(k.H1, 10)
 	h2, h2Ok := new(big.Int).SetString(k.H2, 10)
 	if !h1Ok || !h2Ok {
-		return nil, fmt.Errorf("pubKeys.h1 or pubKeys.h2: %s", ArgsConversionError)
+		return nil, fmt.Errorf("pubKey.h1 or pubKey.h2: %s", ArgsConversionError)
 	}
 
-	orgPubKeys := pseudonymsys.NewOrgPubKeys(h1, h2)
-	return orgPubKeys, nil
+	return pseudonymsys.NewPubKey(h1, h2), nil
 }
 
 // Transcript represents an equivalent of dlogproofs.Transcript, but has string
@@ -187,7 +186,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret string,
 }
 
 func (c *PseudonymsysClient) ObtainCredential(userSecret string,
-	nym *Pseudonym, pubKeys *OrgPubKeys) (*Credential, error) {
+	nym *Pseudonym, publicKey *PubKey) (*Credential, error) {
 	// Translate secret
 	secret, secretOk := new(big.Int).SetString(userSecret, 10)
 	if !secretOk {
@@ -200,14 +199,14 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret string,
 		return nil, err
 	}
 
-	// Translate OrgPubKeys
-	orgPubKeys, err := pubKeys.getNativeType()
+	// Translate PubKey
+	pubKey, err := publicKey.getNativeType()
 	if err != nil {
 		return nil, err
 	}
 
 	// Call PseudonymsysClient client with translated parameters
-	credential, err := c.PseudonymsysClient.ObtainCredential(secret, pseudonym, orgPubKeys)
+	credential, err := c.PseudonymsysClient.ObtainCredential(secret, pseudonym, pubKey)
 	if err != nil {
 		return nil, err
 	}

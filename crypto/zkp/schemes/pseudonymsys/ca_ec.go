@@ -53,9 +53,9 @@ func NewCACertificateEC(blindedA, blindedB *groups.ECGroupElement, r, s *big.Int
 	}
 }
 
-func NewCAEC(d, x, y *big.Int, curveType groups.ECurve) *CAEC {
+func NewCAEC(d *big.Int, caPubKey *PubKey, curveType groups.ECurve) *CAEC {
 	c := groups.GetEllipticCurve(curveType)
-	pubKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
+	pubKey := ecdsa.PublicKey{Curve: c, X: caPubKey.H1, Y: caPubKey.H2}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
 	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, protocoltypes.Sigma)

@@ -25,8 +25,7 @@ import (
 )
 
 type OrgCredentialVerifierEC struct {
-	s1 *big.Int
-	s2 *big.Int
+	secKey *SecKey
 
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
 	a                *groups.ECGroupElement
@@ -34,11 +33,10 @@ type OrgCredentialVerifierEC struct {
 	curveType        groups.ECurve
 }
 
-func NewOrgCredentialVerifierEC(s1, s2 *big.Int, curveType groups.ECurve) *OrgCredentialVerifierEC {
+func NewOrgCredentialVerifierEC(secKey *SecKey, curveType groups.ECurve) *OrgCredentialVerifierEC {
 	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgCredentialVerifierEC{
-		s1:               s1,
-		s2:               s2,
+		secKey:           secKey,
 		EqualityVerifier: equalityVerifier,
 		curveType:        curveType,
 	}
@@ -57,7 +55,7 @@ func (org *OrgCredentialVerifierEC) GetAuthenticationChallenge(a, b, a1, b1,
 }
 
 func (org *OrgCredentialVerifierEC) VerifyAuthentication(z *big.Int,
-	credential *CredentialEC, orgPubKeys *OrgPubKeysEC) bool {
+	credential *CredentialEC, orgPubKeys *PubKeyEC) bool {
 	verified := org.EqualityVerifier.Verify(z)
 	if !verified {
 		return false

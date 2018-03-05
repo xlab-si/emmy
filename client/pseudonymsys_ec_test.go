@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
 func TestPseudonymsysEC(t *testing.T) {
@@ -63,10 +62,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	assert.NotNil(t, err, "Should produce an error")
 
 	orgName := "org1"
-	h1X, h1Y, h2X, h2Y := config.LoadPseudonymsysOrgPubKeysEC(orgName)
-	h1 := groups.NewECGroupElement(h1X, h1Y)
-	h2 := groups.NewECGroupElement(h2X, h2Y)
-	orgPubKeys := pseudonymsys.NewOrgPubKeysEC(h1, h2)
+	orgPubKeys := config.LoadPseudonymsysOrgPubKeysEC(orgName)
 	credential, err := c1.ObtainCredential(userSecret, nym1, orgPubKeys)
 	if err != nil {
 		t.Errorf(err.Error())
