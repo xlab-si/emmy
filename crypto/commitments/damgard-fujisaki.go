@@ -143,17 +143,17 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 		nil
 }
 
-// NewDamgardFujisakiReceiverFromExisting returns an instance of receiver with the same
-// parameters as the receiver used as an input. Different instances are needed because
+// NewDamgardFujisakiReceiverFromParams returns an instance of a receiver with the
+// parameters as given by input. Different instances are needed because
 // each sets its own Commitment value.
-func NewDamgardFujisakiReceiverFromParams(qrSpecialRSA *groups.QRSpecialRSA, H, G *big.Int,
-	K int) (
+func NewDamgardFujisakiReceiverFromParams(qrSpecialRSA *groups.QRSpecialRSA, h, g *big.Int,
+	k int) (
 	*DamgardFujisakiReceiver, error) {
 	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
 		QRSpecialRSA: qrSpecialRSA,
-		H:            H,
-		G:            G,
-		K:            K},
+		H:            h,
+		G:            g,
+		K:            k},
 	}, nil
 }
 

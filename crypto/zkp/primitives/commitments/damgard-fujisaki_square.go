@@ -25,8 +25,10 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 )
 
+// DFCommitmentSquareProver proves that the commitment hides the square. Given c,
+// prove that c = g^(x^2) * h^r (mod n).
 type DFCommitmentSquareProver struct {
-	equalityProver *DFCommitmentEqualityProver
+	*DFCommitmentEqualityProver
 }
 
 func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter,
@@ -63,21 +65,12 @@ func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter
 	prover := NewDFCommitmentEqualityProver(committer1, committer2, challengeSpaceSize)
 
 	return &DFCommitmentSquareProver{
-		equalityProver: prover,
+		prover,
 	}, c1, nil
 }
 
-func (prover *DFCommitmentSquareProver) GetProofRandomData() (*big.Int, *big.Int) {
-	return prover.equalityProver.GetProofRandomData()
-}
-
-func (prover *DFCommitmentSquareProver) GetProofData(challenge *big.Int) (*big.Int,
-	*big.Int, *big.Int) {
-	return prover.equalityProver.GetProofData(challenge)
-}
-
 type DFCommitmentSquareVerifier struct {
-	equalityVerifier *DFCommitmentEqualityVerifier
+	*DFCommitmentEqualityVerifier
 }
 
 func NewDFCommitmentSquareVerifier(receiver *commitments.DamgardFujisakiReceiver,
@@ -100,19 +93,6 @@ func NewDFCommitmentSquareVerifier(receiver *commitments.DamgardFujisakiReceiver
 	verifier := NewDFCommitmentEqualityVerifier(receiver1, receiver2, challengeSpaceSize)
 
 	return &DFCommitmentSquareVerifier{
-		equalityVerifier: verifier,
+		verifier,
 	}, nil
-}
-
-func (verifier *DFCommitmentSquareVerifier) SetProofRandomData(proofRandomData1,
-	proofRandomData2 *big.Int) {
-	verifier.equalityVerifier.SetProofRandomData(proofRandomData1, proofRandomData2)
-}
-
-func (verifier *DFCommitmentSquareVerifier) GetChallenge() *big.Int {
-	return verifier.equalityVerifier.GetChallenge()
-}
-
-func (verifier *DFCommitmentSquareVerifier) Verify(s1, s21, s22 *big.Int) bool {
-	return verifier.equalityVerifier.Verify(s1, s21, s22)
 }
