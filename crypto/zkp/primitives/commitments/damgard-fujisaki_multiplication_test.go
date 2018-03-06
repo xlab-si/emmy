@@ -40,14 +40,16 @@ func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
 	committer1 := commitments.NewDamgardFujisakiCommitter(receiver1.QRSpecialRSA.N,
 		receiver1.H, receiver1.G, T, receiver1.K)
 
-	receiver2, err := commitments.NewDamgardFujisakiReceiverFromExisting(receiver1)
+	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver1.QRSpecialRSA,
+		receiver1.H, receiver1.G, receiver1.K)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 	committer2 := commitments.NewDamgardFujisakiCommitter(receiver2.QRSpecialRSA.N,
 		receiver2.H, receiver2.G, T, receiver2.K)
 
-	receiver3, err := commitments.NewDamgardFujisakiReceiverFromExisting(receiver1)
+	receiver3, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver1.QRSpecialRSA,
+		receiver1.H, receiver1.G, receiver1.K)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
