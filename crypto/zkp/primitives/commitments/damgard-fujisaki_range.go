@@ -46,13 +46,13 @@ func NewDFCommitmentRangeProver(committer *commitments.DamgardFujisakiCommitter,
 		challengeSpaceSize)
 	if err != nil {
 		return nil, []*big.Int(nil), []*big.Int(nil), []*big.Int(nil), []*big.Int(nil),
-			fmt.Errorf("Error in instantiating DFCommitmentPositiveProver")
+			fmt.Errorf("error in instantiating DFCommitmentPositiveProver")
 	}
 	prover2, bases2, commitmentsToSquares2, err := NewDFCommitmentPositiveProver(committer, xa, r,
 		challengeSpaceSize)
 	if err != nil {
 		return nil, []*big.Int(nil), []*big.Int(nil), []*big.Int(nil), []*big.Int(nil),
-			fmt.Errorf("Error in instantiating DFCommitmentPositiveProver")
+			fmt.Errorf("error in instantiating DFCommitmentPositiveProver")
 	}
 
 	return &DFCommitmentRangeProver{
@@ -61,15 +61,15 @@ func NewDFCommitmentRangeProver(committer *commitments.DamgardFujisakiCommitter,
 	}, bases1, commitmentsToSquares1, bases2, commitmentsToSquares2, nil
 }
 
-func (prover *DFCommitmentRangeProver) GetProofRandomData() []*big.Int {
-	proofRandomData1 := prover.prover1.GetProofRandomData()
-	proofRandomData2 := prover.prover2.GetProofRandomData()
+func (p *DFCommitmentRangeProver) GetProofRandomData() []*big.Int {
+	proofRandomData1 := p.prover1.GetProofRandomData()
+	proofRandomData2 := p.prover2.GetProofRandomData()
 	return append(proofRandomData1, proofRandomData2...)
 }
 
-func (prover *DFCommitmentRangeProver) GetProofData(challenges []*big.Int) []*big.Int {
-	proofData1 := prover.prover1.GetProofData(challenges[0:4])
-	proofData2 := prover.prover2.GetProofData(challenges[4:8])
+func (p *DFCommitmentRangeProver) GetProofData(challenges []*big.Int) []*big.Int {
+	proofData1 := p.prover1.GetProofData(challenges[0:4])
+	proofData2 := p.prover2.GetProofData(challenges[4:8])
 	return append(proofData1, proofData2...)
 }
 
@@ -92,7 +92,7 @@ func NewDFCommitmentRangeVerifier(receiver *commitments.DamgardFujisakiReceiver,
 	verifier1, err := NewDFCommitmentPositiveVerifier(receiver, receiverCommitment1, bases1,
 		commitmentsToSquares1, challengeSpaceSize)
 	if err != nil {
-		return nil, fmt.Errorf("Error in instantiating DFCommitmentPositiveVerifier")
+		return nil, fmt.Errorf("error in instantiating DFCommitmentPositiveVerifier")
 	}
 
 	// c / g^a
@@ -103,7 +103,7 @@ func NewDFCommitmentRangeVerifier(receiver *commitments.DamgardFujisakiReceiver,
 	verifier2, err := NewDFCommitmentPositiveVerifier(receiver, receiverCommitment2, bases2,
 		commitmentsToSquares2, challengeSpaceSize)
 	if err != nil {
-		return nil, fmt.Errorf("Error in instantiating DFCommitmentPositiveVerifier")
+		return nil, fmt.Errorf("error in instantiating DFCommitmentPositiveVerifier")
 	}
 
 	return &DFCommitmentRangeVerifier{
@@ -112,17 +112,17 @@ func NewDFCommitmentRangeVerifier(receiver *commitments.DamgardFujisakiReceiver,
 	}, nil
 }
 
-func (verifier *DFCommitmentRangeVerifier) GetChallenges() []*big.Int {
-	challenges1 := verifier.verifier1.GetChallenges()
-	challenges2 := verifier.verifier2.GetChallenges()
+func (v *DFCommitmentRangeVerifier) GetChallenges() []*big.Int {
+	challenges1 := v.verifier1.GetChallenges()
+	challenges2 := v.verifier2.GetChallenges()
 	return append(challenges1, challenges2...)
 }
 
-func (verifier *DFCommitmentRangeVerifier) SetProofRandomData(proofRandomData []*big.Int) {
-	verifier.verifier1.SetProofRandomData(proofRandomData[0:8])
-	verifier.verifier2.SetProofRandomData(proofRandomData[8:16])
+func (v *DFCommitmentRangeVerifier) SetProofRandomData(proofRandomData []*big.Int) {
+	v.verifier1.SetProofRandomData(proofRandomData[0:8])
+	v.verifier2.SetProofRandomData(proofRandomData[8:16])
 }
 
-func (verifier *DFCommitmentRangeVerifier) Verify(proofData []*big.Int) bool {
-	return verifier.verifier1.Verify(proofData[0:12]) && verifier.verifier2.Verify(proofData[12:24])
+func (v *DFCommitmentRangeVerifier) Verify(proofData []*big.Int) bool {
+	return v.verifier1.Verify(proofData[0:12]) && v.verifier2.Verify(proofData[12:24])
 }
