@@ -30,33 +30,52 @@ var (
 	four = big.NewInt(4)
 )
 
-// Lagrange is an array that will hold the roots of the decomposed integer.
+// lagrange is an array that will hold the roots of the decomposed integer.
 // It has exactly 4 elements - if decomposition has less than four roots, the remaining
 // ones are set to zero.
-type Lagrange [4]*big.Int
+type lagrange [4]*big.Int
 
-// NewLagrange initializes Lagrange array with zero values
-func NewLagrange() Lagrange {
-	w := Lagrange{}
+// NewLagrange initializes lagrange array with zero values
+func NewLagrange() *lagrange {
+	w := &lagrange{}
 	for i := 0; i < 4; i++ {
 		w[i] = new(big.Int).Set(zero)
 	}
 	return w
 }
 
-func (l Lagrange) Set(w0, w1, w2, w3 *big.Int) {
+func (l *lagrange) Set(w0, w1, w2, w3 *big.Int) {
 	l[0].Set(w0)
 	l[1].Set(w1)
 	l[2].Set(w2)
 	l[3].Set(w3)
 }
 
-// LipmaaDecomposition takes a positive integer and computes its lagrange representation as the
+// LipmaaDecomposition calls lipmaaDecompose and converts its result from a
+// fixed-size 4-element array to a slice containing only non-zero roots.
+func LipmaaDecomposition(n *big.Int) ([]*big.Int, error) {
+	roots, err := lipmaaDecompose(n)
+	if err != nil {
+		return nil, err
+	}
+
+	rootsSlice := make([]*big.Int, 0, 4)
+	for _, root := range roots {
+		if root.Cmp(zero) != 0 {
+			rootsSlice = append(rootsSlice, root)
+		}
+	}
+
+	return rootsSlice, nil
+}
+
+// lipmaaDecompose takes a positive integer and computes its lagrange representation as the
 // sum of (at most) four squares.
-// Returns the roots of the decomposed integer - when squared, they sum up to exactly n.
-func LipmaaDecomposition(n *big.Int) (Lagrange, error) {
+// Returns the roots of the decomposed integer in an array of size 4 - when squared,
+// they sum up to exactly n.
+func lipmaaDecompose(n *big.Int) (*lagrange, error) {
 	// roots of the decomposed integer
-	var w Lagrange
+	var w *lagrange
 	var err error
 
 	isSpecial, w, err := getSpecialDecomposition(n)
@@ -88,7 +107,7 @@ func LipmaaDecomposition(n *big.Int) (Lagrange, error) {
 		m := new(big.Int).Rsh(n, uint(t-1))
 
 		// recurse to find representation (w1,w2,w3,w4) of integer m
-		w, err = LipmaaDecomposition(m)
+		w, err = lipmaaDecompose(m)
 		if err != nil {
 			return w, err
 		}
@@ -104,7 +123,7 @@ func LipmaaDecomposition(n *big.Int) (Lagrange, error) {
 		m.Add(m, two)
 
 		// recurse to find representation (w1,w2,w3,w4) of integer m
-		wM, err := LipmaaDecomposition(m)
+		wM, err := lipmaaDecompose(m)
 		if err != nil {
 			return w, err
 		}
@@ -161,7 +180,7 @@ func LipmaaDecomposition(n *big.Int) (Lagrange, error) {
 
 // getSpecialDecomposition checks for validity of integral argument and returns decomposition of a
 // special case (0, 1 and 2) if aporopriate. Otherwise it returns a zero-filled decomposition.
-func getSpecialDecomposition(n *big.Int) (bool, Lagrange, error) {
+func getSpecialDecomposition(n *big.Int) (bool, *lagrange, error) {
 	w := NewLagrange()
 
 	if n.Cmp(zero) < 0 {
