@@ -33,8 +33,7 @@ type DFCommitmentRangeProver struct {
 }
 
 func NewDFCommitmentRangeProver(committer *commitments.DamgardFujisakiCommitter,
-	x, a, b *big.Int, challengeSpaceSize int) (*DFCommitmentRangeProver,
-	[]*big.Int, []*big.Int, []*big.Int, []*big.Int, error) {
+	x, a, b *big.Int, challengeSpaceSize int) (*DFCommitmentRangeProver, error) {
 
 	// We will prove that b-x >= 0 and x-a >= 0.
 	bx := new(big.Int).Sub(b, x)
@@ -42,23 +41,21 @@ func NewDFCommitmentRangeProver(committer *commitments.DamgardFujisakiCommitter,
 	_, r := committer.GetDecommitMsg()
 
 	rNeg := new(big.Int).Neg(r) // we act as commitment is: g^b / (g^x * h^r) = g^(b-x) * h^(-r)
-	prover1, bases1, commitmentsToSquares1, err := NewDFCommitmentPositiveProver(committer, bx, rNeg,
+	prover1, err := NewDFCommitmentPositiveProver(committer, bx, rNeg,
 		challengeSpaceSize)
 	if err != nil {
-		return nil, []*big.Int(nil), []*big.Int(nil), []*big.Int(nil), []*big.Int(nil),
-			fmt.Errorf("error in instantiating DFCommitmentPositiveProver")
+		return nil, fmt.Errorf("error in instantiating DFCommitmentPositiveProver")
 	}
-	prover2, bases2, commitmentsToSquares2, err := NewDFCommitmentPositiveProver(committer, xa, r,
+	prover2, err := NewDFCommitmentPositiveProver(committer, xa, r,
 		challengeSpaceSize)
 	if err != nil {
-		return nil, []*big.Int(nil), []*big.Int(nil), []*big.Int(nil), []*big.Int(nil),
-			fmt.Errorf("error in instantiating DFCommitmentPositiveProver")
+		return nil, fmt.Errorf("error in instantiating DFCommitmentPositiveProver")
 	}
 
 	return &DFCommitmentRangeProver{
 		prover1: prover1,
 		prover2: prover2,
-	}, bases1, commitmentsToSquares1, bases2, commitmentsToSquares2, nil
+	}, nil
 }
 
 func (p *DFCommitmentRangeProver) GetProofRandomData() []*big.Int {
@@ -67,10 +64,21 @@ func (p *DFCommitmentRangeProver) GetProofRandomData() []*big.Int {
 	return append(proofRandomData1, proofRandomData2...)
 }
 
-func (p *DFCommitmentRangeProver) GetProofData(challenges []*big.Int) []*big.Int {
+func (p *DFCommitmentRangeProver) GetProofData(challenges []*big.Int) ([]*big.Int, error) {
+	if len(challenges) != 8 {
+		return nil, fmt.Errorf("length of challenges is not correct")
+	}
 	proofData1 := p.prover1.GetProofData(challenges[0:4])
 	proofData2 := p.prover2.GetProofData(challenges[4:8])
-	return append(proofData1, proofData2...)
+	return append(proofData1, proofData2...), nil
+}
+
+// GetVerifierInitializationData returns data that are needed by DFCommitmentRangeVerifier
+// and are known only after the initialization of DFCommitmentRangeProver.
+func (p *DFCommitmentRangeProver) GetVerifierInitializationData() ([]*big.Int, []*big.Int, []*big.Int,
+	[]*big.Int) {
+	return p.prover1.SmallCommitments, p.prover1.BigCommitments, p.prover2.SmallCommitments,
+		p.prover2.BigCommitments
 }
 
 type DFCommitmentRangeVerifier struct {
@@ -80,28 +88,27 @@ type DFCommitmentRangeVerifier struct {
 }
 
 func NewDFCommitmentRangeVerifier(receiver *commitments.DamgardFujisakiReceiver, a, b *big.Int,
-	bases1 []*big.Int, commitmentsToSquares1 []*big.Int,
-	bases2 []*big.Int, commitmentsToSquares2 []*big.Int,
+	smallCommitments1, bigCommitments1, smallCommitments2, bigCommitments2 []*big.Int,
 	challengeSpaceSize int) (*DFCommitmentRangeVerifier, error) {
 
-	// g^b / c
+	// receiverCommitment1 = g^b / c
 	receiverCommitment1 := receiver.QRSpecialRSA.Exp(receiver.G, b)
 	cInv := receiver.QRSpecialRSA.Inv(receiver.Commitment)
 	receiverCommitment1 = receiver.QRSpecialRSA.Mul(receiverCommitment1, cInv)
 
-	verifier1, err := NewDFCommitmentPositiveVerifier(receiver, receiverCommitment1, bases1,
-		commitmentsToSquares1, challengeSpaceSize)
+	verifier1, err := NewDFCommitmentPositiveVerifier(receiver, receiverCommitment1, smallCommitments1,
+		bigCommitments1, challengeSpaceSize)
 	if err != nil {
 		return nil, fmt.Errorf("error in instantiating DFCommitmentPositiveVerifier")
 	}
 
-	// c / g^a
+	// receiverCommitment2 = c / g^a
 	gToa := receiver.QRSpecialRSA.Exp(receiver.G, a)
 	gToaInv := receiver.QRSpecialRSA.Inv(gToa)
 	receiverCommitment2 := receiver.QRSpecialRSA.Mul(receiver.Commitment, gToaInv)
 
-	verifier2, err := NewDFCommitmentPositiveVerifier(receiver, receiverCommitment2, bases2,
-		commitmentsToSquares2, challengeSpaceSize)
+	verifier2, err := NewDFCommitmentPositiveVerifier(receiver, receiverCommitment2, smallCommitments2,
+		bigCommitments2, challengeSpaceSize)
 	if err != nil {
 		return nil, fmt.Errorf("error in instantiating DFCommitmentPositiveVerifier")
 	}
@@ -118,11 +125,18 @@ func (v *DFCommitmentRangeVerifier) GetChallenges() []*big.Int {
 	return append(challenges1, challenges2...)
 }
 
-func (v *DFCommitmentRangeVerifier) SetProofRandomData(proofRandomData []*big.Int) {
+func (v *DFCommitmentRangeVerifier) SetProofRandomData(proofRandomData []*big.Int) error {
+	if len(proofRandomData) != 16 {
+		return fmt.Errorf("length of proofRandomData is not correct")
+	}
 	v.verifier1.SetProofRandomData(proofRandomData[0:8])
 	v.verifier2.SetProofRandomData(proofRandomData[8:16])
+	return nil
 }
 
-func (v *DFCommitmentRangeVerifier) Verify(proofData []*big.Int) bool {
-	return v.verifier1.Verify(proofData[0:12]) && v.verifier2.Verify(proofData[12:24])
+func (v *DFCommitmentRangeVerifier) Verify(proofData []*big.Int) (bool, error) {
+	if len(proofData) != 24 {
+		return false, fmt.Errorf("length of proofData is not correct")
+	}
+	return v.verifier1.Verify(proofData[0:12]) && v.verifier2.Verify(proofData[12:24]), nil
 }

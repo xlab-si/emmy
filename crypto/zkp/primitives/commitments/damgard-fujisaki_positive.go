@@ -29,11 +29,13 @@ import (
 // DFCommitmentPositiveProver proves that the commitment hides the positive number. Given c,
 // prove that c = g^x * h^r (mod n) where x >= 0.
 type DFCommitmentPositiveProver struct {
-	squareProvers []*DFCommitmentSquareProver
+	squareProvers    []*DFCommitmentSquareProver
+	SmallCommitments []*big.Int
+	BigCommitments   []*big.Int
 }
 
 func NewDFCommitmentPositiveProver(committer *commitments.DamgardFujisakiCommitter,
-	x, r *big.Int, challengeSpaceSize int) (*DFCommitmentPositiveProver, []*big.Int, []*big.Int, error) {
+	x, r *big.Int, challengeSpaceSize int) (*DFCommitmentPositiveProver, error) {
 
 	// x can be written (if positive) as x = x0^2 + x1^2 + x2^2 + x3^2.
 	// We create committers which hold c0 = g^(x0^2) * h^r0, c1 = g^(x1^2) * h^r1,
@@ -42,61 +44,59 @@ func NewDFCommitmentPositiveProver(committer *commitments.DamgardFujisakiCommitt
 
 	roots, err := common.LipmaaDecomposition(x)
 	if err != nil {
-		return nil, []*big.Int(nil), []*big.Int(nil),
-			fmt.Errorf("error when doing Lipmaa decomposition")
+		return nil, fmt.Errorf("error when doing Lipmaa decomposition")
 	}
-	numOfRoots := len(roots)
+	nRoots := len(roots)
 
 	// find r0, r1, r2, r3 such that r0 + r1 + r2 + r3 = r
-	rs := getCommitRandoms(r, numOfRoots)
+	rs := getCommitRandoms(r, nRoots)
 
-	committers := make([]*commitments.DamgardFujisakiCommitter, numOfRoots)
-	commitmentsToSquares := make([]*big.Int, numOfRoots)
-	//for i := 0; i < numOfRoots; i++ {
-	for index, rand := range rs {
+	committers := make([]*commitments.DamgardFujisakiCommitter, nRoots)
+	bigCommitments := make([]*big.Int, nRoots)
+	for i, rand := range rs {
 		committer := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
 			committer.H, committer.G, committer.T, committer.K)
-		square := new(big.Int).Mul(roots[index], roots[index])
+		square := new(big.Int).Mul(roots[i], roots[i])
 		commitment, err := committer.GetCommitMsgWithGivenR(square, rand)
-		commitmentsToSquares[index] = commitment
+		bigCommitments[i] = commitment
 		if err != nil {
-			return nil, []*big.Int(nil), []*big.Int(nil),
-				fmt.Errorf("error when creating commit msg")
+			return nil, fmt.Errorf("error when creating commit msg")
 		}
-		committers[index] = committer
+		committers[i] = committer
 	}
 
-	bases := make([]*big.Int, numOfRoots)
-	squareProvers := make([]*DFCommitmentSquareProver, numOfRoots)
-	for index, root := range roots {
-		prover, c1, err := NewDFCommitmentSquareProver(committers[index], root, challengeSpaceSize)
+	smallCommitments := make([]*big.Int, nRoots)
+	squareProvers := make([]*DFCommitmentSquareProver, nRoots)
+	for i, root := range roots {
+		prover, err := NewDFCommitmentSquareProver(committers[i], root, challengeSpaceSize)
 		if err != nil {
-			return nil, []*big.Int(nil), []*big.Int(nil),
-				fmt.Errorf("error in instantiating DFCommitmentSquareProver")
+			return nil, fmt.Errorf("error in instantiating DFCommitmentSquareProver")
 		}
-		bases[index] = c1
-		squareProvers[index] = prover
+		smallCommitments[i] = prover.SmallCommitment
+		squareProvers[i] = prover
 	}
 
 	return &DFCommitmentPositiveProver{
-		squareProvers: squareProvers,
-	}, bases, commitmentsToSquares, nil
+		squareProvers:    squareProvers,
+		SmallCommitments: smallCommitments,
+		BigCommitments:   bigCommitments,
+	}, nil
 }
 
-// getCommitRandoms returns slice containing r_i for 0 <= i < numOfRoots such that
-// r = r_0 + ... + r_(numOfRoots-1).
-func getCommitRandoms(r *big.Int, numOfRoots int) []*big.Int {
+// getCommitRandoms returns slice containing r_i for 0 <= i < nRoots such that
+// r = r_0 + ... + r_(nRoots-1).
+func getCommitRandoms(r *big.Int, nRoots int) []*big.Int {
 	rAbs := new(big.Int).Abs(r) // r can be negative, see range proof
 	boundary := new(big.Int).Set(rAbs)
 
-	rs := make([]*big.Int, numOfRoots)
-	for index, _ := range rs {
-		currR := common.GetRandomInt(boundary)
-		if index < numOfRoots-1 {
-			rs[index] = currR
-			boundary.Sub(boundary, currR)
+	rs := make([]*big.Int, nRoots)
+	for i, _ := range rs {
+		r := common.GetRandomInt(boundary)
+		if i < nRoots-1 {
+			rs[i] = r
+			boundary.Sub(boundary, r)
 		} else {
-			rs[index] = boundary
+			rs[i] = boundary
 		}
 	}
 
@@ -110,23 +110,29 @@ func getCommitRandoms(r *big.Int, numOfRoots int) []*big.Int {
 
 func (p *DFCommitmentPositiveProver) GetProofRandomData() []*big.Int {
 	proofRandomData := make([]*big.Int, len(p.squareProvers)*2)
-	for index, squareProver := range p.squareProvers {
+	for i, squareProver := range p.squareProvers {
 		proofRandomData1, proofRandomData2 := squareProver.GetProofRandomData()
-		proofRandomData[2*index] = proofRandomData1
-		proofRandomData[2*index+1] = proofRandomData2
+		proofRandomData[2*i] = proofRandomData1
+		proofRandomData[2*i+1] = proofRandomData2
 	}
 	return proofRandomData
 }
 
 func (p *DFCommitmentPositiveProver) GetProofData(challenges []*big.Int) []*big.Int {
 	proofData := make([]*big.Int, len(p.squareProvers)*3)
-	for index, squareProver := range p.squareProvers {
-		s1, s21, s22 := squareProver.GetProofData(challenges[index])
-		proofData[3*index] = s1
-		proofData[3*index+1] = s21
-		proofData[3*index+2] = s22
+	for i, squareProver := range p.squareProvers {
+		s1, s21, s22 := squareProver.GetProofData(challenges[i])
+		proofData[3*i] = s1
+		proofData[3*i+1] = s21
+		proofData[3*i+2] = s22
 	}
 	return proofData
+}
+
+// GetVerifierInitializationData returns data that are needed by DFCommitmentPositiveVerifier
+// and are known only after the initialization of DFCommitmentPositiveProver.
+func (p *DFCommitmentPositiveProver) GetVerifierInitializationData() ([]*big.Int, []*big.Int) {
+	return p.SmallCommitments, p.BigCommitments
 }
 
 type DFCommitmentPositiveVerifier struct {
@@ -135,37 +141,37 @@ type DFCommitmentPositiveVerifier struct {
 }
 
 func NewDFCommitmentPositiveVerifier(receiver *commitments.DamgardFujisakiReceiver,
-	receiverCommitment *big.Int, bases []*big.Int, commitmentsToSquares []*big.Int,
+	receiverCommitment *big.Int, smallCommitments, bigCommitments []*big.Int,
 	challengeSpaceSize int) (*DFCommitmentPositiveVerifier, error) {
 
-	numOfRoots := len(bases)
+	nRoots := len(smallCommitments)
 	// check: c = c0*c1*c2*c3
 	check := big.NewInt(1)
-	for i := 0; i < numOfRoots; i++ {
-		check = receiver.QRSpecialRSA.Mul(check, commitmentsToSquares[i])
+	for i := 0; i < nRoots; i++ {
+		check = receiver.QRSpecialRSA.Mul(check, bigCommitments[i])
 	}
 	if receiverCommitment.Cmp(check) != 0 {
 		return nil, fmt.Errorf("squareProvers are not properly instantiated")
 	}
 
-	receivers := make([]*commitments.DamgardFujisakiReceiver, numOfRoots)
-	for index, comm := range commitmentsToSquares {
+	receivers := make([]*commitments.DamgardFujisakiReceiver, nRoots)
+	for i, comm := range bigCommitments {
 		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA,
 			receiver.H, receiver.G, receiver.K)
 		if err != nil {
 			return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
 		}
 		receiver.SetCommitment(comm)
-		receivers[index] = receiver
+		receivers[i] = receiver
 	}
 
-	squareVerifiers := make([]*DFCommitmentSquareVerifier, numOfRoots)
-	for index, receiver := range receivers {
-		verifier, err := NewDFCommitmentSquareVerifier(receiver, bases[index], challengeSpaceSize)
+	squareVerifiers := make([]*DFCommitmentSquareVerifier, nRoots)
+	for i, receiver := range receivers {
+		verifier, err := NewDFCommitmentSquareVerifier(receiver, smallCommitments[i], challengeSpaceSize)
 		if err != nil {
 			return nil, fmt.Errorf("error when creating DFCommitmentSquareVerifier")
 		}
-		squareVerifiers[index] = verifier
+		squareVerifiers[i] = verifier
 	}
 
 	return &DFCommitmentPositiveVerifier{
@@ -181,13 +187,21 @@ func (v *DFCommitmentPositiveVerifier) GetChallenges() []*big.Int {
 	return challenges
 }
 
-func (v *DFCommitmentPositiveVerifier) SetProofRandomData(proofRandomData []*big.Int) {
+func (v *DFCommitmentPositiveVerifier) SetProofRandomData(proofRandomData []*big.Int) error {
+	if len(proofRandomData) != 8 {
+		return fmt.Errorf("the length of proofRandomData is not correct")
+
+	}
 	for i, verifier := range v.squareVerifiers {
 		verifier.SetProofRandomData(proofRandomData[2*i], proofRandomData[2*i+1])
 	}
+	return nil
 }
 
 func (v *DFCommitmentPositiveVerifier) Verify(proofData []*big.Int) bool {
+	if len(proofData) != 12 {
+		return false
+	}
 	verified := true
 	for i, verifier := range v.squareVerifiers {
 		verified = verified && verifier.Verify(proofData[3*i], proofData[3*i+1], proofData[3*i+2])

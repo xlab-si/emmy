@@ -48,12 +48,12 @@ func TestProveDamgardFujisakiCommitmentSquare(t *testing.T) {
 	receiver.SetCommitment(c)
 
 	challengeSpaceSize := 80
-	prover, c1, err := NewDFCommitmentSquareProver(committer, x, challengeSpaceSize)
+	prover, err := NewDFCommitmentSquareProver(committer, x, challengeSpaceSize)
 	if err != nil {
 		t.Errorf("Error in instantiating DFCommitmentSquareProver: %v", err)
 	}
 
-	verifier, err := NewDFCommitmentSquareVerifier(receiver, c1, challengeSpaceSize)
+	verifier, err := NewDFCommitmentSquareVerifier(receiver, prover.SmallCommitment, challengeSpaceSize)
 	if err != nil {
 		t.Errorf("Error in instantiating DFCommitmentSquareVerifier: %v", err)
 	}

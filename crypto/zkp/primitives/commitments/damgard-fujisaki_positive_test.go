@@ -31,7 +31,7 @@ import (
 func TestProveDamgardFujisakiCommitmentPositive(t *testing.T) {
 	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
@@ -42,27 +42,31 @@ func TestProveDamgardFujisakiCommitmentPositive(t *testing.T) {
 	x := common.GetRandomInt(committer.QRSpecialRSA.N)
 	c, err := committer.GetCommitMsg(x)
 	if err != nil {
-		t.Errorf("Error in computing commit msg: %v", err)
+		t.Errorf("error in computing commit msg: %v", err)
 	}
 	receiver.SetCommitment(c)
 	_, r := committer.GetDecommitMsg()
 
 	challengeSpaceSize := 80
-	prover, bases, commitmentsToSquares, err := NewDFCommitmentPositiveProver(committer, x, r,
+	prover, err := NewDFCommitmentPositiveProver(committer, x, r,
 		challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentPositiveProver: %v", err)
+		t.Errorf("error in instantiating DFCommitmentPositiveProver: %v", err)
 	}
 
-	verifier, err := NewDFCommitmentPositiveVerifier(receiver, receiver.Commitment, bases,
-		commitmentsToSquares, challengeSpaceSize)
+	smallCommitments, bigCommitments := prover.GetVerifierInitializationData()
+	verifier, err := NewDFCommitmentPositiveVerifier(receiver, receiver.Commitment,
+		smallCommitments, bigCommitments, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentPositiveVerifier: %v", err)
+		t.Errorf("error in instantiating DFCommitmentPositiveVerifier: %v", err)
 	}
 
 	proofRandomData := prover.GetProofRandomData()
 	challenges := verifier.GetChallenges()
-	verifier.SetProofRandomData(proofRandomData)
+	err = verifier.SetProofRandomData(proofRandomData)
+	if err != nil {
+		t.Errorf("error when calling SetProofRandomData: %v", err)
+	}
 	proofData := prover.GetProofData(challenges)
 	proved := verifier.Verify(proofData)
 	assert.Equal(t, true, proved, "DamgardFujisaki positive proof failed.")

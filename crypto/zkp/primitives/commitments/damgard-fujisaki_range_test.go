@@ -31,7 +31,7 @@ import (
 func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
 	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
@@ -44,27 +44,39 @@ func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
 	b := new(big.Int).Add(x, big.NewInt(10))
 	c, err := committer.GetCommitMsg(x)
 	if err != nil {
-		t.Errorf("Error in computing commit msg: %v", err)
+		t.Errorf("error in computing commit msg: %v", err)
 	}
 	receiver.SetCommitment(c)
 
 	challengeSpaceSize := 80
-	prover, bases1, commitmentsToSquares1, bases2, commitmentsToSquares2, err :=
-		NewDFCommitmentRangeProver(committer, x, a, b, challengeSpaceSize)
+	prover, err := NewDFCommitmentRangeProver(committer, x, a, b, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentRangeProver: %v", err)
+		t.Errorf("error in instantiating DFCommitmentRangeProver: %v", err)
 	}
 
-	verifier, err := NewDFCommitmentRangeVerifier(receiver, a, b, bases1, commitmentsToSquares1,
-		bases2, commitmentsToSquares2, challengeSpaceSize)
+	smallCommitments1, bigCommitments1, smallCommitments2, bigCommitments2 :=
+		prover.GetVerifierInitializationData()
+	verifier, err := NewDFCommitmentRangeVerifier(receiver, a, b, smallCommitments1,
+		bigCommitments1, smallCommitments2, bigCommitments2, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentRangeVerifier: %v", err)
+		t.Errorf("error in instantiating DFCommitmentRangeVerifier: %v", err)
 	}
 
 	proofRandomData := prover.GetProofRandomData()
 	challenges := verifier.GetChallenges()
-	verifier.SetProofRandomData(proofRandomData)
-	proofData := prover.GetProofData(challenges)
-	proved := verifier.Verify(proofData)
+	err = verifier.SetProofRandomData(proofRandomData)
+	if err != nil {
+		t.Errorf("error when calling SetProofRandomData: %v", err)
+	}
+
+	proofData, err := prover.GetProofData(challenges)
+	if err != nil {
+		t.Errorf("error when calling GetProofData: %v", err)
+	}
+
+	proved, err := verifier.Verify(proofData)
+	if err != nil {
+		t.Errorf("error when calling Verify: %v", err)
+	}
 	assert.Equal(t, true, proved, "DamgardFujisaki range proof failed.")
 }
