@@ -77,8 +77,8 @@ func (p *DFCommitmentRangeProver) GetProofData(challenges []*big.Int) ([]*big.In
 // and are known only after the initialization of DFCommitmentRangeProver.
 func (p *DFCommitmentRangeProver) GetVerifierInitializationData() ([]*big.Int, []*big.Int, []*big.Int,
 	[]*big.Int) {
-	return p.prover1.SmallCommitments, p.prover1.BigCommitments, p.prover2.SmallCommitments,
-		p.prover2.BigCommitments
+	return p.prover1.smallCommitments, p.prover1.bigCommitments, p.prover2.smallCommitments,
+		p.prover2.bigCommitments
 }
 
 type DFCommitmentRangeVerifier struct {

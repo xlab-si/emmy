@@ -30,8 +30,8 @@ import (
 // prove that c = g^x * h^r (mod n) where x >= 0.
 type DFCommitmentPositiveProver struct {
 	squareProvers    []*DFCommitmentSquareProver
-	SmallCommitments []*big.Int
-	BigCommitments   []*big.Int
+	smallCommitments []*big.Int
+	bigCommitments   []*big.Int
 }
 
 func NewDFCommitmentPositiveProver(committer *commitments.DamgardFujisakiCommitter,
@@ -78,8 +78,8 @@ func NewDFCommitmentPositiveProver(committer *commitments.DamgardFujisakiCommitt
 
 	return &DFCommitmentPositiveProver{
 		squareProvers:    squareProvers,
-		SmallCommitments: smallCommitments,
-		BigCommitments:   bigCommitments,
+		smallCommitments: smallCommitments,
+		bigCommitments:   bigCommitments,
 	}, nil
 }
 
@@ -132,7 +132,7 @@ func (p *DFCommitmentPositiveProver) GetProofData(challenges []*big.Int) []*big.
 // GetVerifierInitializationData returns data that are needed by DFCommitmentPositiveVerifier
 // and are known only after the initialization of DFCommitmentPositiveProver.
 func (p *DFCommitmentPositiveProver) GetVerifierInitializationData() ([]*big.Int, []*big.Int) {
-	return p.SmallCommitments, p.BigCommitments
+	return p.smallCommitments, p.bigCommitments
 }
 
 type DFCommitmentPositiveVerifier struct {
@@ -190,7 +190,6 @@ func (v *DFCommitmentPositiveVerifier) GetChallenges() []*big.Int {
 func (v *DFCommitmentPositiveVerifier) SetProofRandomData(proofRandomData []*big.Int) error {
 	if len(proofRandomData) != 8 {
 		return fmt.Errorf("the length of proofRandomData is not correct")
-
 	}
 	for i, verifier := range v.squareVerifiers {
 		verifier.SetProofRandomData(proofRandomData[2*i], proofRandomData[2*i+1])
