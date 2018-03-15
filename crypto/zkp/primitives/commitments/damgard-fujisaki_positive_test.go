@@ -26,12 +26,12 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentSquare demonstrates how to prove that the commitment
-// hides the square. Given c, prove that c = g^(x^2) * h^r (mod n).
-func TestProveDamgardFujisakiCommitmentSquare(t *testing.T) {
+// TestProveDamgardFujisakiCommitmentPositive demonstrates how to prove that the commitment
+// hides a positive number. Given c, prove that c = g^x * h^r (mod n) where x >= 0.
+func TestProveDamgardFujisakiCommitmentPositive(t *testing.T) {
 	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
@@ -40,30 +40,34 @@ func TestProveDamgardFujisakiCommitmentSquare(t *testing.T) {
 		receiver.H, receiver.G, T, receiver.K)
 
 	x := common.GetRandomInt(committer.QRSpecialRSA.N)
-	x2 := new(big.Int).Mul(x, x)
-	c, err := committer.GetCommitMsg(x2)
+	c, err := committer.GetCommitMsg(x)
 	if err != nil {
-		t.Errorf("Error in computing commit msg: %v", err)
+		t.Errorf("error in computing commit msg: %v", err)
 	}
 	receiver.SetCommitment(c)
+	_, r := committer.GetDecommitMsg()
 
 	challengeSpaceSize := 80
-	prover, err := NewDFCommitmentSquareProver(committer, x, challengeSpaceSize)
+	prover, err := NewDFCommitmentPositiveProver(committer, x, r,
+		challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentSquareProver: %v", err)
+		t.Errorf("error in instantiating DFCommitmentPositiveProver: %v", err)
 	}
 
-	verifier, err := NewDFCommitmentSquareVerifier(receiver, prover.SmallCommitment, challengeSpaceSize)
+	smallCommitments, bigCommitments := prover.GetVerifierInitializationData()
+	verifier, err := NewDFCommitmentPositiveVerifier(receiver, receiver.Commitment,
+		smallCommitments, bigCommitments, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentSquareVerifier: %v", err)
+		t.Errorf("error in instantiating DFCommitmentPositiveVerifier: %v", err)
 	}
 
-	proofRandomData1, proofRandomData2 := prover.GetProofRandomData()
-	verifier.SetProofRandomData(proofRandomData1, proofRandomData2)
-
-	challenge := verifier.GetChallenge()
-	s1, s21, s22 := prover.GetProofData(challenge)
-	proved := verifier.Verify(s1, s21, s22)
-
-	assert.Equal(t, true, proved, "DamgardFujisaki square proof failed.")
+	proofRandomData := prover.GetProofRandomData()
+	challenges := verifier.GetChallenges()
+	err = verifier.SetProofRandomData(proofRandomData)
+	if err != nil {
+		t.Errorf("error when calling SetProofRandomData: %v", err)
+	}
+	proofData := prover.GetProofData(challenges)
+	proved := verifier.Verify(proofData)
+	assert.Equal(t, true, proved, "DamgardFujisaki positive proof failed.")
 }

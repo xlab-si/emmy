@@ -29,27 +29,31 @@ import (
 // prove that c = g^(x^2) * h^r (mod n).
 type DFCommitmentSquareProver struct {
 	*DFCommitmentEqualityProver
+	// We have two commitments with the same value: SmallCommitment = g^x * h^r1 and
+	// c = SmallCommitment^x * h^r2. Also c = g^(x^2) * h^r.
+	SmallCommitment *big.Int
 }
 
 func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter,
-	x *big.Int, challengeSpaceSize int) (*DFCommitmentSquareProver, *big.Int, error) {
+	x *big.Int, challengeSpaceSize int) (*DFCommitmentSquareProver, error) {
 
 	// Input committer contains c = g^(x^2) * h^r (mod n).
-	// We now create two committers - committer1 will contain c1 = g^x * h^r1 (mod n),
-	// committer2 will contain the same c as committer, but using a different base c = c1^x * h^r2.
-	// Note that c = c1^x * h^r2 = g^(x^2) * h^(r1*x) * h^r2, so we choose r2 = r - r1*x.
+	// We now create two committers - committer1 will contain SmallCommitment = g^x * h^r1 (mod n),
+	// committer2 will contain the same c as committer, but using a different
+	// base c = SmallCommitment^x * h^r2.
+	// Note that c = SmallCommitment^x * h^r2 = g^(x^2) * h^(r1*x) * h^r2, so we choose r2 = r - r1*x.
 	// DFCommitmentSquareProver proves that committer1 and committer2 hide the same value (x) -
 	// using DFCommitmentEqualityProver.
 
 	committer1 := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
 		committer.H, committer.G, committer.T, committer.K)
-	c1, err := committer1.GetCommitMsg(x)
+	smallCommitment, err := committer1.GetCommitMsg(x)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error when creating commit msg")
+		return nil, fmt.Errorf("error when creating commit msg")
 	}
 
 	committer2 := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
-		committer.H, c1, committer.T, committer.K)
+		committer.H, smallCommitment, committer.T, committer.K)
 	_, r := committer.GetDecommitMsg()
 	_, r1 := committer1.GetDecommitMsg()
 	r1x := new(big.Int).Mul(r1, x)
@@ -59,14 +63,15 @@ func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter
 	// just need to set the committer2 committedValue and r:
 	_, err = committer2.GetCommitMsgWithGivenR(x, r2)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error when creating commit msg with given r")
+		return nil, fmt.Errorf("error when creating commit msg with given r")
 	}
 
 	prover := NewDFCommitmentEqualityProver(committer1, committer2, challengeSpaceSize)
 
 	return &DFCommitmentSquareProver{
-		prover,
-	}, c1, nil
+		DFCommitmentEqualityProver: prover,
+		SmallCommitment:            smallCommitment,
+	}, nil
 }
 
 type DFCommitmentSquareVerifier struct {

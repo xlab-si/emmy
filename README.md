@@ -65,7 +65,9 @@ Primitives are meant to be used in schemes (like Schnorr, DLogEquality and other
 | [✗] Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
 | [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
 | [✗] Camenisch-Lysyanskaya signature [2] |
-| [✗] Damgard-Fujisaki commitment scheme for groups with hidden order and associated proofs [11] |
+| [✗] Damgard-Fujisaki commitment scheme for groups with hidden order and associated proofs [12] |
+| [✗] Damgard-Fujisaki commitment associated proofs - opening, equality, multiplication, positiveness |
+| [✗] Lipmaa decomposition and Damgard-Fujisaki commitment range proof based on Lipmaa [11] |
 | [✗] Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
 | [✗] Proof of knowledge of representation (generalized Schnorr for multiple bases) [10] |
 | [✗] Shamir's secret sharing scheme |
@@ -271,7 +273,9 @@ certificate store location beforehand.
 
 # TODO
 
- * primitives required for Camenisch Lysyanskaya anonymous credentials [2], like range proofs [11]
+ * Camenisch-Lysyanskaya scheme for anonymous credentials [2]
+ * Camenisch-Lysyanskaya scheme based on pairings [14]
+ * Efficient attributes for anonymous credentials [15]
  * for all proofs use Damgard technique [13] to turn sigma protocol in ZKP (Schnorr protocol actually already contains a technique to turn sigma protocol into ZKP, but other technique will be used and applied for all proofs)
  * refactor proofs to set all parameters in a constructor (see comment in Schnorr prover)
  * optional: generator of communication layer code (automatic generation of code in client and server packages)
@@ -298,8 +302,12 @@ certificate store location beforehand.
 
 [10] Brands, Stefan A. "An efficient off-line electronic cash system based on the representation problem." (1993): 01-16.
 
-[11] F. Boudot. Efficient proofs that a committed number lies in an interval. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
+[11] Helger Lipmaa. On diophantine complexity and statistical zero-knowledge arguments. In ASIACRYPT, volume 2894 of Lecture Notes in Computer Science, pages 398–415. Springer, 2003.
 
 [12] I. Damgard and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
 
 [13] I. Damgard. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
+
+[14] Camenisch, Jan, and Anna Lysyanskaya. "Signature schemes and anonymous credentials from bilinear maps." Annual International Cryptology Conference. Springer, Berlin, Heidelberg, 2004.
+
+[15] Camenisch, Jan, and Thomas Groß. "Efficient attributes for anonymous credentials." Proceedings of the 15th ACM conference on Computer and communications security. ACM, 2008.
