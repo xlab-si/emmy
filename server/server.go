@@ -54,10 +54,10 @@ type EmmyServer interface {
 var _ EmmyServer = (*Server)(nil)
 
 type Server struct {
-	grpcServer *grpc.Server
-	logger     log.Logger
-	*sessionManager
-	*registrationManager
+	GrpcServer *grpc.Server
+	Logger     log.Logger
+	*SessionManager
+	*RegistrationManager
 }
 
 // NewServer initializes an instance of the Server struct and returns a pointer.
@@ -89,14 +89,14 @@ func NewServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server,
 	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
 	// for logging and monitoring purposes.
 	server := &Server{
-		grpcServer: grpc.NewServer(
+		GrpcServer: grpc.NewServer(
 			grpc.Creds(creds),
 			grpc.MaxConcurrentStreams(math.MaxUint32),
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		),
-		logger:              logger,
-		sessionManager:      sessionManager,
-		registrationManager: registrationManager,
+		Logger:              logger,
+		SessionManager:      sessionManager,
+		RegistrationManager: registrationManager,
 	}
 
 	// Disable tracing by default, as is used for debugging purposes.
@@ -107,7 +107,7 @@ func NewServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server,
 	server.registerServices()
 
 	// Initialize gRPC metrics offered by Prometheus package
-	grpc_prometheus.Register(server.grpcServer)
+	grpc_prometheus.Register(server.GrpcServer)
 
 	return server, nil
 }
@@ -122,7 +122,7 @@ func (s *Server) Start(port int) error {
 
 	// Register Prometheus metrics handler and serve metrics page on the desired endpoint.
 	// Metrics are handled via HTTP in a separate goroutine as gRPC requests,
-	// as grpc server's performance over HTTP (grpcServer.ServeHTTP) is much worse.
+	// as grpc server's performance over HTTP (GrpcServer.ServeHTTP) is much worse.
 	http.Handle("/metrics", prometheus.Handler())
 
 	// After this, /metrics will be available, along with /debug/requests, /debug/events in
@@ -130,15 +130,15 @@ func (s *Server) Start(port int) error {
 	go http.ListenAndServe(":8881", nil)
 
 	// From here on, gRPC server will accept connections
-	s.logger.Noticef("Emmy server listening for connections on port %d", port)
-	s.grpcServer.Serve(listener)
+	s.Logger.Noticef("Emmy server listening for connections on port %d", port)
+	s.GrpcServer.Serve(listener)
 	return nil
 }
 
 // Teardown stops the protocol server by gracefully stopping enclosed gRPC server.
 func (s *Server) Teardown() {
-	s.logger.Notice("Tearing down gRPC server")
-	s.grpcServer.GracefulStop()
+	s.Logger.Notice("Tearing down gRPC server")
+	s.GrpcServer.GracefulStop()
 }
 
 // EnableTracing instructs the gRPC framework to enable its tracing capability, which
@@ -147,18 +147,18 @@ func (s *Server) Teardown() {
 // in order to provide a nicer API when setting up the server.
 func (s *Server) EnableTracing() {
 	grpc.EnableTracing = true
-	s.logger.Notice("Enabled gRPC tracing")
+	s.Logger.Notice("Enabled gRPC tracing")
 }
 
 // registerServices binds gRPC server interfaces to the server instance itself, as the server
 // provides implementations of these interfaces.
 func (s *Server) registerServices() {
-	pb.RegisterProtocolServer(s.grpcServer, s)
-	pb.RegisterInfoServer(s.grpcServer, s)
-	pb.RegisterPseudonymSystemServer(s.grpcServer, s)
-	pb.RegisterPseudonymSystemCAServer(s.grpcServer, s)
+	pb.RegisterProtocolServer(s.GrpcServer, s)
+	pb.RegisterInfoServer(s.GrpcServer, s)
+	pb.RegisterPseudonymSystemServer(s.GrpcServer, s)
+	pb.RegisterPseudonymSystemCAServer(s.GrpcServer, s)
 
-	s.logger.Notice("Registered gRPC Services")
+	s.Logger.Notice("Registered gRPC Services")
 }
 
 func (s *Server) send(msg *pb.Message, stream pb.ServerStream) error {
@@ -166,11 +166,11 @@ func (s *Server) send(msg *pb.Message, stream pb.ServerStream) error {
 		return fmt.Errorf("error sending message: %v", err)
 	}
 	if msg.ProtocolError != "" {
-		s.logger.Infof("Successfully sent response of type %T", msg.ProtocolError)
+		s.Logger.Infof("Successfully sent response of type %T", msg.ProtocolError)
 	} else {
-		s.logger.Infof("Successfully sent response of type %T", msg.Content)
+		s.Logger.Infof("Successfully sent response of type %T", msg.Content)
 	}
-	s.logger.Debugf("%+v", msg)
+	s.Logger.Debugf("%+v", msg)
 
 	return nil
 }
@@ -182,14 +182,14 @@ func (s *Server) receive(stream pb.ServerStream) (*pb.Message, error) {
 	} else if err != nil {
 		return nil, fmt.Errorf("an error occurred: %v", err)
 	}
-	s.logger.Infof("Received request of type %T from the stream", resp.Content)
-	s.logger.Debugf("%+v", resp)
+	s.Logger.Infof("Received request of type %T from the stream", resp.Content)
+	s.Logger.Debugf("%+v", resp)
 
 	return resp, nil
 }
 
 func (s *Server) Run(stream pb.Protocol_RunServer) error {
-	s.logger.Info("Starting new RPC")
+	s.Logger.Info("Starting new RPC")
 
 	req, err := s.receive(stream)
 	if err != nil {
@@ -212,7 +212,7 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 		return fmt.Errorf("client [ %d ] requested invalid schema variant: %v", reqClientId, reqSchemaVariant)
 	}
 
-	s.logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
+	s.Logger.Noticef("Client [ %v ] requested schema %v, variant %v", reqClientId, reqSchemaTypeStr, reqSchemaVariantStr)
 
 	// Convert Sigma, ZKP or ZKPOK protocol type to a types type
 	protocolType := reqSchemaVariant.GetNativeType()
@@ -240,10 +240,10 @@ func (s *Server) Run(stream pb.Protocol_RunServer) error {
 	}
 
 	if err != nil {
-		s.logger.Error("Closing RPC due to previous errors")
+		s.Logger.Error("Closing RPC due to previous errors")
 		return fmt.Errorf("RPC call failed: %v", err)
 	}
 
-	s.logger.Notice("RPC finished successfully")
+	s.Logger.Notice("RPC finished successfully")
 	return nil
 }
