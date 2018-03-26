@@ -29,7 +29,8 @@ WORKDIR $GOPATH/src/github.com/xlab-si/emmy
 COPY ./ ./
 
 # Install dependencies and compile the project
-RUN go get -t ./... && \
+RUN make setup_dep && \
+    dep ensure && \
     go install
 
 # Start emmy server

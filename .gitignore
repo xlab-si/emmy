@@ -1,6 +1,15 @@
 # IDE files
 .idea
+.vscode
+
+# Vendor directory
+vendor/*/
 
 # Output of 'make android'
 *.aar
 *.jar
+
+# Other
+*.swp
+*.swo
+.DS_Store

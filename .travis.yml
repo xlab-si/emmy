@@ -12,10 +12,11 @@ before_install:
   - docker run -d --rm -p 127.0.0.1:6379:6379 --name emmy-redis redis
 
 install:
-  - make setup_test
+  - make setup_dep setup_test
   - go get -u -t github.com/$TRAVIS_REPO_SLUG
-  
-script: 
+  - dep ensure
+
+script:
   - make test
 
 after_script:
