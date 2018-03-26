@@ -1,12 +1,13 @@
-# Emmy binary
-emmy
+# IDE files
+.idea
+.vscode
 
 # Vendor directory
 vendor/*/
 
-# IDE files
-.idea
-.vscode
+# Output of 'make android'
+*.aar
+*.jar
 
 # Other
 *.swp

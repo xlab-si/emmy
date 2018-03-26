@@ -45,12 +45,12 @@ func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) 
 	signatureR := new(big.Int).SetBytes(proofRandData.R)
 	signatureS := new(big.Int).SetBytes(proofRandData.S)
 
-	regKeyOk, err := s.registrationManager.CheckRegistrationKey(proofRandData.RegKey)
+	regKeyOk, err := s.RegistrationManager.CheckRegistrationKey(proofRandData.RegKey)
 
 	var resp *pb.Message
 
 	if !regKeyOk || err != nil {
-		s.logger.Debugf("Registration key %s ok=%t, error=%v",
+		s.Logger.Debugf("Registration key %s ok=%t, error=%v",
 			proofRandData.RegKey, regKeyOk, err)
 		resp = &pb.Message{
 			ProtocolError: "registration key verification failed",
@@ -62,7 +62,7 @@ func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) 
 	} else {
 		challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, signatureR, signatureS)
 		if err != nil {
-			s.logger.Debug(err)
+			s.Logger.Debug(err)
 			resp = &pb.Message{
 				ProtocolError: err.Error(),
 			}
@@ -139,7 +139,7 @@ func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_
 	x11, x12, x21, x22, A, B, err := org.VerifyAuthentication(z)
 
 	if err != nil {
-		s.logger.Debug(err)
+		s.Logger.Debug(err)
 		resp = &pb.Message{
 			ProtocolError: err.Error(),
 		}
@@ -262,7 +262,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 	if verified {
 		sessionKey, err := s.generateSessionKey()
 		if err != nil {
-			s.logger.Debug(err)
+			s.Logger.Debug(err)
 			resp.ProtocolError = "failed to obtain session key"
 		} else {
 			resp.Content = &pb.Message_SessionKey{
@@ -272,7 +272,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 			}
 		}
 	} else {
-		s.logger.Debug("User authentication failed")
+		s.Logger.Debug("User authentication failed")
 		resp.ProtocolError = "user authentication failed"
 	}
 

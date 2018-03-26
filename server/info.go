@@ -25,7 +25,7 @@ import (
 )
 
 func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
-	s.logger.Info("Client requested service information")
+	s.Logger.Info("Client requested service information")
 
 	name, provider, description := config.LoadServiceInfo()
 	info := &pb.ServiceInfo{

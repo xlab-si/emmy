@@ -71,6 +71,7 @@ func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCom
 		T: t}
 }
 
+// TODO: the naming is not OK because it also sets committer.committedValue and committer.r
 func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
 	abs := new(big.Int).Abs(a)
 	if abs.Cmp(committer.T) != -1 {
@@ -83,6 +84,18 @@ func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, e
 	r := common.GetRandomInt(boundary)
 	c := committer.ComputeCommit(a, r)
 
+	committer.committedValue = a
+	committer.r = r
+	return c, nil
+}
+
+func (committer *DamgardFujisakiCommitter) GetCommitMsgWithGivenR(a, r *big.Int) (*big.Int, error) {
+	abs := new(big.Int).Abs(a)
+	if abs.Cmp(committer.T) != -1 {
+		return nil, fmt.Errorf("committed value needs to be in (-T, T)")
+	}
+	// c = G^a * H^r % group.N
+	c := committer.ComputeCommit(a, r)
 	committer.committedValue = a
 	committer.r = r
 	return c, nil
@@ -130,16 +143,17 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 		nil
 }
 
-// NewDamgardFujisakiReceiverFromExisting returns an instance of receiver with the same
-// parameters as the receiver used as an input. Different instances are needed because
+// NewDamgardFujisakiReceiverFromParams returns an instance of a receiver with the
+// parameters as given by input. Different instances are needed because
 // each sets its own Commitment value.
-func NewDamgardFujisakiReceiverFromExisting(receiver *DamgardFujisakiReceiver) (
+func NewDamgardFujisakiReceiverFromParams(qrSpecialRSA *groups.QRSpecialRSA, h, g *big.Int,
+	k int) (
 	*DamgardFujisakiReceiver, error) {
 	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
-		QRSpecialRSA: receiver.QRSpecialRSA,
-		H:            receiver.H,
-		G:            receiver.G,
-		K:            receiver.K},
+		QRSpecialRSA: qrSpecialRSA,
+		H:            h,
+		G:            g,
+		K:            k},
 	}, nil
 }
 

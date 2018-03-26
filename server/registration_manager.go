@@ -23,11 +23,11 @@ import (
 	"github.com/go-redis/redis"
 )
 
-type registrationManager struct {
+type RegistrationManager struct {
 	*redis.Client
 }
 
-func NewRegistrationManager(address string) (*registrationManager, error) {
+func NewRegistrationManager(address string) (*RegistrationManager, error) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: address,
 	})
@@ -35,13 +35,13 @@ func NewRegistrationManager(address string) (*registrationManager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to redis database (%s)", err)
 	}
-	return &registrationManager{redisClient}, nil
+	return &RegistrationManager{redisClient}, nil
 }
 
 // CheckRegistrationKey checks whether provided key is present in registration database and deletes it,
 // preventing another registration with the same key.
 // Returns true if key was present (registration allowed), false otherwise.
-func (rm *registrationManager) CheckRegistrationKey(key string) (bool, error) {
+func (rm *RegistrationManager) CheckRegistrationKey(key string) (bool, error) {
 	resp := rm.Del(key)
 
 	err := resp.Err()
