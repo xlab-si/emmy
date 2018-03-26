@@ -21,11 +21,6 @@ package protobuf;
 
 import "messages.proto";
 
-// A generic service
-service Protocol {
-	rpc Run (stream Message) returns (stream Message) {}
-}
-
 service PseudonymSystemCA {
 	rpc GenerateCertificate(stream Message) returns (stream Message) {}
 	rpc GenerateCertificate_EC(stream Message) returns (stream Message) {}

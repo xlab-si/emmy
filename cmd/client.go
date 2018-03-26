@@ -19,8 +19,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/big"
-	"strings"
 	"sync"
 	"time"
 
@@ -31,10 +29,7 @@ import (
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/log"
-	pb "github.com/xlab-si/emmy/protobuf"
 	"google.golang.org/grpc"
 )
 
@@ -111,120 +106,8 @@ var protocolSecretFlag = cli.Int64Flag{
 	Value: 121212121,
 }
 
-// protocolLabelFlag keeps the label used to bootstrap cspaillier verifiable encryption.
-var protocolLabelFlag = cli.Int64Flag{
-	Name:  "label",
-	Value: 340002223232,
-}
-
-// protocolPubKeyFlag keeps the path to the public key file of the verifier used in cspaillier
-// verifiable encryption protocol.
-var protocolPubKeyFlag = cli.StringFlag{
-	Name:  "pubkey",
-	Value: filepath.Join(config.LoadKeyDirFromConfig(), "cspaillierpubkey.txt"),
-	Usage: "`PATH` to the verifier's public key file",
-}
-
 // clientSubcommands represent different protocols that can be executed by clients.
 var clientSubcommands = []cli.Command{
-	{
-		Name:     "pedersen",
-		Usage:    "Pedersen commitments (modular)",
-		Category: "Commitment schemes",
-		Flags:    []cli.Flag{protocolVariantFlag, protocolSecretFlag},
-		Action: func(ctx *cli.Context) error {
-			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
-				pbVariant, err := parseSchema(ctx.String("variant"))
-				if err != nil {
-					return err
-				}
-				group := config.LoadSchnorrGroup()
-				secret := big.NewInt(ctx.Int64("secret"))
-				client, err := client.NewPedersenClient(conn, pbVariant, group, secret)
-				if err != nil {
-					return fmt.Errorf("error creating client: %v", err)
-				}
-				return client.Run()
-			})
-		},
-	},
-	{
-		Name:     "pedersen_ec",
-		Usage:    "Pedersen commitments (elliptic curves)",
-		Category: "Commitment schemes",
-		Flags:    []cli.Flag{protocolSecretFlag},
-		Action: func(ctx *cli.Context) error {
-			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
-				secret := big.NewInt(ctx.Int64("secret"))
-				curve := groups.P256
-				client, err := client.NewPedersenECClient(conn, secret, curve)
-				if err != nil {
-					return fmt.Errorf("error creating client: %v", err)
-				}
-				return client.Run()
-			})
-		},
-	},
-	{
-		Name:     "schnorr",
-		Usage:    "Schnorr protocol (modular)",
-		Category: "Discrete logatithm proofs",
-		Flags:    []cli.Flag{protocolSecretFlag, protocolVariantFlag},
-		Action: func(ctx *cli.Context) error {
-			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
-				pbVariant, err := parseSchema(ctx.String("variant"))
-				if err != nil {
-					return err
-				}
-				group := config.LoadSchnorrGroup()
-				secret := big.NewInt(ctx.Int64("secret"))
-				client, err := client.NewSchnorrClient(conn, pbVariant, group, secret)
-				if err != nil {
-					return fmt.Errorf("error creating client: %v", err)
-				}
-				return client.Run()
-			})
-		},
-	},
-	{
-		Name:     "schnorr_ec",
-		Usage:    "Schnorr protocol (elliptic curves)",
-		Category: "Discrete logatithm proofs",
-		Flags:    []cli.Flag{protocolSecretFlag, protocolVariantFlag},
-		Action: func(ctx *cli.Context) error {
-			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
-				group := config.LoadSchnorrGroup()
-				pbVariant, err := parseSchema(ctx.String("variant"))
-				if err != nil {
-					return err
-				}
-				secret := big.NewInt(ctx.Int64("secret"))
-				client, err := client.NewSchnorrClient(conn, pbVariant, group, secret)
-				if err != nil {
-					return fmt.Errorf("error creating client: %v", err)
-				}
-				return client.Run()
-			})
-		},
-	},
-	{
-		Name:     "cspaillier",
-		Usage:    "Camenisch-Shoup verifiable encryption",
-		Category: "Encryption",
-		Flags:    []cli.Flag{protocolSecretFlag, protocolLabelFlag, protocolPubKeyFlag},
-		Action: func(ctx *cli.Context) error {
-			return run(ctx.Parent(), ctx, func(ctx *cli.Context, conn *grpc.ClientConn) error {
-				secret := common.GetRandomInt(big.NewInt(ctx.Int64("secret")))
-				label := common.GetRandomInt(big.NewInt(ctx.Int64("label")))
-				pubKey := ctx.String("pubkey")
-				client, err := client.NewCSPaillierClient(conn, pubKey, secret, label)
-				if err != nil {
-					return fmt.Errorf("error creating client: %v", err)
-				}
-				return client.Run()
-			})
-		},
-	},
 	{
 		Name:     "info",
 		Usage:    "Fetch information about the service provider",
@@ -301,14 +184,4 @@ func run(ctx, subCmdCtx *cli.Context, f func(ctx *cli.Context, conn *grpc.Client
 
 	fmt.Printf("***Time: %v seconds***\n", elapsed.Seconds())
 	return nil
-}
-
-// parseSchema parses string equivalents of protocol's variant and returns
-// pb.SchemaVariant. If the user requested a variant that doesn't exist, returns an error.
-func parseSchema(schemaVariant string) (pb.SchemaVariant, error) {
-	variant, success := pb.SchemaVariant_value[strings.ToUpper(schemaVariant)]
-	if !success {
-		return 0, fmt.Errorf("invalid schema: %s", schemaVariant)
-	}
-	return pb.SchemaVariant(variant), nil
 }
