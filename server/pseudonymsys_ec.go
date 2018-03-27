@@ -24,6 +24,8 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) error {
@@ -52,50 +54,41 @@ func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) 
 	if !regKeyOk || err != nil {
 		s.Logger.Debugf("Registration key %s ok=%t, error=%v",
 			proofRandData.RegKey, regKeyOk, err)
-		resp = &pb.Message{
-			ProtocolError: "registration key verification failed",
-		}
+		return status.Error(codes.NotFound, "registration key verification failed")
 
-		if err = s.send(resp, stream); err != nil {
-			return err
-		}
-	} else {
-		challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, signatureR, signatureS)
-		if err != nil {
-			s.Logger.Debug(err)
-			resp = &pb.Message{
-				ProtocolError: err.Error(),
-			}
-		} else {
-			resp = &pb.Message{
-				Content: &pb.Message_PedersenDecommitment{
-					&pb.PedersenDecommitment{
-						X: challenge.Bytes(),
-					},
-				},
-			}
-		}
+	}
+	challenge, err := org.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2, signatureR, signatureS)
+	if err != nil {
+		s.Logger.Debug(err)
+		return status.Error(codes.Internal, err.Error())
+	}
+	resp = &pb.Message{
+		Content: &pb.Message_PedersenDecommitment{
+			&pb.PedersenDecommitment{
+				X: challenge.Bytes(),
+			},
+		},
+	}
 
-		if err := s.send(resp, stream); err != nil {
-			return err
-		}
+	if err := s.send(resp, stream); err != nil {
+		return err
+	}
 
-		req, err = s.receive(stream)
-		if err != nil {
-			return err
-		}
+	req, err = s.receive(stream)
+	if err != nil {
+		return err
+	}
 
-		proofData := req.GetSchnorrProofData() // SchnorrProofData is used in DLog equality proof as well
-		z := new(big.Int).SetBytes(proofData.Z)
-		valid := org.Verify(z)
+	proofData := req.GetSchnorrProofData() // SchnorrProofData is used in DLog equality proof as well
+	z := new(big.Int).SetBytes(proofData.Z)
+	valid := org.Verify(z)
 
-		resp = &pb.Message{
-			Content: &pb.Message_Status{&pb.Status{Success: valid}},
-		}
+	resp = &pb.Message{
+		Content: &pb.Message_Status{&pb.Status{Success: valid}},
+	}
 
-		if err = s.send(resp, stream); err != nil {
-			return err
-		}
+	if err = s.send(resp, stream); err != nil {
+		return err
 	}
 
 	return nil
@@ -140,22 +133,19 @@ func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_
 
 	if err != nil {
 		s.Logger.Debug(err)
-		resp = &pb.Message{
-			ProtocolError: err.Error(),
-		}
-	} else {
-		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysIssueProofRandomDataEc{
-				&pb.PseudonymsysIssueProofRandomDataEC{
-					X11: pb.ToPbECGroupElement(x11),
-					X12: pb.ToPbECGroupElement(x12),
-					X21: pb.ToPbECGroupElement(x21),
-					X22: pb.ToPbECGroupElement(x22),
-					A:   pb.ToPbECGroupElement(A),
-					B:   pb.ToPbECGroupElement(B),
-				},
+		return status.Error(codes.Internal, err.Error())
+	}
+	resp = &pb.Message{
+		Content: &pb.Message_PseudonymsysIssueProofRandomDataEc{
+			&pb.PseudonymsysIssueProofRandomDataEC{
+				X11: pb.ToPbECGroupElement(x11),
+				X12: pb.ToPbECGroupElement(x12),
+				X21: pb.ToPbECGroupElement(x21),
+				X22: pb.ToPbECGroupElement(x22),
+				A:   pb.ToPbECGroupElement(A),
+				B:   pb.ToPbECGroupElement(B),
 			},
-		}
+		},
 	}
 
 	if err := s.send(resp, stream); err != nil {
@@ -254,26 +244,23 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 	proofData := req.GetBigint()
 	z := new(big.Int).SetBytes(proofData.X1)
 
-	verified := org.VerifyAuthentication(z, credential, orgPubKeys)
-
-	resp = &pb.Message{}
-	// If something went wrong (either user was not authenticated or secure session key could not
-	// be generated), then sessionKey will be nil and the message will contain ProtocolError.
-	if verified {
-		sessionKey, err := s.generateSessionKey()
-		if err != nil {
-			s.Logger.Debug(err)
-			resp.ProtocolError = "failed to obtain session key"
-		} else {
-			resp.Content = &pb.Message_SessionKey{
-				SessionKey: &pb.SessionKey{
-					Value: *sessionKey,
-				},
-			}
-		}
-	} else {
+	if verified := org.VerifyAuthentication(z, credential, orgPubKeys); !verified {
 		s.Logger.Debug("User authentication failed")
-		resp.ProtocolError = "user authentication failed"
+		return status.Error(codes.Unauthenticated, "user authentication failed")
+	}
+
+	sessionKey, err := s.generateSessionKey()
+	if err != nil {
+		s.Logger.Debug(err)
+		return status.Error(codes.Internal, "failed to obtain session key")
+	}
+
+	resp = &pb.Message{
+		Content: &pb.Message_SessionKey{
+			SessionKey: &pb.SessionKey{
+				Value: *sessionKey,
+			},
+		},
 	}
 
 	if err = s.send(resp, stream); err != nil {

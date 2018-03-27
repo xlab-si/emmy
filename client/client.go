@@ -153,9 +153,7 @@ func (c *genericClient) receive() (*pb.Message, error) {
 	} else if err != nil {
 		return nil, fmt.Errorf("[client %v] An error occurred: %v", c.id, err)
 	}
-	if resp.ProtocolError != "" {
-		return nil, fmt.Errorf(resp.ProtocolError)
-	}
+
 	logger.Infof("[client %v] Received response of type %T from the genericClient", c.id, resp.Content)
 	logger.Debugf("%+v", resp)
 

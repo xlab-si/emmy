@@ -304,14 +304,10 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 	if err != nil {
 		return nil, err
 	}
-	sessionKey := resp.GetSessionKey()
-	if sessionKey == nil {
-		return nil, fmt.Errorf(resp.GetProtocolError())
-	}
 
 	if err := c.genericClient.CloseSend(); err != nil {
 		return nil, err
 	}
 
-	return sessionKey, nil
+	return resp.GetSessionKey(), nil
 }

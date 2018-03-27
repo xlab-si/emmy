@@ -23,6 +23,8 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Server) GenerateCertificate(stream pb.PseudonymSystemCA_GenerateCertificateServer) error {
@@ -65,22 +67,20 @@ func (s *Server) GenerateCertificate(stream pb.PseudonymSystemCA_GenerateCertifi
 	z := new(big.Int).SetBytes(sProofData.Z)
 	cert, err := ca.Verify(z)
 
-	if err == nil {
-		resp = &pb.Message{
-			Content: &pb.Message_PseudonymsysCaCertificate{
-				&pb.PseudonymsysCACertificate{
-					BlindedA: cert.BlindedA.Bytes(),
-					BlindedB: cert.BlindedB.Bytes(),
-					R:        cert.R.Bytes(),
-					S:        cert.S.Bytes(),
-				},
-			},
-		}
-	} else {
+	if err != nil {
 		s.Logger.Debug(err)
-		resp = &pb.Message{
-			ProtocolError: err.Error(),
-		}
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	resp = &pb.Message{
+		Content: &pb.Message_PseudonymsysCaCertificate{
+			&pb.PseudonymsysCACertificate{
+				BlindedA: cert.BlindedA.Bytes(),
+				BlindedB: cert.BlindedB.Bytes(),
+				R:        cert.R.Bytes(),
+				S:        cert.S.Bytes(),
+			},
+		},
 	}
 
 	if err = s.send(resp, stream); err != nil {
