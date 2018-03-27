@@ -43,7 +43,6 @@ message Message {
 		SessionKey SessionKey = 30;
 	}
 	int32 clientId = 28;
-	string ProtocolError = 29;
 }
 
 message EmptyMsg {}
