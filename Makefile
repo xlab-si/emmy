@@ -69,7 +69,6 @@ proto:
 	protoc -I protobuf/ \
  	 	protobuf/messages.proto \
  	 	protobuf/services.proto \
- 	 	protobuf/enums.proto \
  	 	--go_out=plugins=grpc:protobuf
 
 # Removes temporary files produced by the targets

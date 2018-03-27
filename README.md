@@ -4,7 +4,8 @@ Emmy is a library that offers a **crypto-backend** with primitives for implement
 
 Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. 
 
-The library comes with a convenient CLI for running *emmy server* and *emmy client*s that demonstrates the execution of protocols between clients and the server.
+The library comes with a convenient CLI for running *emmy server* and *emmy client*s that 
+demonstrates the execution of selected interactive protocols between clients and the server.
 
 In addition, Emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
 package providing client wrappers and types that can be used for generating language bindings for 
@@ -79,7 +80,12 @@ Below we provide some isntructions for using the `emmy` CLI tool. You can type `
 
 Emmy CLI offers two commands:
 * `emmy server` (with a `start` subcommand, e.g. `emmy server start`) and
-* `emmy client` (with subcommands `pedersen`, `pedersen_ec`, `schnorr`, `schnorr_ec`, `cspaillier`).
+* `emmy client` (with subcommand `info`).
+> **Note:** Emmy client command is currently going through a major revision. Running clients for
+    demo interactive protocols (_pedersen_, _pedersen_ec_, _schnorr_, _schnorr_ec_ _cspaillier_) is
+     no longer supported. Instead, clients for running protocols comprising anonymous 
+     authentication schemes will be added soon.
+
 
 ## Emmy server
 
@@ -144,7 +150,7 @@ You can stop emmy server by hitting `Ctrl+C` in the same terminal window.
 Emmy server verifies registration keys provided by clients when initiating the nym generation procedure. A separate server is expected to provide registration keys to clients via another channel (e.g. QR codes on physical person identification) and save the generated keys to a registration database, read by the Emmy server.
 
 
-## Emmy clients
+## Emmy clients (DEPRECATED)
 
 Running a client requires an instance of emmy server. First, spin up emmy server according to instructions in the previous section. You can then start one or more emmy clients in another terminal. 
 

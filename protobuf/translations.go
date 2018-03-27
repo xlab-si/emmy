@@ -22,7 +22,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type PbConvertibleType interface {
@@ -52,16 +51,5 @@ func ToPbPair(el *common.Pair) *Pair {
 	return &Pair{
 		A: el.A.Bytes(),
 		B: el.B.Bytes(),
-	}
-}
-
-func (variant SchemaVariant) GetNativeType() protocoltypes.ProtocolType {
-	switch variant {
-	case SchemaVariant_ZKP:
-		return protocoltypes.ZKP
-	case SchemaVariant_ZKPOK:
-		return protocoltypes.ZKPOK
-	default:
-		return protocoltypes.Sigma
 	}
 }

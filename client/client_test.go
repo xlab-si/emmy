@@ -83,7 +83,7 @@ func TestMain(m *testing.M) {
 func TestInvalidStreamGenerationFunction(t *testing.T) {
 	// We don't care about which client we instantiate here, or its arguments,
 	// since the underlying behavior we're testing is the same for all of them
-	c, _ := NewPedersenClient(testGrpcClientConn, 0, nil, nil)
+	c, _ := NewPseudonymsysCAClient(testGrpcClientConn, nil)
 	// This is otherwise called implicitly at the beginning of any client's function
 	// for running a given cryptographic protocol
 	res := c.openStream(c.grpcClient, "InvalidFunc")
