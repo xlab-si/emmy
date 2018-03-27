@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	pb "github.com/xlab-si/emmy/protobuf"
+	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
 

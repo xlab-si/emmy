@@ -21,7 +21,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/xlab-si/emmy/config"
-	pb "github.com/xlab-si/emmy/protobuf"
+	pb "github.com/xlab-si/emmy/proto"
 )
 
 func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {

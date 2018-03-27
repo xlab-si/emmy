@@ -66,10 +66,10 @@ android:
 # Generates protobuffer code based on protobuffer definitions
 # Requires protoc compiler
 proto:
-	protoc -I protobuf/ \
- 	 	protobuf/messages.proto \
- 	 	protobuf/services.proto \
- 	 	--go_out=plugins=grpc:protobuf
+	protoc -I proto/ \
+ 	 	proto/messages.proto \
+ 	 	proto/services.proto \
+ 	 	--go_out=plugins=grpc:proto
 
 # Removes temporary files produced by the targets
 clean:

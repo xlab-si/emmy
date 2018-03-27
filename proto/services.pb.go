@@ -2,9 +2,9 @@
 // source: services.proto
 // DO NOT EDIT!
 
-package protobuf
+package proto
 
-import proto "github.com/golang/protobuf/proto"
+import proto1 "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -14,7 +14,7 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
+var _ = proto1.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
@@ -42,7 +42,7 @@ func NewPseudonymSystemCAClient(cc *grpc.ClientConn) PseudonymSystemCAClient {
 }
 
 func (c *pseudonymSystemCAClient) GenerateCertificate(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystemCA_GenerateCertificateClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystemCA_serviceDesc.Streams[0], c.cc, "/protobuf.PseudonymSystemCA/GenerateCertificate", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystemCA_serviceDesc.Streams[0], c.cc, "/proto.PseudonymSystemCA/GenerateCertificate", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (x *pseudonymSystemCAGenerateCertificateClient) Recv() (*Message, error) {
 }
 
 func (c *pseudonymSystemCAClient) GenerateCertificate_EC(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystemCA_GenerateCertificate_ECClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystemCA_serviceDesc.Streams[1], c.cc, "/protobuf.PseudonymSystemCA/GenerateCertificate_EC", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystemCA_serviceDesc.Streams[1], c.cc, "/proto.PseudonymSystemCA/GenerateCertificate_EC", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (x *pseudonymSystemCAGenerateCertificate_ECServer) Recv() (*Message, error)
 }
 
 var _PseudonymSystemCA_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "protobuf.PseudonymSystemCA",
+	ServiceName: "proto.PseudonymSystemCA",
 	HandlerType: (*PseudonymSystemCAServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
@@ -207,7 +207,7 @@ func NewPseudonymSystemClient(cc *grpc.ClientConn) PseudonymSystemClient {
 }
 
 func (c *pseudonymSystemClient) GenerateNym(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystem_GenerateNymClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[0], c.cc, "/protobuf.PseudonymSystem/GenerateNym", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[0], c.cc, "/proto.PseudonymSystem/GenerateNym", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (x *pseudonymSystemGenerateNymClient) Recv() (*Message, error) {
 }
 
 func (c *pseudonymSystemClient) GenerateNym_EC(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystem_GenerateNym_ECClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[1], c.cc, "/protobuf.PseudonymSystem/GenerateNym_EC", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[1], c.cc, "/proto.PseudonymSystem/GenerateNym_EC", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (x *pseudonymSystemGenerateNym_ECClient) Recv() (*Message, error) {
 }
 
 func (c *pseudonymSystemClient) ObtainCredential(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystem_ObtainCredentialClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[2], c.cc, "/protobuf.PseudonymSystem/ObtainCredential", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[2], c.cc, "/proto.PseudonymSystem/ObtainCredential", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (x *pseudonymSystemObtainCredentialClient) Recv() (*Message, error) {
 }
 
 func (c *pseudonymSystemClient) ObtainCredential_EC(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystem_ObtainCredential_ECClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[3], c.cc, "/protobuf.PseudonymSystem/ObtainCredential_EC", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[3], c.cc, "/proto.PseudonymSystem/ObtainCredential_EC", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +331,7 @@ func (x *pseudonymSystemObtainCredential_ECClient) Recv() (*Message, error) {
 }
 
 func (c *pseudonymSystemClient) TransferCredential(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystem_TransferCredentialClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[4], c.cc, "/protobuf.PseudonymSystem/TransferCredential", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[4], c.cc, "/proto.PseudonymSystem/TransferCredential", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +362,7 @@ func (x *pseudonymSystemTransferCredentialClient) Recv() (*Message, error) {
 }
 
 func (c *pseudonymSystemClient) TransferCredential_EC(ctx context.Context, opts ...grpc.CallOption) (PseudonymSystem_TransferCredential_ECClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[5], c.cc, "/protobuf.PseudonymSystem/TransferCredential_EC", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_PseudonymSystem_serviceDesc.Streams[5], c.cc, "/proto.PseudonymSystem/TransferCredential_EC", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +564,7 @@ func (x *pseudonymSystemTransferCredential_ECServer) Recv() (*Message, error) {
 }
 
 var _PseudonymSystem_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "protobuf.PseudonymSystem",
+	ServiceName: "proto.PseudonymSystem",
 	HandlerType: (*PseudonymSystemServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
@@ -624,7 +624,7 @@ func NewInfoClient(cc *grpc.ClientConn) InfoClient {
 
 func (c *infoClient) GetServiceInfo(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*ServiceInfo, error) {
 	out := new(ServiceInfo)
-	err := grpc.Invoke(ctx, "/protobuf.Info/GetServiceInfo", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/proto.Info/GetServiceInfo", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +651,7 @@ func _Info_GetServiceInfo_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protobuf.Info/GetServiceInfo",
+		FullMethod: "/proto.Info/GetServiceInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InfoServer).GetServiceInfo(ctx, req.(*EmptyMsg))
@@ -660,7 +660,7 @@ func _Info_GetServiceInfo_Handler(srv interface{}, ctx context.Context, dec func
 }
 
 var _Info_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "protobuf.Info",
+	ServiceName: "proto.Info",
 	HandlerType: (*InfoServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -672,24 +672,24 @@ var _Info_serviceDesc = grpc.ServiceDesc{
 	Metadata: "services.proto",
 }
 
-func init() { proto.RegisterFile("services.proto", fileDescriptor1) }
+func init() { proto1.RegisterFile("services.proto", fileDescriptor1) }
 
 var fileDescriptor1 = []byte{
-	// 250 bytes of a gzipped FileDescriptorProto
+	// 245 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x2b, 0x4e, 0x2d, 0x2a,
-	0xcb, 0x4c, 0x4e, 0x2d, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x00, 0x53, 0x49, 0xa5,
-	0x69, 0x52, 0x7c, 0xb9, 0xa9, 0xc5, 0xc5, 0x89, 0xe9, 0x30, 0x19, 0xa3, 0x39, 0x8c, 0x5c, 0x82,
-	0x01, 0xc5, 0xa9, 0xa5, 0x29, 0xf9, 0x79, 0x95, 0xb9, 0xc1, 0x95, 0xc5, 0x25, 0xa9, 0xb9, 0xce,
-	0x8e, 0x42, 0x8e, 0x5c, 0xc2, 0xee, 0xa9, 0x79, 0xa9, 0x45, 0x89, 0x25, 0xa9, 0xce, 0xa9, 0x45,
-	0x25, 0x99, 0x69, 0x99, 0xc9, 0x40, 0xa6, 0x90, 0xa0, 0x1e, 0xcc, 0x1c, 0x3d, 0x5f, 0x88, 0x31,
-	0x52, 0x98, 0x42, 0x4a, 0x0c, 0x1a, 0x8c, 0x06, 0x8c, 0x42, 0x2e, 0x5c, 0x62, 0x58, 0x8c, 0x88,
-	0x77, 0x75, 0x26, 0xc5, 0x14, 0xa3, 0x29, 0xcc, 0x5c, 0xfc, 0x68, 0xce, 0x13, 0xb2, 0xe4, 0xe2,
-	0x86, 0x99, 0xec, 0x57, 0x99, 0x4b, 0x92, 0xa3, 0x6c, 0xb8, 0xf8, 0x90, 0xb4, 0x92, 0xe8, 0x18,
-	0x21, 0x3b, 0x2e, 0x01, 0xff, 0xa4, 0x92, 0xc4, 0xcc, 0x3c, 0xe7, 0xa2, 0xd4, 0x94, 0xd4, 0xbc,
-	0x92, 0xcc, 0xc4, 0x1c, 0x92, 0xf4, 0x03, 0x43, 0x15, 0x5d, 0x3f, 0xa9, 0x4e, 0x70, 0xe0, 0x12,
-	0x0a, 0x29, 0x4a, 0xcc, 0x2b, 0x4e, 0x4b, 0x2d, 0x22, 0xd3, 0x11, 0xce, 0x5c, 0xa2, 0x98, 0x26,
-	0x90, 0x1a, 0x2d, 0xae, 0x5c, 0x2c, 0x9e, 0x79, 0x69, 0xf9, 0x42, 0xb6, 0xa0, 0xf0, 0x2c, 0x09,
-	0x86, 0x24, 0x36, 0xb0, 0x88, 0x10, 0x42, 0x8b, 0x6b, 0x6e, 0x41, 0x49, 0xa5, 0x6f, 0x71, 0xba,
-	0x94, 0x28, 0x42, 0x0c, 0x49, 0xa9, 0x12, 0x43, 0x12, 0x1b, 0x58, 0xdc, 0x18, 0x10, 0x00, 0x00,
-	0xff, 0xff, 0x09, 0x8a, 0x2b, 0xb5, 0xaf, 0x02, 0x00, 0x00,
+	0xcb, 0x4c, 0x4e, 0x2d, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x52, 0x7c,
+	0xb9, 0xa9, 0xc5, 0xc5, 0x89, 0xe9, 0x30, 0x61, 0xa3, 0x09, 0x8c, 0x5c, 0x82, 0x01, 0xc5, 0xa9,
+	0xa5, 0x29, 0xf9, 0x79, 0x95, 0xb9, 0xc1, 0x95, 0xc5, 0x25, 0xa9, 0xb9, 0xce, 0x8e, 0x42, 0xd6,
+	0x5c, 0xc2, 0xee, 0xa9, 0x79, 0xa9, 0x45, 0x89, 0x25, 0xa9, 0xce, 0xa9, 0x45, 0x25, 0x99, 0x69,
+	0x99, 0xc9, 0x40, 0xa6, 0x10, 0x1f, 0x44, 0x93, 0x9e, 0x2f, 0xc4, 0x0c, 0x29, 0x34, 0xbe, 0x12,
+	0x83, 0x06, 0xa3, 0x01, 0xa3, 0x90, 0x1d, 0x97, 0x18, 0x16, 0xcd, 0xf1, 0xae, 0xce, 0xc4, 0xe9,
+	0x37, 0xfa, 0xc0, 0xc4, 0xc5, 0x8f, 0xe6, 0x24, 0x21, 0x63, 0x2e, 0x6e, 0x98, 0x99, 0x7e, 0x95,
+	0xb9, 0x44, 0x3a, 0xc4, 0x8c, 0x8b, 0x0f, 0x49, 0x13, 0xd1, 0x0e, 0x10, 0xb2, 0xe0, 0x12, 0xf0,
+	0x4f, 0x2a, 0x49, 0xcc, 0xcc, 0x73, 0x2e, 0x4a, 0x4d, 0x49, 0xcd, 0x2b, 0xc9, 0x4c, 0xcc, 0x21,
+	0x52, 0x27, 0x30, 0xdc, 0xd0, 0x75, 0x12, 0x6f, 0xad, 0x15, 0x97, 0x50, 0x48, 0x51, 0x62, 0x5e,
+	0x71, 0x5a, 0x6a, 0x11, 0xc9, 0x16, 0xdb, 0x72, 0x89, 0x62, 0xea, 0x25, 0x3e, 0xc8, 0xed, 0xb9,
+	0x58, 0x3c, 0xf3, 0xd2, 0xf2, 0x85, 0xcc, 0x41, 0x21, 0x56, 0x12, 0x0c, 0x49, 0x39, 0x60, 0x11,
+	0x7e, 0xa8, 0x7a, 0xd7, 0xdc, 0x82, 0x92, 0x4a, 0xdf, 0xe2, 0x74, 0x29, 0x21, 0xa8, 0x00, 0x92,
+	0x22, 0x25, 0x86, 0x24, 0x36, 0xb0, 0xa0, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x5c, 0x07, 0x5d,
+	0x7c, 0x76, 0x02, 0x00, 0x00,
 }
