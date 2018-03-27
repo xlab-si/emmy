@@ -15,7 +15,7 @@
  *
  */
 
-package protobuf
+package proto
 
 import (
 	"google.golang.org/grpc"

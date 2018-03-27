@@ -15,7 +15,7 @@
  *
  */
 
-package protobuf
+package proto
 
 import (
 	"math/big"

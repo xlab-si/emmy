@@ -17,7 +17,7 @@
 
 syntax = "proto3";
 
-package protobuf;
+package proto;
 
 import "messages.proto";
 

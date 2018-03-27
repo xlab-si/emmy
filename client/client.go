@@ -27,7 +27,7 @@ import (
 	"reflect"
 
 	"github.com/xlab-si/emmy/log"
-	pb "github.com/xlab-si/emmy/protobuf"
+	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

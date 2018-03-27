@@ -23,7 +23,7 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
-	pb "github.com/xlab-si/emmy/protobuf"
+	pb "github.com/xlab-si/emmy/proto"
 )
 
 func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) error {

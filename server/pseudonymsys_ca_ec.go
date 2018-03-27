@@ -22,7 +22,7 @@ import (
 
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
-	pb "github.com/xlab-si/emmy/protobuf"
+	pb "github.com/xlab-si/emmy/proto"
 )
 
 func (s *Server) GenerateCertificate_EC(stream pb.PseudonymSystemCA_GenerateCertificate_ECServer) error {

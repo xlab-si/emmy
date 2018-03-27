@@ -25,7 +25,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	pb "github.com/xlab-si/emmy/protobuf"
+	pb "github.com/xlab-si/emmy/proto"
 	"github.com/xlab-si/emmy/storage"
 )
 
