@@ -20,6 +20,7 @@ syntax = "proto3";
 package proto;
 
 import "messages.proto";
+import "google/protobuf/empty.proto";
 
 service PseudonymSystemCA {
 	rpc GenerateCertificate(stream Message) returns (stream Message) {}
@@ -36,5 +37,5 @@ service PseudonymSystem {
 }
 
 service Info {
-	rpc GetServiceInfo(EmptyMsg) returns (ServiceInfo) {}
+	rpc GetServiceInfo(google.protobuf.Empty) returns (ServiceInfo) {}
 }

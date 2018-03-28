@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -45,7 +46,7 @@ func GetServiceInfo(conn *grpc.ClientConn) (*ServiceInfo, error) {
 	logger.Debug("GetServiceInfo invoked")
 	client := pb.NewInfoClient(conn)
 
-	info, err := client.GetServiceInfo(context.Background(), &pb.EmptyMsg{})
+	info, err := client.GetServiceInfo(context.Background(), &empty.Empty{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve service info: %v", err)
 	}
