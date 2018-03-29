@@ -19,10 +19,11 @@ syntax = "proto3";
 
 package proto;
 
+import "google/protobuf/empty.proto";
+
 // A generic message
 message Message {
 	oneof content {
-		EmptyMsg empty = 3;
 		BigInt bigint = 4;
 		ECGroupElement ec_group_element = 5;
 		Status status = 6;
@@ -44,8 +45,6 @@ message Message {
 	}
 	int32 clientId = 28;
 }
-
-message EmptyMsg {}
 
 message ServiceInfo {
 	string name = 1;

@@ -20,11 +20,12 @@ package server
 import (
 	"golang.org/x/net/context"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/xlab-si/emmy/config"
 	pb "github.com/xlab-si/emmy/proto"
 )
 
-func (s *Server) GetServiceInfo(ctx context.Context, message *pb.EmptyMsg) (*pb.ServiceInfo, error) {
+func (s *Server) GetServiceInfo(ctx context.Context, _ *empty.Empty) (*pb.ServiceInfo, error) {
 	s.Logger.Info("Client requested service information")
 
 	name, provider, description := config.LoadServiceInfo()
