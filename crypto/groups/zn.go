@@ -43,6 +43,14 @@ func (group *Zn) GetRandomElement() *big.Int {
 	return common.GetRandomZnInvertibleElement(group.N)
 }
 
+// Add computes x + y mod group.N.
+func (group *Zn) Add(x, y *big.Int) *big.Int {
+	r := new(big.Int)
+	r.Add(x, y)
+	r.Mod(r, group.N)
+	return r
+}
+
 // Mul computes x * y mod group.N.
 func (group *Zn) Mul(x, y *big.Int) *big.Int {
 	r := new(big.Int)

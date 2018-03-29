@@ -58,6 +58,13 @@ func NewQRRSAPublic(N *big.Int) *QRRSA {
 	}
 }
 
+// Add computes x + y (mod N)
+func (group *QRRSA) Add(x, y *big.Int) *big.Int {
+	r := new(big.Int)
+	r.Add(x, y)
+	return r.Mod(r, group.N)
+}
+
 // Mul computes x * y in QR_N. This means x * y mod N.
 func (group *QRRSA) Mul(x, y *big.Int) *big.Int {
 	r := new(big.Int)

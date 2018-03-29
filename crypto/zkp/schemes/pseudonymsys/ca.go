@@ -26,7 +26,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type CA struct {
@@ -57,7 +56,7 @@ func NewCA(group *groups.SchnorrGroup, d *big.Int, caPubKey *PubKey) *CA {
 	pubKey := ecdsa.PublicKey{Curve: c, X: caPubKey.H1, Y: caPubKey.H2}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, protocoltypes.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group)
 	ca := CA{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,
@@ -72,12 +71,12 @@ func (ca *CA) GetChallenge(a, b, x *big.Int) *big.Int {
 	ca.a = a
 	ca.b = b
 	ca.SchnorrVerifier.SetProofRandomData(x, a, b)
-	challenge, _ := ca.SchnorrVerifier.GetChallenge()
+	challenge := ca.SchnorrVerifier.GetChallenge()
 	return challenge
 }
 
 func (ca *CA) Verify(z *big.Int) (*CACertificate, error) {
-	verified := ca.SchnorrVerifier.Verify(z, nil)
+	verified := ca.SchnorrVerifier.Verify(z)
 	if verified {
 		r := common.GetRandomInt(ca.SchnorrVerifier.Group.Q)
 		blindedA := ca.SchnorrVerifier.Group.Exp(ca.a, r)
