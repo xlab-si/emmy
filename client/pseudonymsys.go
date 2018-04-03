@@ -107,7 +107,6 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 		Content: &pb.Message_SchnorrProofData{
 			&pb.SchnorrProofData{
 				Z: z.Bytes(),
-				//Trapdoor: trapdoor.Bytes(),
 			},
 		},
 	}

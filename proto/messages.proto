@@ -92,7 +92,6 @@ message SchnorrProofRandomData {
 
 message SchnorrProofData {
 	bytes Z = 1;
- 	bytes Trapdoor = 2; // needed only in zero-knowledge proof of knowledge
 }
 
 message SchnorrECProofRandomData {
