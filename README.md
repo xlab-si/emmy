@@ -1,7 +1,11 @@
 # emmy - Library for sigma protocols and zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
-Emmy is a library that offers a **crypto-backend** with primitives for implementation of various cryptographic proofs and **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on the role of the client, and the verifier takes on the role of the server). It can be used in scenarios like *anonymous digital credentials*. Emmy also implements a communication layer supporting the execution of these protocols. 
-
+Emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
+Zero-knowledge proofs are **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on 
+the role of the client, and the verifier takes on the role of the server) where the client proves a knowledge of 
+of a secret without actually revealing the secret.
+  
+Emmy also implements a communication layer supporting the execution of these protocols. 
 Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. 
 
 The library comes with a convenient CLI for running *emmy server* and *emmy client*s that 
@@ -46,33 +50,32 @@ $ go test ./...
 
 The crypto primitives and schemes (schemes are primitives combined in some more complex protocol) supported by emmy are listed in the table below.
 ZKP primitives and schemes are collected in `crypto/zkp/primitives` and `crypto/zkp/schemes` respectively.
-Each of the ZKP primitives contains a function (at the beginning of the file) which demonstrates how proof should be executed. Client-server communication via gRPC which enable execution of ZKPs over the internet is in `client` and `server` packages.
-
-Note that the primitives not ticked are implemented, but without client-server communication via gRPC. 
-Primitives are meant to be used in schemes (like Schnorr, DLogEquality and others in Pseudonymsys) and communication messages for primitives are implemented there 
-(different schemes might require slightly different messages).
+Client-server communication via gRPC which enable execution of ZKPs over the internet is in `client` and `server` packages.
 
 >**Note**: &#8484;<sub>p</sub> = multiplicative group of integers modulo prime p, EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
 
 | Primitives |
 | ----- |
-| [✓] Schnorr protocol [5] (&#8484;<sub>p</sub> and EC)(sigma protocol can be turned into ZKP and ZKPOK) |
-| [✓] Pedersen commitments (&#8484;<sub>p</sub> and EC) |
-| [✓] ZKP of quadratic residuosity [6] |
-| [✓] ZKP of quadratic nonresiduosity [6] |
-| [✓] Chaum-Pedersen for proving dlog equality [7] (&#8484;<sub>p</sub> and EC) | 
-| [✓] DLog Equality Blinded Transcript [4] (&#8484;<sub>p</sub> and EC) | 
-| [✓] Pseudonym system [4] (&#8484;<sub>p</sub> and EC) |
-| [✗] Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
-| [✓] Camenisch-Shoup verifiable encryption (cspaillier) [1] |
-| [✗] Camenisch-Lysyanskaya signature [2] |
-| [✗] Damgard-Fujisaki commitment scheme for groups with hidden order and associated proofs [12] |
-| [✗] Damgard-Fujisaki commitment associated proofs - opening, equality, multiplication, positiveness |
-| [✗] Lipmaa decomposition and Damgard-Fujisaki commitment range proof based on Lipmaa [11] |
-| [✗] Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
-| [✗] Proof of knowledge of representation (generalized Schnorr for multiple bases) [10] |
-| [✗] Shamir's secret sharing scheme |
+| Schnorr protocol [5] (&#8484;<sub>p</sub> and EC)(sigma protocol can be turned into ZKP and ZKPOK) |
+| Pedersen commitments (&#8484;<sub>p</sub> and EC) |
+| ZKP of quadratic residuosity [6] |
+| ZKP of quadratic nonresiduosity [6] |
+| Chaum-Pedersen for proving dlog equality [7] (&#8484;<sub>p</sub> and EC) |
+| DLog Equality Blinded Transcript [4] (&#8484;<sub>p</sub> and EC) |
+| Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
+| Camenisch-Shoup verifiable encryption (cspaillier) [1] |
+| Camenisch-Lysyanskaya signature [2] |
+| Damgard-Fujisaki commitment scheme for groups with hidden order and associated proofs [12] |
+| Damgard-Fujisaki commitment associated proofs - opening, equality, multiplication, positiveness |
+| Lipmaa decomposition and Damgard-Fujisaki commitment range proof based on Lipmaa [11] |
+| Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
+| Proof of knowledge of representation (generalized Schnorr for multiple bases) [10] |
+| Shamir's secret sharing scheme |
 
+| Schemes |
+| ----- |
+| Pseudonym system [4] (&#8484;<sub>p</sub> and EC) |
+| Anonymous credentials [2][15] - work in progress  |
 
 # Using the emmy CLI tool
 

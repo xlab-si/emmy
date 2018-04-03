@@ -40,10 +40,10 @@ func ProveECDLogKnowledge(secret *big.Int, g1, t1 *groups.ECGroupElement, curve 
 }
 
 type SchnorrECProver struct {
-	Group            *groups.ECGroup
-	a                *groups.ECGroupElement
-	secret           *big.Int
-	r                *big.Int                        // ProofRandomData
+	Group  *groups.ECGroup
+	a      *groups.ECGroupElement
+	secret *big.Int
+	r      *big.Int // ProofRandomData
 }
 
 func NewSchnorrECProver(curveType groups.ECurve) *SchnorrECProver {
@@ -74,16 +74,16 @@ func (prover *SchnorrECProver) GetProofData(challenge *big.Int) *big.Int {
 }
 
 type SchnorrECVerifier struct {
-	Group             *groups.ECGroup
-	x                 *groups.ECGroupElement
-	a                 *groups.ECGroupElement
-	b                 *groups.ECGroupElement
-	challenge         *big.Int
+	Group     *groups.ECGroup
+	x         *groups.ECGroupElement
+	a         *groups.ECGroupElement
+	b         *groups.ECGroupElement
+	challenge *big.Int
 }
 
 func NewSchnorrECVerifier(curveType groups.ECurve) *SchnorrECVerifier {
 	return &SchnorrECVerifier{
-		Group:        groups.NewECGroup(curveType),
+		Group: groups.NewECGroup(curveType),
 	}
 }
 

@@ -70,7 +70,7 @@ If the definitions in *.proto* files have been changed, we need to re-generate t
 *protoc* compiler. This means we have to execute the following command from the root of the repository:
 
 ```bash
-$ protoc -I protobuf/ protobuf/messages.proto protobuf/services.proto protobuf/enums.proto --go_out=plugins=grpc:protobuf
+$ protoc -I proto/ proto/messages.proto proto/services.proto --go_out=plugins=grpc:proto
 ```
 Alternatively, you can run `make proto` to re-generate the same files.
 

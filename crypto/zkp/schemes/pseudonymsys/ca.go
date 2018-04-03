@@ -70,13 +70,14 @@ func (ca *CA) GetChallenge(a, b, x *big.Int) *big.Int {
 
 	ca.a = a
 	ca.b = b
-	ca.SchnorrVerifier.SetProofRandomData(x, a, b)
+	base := []*big.Int{a} // only one base
+	ca.SchnorrVerifier.SetProofRandomData(x, base, b)
 	challenge := ca.SchnorrVerifier.GetChallenge()
 	return challenge
 }
 
 func (ca *CA) Verify(z *big.Int) (*CACertificate, error) {
-	verified := ca.SchnorrVerifier.Verify(z)
+	verified := ca.SchnorrVerifier.Verify([]*big.Int{z})
 	if verified {
 		r := common.GetRandomInt(ca.SchnorrVerifier.Group.Q)
 		blindedA := ca.SchnorrVerifier.Group.Exp(ca.a, r)

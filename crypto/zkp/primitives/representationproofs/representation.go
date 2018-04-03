@@ -94,6 +94,18 @@ func NewRepresentationProver(group *groups.SchnorrGroup, secrets,
 }
 
 func (prover *RepresentationProver) GetProofRandomData() *big.Int {
+	// TODO: name GetProofRandomData is not ok, but I am not sure what would be the best way
+	// to fix it.
+	// It might be replaced with something that
+	// would reflect setting of parameters secret and a. Splitting into two functions is
+	// another option, but it would add complexity of the API (for example SetParams necessary to
+	// be called before GetProofRandomData). Possible solution would also be to push secret and a
+	// into SchnorrProver constructor, but then if SchnorrProver used for two different proofs
+	// (two different (secret, a) pairs), its params would need to be reset before proof execution.
+	// Thinking of it, this last option might be the one to go, because usually Schnorr is
+	// executed once.
+	// The problem is the same for all proofs.
+
 	// t = g_1^r_1 * ... * g_k^r_k where g_i are bases and r_i are random values
 	t := big.NewInt(1)
 	var randomValues []*big.Int

@@ -86,7 +86,7 @@ func (c *PseudonymsysCAClientEC) GenerateCertificate(userSecret *big.Int, nym *p
 	msg := &pb.Message{
 		Content: &pb.Message_SchnorrProofData{
 			&pb.SchnorrProofData{
-				Z:        z.Bytes(),
+				Z: z.Bytes(),
 			},
 		},
 	}
