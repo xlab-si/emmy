@@ -89,16 +89,12 @@ type PedersenECReceiver struct {
 
 func NewPedersenECReceiver(curve groups.ECurve) *PedersenECReceiver {
 	group := groups.NewECGroup(curve)
-
 	a := common.GetRandomInt(group.Q)
-	h := group.ExpBaseG(a)
-
-	receiver := new(PedersenECReceiver)
-	receiver.Group = group
-	receiver.a = a
-	receiver.H = h
-
-	return receiver
+	return &PedersenECReceiver{
+		Group: group,
+		H:     group.ExpBaseG(a),
+		a:     a,
+	}
 }
 
 func (s *PedersenECReceiver) GetTrapdoor() *big.Int {

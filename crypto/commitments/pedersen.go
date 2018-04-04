@@ -96,21 +96,14 @@ func NewPedersenReceiver(bitLengthGroupOrder int) (*PedersenReceiver, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error when creating SchnorrGroup: %s", err)
 	}
-	a := common.GetRandomInt(group.Q)
-	h := group.Exp(group.G, a)
-	return &PedersenReceiver{
-		Group: group,
-		H:     h,
-		a:     a,
-	}, nil
+	return NewPedersenReceiverFromExistingSchnorr(group), nil
 }
 
 func NewPedersenReceiverFromExistingSchnorr(group *groups.SchnorrGroup) *PedersenReceiver {
 	a := common.GetRandomInt(group.Q)
-	h := group.Exp(group.G, a)
 	return &PedersenReceiver{
 		Group: group,
-		H:     h,
+		H:     group.Exp(group.G, a),
 		a:     a,
 	}
 }

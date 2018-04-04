@@ -24,21 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 )
 
-// ProveECDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
-// means g1^secret = t1 in EC group.
-func ProveECDLogKnowledge(secret *big.Int, g1, t1 *groups.ECGroupElement, curve groups.ECurve) (bool, error) {
-	prover := NewSchnorrECProver(curve)
-	verifier := NewSchnorrECVerifier(curve)
-
-	x := prover.GetProofRandomData(secret, g1)
-	verifier.SetProofRandomData(x, g1, t1)
-
-	challenge := verifier.GetChallenge()
-	z := prover.GetProofData(challenge)
-	verified := verifier.Verify(z)
-	return verified, nil
-}
-
 type SchnorrECProver struct {
 	Group  *groups.ECGroup
 	a      *groups.ECGroupElement
@@ -53,23 +38,23 @@ func NewSchnorrECProver(curveType groups.ECurve) *SchnorrECProver {
 }
 
 // It contains also value b = a^secret.
-func (prover *SchnorrECProver) GetProofRandomData(secret *big.Int,
+func (p *SchnorrECProver) GetProofRandomData(secret *big.Int,
 	a *groups.ECGroupElement) *groups.ECGroupElement {
-	r := common.GetRandomInt(prover.Group.Q)
-	prover.r = r
-	prover.a = a
-	prover.secret = secret
-	x := prover.Group.Exp(a, r)
+	r := common.GetRandomInt(p.Group.Q)
+	p.r = r
+	p.a = a
+	p.secret = secret
+	x := p.Group.Exp(a, r)
 	return x
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w.
-func (prover *SchnorrECProver) GetProofData(challenge *big.Int) *big.Int {
+func (p *SchnorrECProver) GetProofData(challenge *big.Int) *big.Int {
 	// z = r + challenge * secret
 	z := new(big.Int)
-	z.Mul(challenge, prover.secret)
-	z.Add(z, prover.r)
-	z.Mod(z, prover.Group.Q)
+	z.Mul(challenge, p.secret)
+	z.Add(z, p.r)
+	z.Mod(z, p.Group.Q)
 	return z
 }
 
@@ -88,21 +73,21 @@ func NewSchnorrECVerifier(curveType groups.ECurve) *SchnorrECVerifier {
 }
 
 // TODO: t transferred at some other stage?
-func (verifier *SchnorrECVerifier) SetProofRandomData(x, a, b *groups.ECGroupElement) {
-	verifier.x = x
-	verifier.a = a
-	verifier.b = b
+func (v *SchnorrECVerifier) SetProofRandomData(x, a, b *groups.ECGroupElement) {
+	v.x = x
+	v.a = a
+	v.b = b
 }
 
-func (verifier *SchnorrECVerifier) GetChallenge() *big.Int {
-	challenge := common.GetRandomInt(verifier.Group.Q)
-	verifier.challenge = challenge
+func (v *SchnorrECVerifier) GetChallenge() *big.Int {
+	challenge := common.GetRandomInt(v.Group.Q)
+	v.challenge = challenge
 	return challenge
 }
 
-func (verifier *SchnorrECVerifier) Verify(z *big.Int) bool {
-	left := verifier.Group.Exp(verifier.a, z)
-	r := verifier.Group.Exp(verifier.b, verifier.challenge)
-	right := verifier.Group.Mul(r, verifier.x)
+func (v *SchnorrECVerifier) Verify(z *big.Int) bool {
+	left := v.Group.Exp(v.a, z)
+	r := v.Group.Exp(v.b, v.challenge)
+	right := v.Group.Mul(r, v.x)
 	return left.Equals(right)
 }

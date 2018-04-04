@@ -2,7 +2,7 @@
 
 Emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
 Zero-knowledge proofs are **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on 
-the role of the client, and the verifier takes on the role of the server) where the client proves a knowledge of 
+the role of the client, and the verifier takes on the role of the server) where the client proves a knowledge
 of a secret without actually revealing the secret.
   
 Emmy also implements a communication layer supporting the execution of these protocols. 
@@ -50,7 +50,7 @@ $ go test ./...
 
 The crypto primitives and schemes (schemes are primitives combined in some more complex protocol) supported by emmy are listed in the table below.
 ZKP primitives and schemes are collected in `crypto/zkp/primitives` and `crypto/zkp/schemes` respectively.
-Client-server communication via gRPC which enable execution of ZKPs over the internet is in `client` and `server` packages.
+Client-server communication code (based on gRPC) which enables execution of ZKPs over the internet is in `client` and `server` packages.
 
 >**Note**: &#8484;<sub>p</sub> = multiplicative group of integers modulo prime p, EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
 

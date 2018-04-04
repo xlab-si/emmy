@@ -30,11 +30,11 @@ import (
 // such that y = g_1^x_1 * ... * g_k^x_k where g_i are given generators (bases) of cyclic group G.
 // For a "normal" Schnorr just use bases and secrets arrays with only one element.
 type SchnorrProver struct {
-	Group        *groups.SchnorrGroup
-	secrets      []*big.Int
-	bases        []*big.Int
-	randomValues []*big.Int
-	y            *big.Int
+	Group      *groups.SchnorrGroup
+	secrets    []*big.Int
+	bases      []*big.Int
+	randomVals []*big.Int
+	y          *big.Int
 }
 
 func NewSchnorrProver(group *groups.SchnorrGroup, secrets,
@@ -51,27 +51,27 @@ func NewSchnorrProver(group *groups.SchnorrGroup, secrets,
 	}, nil
 }
 
-func (prover *SchnorrProver) GetProofRandomData() *big.Int {
+func (p *SchnorrProver) GetProofRandomData() *big.Int {
 	// t = g_1^r_1 * ... * g_k^r_k where g_i are bases and r_i are random values
 	t := big.NewInt(1)
-	var randomValues []*big.Int
-	for i := 0; i < len(prover.bases); i++ {
-		r := common.GetRandomInt(prover.Group.Q)
-		randomValues = append(randomValues, r)
-		f := prover.Group.Exp(prover.bases[i], r)
-		t = prover.Group.Mul(t, f)
+	var randomVals = make([]*big.Int, len(p.bases))
+	for i, _ := range randomVals {
+		r := common.GetRandomInt(p.Group.Q)
+		randomVals[i] = r
+		f := p.Group.Exp(p.bases[i], r)
+		t = p.Group.Mul(t, f)
 	}
-	prover.randomValues = randomValues
+	p.randomVals = randomVals
 	return t
 }
 
-func (prover *SchnorrProver) GetProofData(challenge *big.Int) []*big.Int {
+func (p *SchnorrProver) GetProofData(challenge *big.Int) []*big.Int {
 	// z_i = r_i + challenge * secrets[i]
-	var proofData []*big.Int
-	for i := 0; i < len(prover.bases); i++ {
-		z_i := prover.Group.Mul(challenge, prover.secrets[i])
-		z_i = prover.Group.Add(z_i, prover.randomValues[i])
-		proofData = append(proofData, z_i)
+	var proofData = make([]*big.Int, len(p.bases))
+	for i, _ := range proofData {
+		z_i := p.Group.Mul(challenge, p.secrets[i])
+		z_i = p.Group.Add(z_i, p.randomVals[i])
+		proofData[i] = z_i
 	}
 	return proofData
 }
@@ -93,30 +93,30 @@ func NewSchnorrVerifier(group *groups.SchnorrGroup) *SchnorrVerifier {
 // TODO: SetProofRandomData name is not ok - it is not only setting
 // proofRandomData, but also bases and y.
 // It might be split (a, b for example set in SchnorrVerifier constructor).
-func (verifier *SchnorrVerifier) SetProofRandomData(proofRandomData *big.Int, bases []*big.Int,
+func (v *SchnorrVerifier) SetProofRandomData(proofRandomData *big.Int, bases []*big.Int,
 	y *big.Int) {
-	verifier.proofRandomData = proofRandomData
-	verifier.bases = bases
-	verifier.y = y
+	v.proofRandomData = proofRandomData
+	v.bases = bases
+	v.y = y
 }
 
-func (verifier *SchnorrVerifier) GetChallenge() *big.Int {
-	challenge := common.GetRandomInt(verifier.Group.Q)
-	verifier.challenge = challenge
+func (v *SchnorrVerifier) GetChallenge() *big.Int {
+	challenge := common.GetRandomInt(v.Group.Q)
+	v.challenge = challenge
 	return challenge
 }
 
-func (verifier *SchnorrVerifier) Verify(proofData []*big.Int) bool {
+func (v *SchnorrVerifier) Verify(proofData []*big.Int) bool {
 	// check:
 	// g_1^z_1 * ... * g_k^z_k = (g_1^x_1 * ... * g_k^x_k)^challenge * (g_1^r_1 * ... * g_k^r_k)
 	left := big.NewInt(1)
-	for i := 0; i < len(verifier.bases); i++ {
-		t := verifier.Group.Exp(verifier.bases[i], proofData[i])
-		left = verifier.Group.Mul(left, t)
+	for i := 0; i < len(v.bases); i++ {
+		t := v.Group.Exp(v.bases[i], proofData[i])
+		left = v.Group.Mul(left, t)
 	}
 
-	right := verifier.Group.Exp(verifier.y, verifier.challenge)
-	right = verifier.Group.Mul(right, verifier.proofRandomData)
+	right := v.Group.Exp(v.y, v.challenge)
+	right = v.Group.Mul(right, v.proofRandomData)
 
 	return left.Cmp(right) == 0
 }

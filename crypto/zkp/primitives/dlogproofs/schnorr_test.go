@@ -37,14 +37,12 @@ func TestDLogKnowledge(t *testing.T) {
 	var bases [3]*big.Int
 	for i := 0; i < len(bases); i++ {
 		r := common.GetRandomInt(group.Q)
-		base := group.Exp(group.G, r)
-		bases[i] = base
+		bases[i] = group.Exp(group.G, r)
 	}
 
 	var secrets [3]*big.Int
 	for i := 0; i < 3; i++ {
-		secret := common.GetRandomInt(group.Q)
-		secrets[i] = secret
+		secrets[i] = common.GetRandomInt(group.Q)
 	}
 
 	// y = g_1^x_1 * ... * g_k^x_k where g_i are bases and x_i are secrets
