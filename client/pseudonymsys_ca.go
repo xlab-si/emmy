@@ -22,7 +22,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
@@ -41,7 +40,6 @@ func NewPseudonymsysCAClient(conn *grpc.ClientConn,
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
 		group:         group,
-		prover:        dlogproofs.NewSchnorrProver(group, protocoltypes.Sigma),
 	}, nil
 }
 
@@ -62,7 +60,12 @@ func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pse
 	}
 	defer c.closeStream()
 
-	x := c.prover.GetProofRandomData(userSecret, nym.A)
+	prover, err := dlogproofs.NewSchnorrProver(c.group, []*big.Int{userSecret}, []*big.Int{nym.A}, nym.B)
+	if err != nil {
+		return nil, err
+	}
+	c.prover = prover
+	x := c.prover.GetProofRandomData()
 	b := c.prover.Group.Exp(nym.A, userSecret)
 	pRandomData := pb.SchnorrProofRandomData{
 		X: x.Bytes(),
@@ -84,13 +87,11 @@ func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pse
 	ch := resp.GetBigint()
 	challenge := new(big.Int).SetBytes(ch.X1)
 
-	z, _ := c.prover.GetProofData(challenge)
-	trapdoor := new(big.Int)
+	z := c.prover.GetProofData(challenge)[0]
 	msg := &pb.Message{
 		Content: &pb.Message_SchnorrProofData{
 			&pb.SchnorrProofData{
-				Z:        z.Bytes(),
-				Trapdoor: trapdoor.Bytes(),
+				Z: z.Bytes(),
 			},
 		},
 	}

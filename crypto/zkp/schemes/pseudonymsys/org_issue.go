@@ -24,7 +24,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type Credential struct {
@@ -64,7 +63,7 @@ type OrgCredentialIssuer struct {
 func NewOrgCredentialIssuer(group *groups.SchnorrGroup, secKey *SecKey) *OrgCredentialIssuer {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group, protocoltypes.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group)
 	equalityProver1 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	org := OrgCredentialIssuer{
@@ -83,15 +82,16 @@ func (org *OrgCredentialIssuer) GetAuthenticationChallenge(a, b, x *big.Int) *bi
 
 	org.a = a
 	org.b = b
-	org.SchnorrVerifier.SetProofRandomData(x, a, b)
-	challenge, _ := org.SchnorrVerifier.GetChallenge()
+	base := []*big.Int{a} // only one base
+	org.SchnorrVerifier.SetProofRandomData(x, base, b)
+	challenge := org.SchnorrVerifier.GetChallenge()
 	return challenge
 }
 
 // Verifies that user knows log_a(b). Sends back proof random data (g1^r, g2^r) for both equality proofs.
 func (org *OrgCredentialIssuer) VerifyAuthentication(z *big.Int) (
 	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, error) {
-	verified := org.SchnorrVerifier.Verify(z, nil)
+	verified := org.SchnorrVerifier.Verify([]*big.Int{z})
 	if verified {
 		A := org.Group.Exp(org.b, org.secKey.S2)
 		aA := org.Group.Mul(org.a, A)

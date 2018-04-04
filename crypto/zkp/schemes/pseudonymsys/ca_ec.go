@@ -26,7 +26,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type CAEC struct {
@@ -58,7 +57,7 @@ func NewCAEC(d *big.Int, caPubKey *PubKey, curveType groups.ECurve) *CAEC {
 	pubKey := ecdsa.PublicKey{Curve: c, X: caPubKey.H1, Y: caPubKey.H2}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, protocoltypes.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType)
 	ca := CAEC{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,
@@ -73,12 +72,12 @@ func (ca *CAEC) GetChallenge(a, b, x *groups.ECGroupElement) *big.Int {
 	ca.a = a
 	ca.b = b
 	ca.SchnorrVerifier.SetProofRandomData(x, a, b)
-	challenge, _ := ca.SchnorrVerifier.GetChallenge()
+	challenge := ca.SchnorrVerifier.GetChallenge()
 	return challenge
 }
 
 func (ca *CAEC) Verify(z *big.Int) (*CACertificateEC, error) {
-	verified := ca.SchnorrVerifier.Verify(z, nil)
+	verified := ca.SchnorrVerifier.Verify(z)
 	if verified {
 		r := common.GetRandomInt(ca.SchnorrVerifier.Group.Q)
 		blindedA := ca.SchnorrVerifier.Group.Exp(ca.a, r)

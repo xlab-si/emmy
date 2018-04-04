@@ -24,7 +24,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/protocoltypes"
 )
 
 type CredentialEC struct {
@@ -63,7 +62,7 @@ type OrgCredentialIssuerEC struct {
 func NewOrgCredentialIssuerEC(secKey *SecKey, curveType groups.ECurve) *OrgCredentialIssuerEC {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType, protocoltypes.Sigma)
+	schnorrVerifier := dlogproofs.NewSchnorrECVerifier(curveType)
 	equalityProver1 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
 	equalityProver2 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
 	org := OrgCredentialIssuerEC{
@@ -82,7 +81,7 @@ func (org *OrgCredentialIssuerEC) GetAuthenticationChallenge(a, b, x *groups.ECG
 	org.a = a
 	org.b = b
 	org.SchnorrVerifier.SetProofRandomData(x, a, b)
-	challenge, _ := org.SchnorrVerifier.GetChallenge()
+	challenge := org.SchnorrVerifier.GetChallenge()
 	return challenge
 }
 
@@ -90,7 +89,7 @@ func (org *OrgCredentialIssuerEC) GetAuthenticationChallenge(a, b, x *groups.ECG
 func (org *OrgCredentialIssuerEC) VerifyAuthentication(z *big.Int) (
 	*groups.ECGroupElement, *groups.ECGroupElement, *groups.ECGroupElement,
 	*groups.ECGroupElement, *groups.ECGroupElement, *groups.ECGroupElement, error) {
-	verified := org.SchnorrVerifier.Verify(z, nil)
+	verified := org.SchnorrVerifier.Verify(z)
 	if verified {
 		A := org.SchnorrVerifier.Group.Exp(org.b, org.secKey.S2)
 		aA := org.SchnorrVerifier.Group.Mul(org.a, A)
