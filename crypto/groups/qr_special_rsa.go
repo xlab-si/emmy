@@ -42,7 +42,10 @@ func NewQRSpecialRSA(safePrimeBitLength int) (*QRSpecialRSA, error) {
 	if err != nil {
 		return nil, err
 	}
+	return NewQRSpecialRSAFromExistingParams(specialRSAPrimes)
+}
 
+func NewQRSpecialRSAFromExistingParams(specialRSAPrimes *common.SpecialRSAPrimes) (*QRSpecialRSA, error) {
 	qrRSA, err := NewQRRSA(specialRSAPrimes.P, specialRSAPrimes.Q)
 	if err != nil {
 		return nil, err
