@@ -27,7 +27,7 @@ import (
 
 // SchnorrProver is a generalized Schnorr - while usually Schnorr proof is executed with one base,
 // SchnorrProver for a given y enables proof of knowledge of secrets x_1,...,x_k
-// such that y = g_1^x_1 * ... * g_k^x_k where g_i are given generators (bases) of cyclic group G.
+// such that y = g_1^x_1 * ... * g_k^x_k where g_i are given generators (bases) of Schnorr group.
 // For a "normal" Schnorr just use bases and secrets arrays with only one element.
 type SchnorrProver struct {
 	Group      *groups.SchnorrGroup
