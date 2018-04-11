@@ -19,7 +19,6 @@ package cl
 
 import (
 	"math/big"
-	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"fmt"
 )
@@ -38,6 +37,8 @@ func NewUser(clPubKey *CLPubKey, sec_param int) *User {
 	committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N, clPubKey.S, clPubKey.Z,
 		clPubKey.N, sec_param)
 
+	//committer := commitments.NewPedersenCommitter(u.CLParams.CommitmentGroup)
+
 	return &User{
 		nyms: nyms,
 		committer: committer,
@@ -45,7 +46,7 @@ func NewUser(clPubKey *CLPubKey, sec_param int) *User {
 }
 
 func (u *User) GenerateMasterSecret() {
-	u.masterSecret = common.GetRandomInt(u.CLParams.CommitmentGroup.Q)
+	//u.masterSecret = common.GetRandomInt(u.CLParams.CommitmentGroup.Q)
 }
 
 // GenerateNym creates a pseudonym to be used with a given organization. Multiple pseudonyms

@@ -42,6 +42,7 @@ func TestCLIssue(t *testing.T) {
 
 	fmt.Println(org)
 
+	/*
 	user := NewUser(clParams)
 	user.GenerateMasterSecret()
 	nym, err := user.GenerateNym("testOrg")
@@ -50,6 +51,7 @@ func TestCLIssue(t *testing.T) {
 	}
 
 	fmt.Println(nym)
+	*/
 
 
 	/*

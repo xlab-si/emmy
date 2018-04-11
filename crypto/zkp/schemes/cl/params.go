@@ -19,12 +19,12 @@ package cl
 
 import (
 	"math/big"
-	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"fmt"
 )
 
 type CLParamSizes struct {
+        // There are only a few possibilities for RhoBitLen. 256 implies that the modulus
+        // bit length is 2048 (this number corresponds to the Gamma in idemix technical report).
 	RhoBitLen int // bit length of order of the commitment group
 	L_n       int // bit length of RSA modulus
 	L_attrs   int // number of attributes
@@ -42,26 +42,6 @@ func GetParamSizes() *CLParamSizes {
 type CLParams struct {
 	CommitmentGroup *groups.SchnorrGroup
 	CommitmentH *big.Int
-}
-
-func GenerateParams(paramSizes *CLParamSizes) (*CLParams, error) {
-	// There are only a few possibilities for RhoBitLen. 256 implies that the modulus
-	// bit length is 2048 (this number corresponds to the Gamma in idemix technical report).
-	commitmentGroup, err := groups.NewSchnorrGroup(paramSizes.RhoBitLen)
-	if err != nil {
-		return nil, fmt.Errorf("error when creating SchnorrGroup: %s", err)
-	}
-
-	a := common.GetRandomInt(commitmentGroup.Q)
-	h := commitmentGroup.Exp(commitmentGroup.G, a)
-
-	// what to do with h? trapdoor not needed any more due to different ZKP technique
-	// should be h pushed into PedersenCommitter constructor?
-
-	return &CLParams{
-		CommitmentGroup: commitmentGroup, // commitmentGroup.G is Rho from idemix technical report
-		CommitmentH: h,
-	}, nil
 }
 
 

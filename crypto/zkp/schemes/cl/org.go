@@ -19,6 +19,7 @@ package cl
 
 import (
 	"fmt"
+	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"math/big"
@@ -42,9 +43,11 @@ func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *CLPubKey {
 
 type CLOrg struct {
 	group *groups.QRSpecialRSA
+	commitmentReceiver *commitments.PedersenReceiver
 	PubKey *CLPubKey
 	x_Z *big.Int // Z = S^x_Z
 	x_R []*big.Int // R_i = S^x_R_i
+	receiver *commitments.PedersenReceiver
 }
 
 func NewOrg(clParamSizes *CLParamSizes) (*CLOrg, error) {
@@ -59,12 +62,18 @@ func NewOrg(clParamSizes *CLParamSizes) (*CLOrg, error) {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
+	pedersenParams, err := commitments.GeneratePedersenParams(clParamSizes.RhoBitLen)
+	if err != nil {
+		return nil, fmt.Errorf("error when creating Pedersen receiver: %s", err)
+	}
+
+
 	primes := common.NewSpecialRSAPrimes(group.P, group.Q, group.P1, group.Q1)
-	return NewOrgFromExistingParams(primes, pubKey, x_Z, x_R)
+	return NewOrgFromExistingParams(primes, pubKey, x_Z, x_R, pedersenParams)
 }
 
 func NewOrgFromExistingParams(primes *common.SpecialRSAPrimes, pubKey *CLPubKey, x_Z *big.Int,
-		x_R []*big.Int) (*CLOrg, error) {
+		x_R []*big.Int, pedersenParams *commitments.PedersenParams) (*CLOrg, error) {
 	group, err := groups.NewQRSpecialRSAFromExistingParams(primes)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
@@ -75,6 +84,7 @@ func NewOrgFromExistingParams(primes *common.SpecialRSAPrimes, pubKey *CLPubKey,
 		PubKey: pubKey,
 		x_Z: x_Z,
 		x_R: x_R,
+		receiver: commitments.NewPedersenReceiverFromExistingParams(pedersenParams),
 	}, nil
 }
 
@@ -97,3 +107,5 @@ func generateQuadraticResidues(group *groups.QRSpecialRSA, num_of_attrs int) (*b
 	}
 	return S, Z, R_L, x_Z, x_R, nil
 }
+
+

@@ -34,40 +34,60 @@ import (
 // Committer first needs to know H (it gets it from the receiver).
 // Then committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
+
+type PedersenParams struct {
+	Group *groups.SchnorrGroup
+	H     *big.Int
+	a     *big.Int
+	// trapdoor a can be nil (doesn't need to be known), it is rarely needed -
+	// for example in one of techniques to turn sigma to ZKP
+}
+
+func NewPedersenParams(group *groups.SchnorrGroup, H, a *big.Int) *PedersenParams{
+	return &PedersenParams{
+		Group: group,
+		H: H, // H = g^a
+		a: a,
+	}
+}
+
+func GeneratePedersenParams(bitLengthGroupOrder int) (*PedersenParams, error) {
+	group, err := groups.NewSchnorrGroup(bitLengthGroupOrder)
+	if err != nil {
+		return nil, fmt.Errorf("error when creating SchnorrGroup: %s", err)
+	}
+	a := common.GetRandomInt(group.Q)
+	return NewPedersenParams(group, group.Exp(group.G, a), a), nil
+}
+
 type PedersenCommitter struct {
-	Group          *groups.SchnorrGroup
-	H              *big.Int
+	Params          *PedersenParams
 	committedValue *big.Int
 	r              *big.Int
 }
 
-func NewPedersenCommitter(group *groups.SchnorrGroup) *PedersenCommitter {
+func NewPedersenCommitter(pedersenParams *PedersenParams) *PedersenCommitter {
 	committer := PedersenCommitter{
-		Group: group,
+		Params: pedersenParams,
 	}
 	return &committer
 }
 
-// Value h needs to be obtained from a receiver and then set in a committer.
-func (committer *PedersenCommitter) SetH(h *big.Int) {
-	committer.H = h
-}
-
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
 func (committer *PedersenCommitter) GetCommitMsg(val *big.Int) (*big.Int, error) {
-	if val.Cmp(committer.Group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
+	if val.Cmp(committer.Params.Group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
 		err := fmt.Errorf("committed value needs to be in Z_q (order of a base point)")
 		return nil, err
 	}
 
 	// c = g^x * h^r
-	r := common.GetRandomInt(committer.Group.Q)
+	r := common.GetRandomInt(committer.Params.Group.Q)
 
 	committer.r = r
 	committer.committedValue = val
-	t1 := committer.Group.Exp(committer.Group.G, val)
-	t2 := committer.Group.Exp(committer.H, r)
-	c := committer.Group.Mul(t1, t2)
+	t1 := committer.Params.Group.Exp(committer.Params.Group.G, val)
+	t2 := committer.Params.Group.Exp(committer.Params.H, r)
+	c := committer.Params.Group.Mul(t1, t2)
 
 	return c, nil
 }
@@ -80,36 +100,31 @@ func (committer *PedersenCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
 }
 
 func (committer *PedersenCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
-	h := committer.Group.Exp(committer.Group.G, trapdoor)
-	return h.Cmp(committer.H) == 0
+	h := committer.Params.Group.Exp(committer.Params.Group.G, trapdoor)
+	return h.Cmp(committer.Params.H) == 0
 }
 
 type PedersenReceiver struct {
-	Group      *groups.SchnorrGroup
-	H          *big.Int
-	a          *big.Int
+	Params          *PedersenParams
 	commitment *big.Int
 }
 
 func NewPedersenReceiver(bitLengthGroupOrder int) (*PedersenReceiver, error) {
-	group, err := groups.NewSchnorrGroup(bitLengthGroupOrder)
+	params, err := GeneratePedersenParams(bitLengthGroupOrder)
 	if err != nil {
-		return nil, fmt.Errorf("error when creating SchnorrGroup: %s", err)
+		return nil, err
 	}
-	return NewPedersenReceiverFromExistingSchnorr(group), nil
+	return NewPedersenReceiverFromExistingParams(params), nil
 }
 
-func NewPedersenReceiverFromExistingSchnorr(group *groups.SchnorrGroup) *PedersenReceiver {
-	a := common.GetRandomInt(group.Q)
+func NewPedersenReceiverFromExistingParams(params *PedersenParams) *PedersenReceiver {
 	return &PedersenReceiver{
-		Group: group,
-		H:     group.Exp(group.G, a),
-		a:     a,
+		Params: params,
 	}
 }
 
 func (s *PedersenReceiver) GetTrapdoor() *big.Int {
-	return s.a
+	return s.Params.a
 }
 
 // When receiver receives a commitment, it stores the value using SetCommitment method.
@@ -120,8 +135,8 @@ func (s *PedersenReceiver) SetCommitment(el *big.Int) {
 // When receiver receives a decommitment, CheckDecommitment verifies it against the stored value
 // (stored by SetCommitment).
 func (s *PedersenReceiver) CheckDecommitment(r, val *big.Int) bool {
-	t1 := s.Group.Exp(s.Group.G, val) // g^x
-	t2 := s.Group.Exp(s.H, r)         // h^r
-	c := s.Group.Mul(t1, t2)          // g^x * h^r
+	t1 := s.Params.Group.Exp(s.Params.Group.G, val) // g^x
+	t2 := s.Params.Group.Exp(s.Params.H, r)         // h^r
+	c := s.Params.Group.Mul(t1, t2)          // g^x * h^r
 	return c.Cmp(s.commitment) == 0
 }
