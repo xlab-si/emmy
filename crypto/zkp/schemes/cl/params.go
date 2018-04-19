@@ -23,19 +23,25 @@ import (
 )
 
 type CLParamSizes struct {
-        // There are only a few possibilities for RhoBitLen. 256 implies that the modulus
-        // bit length is 2048 (this number corresponds to the Gamma in idemix technical report).
+		      // There are only a few possibilities for RhoBitLen. 256 implies that the modulus
+		      // bit length is 2048 (this number corresponds to the Gamma in idemix technical report).
 	RhoBitLen int // bit length of order of the commitment group
-	L_n       int // bit length of RSA modulus
-	L_attrs   int // number of attributes
+	NLength   int // bit length of RSA modulus
+	AttrsNum  int // number of attributes
+	AttrBitLen  int // bit length of attribute (l_m in Idemix technical report)
+	HashBitLen int // bit length of hash output used for Fiat-Shamir (l_H in Idemix technical report)
+	SecParam  int // security parameter (l_Phi in Idemix technical report)
 }
 
 // TODO: load params from file or blockchain or wherever they will be stored.
 func GetParamSizes() *CLParamSizes {
 	return &CLParamSizes{
 		RhoBitLen: 256,
-		L_n:       1024,
-		L_attrs:   3,
+		NLength:       1024,
+		AttrsNum:   3,
+		AttrBitLen:   256,
+		HashBitLen:   256,
+		SecParam: 80,
 	}
 }
 

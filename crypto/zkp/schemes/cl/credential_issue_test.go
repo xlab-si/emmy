@@ -40,11 +40,23 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	fmt.Println(org)
+	user := NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params)
+	//user.GenerateMasterSecret()
+
+
+	n1 := org.GetNonce()
+	fmt.Println(n1)
+
+	U := user.GetU()
+	// the user must now prove that U was properly computed:
+
+
+
+
+	fmt.Println(U)
+	fmt.Println("================================")
 
 	/*
-	user := NewUser(clParams)
-	user.GenerateMasterSecret()
 	nym, err := user.GenerateNym("testOrg")
 	if err != nil {
 		t.Errorf("error when generating nym: %v", err)

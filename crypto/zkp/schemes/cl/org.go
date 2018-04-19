@@ -26,10 +26,10 @@ import (
 )
 
 type CLPubKey struct {
-	N   *big.Int
-	S   *big.Int
-	Z   *big.Int
-	R_L []*big.Int
+	N          *big.Int
+	S          *big.Int
+	Z          *big.Int
+	R_NumAttrs []*big.Int // one R corresponds to one attribute
 }
 
 func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *CLPubKey {
@@ -37,26 +37,26 @@ func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *CLPubKey {
 		N:   N,
 		S:   S,
 		Z:   Z,
-		R_L: R_L,
+		R_NumAttrs: R_L,
 	}
 }
 
 type CLOrg struct {
-	group *groups.QRSpecialRSA
-	commitmentReceiver *commitments.PedersenReceiver
-	PubKey *CLPubKey
-	x_Z *big.Int // Z = S^x_Z
-	x_R []*big.Int // R_i = S^x_R_i
-	receiver *commitments.PedersenReceiver
+	CLParamSizes     *CLParamSizes
+	Group            *groups.QRSpecialRSA
+	PedersenReceiver *commitments.PedersenReceiver
+	PubKey           *CLPubKey
+	x_Z              *big.Int // Z = S^x_Z
+	x_R              []*big.Int // R_i = S^x_R_i
 }
 
 func NewOrg(clParamSizes *CLParamSizes) (*CLOrg, error) {
-	group, err := groups.NewQRSpecialRSA(clParamSizes.L_n / 2)
+	group, err := groups.NewQRSpecialRSA(clParamSizes.NLength / 2)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
-	S, Z, R_L, x_Z, x_R, err := generateQuadraticResidues(group, clParamSizes.L_attrs)
+	S, Z, R_L, x_Z, x_R, err := generateQuadraticResidues(group, clParamSizes.AttrsNum)
 	pubKey := NewCLPubKey(group.N, S, Z, R_L)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
@@ -69,23 +69,30 @@ func NewOrg(clParamSizes *CLParamSizes) (*CLOrg, error) {
 
 
 	primes := common.NewSpecialRSAPrimes(group.P, group.Q, group.P1, group.Q1)
-	return NewOrgFromExistingParams(primes, pubKey, x_Z, x_R, pedersenParams)
+	return NewOrgFromExistingParams(clParamSizes, primes, pubKey, x_Z, x_R, pedersenParams)
 }
 
-func NewOrgFromExistingParams(primes *common.SpecialRSAPrimes, pubKey *CLPubKey, x_Z *big.Int,
-		x_R []*big.Int, pedersenParams *commitments.PedersenParams) (*CLOrg, error) {
+func NewOrgFromExistingParams(clParamSizes *CLParamSizes, primes *common.SpecialRSAPrimes,
+		pubKey *CLPubKey, x_Z *big.Int, x_R []*big.Int,
+		pedersenParams *commitments.PedersenParams) (*CLOrg, error) {
 	group, err := groups.NewQRSpecialRSAFromExistingParams(primes)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
 	return &CLOrg{
-		group: group,
+		CLParamSizes: clParamSizes,
+		Group: group,
 		PubKey: pubKey,
 		x_Z: x_Z,
 		x_R: x_R,
-		receiver: commitments.NewPedersenReceiverFromExistingParams(pedersenParams),
+		PedersenReceiver: commitments.NewPedersenReceiverFromExistingParams(pedersenParams),
 	}, nil
+}
+
+func (o *CLOrg) GetNonce() *big.Int {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(o.CLParamSizes.SecParam)), nil)
+	return common.GetRandomInt(b)
 }
 
 func generateQuadraticResidues(group *groups.QRSpecialRSA, num_of_attrs int) (*big.Int, *big.Int, []*big.Int,
