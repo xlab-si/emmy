@@ -29,20 +29,29 @@ import (
 func TestCLIssue(t *testing.T) {
 	clParamSizes := GetParamSizes()
 	/*
-	clParams, err := GenerateParams(clParamSizes)
-	if err != nil {
-		t.Errorf("error when generating CL params: %v", err)
-	}
+		clParams, err := GenerateParams(clParamSizes)
+		if err != nil {
+			t.Errorf("error when generating CL params: %v", err)
+		}
 	*/
 
-	org, err := NewOrg(clParamSizes)
+	orgName := "organization 1"
+	org, err := NewOrg(orgName, clParamSizes)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
 	user := NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params)
-	//user.GenerateMasterSecret()
+	user.GenerateMasterSecret()
+	nymName := "nym1"
 
+	// TODO: if there are more than one organizations, each can have its own PedersenParams (where
+	// nyms are generated, and nyms need to be managed per organization
+	nym, err := user.GenerateNym(nymName)
+	if err != nil {
+		t.Errorf("error when generating nym: %v", err)
+	}
+	fmt.Println(nym)
 
 	n1 := org.GetNonce()
 	fmt.Println(n1)
@@ -50,27 +59,23 @@ func TestCLIssue(t *testing.T) {
 	U := user.GetU()
 	// the user must now prove that U was properly computed:
 
-
-
-
 	fmt.Println(U)
 	fmt.Println("================================")
 
 	/*
-	nym, err := user.GenerateNym("testOrg")
-	if err != nil {
-		t.Errorf("error when generating nym: %v", err)
-	}
+		nym, err := user.GenerateNym("testOrg")
+		if err != nil {
+			t.Errorf("error when generating nym: %v", err)
+		}
 
-	fmt.Println(nym)
+		fmt.Println(nym)
 	*/
 
-
 	/*
-	if err != nil {
-		assert.Equal(t, proved, false, "ECDLogEquality proof failed: %v", err)
-	}
+		if err != nil {
+			assert.Equal(t, proved, false, "ECDLogEquality proof failed: %v", err)
+		}
 
-	assert.Equal(t, proved, true, "ECDLogEquality does not work correctly")
+		assert.Equal(t, proved, true, "ECDLogEquality does not work correctly")
 	*/
 }

@@ -24,11 +24,21 @@ import (
 	"math/big"
 )
 
-// Returns random integer from [0, max).
+// GetRandomInt returns random integer from [0, max).
 func GetRandomInt(max *big.Int) *big.Int {
 	n, err := rand.Int(rand.Reader, max)
 	if err != nil {
 		log.Fatal(err)
+	}
+	return n
+}
+
+// GetRandomIntAlsoNeg returns random integer from (-max, max).
+func GetRandomIntAlsoNeg(max *big.Int) *big.Int {
+	n := GetRandomInt(max)
+	sign := GetRandomInt(big.NewInt(2)) // 0 or 1
+	if sign.Cmp(big.NewInt(0)) == 0 {
+		n.Neg(n)
 	}
 	return n
 }

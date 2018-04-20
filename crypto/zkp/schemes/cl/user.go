@@ -18,51 +18,45 @@
 package cl
 
 import (
+	"fmt"
 	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"fmt"
 	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type User struct {
-	CLParamSizes *CLParamSizes
-	CLPubKey *CLPubKey
-	Committer *commitments.PedersenCommitter // for generating pseudonyms
-	masterSecret               *big.Int
-	nyms map[string]*big.Int
+	CLParamSizes   *CLParamSizes
+	CLPubKey       *CLPubKey
+	PedersenParams *commitments.PedersenParams               // for pseudonyms - nym is a commitment to the master secret
+	Committers     map[string]*commitments.PedersenCommitter // for generating nyms
+	masterSecret   *big.Int
 }
 
 func NewUser(clParamSizes *CLParamSizes, clPubKey *CLPubKey, pedersenParams *commitments.PedersenParams) *User {
-	nyms := make(map[string]*big.Int)
 
 	//committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N, clPubKey.S, clPubKey.Z,
 	//	clPubKey.N, clParamSizes.SecParam)
 
-	committer := commitments.NewPedersenCommitter(pedersenParams)
-
 	return &User{
-		CLParamSizes: clParamSizes,
-		CLPubKey: clPubKey,
-		Committer: committer,
-		nyms: nyms,
+		CLParamSizes:   clParamSizes,
+		CLPubKey:       clPubKey,
+		Committers:     make(map[string]*commitments.PedersenCommitter),
+		PedersenParams: pedersenParams,
 	}
 }
 
 func (u *User) GenerateMasterSecret() {
-	//u.masterSecret = common.GetRandomInt(u.CLParams.CommitmentGroup.Q)
+	u.masterSecret = common.GetRandomInt(u.PedersenParams.Group.Q)
 }
 
 // GetU returns U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where v1 is from +-{0,1}^(NLength + SecParam)
 func (u *User) GetU() *big.Int {
 	b := new(big.Int).Exp(big.NewInt(2),
-		big.NewInt(int64(u.CLParamSizes.NLength + u.CLParamSizes.SecParam)), nil)
-	v1 := common.GetRandomInt(b)
-	sign := common.GetRandomInt(big.NewInt(2)) // 0 or 1
-	if sign.Cmp(big.NewInt(0)) == 0 {
-		v1.Neg(v1)
-	}
+		big.NewInt(int64(u.CLParamSizes.NLength+u.CLParamSizes.SecParam)), nil)
+	v1 := common.GetRandomIntAlsoNeg(b)
 
 	group := groups.NewQRSpecialRSAPublic(u.CLPubKey.N)
 	U := group.Exp(u.CLPubKey.S, v1)
@@ -80,39 +74,45 @@ func (u *User) GetU() *big.Int {
 }
 
 // GetNymUProofRandomData return proof random data for nym and U.
-func (u *User) GetNymUProofRandomData() []*big.Int {
+func (u *User) GetNymUProofRandomData(nymName string) ([]*big.Int, error) {
 	// random values are from +-{0,1}^(AttrBitLen + NLen + HashBitLen + 1)
 	b := new(big.Int).Exp(big.NewInt(2),
 		big.NewInt(int64(
-			u.CLParamSizes.AttrBitLen + u.CLParamSizes.NLength + u.CLParamSizes.HashBitLen + 1)), nil)
+			u.CLParamSizes.AttrBitLen+u.CLParamSizes.NLength+u.CLParamSizes.HashBitLen+1)), nil)
 
 	// for nym:
-	nymR := common.GetRandomInt(b)
-	sign := common.GetRandomInt(big.NewInt(2)) // 0 or 1
-	if sign.Cmp(big.NewInt(0)) == 0 {
-		nymR.Neg(nymR)
-	}
+	nymR := common.GetRandomIntAlsoNeg(b)
 	fmt.Println(nymR)
 
-	// use Schnorr with two bases for nym:
+	// use Schnorr with two bases for proving that you know nym opening:
+	bases := []*big.Int{u.PedersenParams.Group.G, u.PedersenParams.H}
+	committer := u.Committers[nymName]
+	val, r := committer.GetDecommitMsg() // val is actually master key
+	secrets := []*big.Int{val, r}
+
+	prover, err := dlogproofs.NewSchnorrProver(u.PedersenParams.Group, secrets[:], bases[:], committer.Commitment)
+	if err != nil {
+		return nil, fmt.Errorf("error when creating Schnorr prover: %s", err)
+	}
+
+	proofRandomData := prover.GetProofRandomData()
+	fmt.Println(proofRandomData)
 
 	// use RepresentationProof for attributes:
 
-	return nil
+	return nil, nil
 }
 
 // GenerateNym creates a pseudonym to be used with a given organization. Multiple pseudonyms
 // can be generated for the same organization (on the contrary domain pseudonym can be only
 // one per organization - not implemented yet). Authentication can be done with respect to
 // the pseudonym or not (depends on the server configuration).
-func (u *User) GenerateNym(orgName string) (*big.Int, error) {
-	com, err := u.Committer.GetCommitMsg(u.masterSecret)
+func (u *User) GenerateNym(nymName string) (*big.Int, error) {
+	committer := commitments.NewPedersenCommitter(u.PedersenParams)
+	com, err := committer.GetCommitMsg(u.masterSecret)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Pedersen commitment: %s", err)
 	}
-	u.nyms[orgName] = com
+	u.Committers[nymName] = committer
 	return com, nil
 }
-
-
-

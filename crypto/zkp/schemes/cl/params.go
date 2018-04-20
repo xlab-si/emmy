@@ -19,35 +19,34 @@ package cl
 
 import (
 	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 type CLParamSizes struct {
-		      // There are only a few possibilities for RhoBitLen. 256 implies that the modulus
-		      // bit length is 2048 (this number corresponds to the Gamma in idemix technical report).
-	RhoBitLen int // bit length of order of the commitment group
-	NLength   int // bit length of RSA modulus
-	AttrsNum  int // number of attributes
-	AttrBitLen  int // bit length of attribute (l_m in Idemix technical report)
+	// There are only a few possibilities for RhoBitLen. 256 implies that the modulus
+	// bit length is 2048 (this number corresponds to the Gamma in idemix technical report).
+	RhoBitLen  int // bit length of order of the commitment group
+	NLength    int // bit length of RSA modulus
+	AttrsNum   int // number of attributes
+	AttrBitLen int // bit length of attribute (l_m in Idemix technical report)
 	HashBitLen int // bit length of hash output used for Fiat-Shamir (l_H in Idemix technical report)
-	SecParam  int // security parameter (l_Phi in Idemix technical report)
+	SecParam   int // security parameter (l_Phi in Idemix technical report)
 }
 
 // TODO: load params from file or blockchain or wherever they will be stored.
 func GetParamSizes() *CLParamSizes {
 	return &CLParamSizes{
-		RhoBitLen: 256,
-		NLength:       1024,
+		RhoBitLen:  256,
+		NLength:    1024,
 		AttrsNum:   3,
-		AttrBitLen:   256,
-		HashBitLen:   256,
-		SecParam: 80,
+		AttrBitLen: 256,
+		HashBitLen: 256,
+		SecParam:   80,
 	}
 }
 
 type CLParams struct {
 	CommitmentGroup *groups.SchnorrGroup
-	CommitmentH *big.Int
+	CommitmentH     *big.Int
 }
-
-

@@ -43,11 +43,11 @@ type PedersenParams struct {
 	// for example in one of techniques to turn sigma to ZKP
 }
 
-func NewPedersenParams(group *groups.SchnorrGroup, H, a *big.Int) *PedersenParams{
+func NewPedersenParams(group *groups.SchnorrGroup, H, a *big.Int) *PedersenParams {
 	return &PedersenParams{
 		Group: group,
-		H: H, // H = g^a
-		a: a,
+		H:     H, // H = g^a
+		a:     a,
 	}
 }
 
@@ -61,7 +61,8 @@ func GeneratePedersenParams(bitLengthGroupOrder int) (*PedersenParams, error) {
 }
 
 type PedersenCommitter struct {
-	Params          *PedersenParams
+	Params         *PedersenParams
+	Commitment     *big.Int
 	committedValue *big.Int
 	r              *big.Int
 }
@@ -88,6 +89,7 @@ func (committer *PedersenCommitter) GetCommitMsg(val *big.Int) (*big.Int, error)
 	t1 := committer.Params.Group.Exp(committer.Params.Group.G, val)
 	t2 := committer.Params.Group.Exp(committer.Params.H, r)
 	c := committer.Params.Group.Mul(t1, t2)
+	committer.Commitment = c
 
 	return c, nil
 }
@@ -105,7 +107,7 @@ func (committer *PedersenCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
 }
 
 type PedersenReceiver struct {
-	Params          *PedersenParams
+	Params     *PedersenParams
 	commitment *big.Int
 }
 
@@ -137,6 +139,6 @@ func (s *PedersenReceiver) SetCommitment(el *big.Int) {
 func (s *PedersenReceiver) CheckDecommitment(r, val *big.Int) bool {
 	t1 := s.Params.Group.Exp(s.Params.Group.G, val) // g^x
 	t2 := s.Params.Group.Exp(s.Params.H, r)         // h^r
-	c := s.Params.Group.Mul(t1, t2)          // g^x * h^r
+	c := s.Params.Group.Mul(t1, t2)                 // g^x * h^r
 	return c.Cmp(s.commitment) == 0
 }
