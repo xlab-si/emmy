@@ -62,6 +62,22 @@ func TestCLIssue(t *testing.T) {
 	fmt.Println(U)
 	fmt.Println("================================")
 
+	// nym and U are ready, let's now prepare data to prove that nym and U are properly generated:
+
+	nymProofRandomData, err := user.GetNymProofRandomData(nymName)
+	if err != nil {
+		t.Errorf("error when obtaining nym proof random data: %v", err)
+	}
+	fmt.Println(nymProofRandomData)
+
+	UProofRandomData, err := user.GetUProofRandomData()
+	if err != nil {
+		t.Errorf("error when obtaining U proof random data: %v", err)
+	}
+	fmt.Println(UProofRandomData)
+
+
+
 	/*
 		nym, err := user.GenerateNym("testOrg")
 		if err != nil {

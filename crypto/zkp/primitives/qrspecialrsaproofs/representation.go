@@ -18,11 +18,20 @@
 package qrspecialrsaproofs
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 )
+
+// TODO: Protocol being proof of knowledge is shown by the existance of knowledge extractor. In Schnorr protocol
+// extractor is based on rewinding. In RSA it can be too, but note that when we get y^(c0-c1) = g^(s-s1), we don't
+// know the order of group and cannot compute u such that y = g^u. However, due to the strong RSA assumption, we
+// know (assume) that (c0-c1) divides (s0-s1). So we have y^(c0-c1) = g^((c0-c1)*u). Now, that doesn't mean
+// that y = g^u - it might be y = (b*g)^u such that b^(c0-c1) = 1. It turns out b can be 1 or -1.
+// It seems that idemix is solving this by taking random values (used in random proof data) also from negative values -
+// is this really needed?
 
 // RepresentationProver is like SchnorrProver but in a QRSpecialRSA group (note that here proof data is
 // is computed in Z, not modulo as in Schnorr). Also, RepresentationProver with only one base and one secret
@@ -47,11 +56,11 @@ func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
 	}
 }
 
-func (p *RepresentationProver) GetProofRandomData() *big.Int {
+// GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and r_i are random values.
+func (p *RepresentationProver) GetProofRandomData() (*big.Int) {
 	nLen := p.group.N.BitLen()
 	exp := big.NewInt(int64(nLen + p.l_r))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
-	// t = g_1^r_1 * ... * g_k^r_k where g_i are bases and r_i are random values
 	t := big.NewInt(1)
 	var randomVals = make([]*big.Int, len(p.bases))
 	for i, _ := range randomVals {
@@ -61,7 +70,27 @@ func (p *RepresentationProver) GetProofRandomData() *big.Int {
 		t = p.group.Mul(t, f)
 	}
 	p.randomVals = randomVals
-	return t
+	return t, nil
+}
+
+// GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and each r_i is a
+// random value of boundariesBitLength[i] bit length.
+func (p *RepresentationProver) GetProofRandomDataGivenBoundaries(boundariesBitLength []int) (*big.Int, error) {
+	if len(boundariesBitLength) != len(p.bases) {
+		return nil, fmt.Errorf("the length of boundariesBitLength should be the same as the number of bases")
+	}
+	t := big.NewInt(1)
+	var randomVals = make([]*big.Int, len(p.bases))
+	for i, _ := range randomVals {
+		exp := big.NewInt(int64(boundariesBitLength[i]))
+		b := new(big.Int).Exp(big.NewInt(2), exp, nil)
+		r := common.GetRandomInt(b)
+		randomVals[i] = r
+		f := p.group.Exp(p.bases[i], r)
+		t = p.group.Mul(t, f)
+	}
+	p.randomVals = randomVals
+	return t, nil
 }
 
 func (p *RepresentationProver) GetProofData(challenge *big.Int) []*big.Int {

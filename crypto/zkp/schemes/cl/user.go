@@ -73,17 +73,8 @@ func (u *User) GetU() *big.Int {
 	return U
 }
 
-// GetNymUProofRandomData return proof random data for nym and U.
-func (u *User) GetNymUProofRandomData(nymName string) ([]*big.Int, error) {
-	// random values are from +-{0,1}^(AttrBitLen + NLen + HashBitLen + 1)
-	b := new(big.Int).Exp(big.NewInt(2),
-		big.NewInt(int64(
-			u.CLParamSizes.AttrBitLen+u.CLParamSizes.NLength+u.CLParamSizes.HashBitLen+1)), nil)
-
-	// for nym:
-	nymR := common.GetRandomIntAlsoNeg(b)
-	fmt.Println(nymR)
-
+// GetNymProofRandomData return proof random data for nym.
+func (u *User) GetNymProofRandomData(nymName string) (*big.Int, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{u.PedersenParams.Group.G, u.PedersenParams.H}
 	committer := u.Committers[nymName]
@@ -96,9 +87,17 @@ func (u *User) GetNymUProofRandomData(nymName string) ([]*big.Int, error) {
 	}
 
 	proofRandomData := prover.GetProofRandomData()
-	fmt.Println(proofRandomData)
+	return proofRandomData, nil
+}
 
-	// use RepresentationProof for attributes:
+func (u *User) GetUProofRandomData() (*big.Int, error) {
+	// boundary for v1
+	b_v1 := u.CLParamSizes.NLength + 2*u.CLParamSizes.SecParam + u.CLParamSizes.HashBitLen
+
+	// boundary for m_tilde
+	b_m := u.CLParamSizes.AttrBitLen + u.CLParamSizes.SecParam + u.CLParamSizes.HashBitLen + 1
+
+
 
 	return nil, nil
 }
