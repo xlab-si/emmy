@@ -41,7 +41,7 @@ func GetParamSizes() *CLParamSizes {
 		NLength:    1024,
 		AttrsNum:   3,
 		AttrBitLen: 256,
-		HashBitLen: 256,
+		HashBitLen: 512,
 		SecParam:   80,
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 type User struct {
@@ -33,6 +34,9 @@ type User struct {
 	PedersenParams *commitments.PedersenParams               // for pseudonyms - nym is a commitment to the master secret
 	Committers     map[string]*commitments.PedersenCommitter // for generating nyms
 	masterSecret   *big.Int
+	attrs [] *big.Int
+	v1 *big.Int // TODO: probably this would go under struct something like UserCredentialIssue
+	U *big.Int // TODO: probably this would go under struct something like UserCredentialIssue
 }
 
 func NewUser(clParamSizes *CLParamSizes, clPubKey *CLPubKey, pedersenParams *commitments.PedersenParams) *User {
@@ -45,6 +49,7 @@ func NewUser(clParamSizes *CLParamSizes, clPubKey *CLPubKey, pedersenParams *com
 		CLPubKey:       clPubKey,
 		Committers:     make(map[string]*commitments.PedersenCommitter),
 		PedersenParams: pedersenParams,
+		attrs: []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5)}, // TODO attributes should be read from somewhere and the structure should be loaded too
 	}
 }
 
@@ -53,22 +58,22 @@ func (u *User) GenerateMasterSecret() {
 }
 
 // GetU returns U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where v1 is from +-{0,1}^(NLength + SecParam)
-func (u *User) GetU() *big.Int {
+func (u *User) GetU() *big.Int { // TODO: should be SetU?
 	b := new(big.Int).Exp(big.NewInt(2),
 		big.NewInt(int64(u.CLParamSizes.NLength+u.CLParamSizes.SecParam)), nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
+	u.v1 = v1
 
 	group := groups.NewQRSpecialRSAPublic(u.CLPubKey.N)
 	U := group.Exp(u.CLPubKey.S, v1)
 
-	// TODO: attributes should be read from somewhere and the structure should be loaded too -
 	// the number of attributes, type (A_k - issuer knows an attribute, A_c - issuer knows
 	// a commitment to the attribute, A_h - issuer does not know the attribute)
-	attrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5)}
-	for i, attr := range attrs {
+	for i, attr := range u.attrs {
 		t := group.Exp(u.CLPubKey.R_NumAttrs[i], attr) // R_i^m_i
 		U = group.Mul(U, t)
 	}
+	u.U = U
 
 	return U
 }
@@ -91,15 +96,48 @@ func (u *User) GetNymProofRandomData(nymName string) (*big.Int, error) {
 }
 
 func (u *User) GetUProofRandomData() (*big.Int, error) {
+	group := groups.NewQRSpecialRSAPublic(u.CLPubKey.N)
+	// secrets are [v1, attr_1, ..., attr_L]
+	secrets := make([]*big.Int, len(u.CLPubKey.R_NumAttrs) + 1)
+	secrets[0] = u.v1
+	for i := 0; i < len(u.CLPubKey.R_NumAttrs); i++ {
+		secrets[i+1] = u.attrs[i]
+	}
+
+	// bases are [S, R_1, ..., R_L]
+	bases := make([]*big.Int, len(u.CLPubKey.R_NumAttrs) + 1)
+	bases[0] = u.CLPubKey.S
+	for i := 0; i < len(u.CLPubKey.R_NumAttrs); i++ {
+		bases[i+1] = u.CLPubKey.R_NumAttrs[i]
+	}
+
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.CLParamSizes.SecParam,
+		secrets[:], bases[:], u.U)
+
 	// boundary for v1
 	b_v1 := u.CLParamSizes.NLength + 2*u.CLParamSizes.SecParam + u.CLParamSizes.HashBitLen
-
 	// boundary for m_tilde
 	b_m := u.CLParamSizes.AttrBitLen + u.CLParamSizes.SecParam + u.CLParamSizes.HashBitLen + 1
 
+	boundaries := make([]int, len(u.CLPubKey.R_NumAttrs) + 1)
+	boundaries[0] = b_v1
+	for i := 0; i < len(u.CLPubKey.R_NumAttrs); i++ {
+		boundaries[i+1] = b_m
+	}
 
+	//U_tilde := prover.GetProofRandomData()
+	U_tilde, err := prover.GetProofRandomDataGivenBoundaries(boundaries) // TODO: alsoNeg
+	if err != nil {
+		return nil, fmt.Errorf("error when generating representation proof random data: %s", err)
+	}
 
-	return nil, nil
+	return U_tilde, nil
+}
+
+// GetChallenge returns Hash(context||U||nym||U_tilde||nym_tilde||n1). Thus, Fiat-Shamir is used to
+// generate a challenge, instead of asking verifier to generate it.
+func (u *User) GetChallenge(U, nym, n1 *big.Int) *big.Int {
+	return common.Hash(U, nym, n1)
 }
 
 // GenerateNym creates a pseudonym to be used with a given organization. Multiple pseudonyms

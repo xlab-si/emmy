@@ -42,6 +42,19 @@ func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *CLPubKey {
 	}
 }
 
+// GetContext concatenates public parameters and returns a corresponding number.
+func (k *CLPubKey) GetContext() *big.Int {
+	numbers := make([]*big.Int, len(k.R_NumAttrs) + 3)
+	numbers[0] = k.N
+	numbers[1] = k.S
+	numbers[2] = k.Z
+	for i := 0; i < len(k.R_NumAttrs); i++ {
+		numbers[i+3] = k.R_NumAttrs[i]
+	}
+	concatenated := common.ConcatenateNumbers(numbers...)
+	return new(big.Int).SetBytes(concatenated)
+}
+
 type CLOrg struct {
 	Name             string
 	CLParamSizes     *CLParamSizes

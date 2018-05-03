@@ -76,6 +76,11 @@ func TestCLIssue(t *testing.T) {
 	}
 	fmt.Println(UProofRandomData)
 
+	context := org.PubKey.GetContext()
+	fmt.Println(context)
+
+	challenge := user.GetChallenge(U, nym, n1)
+	fmt.Println(challenge)
 
 
 	/*

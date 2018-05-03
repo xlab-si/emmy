@@ -57,7 +57,7 @@ func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
 }
 
 // GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and r_i are random values.
-func (p *RepresentationProver) GetProofRandomData() (*big.Int) {
+func (p *RepresentationProver) GetProofRandomData() *big.Int {
 	nLen := p.group.N.BitLen()
 	exp := big.NewInt(int64(nLen + p.l_r))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -70,7 +70,7 @@ func (p *RepresentationProver) GetProofRandomData() (*big.Int) {
 		t = p.group.Mul(t, f)
 	}
 	p.randomVals = randomVals
-	return t, nil
+	return t
 }
 
 // GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and each r_i is a
