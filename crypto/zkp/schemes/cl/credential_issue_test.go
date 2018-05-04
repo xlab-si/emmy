@@ -53,10 +53,13 @@ func TestCLIssue(t *testing.T) {
 	}
 	fmt.Println(nym)
 
-	n1 := org.GetNonce()
+	orgIssueCredential := NewOrgIssueCredentialVerifier(org, nym)
+	n1 := orgIssueCredential.GetNonce()
 	fmt.Println(n1)
 
-	U := user.GetU()
+	userIssueCredential := NewUserIssueCredentialProver(user)
+
+	U := userIssueCredential.GetU()
 	// the user must now prove that U was properly computed:
 
 	fmt.Println(U)
@@ -64,23 +67,39 @@ func TestCLIssue(t *testing.T) {
 
 	// nym and U are ready, let's now prepare data to prove that nym and U are properly generated:
 
-	nymProofRandomData, err := user.GetNymProofRandomData(nymName)
+	nymProofRandomData, err := userIssueCredential.GetNymProofRandomData(nymName)
 	if err != nil {
 		t.Errorf("error when obtaining nym proof random data: %v", err)
 	}
 	fmt.Println(nymProofRandomData)
 
-	UProofRandomData, err := user.GetUProofRandomData()
+	UProofRandomData, err := userIssueCredential.GetUProofRandomData()
 	if err != nil {
 		t.Errorf("error when obtaining U proof random data: %v", err)
 	}
 	fmt.Println(UProofRandomData)
 
-	context := org.PubKey.GetContext()
-	fmt.Println(context)
+	challenge := userIssueCredential.GetChallenge(U, nym, n1)
 
-	challenge := user.GetChallenge(U, nym, n1)
-	fmt.Println(challenge)
+	nymProofData, UProofData := userIssueCredential.GetProofData(challenge)
+	fmt.Println(nymProofData)
+	fmt.Println(UProofData)
+
+	// P1 = (challenge, nymProofData, UProofData)
+	// user needs to send (U, P1, n2) to the issuer
+
+	n2 := userIssueCredential.GetNonce()
+	fmt.Println(n2)
+
+	verified := orgIssueCredential.VerifyNym(nymProofRandomData, challenge, nymProofData)
+	fmt.Println(verified)
+
+
+
+	// issuer needs to verify that nym is properly generated
+
+
+
 
 
 	/*

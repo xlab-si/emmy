@@ -106,6 +106,11 @@ func (v *SchnorrVerifier) GetChallenge() *big.Int {
 	return challenge
 }
 
+// SetChallenge is used when Fiat-Shamir is used - when challenge is generated using hash by the prover.
+func (v *SchnorrVerifier) SetChallenge(challenge *big.Int) {
+	v.challenge = challenge
+}
+
 func (v *SchnorrVerifier) Verify(proofData []*big.Int) bool {
 	// check:
 	// g_1^z_1 * ... * g_k^z_k = (g_1^x_1 * ... * g_k^x_k)^challenge * (g_1^r_1 * ... * g_k^r_k)

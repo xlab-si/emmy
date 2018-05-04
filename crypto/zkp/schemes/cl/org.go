@@ -26,46 +26,46 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 )
 
-type CLPubKey struct {
-	N          *big.Int
-	S          *big.Int
-	Z          *big.Int
-	R_NumAttrs []*big.Int // one R corresponds to one attribute
+type PubKey struct {
+	N      *big.Int
+	S      *big.Int
+	Z      *big.Int
+	R_list []*big.Int // one R corresponds to one attribute, TODO: not sure what would be the appropriate name?
 }
 
-func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *CLPubKey {
-	return &CLPubKey{
+func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *PubKey {
+	return &PubKey{
 		N:          N,
 		S:          S,
 		Z:          Z,
-		R_NumAttrs: R_L,
+		R_list: R_L,
 	}
 }
 
 // GetContext concatenates public parameters and returns a corresponding number.
-func (k *CLPubKey) GetContext() *big.Int {
-	numbers := make([]*big.Int, len(k.R_NumAttrs) + 3)
+func (k *PubKey) GetContext() *big.Int {
+	numbers := make([]*big.Int, len(k.R_list) + 3)
 	numbers[0] = k.N
 	numbers[1] = k.S
 	numbers[2] = k.Z
-	for i := 0; i < len(k.R_NumAttrs); i++ {
-		numbers[i+3] = k.R_NumAttrs[i]
+	for i := 0; i < len(k.R_list); i++ {
+		numbers[i+3] = k.R_list[i]
 	}
 	concatenated := common.ConcatenateNumbers(numbers...)
 	return new(big.Int).SetBytes(concatenated)
 }
 
-type CLOrg struct {
+type Org struct {
 	Name             string
 	CLParamSizes     *CLParamSizes
 	Group            *groups.QRSpecialRSA
 	PedersenReceiver *commitments.PedersenReceiver
-	PubKey           *CLPubKey
+	PubKey           *PubKey
 	x_Z              *big.Int   // Z = S^x_Z
 	x_R              []*big.Int // R_i = S^x_R_i
 }
 
-func NewOrg(name string, clParamSizes *CLParamSizes) (*CLOrg, error) {
+func NewOrg(name string, clParamSizes *CLParamSizes) (*Org, error) {
 	group, err := groups.NewQRSpecialRSA(clParamSizes.NLength / 2)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
@@ -87,14 +87,14 @@ func NewOrg(name string, clParamSizes *CLParamSizes) (*CLOrg, error) {
 }
 
 func NewOrgFromExistingParams(name string, clParamSizes *CLParamSizes, primes *common.SpecialRSAPrimes,
-	pubKey *CLPubKey, x_Z *big.Int, x_R []*big.Int,
-	pedersenParams *commitments.PedersenParams) (*CLOrg, error) {
+	pubKey *PubKey, x_Z *big.Int, x_R []*big.Int,
+	pedersenParams *commitments.PedersenParams) (*Org, error) {
 	group, err := groups.NewQRSpecialRSAFromExistingParams(primes)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
-	return &CLOrg{
+	return &Org{
 		Name:             name,
 		CLParamSizes:     clParamSizes,
 		Group:            group,
@@ -103,11 +103,6 @@ func NewOrgFromExistingParams(name string, clParamSizes *CLParamSizes, primes *c
 		x_R:              x_R,
 		PedersenReceiver: commitments.NewPedersenReceiverFromExistingParams(pedersenParams),
 	}, nil
-}
-
-func (o *CLOrg) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(o.CLParamSizes.SecParam)), nil)
-	return common.GetRandomInt(b)
 }
 
 func generateQuadraticResidues(group *groups.QRSpecialRSA, num_of_attrs int) (*big.Int, *big.Int, []*big.Int,
