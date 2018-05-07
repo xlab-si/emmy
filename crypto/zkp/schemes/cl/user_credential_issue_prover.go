@@ -32,6 +32,8 @@ type UserIssueCredentialProver struct {
 	v1 *big.Int // v1 is the random element in U, which is constructed also from clPubKey.R_list and attrs
 	U *big.Int
 	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
+	// TODO: not sure what would be the most appropriate name for UProver and UTilde - currently
+	// they have upper case U as it is in paper
 	UProver *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
 	nymTilde *big.Int // proof random data for nym (proving that nym is of proper form)
 	UTilde *big.Int // proof random data for U (proving that U is of proper form)
@@ -46,17 +48,17 @@ func NewUserIssueCredentialProver(user *User) *UserIssueCredentialProver {
 // GetU returns U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where v1 is from +-{0,1}^(NLength + SecParam)
 func (u *UserIssueCredentialProver) GetU() *big.Int { // TODO: should be SetU?
 	b := new(big.Int).Exp(big.NewInt(2),
-		big.NewInt(int64(u.User.CLParamSizes.NLength+u.User.CLParamSizes.SecParam)), nil)
+		big.NewInt(int64(u.User.ParamSizes.NLength+u.User.ParamSizes.SecParam)), nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
 	u.v1 = v1
 
-	group := groups.NewQRSpecialRSAPublic(u.User.CLPubKey.N)
-	U := group.Exp(u.User.CLPubKey.S, v1)
+	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
+	U := group.Exp(u.User.PubKey.S, v1)
 
 	// the number of attributes, type (A_k - issuer knows an attribute, A_c - issuer knows
 	// a commitment to the attribute, A_h - issuer does not know the attribute)
 	for i, attr := range u.User.attrs {
-		t := group.Exp(u.User.CLPubKey.R_list[i], attr) // R_i^m_i
+		t := group.Exp(u.User.PubKey.R_list[i], attr) // R_i^m_i
 		U = group.Mul(U, t)
 	}
 	u.U = U
@@ -84,38 +86,29 @@ func (u *UserIssueCredentialProver) GetNymProofRandomData(nymName string) (*big.
 }
 
 func (u *UserIssueCredentialProver) GetUProofRandomData() (*big.Int, error) {
-	group := groups.NewQRSpecialRSAPublic(u.User.CLPubKey.N)
-	// secrets are [v1, attr_1, ..., attr_L]
-	secrets := make([]*big.Int, len(u.User.CLPubKey.R_list) + 1)
-	secrets[0] = u.v1
-	for i := 0; i < len(u.User.CLPubKey.R_list); i++ {
-		secrets[i+1] = u.User.attrs[i]
-	}
+	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
+	// secrets are [attr_1, ..., attr_L, v1]
+	secrets := append(u.User.attrs, u.v1)
 
-	// bases are [S, R_1, ..., R_L]
-	bases := make([]*big.Int, len(u.User.CLPubKey.R_list) + 1)
-	bases[0] = u.User.CLPubKey.S
-	for i := 0; i < len(u.User.CLPubKey.R_list); i++ {
-		bases[i+1] = u.User.CLPubKey.R_list[i]
-	}
+	// bases are [R_1, ..., R_L, S]
+	bases := append(u.User.PubKey.R_list, u.User.PubKey.S)
 
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.User.CLParamSizes.SecParam,
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.User.ParamSizes.SecParam,
 		secrets[:], bases[:], u.U)
 	u.UProver = prover
 
 	// boundary for v1
-	b_v1 := u.User.CLParamSizes.NLength + 2*u.User.CLParamSizes.SecParam + u.User.CLParamSizes.HashBitLen
+	b_v1 := u.User.ParamSizes.NLength + 2*u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen
 	// boundary for m_tilde
-	b_m := u.User.CLParamSizes.AttrBitLen + u.User.CLParamSizes.SecParam + u.User.CLParamSizes.HashBitLen + 1
+	b_m := u.User.ParamSizes.AttrBitLen + u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen + 1
 
-	boundaries := make([]int, len(u.User.CLPubKey.R_list) + 1)
-	boundaries[0] = b_v1
-	for i := 0; i < len(u.User.CLPubKey.R_list); i++ {
-		boundaries[i+1] = b_m
+	boundaries := make([]int, len(u.User.PubKey.R_list))
+	for i := 0; i < len(u.User.PubKey.R_list); i++ {
+		boundaries[i] = b_m
 	}
+	boundaries = append(boundaries, b_v1)
 
-	//UTilde := prover.GetProofRandomData()
-	UTilde, err := prover.GetProofRandomDataGivenBoundaries(boundaries) // TODO: alsoNeg
+	UTilde, err := prover.GetProofRandomDataGivenBoundaries(boundaries, true)
 	if err != nil {
 		return nil, fmt.Errorf("error when generating representation proof random data: %s", err)
 	}
@@ -126,7 +119,7 @@ func (u *UserIssueCredentialProver) GetUProofRandomData() (*big.Int, error) {
 // GetChallenge returns Hash(context||U||nym||U_tilde||nym_tilde||n1). Thus, Fiat-Shamir is used to
 // generate a challenge, instead of asking verifier to generate it.
 func (u *UserIssueCredentialProver) GetChallenge(U, nym, n1 *big.Int) *big.Int {
-	context := u.User.CLPubKey.GetContext()
+	context := u.User.PubKey.GetContext()
 	return common.Hash(context, U, nym, n1)
 }
 
@@ -135,7 +128,7 @@ func (u *UserIssueCredentialProver) GetProofData(challenge *big.Int) ([]*big.Int
 }
 
 func (u *UserIssueCredentialProver) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.CLParamSizes.SecParam)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SecParam)), nil)
 	return common.GetRandomInt(b)
 }
 

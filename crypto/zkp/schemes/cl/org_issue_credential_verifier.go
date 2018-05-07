@@ -22,19 +22,25 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 type OrgIssueCredentialVerifier struct {
 	Org      *Org
 	nym *big.Int
+	U *big.Int
 	nymVerifier *dlogproofs.SchnorrVerifier
+	UVerifier *qrspecialrsaproofs.RepresentationVerifier
 }
 
-func NewOrgIssueCredentialVerifier(org *Org, nym *big.Int) *OrgIssueCredentialVerifier {
+func NewOrgIssueCredentialVerifier(org *Org, nym, U *big.Int) *OrgIssueCredentialVerifier {
 	return &OrgIssueCredentialVerifier{
 		Org: org,
 		nym: nym,
+		U: U,
 		nymVerifier: dlogproofs.NewSchnorrVerifier(org.PedersenReceiver.Params.Group),
+		UVerifier: qrspecialrsaproofs.NewRepresentationVerifier(org.Group,
+			org.CLParamSizes.SecParam),
 	}
 }
 
@@ -50,5 +56,14 @@ func (o *OrgIssueCredentialVerifier) VerifyNym(nymProofRandomData, challenge *bi
 	o.nymVerifier.SetChallenge(challenge)
 	return o.nymVerifier.Verify(nymProofData)
 }
+
+func (o *OrgIssueCredentialVerifier) VerifyU(UProofRandomData, challenge *big.Int, UProofData []*big.Int) bool {
+	// bases are [R_1, ..., R_L, S]
+	bases := append(o.Org.PubKey.R_list, o.Org.PubKey.S)
+	o.UVerifier.SetProofRandomData(UProofRandomData, bases, o.U)
+	o.UVerifier.SetChallenge(challenge)
+	return o.UVerifier.Verify(UProofData)
+}
+
 
 

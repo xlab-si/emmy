@@ -26,12 +26,12 @@ import (
 )
 
 type User struct {
-	CLParamSizes   *CLParamSizes
-	CLPubKey       *PubKey
+	ParamSizes     *CLParamSizes
+	PubKey         *PubKey
 	PedersenParams *commitments.PedersenParams               // for pseudonyms - nym is a commitment to the master secret
 	Committers     map[string]*commitments.PedersenCommitter // for generating nyms
 	masterSecret   *big.Int
-	attrs [] *big.Int
+	attrs          [] *big.Int
 }
 
 func NewUser(clParamSizes *CLParamSizes, clPubKey *PubKey, pedersenParams *commitments.PedersenParams) *User {
@@ -40,8 +40,8 @@ func NewUser(clParamSizes *CLParamSizes, clPubKey *PubKey, pedersenParams *commi
 	//	clPubKey.N, clParamSizes.SecParam)
 
 	return &User{
-		CLParamSizes:   clParamSizes,
-		CLPubKey:       clPubKey,
+		ParamSizes:   clParamSizes,
+		PubKey:       clPubKey,
 		Committers:     make(map[string]*commitments.PedersenCommitter),
 		PedersenParams: pedersenParams,
 		attrs: []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5)}, // TODO attributes should be read from somewhere and the structure should be loaded too

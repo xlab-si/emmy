@@ -75,7 +75,8 @@ func (p *RepresentationProver) GetProofRandomData() *big.Int {
 
 // GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and each r_i is a
 // random value of boundariesBitLength[i] bit length.
-func (p *RepresentationProver) GetProofRandomDataGivenBoundaries(boundariesBitLength []int) (*big.Int, error) {
+func (p *RepresentationProver) GetProofRandomDataGivenBoundaries(boundariesBitLength []int,
+		alsoNeg bool) (*big.Int, error) {
 	if len(boundariesBitLength) != len(p.bases) {
 		return nil, fmt.Errorf("the length of boundariesBitLength should be the same as the number of bases")
 	}
@@ -84,7 +85,12 @@ func (p *RepresentationProver) GetProofRandomDataGivenBoundaries(boundariesBitLe
 	for i, _ := range randomVals {
 		exp := big.NewInt(int64(boundariesBitLength[i]))
 		b := new(big.Int).Exp(big.NewInt(2), exp, nil)
-		r := common.GetRandomInt(b)
+		var r *big.Int
+		if alsoNeg {
+			r = common.GetRandomIntAlsoNeg(b)
+		} else {
+			r = common.GetRandomInt(b)
+		}
 		randomVals[i] = r
 		f := p.group.Exp(p.bases[i], r)
 		t = p.group.Mul(t, f)
@@ -136,6 +142,11 @@ func (v *RepresentationVerifier) GetChallenge() *big.Int {
 	challenge := common.GetRandomInt(b)
 	v.challenge = challenge
 	return challenge
+}
+
+// SetChallenge is used when Fiat-Shamir is used - when challenge is generated using hash by the prover.
+func (v *RepresentationVerifier) SetChallenge(challenge *big.Int) {
+	v.challenge = challenge
 }
 
 func (v *RepresentationVerifier) Verify(proofData []*big.Int) bool {

@@ -53,13 +53,13 @@ func TestCLIssue(t *testing.T) {
 	}
 	fmt.Println(nym)
 
-	orgIssueCredential := NewOrgIssueCredentialVerifier(org, nym)
+	userIssueCredential := NewUserIssueCredentialProver(user)
+	U := userIssueCredential.GetU()
+
+	orgIssueCredential := NewOrgIssueCredentialVerifier(org, nym, U)
 	n1 := orgIssueCredential.GetNonce()
 	fmt.Println(n1)
 
-	userIssueCredential := NewUserIssueCredentialProver(user)
-
-	U := userIssueCredential.GetU()
 	// the user must now prove that U was properly computed:
 
 	fmt.Println(U)
@@ -91,12 +91,14 @@ func TestCLIssue(t *testing.T) {
 	n2 := userIssueCredential.GetNonce()
 	fmt.Println(n2)
 
+	// issuer needs to verify that nym is properly generated
 	verified := orgIssueCredential.VerifyNym(nymProofRandomData, challenge, nymProofData)
 	fmt.Println(verified)
 
+	// issuer needs to verify that U is properly generated
+	verified = orgIssueCredential.VerifyU(UProofRandomData, challenge, UProofData)
+	fmt.Println(verified)
 
-
-	// issuer needs to verify that nym is properly generated
 
 
 
