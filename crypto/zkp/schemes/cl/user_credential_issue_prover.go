@@ -97,10 +97,10 @@ func (u *UserIssueCredentialProver) GetUProofRandomData() (*big.Int, error) {
 		secrets[:], bases[:], u.U)
 	u.UProver = prover
 
-	// boundary for v1
-	b_v1 := u.User.ParamSizes.NLength + 2*u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen
 	// boundary for m_tilde
 	b_m := u.User.ParamSizes.AttrBitLen + u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen + 1
+	// boundary for v1
+	b_v1 := u.User.ParamSizes.NLength + 2*u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen
 
 	boundaries := make([]int, len(u.User.PubKey.R_list))
 	for i := 0; i < len(u.User.PubKey.R_list); i++ {

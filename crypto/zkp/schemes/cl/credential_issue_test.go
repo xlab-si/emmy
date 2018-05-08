@@ -85,39 +85,16 @@ func TestCLIssue(t *testing.T) {
 	fmt.Println(nymProofData)
 	fmt.Println(UProofData)
 
-	// P1 = (challenge, nymProofData, UProofData)
-	// user needs to send (U, P1, n2) to the issuer
+	// user needs to send to the issuer:
+	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData)
 
 	n2 := userIssueCredential.GetNonce()
 	fmt.Println(n2)
 
-	// issuer needs to verify that nym is properly generated
-	verified := orgIssueCredential.VerifyNym(nymProofRandomData, challenge, nymProofData)
-	fmt.Println(verified)
-
-	// issuer needs to verify that U is properly generated
-	verified = orgIssueCredential.VerifyU(UProofRandomData, challenge, UProofData)
+	verified := orgIssueCredential.Verify(nymProofRandomData, UProofRandomData, challenge,
+		nymProofData, UProofData)
 	fmt.Println(verified)
 
 
 
-
-
-
-	/*
-		nym, err := user.GenerateNym("testOrg")
-		if err != nil {
-			t.Errorf("error when generating nym: %v", err)
-		}
-
-		fmt.Println(nym)
-	*/
-
-	/*
-		if err != nil {
-			assert.Equal(t, proved, false, "ECDLogEquality proof failed: %v", err)
-		}
-
-		assert.Equal(t, proved, true, "ECDLogEquality does not work correctly")
-	*/
 }
