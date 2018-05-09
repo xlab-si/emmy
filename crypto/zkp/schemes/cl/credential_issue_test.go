@@ -89,12 +89,18 @@ func TestCLIssue(t *testing.T) {
 	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData)
 
 	n2 := userIssueCredential.GetNonce()
-	fmt.Println(n2)
 
 	verified := orgIssueCredential.Verify(nymProofRandomData, UProofRandomData, challenge,
 		nymProofData, UProofData)
 	fmt.Println(verified)
 
+	// TODO: only known attributes (from A_k)
+	A, e, v11, AProof := orgIssueCredential.Issue(user.attrs, n2)
+	fmt.Println(A)
+	fmt.Println(e)
+	fmt.Println(v11)
+	fmt.Println(AProof)
 
+	// issuer needs to prove that it knows eInv such that A = Q^eInv (mod n)
 
 }

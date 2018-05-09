@@ -35,16 +35,16 @@ type PubKey struct {
 
 func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *PubKey {
 	return &PubKey{
-		N:          N,
-		S:          S,
-		Z:          Z,
+		N:      N,
+		S:      S,
+		Z:      Z,
 		R_list: R_L,
 	}
 }
 
 // GetContext concatenates public parameters and returns a corresponding number.
 func (k *PubKey) GetContext() *big.Int {
-	numbers := make([]*big.Int, len(k.R_list) + 3)
+	numbers := make([]*big.Int, len(k.R_list)+3)
 	numbers[0] = k.N
 	numbers[1] = k.S
 	numbers[2] = k.Z

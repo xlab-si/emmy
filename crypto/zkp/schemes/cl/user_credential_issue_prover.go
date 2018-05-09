@@ -28,15 +28,15 @@ import (
 )
 
 type UserIssueCredentialProver struct {
-	User *User
-	v1 *big.Int // v1 is the random element in U, which is constructed also from clPubKey.R_list and attrs
-	U *big.Int
+	User      *User
+	v1        *big.Int // v1 is the random element in U, which is constructed also from clPubKey.R_list and attrs
+	U         *big.Int
 	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde - currently
 	// they have upper case U as it is in paper
-	UProver *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
-	nymTilde *big.Int // proof random data for nym (proving that nym is of proper form)
-	UTilde *big.Int // proof random data for U (proving that U is of proper form)
+	UProver  *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
+	nymTilde *big.Int                                 // proof random data for nym (proving that nym is of proper form)
+	UTilde   *big.Int                                 // proof random data for U (proving that U is of proper form)
 }
 
 func NewUserIssueCredentialProver(user *User) *UserIssueCredentialProver {
@@ -57,6 +57,7 @@ func (u *UserIssueCredentialProver) GetU() *big.Int { // TODO: should be SetU?
 
 	// the number of attributes, type (A_k - issuer knows an attribute, A_c - issuer knows
 	// a commitment to the attribute, A_h - issuer does not know the attribute)
+	// TODO: currently only for A_k
 	for i, attr := range u.User.attrs {
 		t := group.Exp(u.User.PubKey.R_list[i], attr) // R_i^m_i
 		U = group.Mul(U, t)
@@ -131,5 +132,3 @@ func (u *UserIssueCredentialProver) GetNonce() *big.Int {
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SecParam)), nil)
 	return common.GetRandomInt(b)
 }
-
-

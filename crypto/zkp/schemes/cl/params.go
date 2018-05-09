@@ -34,6 +34,7 @@ type CLParamSizes struct {
 	SecParam   int // security parameter (l_Phi in Idemix technical report)
 	SizeE      int // size of e values of certificates (l_e in Idemix technical report)
 	SizeE1     int // size of the interval the e values are taken from
+	SizeV      int // size of the v values of the certificates (l_v in Idemix technical report)
 }
 
 // TODO: load params from file or blockchain or wherever they will be stored.
@@ -47,6 +48,7 @@ func GetParamSizes() *CLParamSizes {
 		SecParam:   80,
 		SizeE:      597,
 		SizeE1:     120,
+		SizeV:      2724,
 	}
 }
 
