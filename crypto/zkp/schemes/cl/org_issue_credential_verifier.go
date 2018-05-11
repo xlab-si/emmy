@@ -113,26 +113,35 @@ func (o *OrgIssueCredentialVerifier) Verify(nymProofRandomData, UProofRandomData
 
 func (o *OrgIssueCredentialVerifier) Issue(knownAttrs []*big.Int, n2 *big.Int) (*big.Int, *big.Int, *big.Int,
 		*qrspecialrsaproofs.RepresentationProof) {
-	er, _ := rand.Prime(rand.Reader, o.Org.CLParamSizes.SizeE1-1)
 	exp := big.NewInt(int64(o.Org.CLParamSizes.SizeE - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
-	e := new(big.Int).Add(er, b)
+	var e *big.Int
+	for {
+		er, _ := rand.Prime(rand.Reader, o.Org.CLParamSizes.SizeE1 - 1)
+		e = new(big.Int).Add(er, b)
+		if e.ProbablyPrime(20) { // e needs to be prime
+			break
+		}
+	}
 
 	vr, _ := rand.Prime(rand.Reader, o.Org.CLParamSizes.SizeV-1)
 	exp = big.NewInt(int64(o.Org.CLParamSizes.SizeV - 1))
 	b = new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v11 := new(big.Int).Add(vr, b)
 
-	// denom = U * S^v11 * R_1^attr_1 * ... * R_j^attr_j where only attributes from A_k (known)
-	t := o.Org.Group.Exp(o.Org.PubKey.S, v11) // s^v11
-	denom := o.Org.Group.Mul(t, o.U)          // U * s^v11
+	// num = Z * R_1^attr_1 * ... * R_j^attr_j where only attributes from A_k (known)
+	// denom = U * S^v11
+	acc := big.NewInt(1)
 	for i := 0; i < len(knownAttrs); i++ {
 		t1 := o.Org.Group.Exp(o.Org.PubKey.R_list[i], knownAttrs[i]) // TODO: R_list should be replaced with those that correspond to A_k
-		denom = o.Org.Group.Mul(denom, t1)
+		acc = o.Org.Group.Mul(acc, t1)
 	}
+	num := o.Org.Group.Mul(o.Org.PubKey.Z, acc)
 
+	t := o.Org.Group.Exp(o.Org.PubKey.S, v11) // s^v11
+	denom := o.Org.Group.Mul(t, o.U)          // U * s^v11
 	denomInv := o.Org.Group.Inv(denom)
-	Q := o.Org.Group.Mul(o.Org.PubKey.Z, denomInv)
+	Q := o.Org.Group.Mul(num, denomInv)
 
 	phiN := new(big.Int).Mul(o.Org.Group.P1, o.Org.Group.Q1)
 	eInv := new(big.Int).ModInverse(e, phiN)
@@ -151,7 +160,7 @@ func (o *OrgIssueCredentialVerifier) Issue(knownAttrs []*big.Int, n2 *big.Int) (
 func (o *OrgIssueCredentialVerifier) getAProof(n2 *big.Int) *qrspecialrsaproofs.RepresentationProof {
 	prover := qrspecialrsaproofs.NewRepresentationProver(o.Org.Group, o.Org.CLParamSizes.SecParam,
 		[]*big.Int{o.eInv}, []*big.Int{o.Q}, o.A)
-	proofRandomData := prover.GetProofRandomData()
+	proofRandomData := prover.GetProofRandomData(true)
 	// challenge = hash(context||Q||A||AProofRandomData||n2)
 	context := o.Org.PubKey.GetContext()
 	challenge := common.Hash(context, o.Q, o.A, proofRandomData, n2)

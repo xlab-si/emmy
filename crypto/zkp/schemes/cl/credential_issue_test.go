@@ -98,8 +98,13 @@ func TestCLIssue(t *testing.T) {
 	A, e, v11, AProof := orgIssueCredential.Issue(user.attrs, n2)
 	fmt.Println(A)
 	fmt.Println(e)
-	fmt.Println(v11)
 	fmt.Println(AProof)
+
+	userVerified, err := userIssueCredential.Verify(A, e, v11)
+	if err != nil {
+		t.Errorf("error when verifying credential: %v", err)
+	}
+	fmt.Println(userVerified)
 
 	// issuer needs to prove that it knows eInv such that A = Q^eInv (mod n)
 

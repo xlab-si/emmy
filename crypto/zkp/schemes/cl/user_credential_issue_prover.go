@@ -132,3 +132,45 @@ func (u *UserIssueCredentialProver) GetNonce() *big.Int {
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SecParam)), nil)
 	return common.GetRandomInt(b)
 }
+
+func (u *UserIssueCredentialProver) verifySignatureProof(AProofData *qrspecialrsaproofs.RepresentationProof) (bool, error) {
+	// TODO
+	return false, nil
+}
+
+func (u *UserIssueCredentialProver) Verify(A, e, v11 *big.Int) (bool, error) {
+	// check bit length of e:
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE - 1)), nil)
+	b21 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE - 1)), nil)
+	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE1 - 1)), nil)
+	b2 := new(big.Int).Add(b21, b22)
+	if (e.Cmp(b1) != 1) || (b2.Cmp(e) != 1) {
+		return false, fmt.Errorf("e is not of the proper bit length")
+	}
+	// check that e is prime
+	if !e.ProbablyPrime(20) {
+		return false, fmt.Errorf("e is not prime")
+	}
+
+	v := new(big.Int).Add(u.v1, v11)
+	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
+	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j where only attributes from A_k (known)
+	denom := group.Exp(u.User.PubKey.S, v) // s^v
+	/*
+	for i := 0; i < len(u.User.attrs); i++ { // TODO: from not known attributes
+		t1 := group.Exp(u.User.PubKey.R_list[i], u.User.attrs[i]) // TODO: R_list should be replaced with those that correspond to A_k
+		denom = group.Mul(denom, t1)
+	}
+	*/
+
+	denomInv := group.Inv(denom)
+	Q := group.Mul(u.User.PubKey.Z, denomInv)
+	Q1 := group.Exp(A, e)
+	if Q1.Cmp(Q) != 0 {
+		return false, fmt.Errorf("Q should be A^e (mod n)")
+	}
+
+	// verify signature proof:
+
+	return true, nil
+}
