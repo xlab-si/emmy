@@ -57,7 +57,7 @@ func (k *PubKey) GetContext() *big.Int {
 
 type Org struct {
 	Name             string
-	CLParamSizes     *CLParamSizes
+	ParamSizes       *CLParamSizes
 	Group            *groups.QRSpecialRSA
 	PedersenReceiver *commitments.PedersenReceiver
 	PubKey           *PubKey
@@ -96,7 +96,7 @@ func NewOrgFromExistingParams(name string, clParamSizes *CLParamSizes, primes *c
 
 	return &Org{
 		Name:             name,
-		CLParamSizes:     clParamSizes,
+		ParamSizes:       clParamSizes,
 		Group:            group,
 		PubKey:           pubKey,
 		x_Z:              x_Z,

@@ -17,11 +17,7 @@
 
 package cl
 
-import (
-	"math/big"
-
-	"github.com/xlab-si/emmy/crypto/groups"
-)
+import ()
 
 type CLParamSizes struct {
 	// There are only a few possibilities for RhoBitLen. 256 implies that the modulus
@@ -50,9 +46,4 @@ func GetParamSizes() *CLParamSizes {
 		SizeE1:     120,
 		SizeV:      2724,
 	}
-}
-
-type CLParams struct {
-	CommitmentGroup *groups.SchnorrGroup
-	CommitmentH     *big.Int
 }

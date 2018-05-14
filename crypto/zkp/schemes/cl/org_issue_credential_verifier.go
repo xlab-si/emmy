@@ -34,10 +34,11 @@ type OrgIssueCredentialVerifier struct {
 	nymVerifier *dlogproofs.SchnorrVerifier
 	UVerifier   *qrspecialrsaproofs.RepresentationVerifier
 	// certificate data:
-	eInv           *big.Int
-	v11         *big.Int
-	Q           *big.Int
-	A           *big.Int
+	eInv             *big.Int
+	v11              *big.Int
+	Q                *big.Int
+	A                *big.Int
+	credentialProver *qrspecialrsaproofs.RepresentationProver
 }
 
 func NewOrgIssueCredentialVerifier(org *Org, nym, U *big.Int) *OrgIssueCredentialVerifier {
@@ -47,12 +48,12 @@ func NewOrgIssueCredentialVerifier(org *Org, nym, U *big.Int) *OrgIssueCredentia
 		U:           U,
 		nymVerifier: dlogproofs.NewSchnorrVerifier(org.PedersenReceiver.Params.Group),
 		UVerifier: qrspecialrsaproofs.NewRepresentationVerifier(org.Group,
-			org.CLParamSizes.SecParam),
+			org.ParamSizes.SecParam),
 	}
 }
 
 func (o *OrgIssueCredentialVerifier) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(o.Org.CLParamSizes.SecParam)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(o.Org.ParamSizes.SecParam)), nil)
 	n := common.GetRandomInt(b)
 	o.n1 = n
 	return n
@@ -82,9 +83,9 @@ func (o *OrgIssueCredentialVerifier) verifyChallenge(challenge *big.Int) bool {
 
 func (o *OrgIssueCredentialVerifier) verifyUProofDataLengths(UProofData []*big.Int) bool {
 	// boundary for m_tilde
-	b_m := o.Org.CLParamSizes.AttrBitLen + o.Org.CLParamSizes.SecParam + o.Org.CLParamSizes.HashBitLen + 2
+	b_m := o.Org.ParamSizes.AttrBitLen + o.Org.ParamSizes.SecParam + o.Org.ParamSizes.HashBitLen + 2
 	// boundary for v1_tilde
-	b_v1 := o.Org.CLParamSizes.NLength + 2*o.Org.CLParamSizes.SecParam + o.Org.CLParamSizes.HashBitLen + 1
+	b_v1 := o.Org.ParamSizes.NLength + 2*o.Org.ParamSizes.SecParam + o.Org.ParamSizes.HashBitLen + 1
 
 	exp := big.NewInt(int64(b_m))
 	b1 := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -103,29 +104,29 @@ func (o *OrgIssueCredentialVerifier) verifyUProofDataLengths(UProofData []*big.I
 	return true
 }
 
-func (o *OrgIssueCredentialVerifier) Verify(nymProofRandomData, UProofRandomData, challenge *big.Int,
-	nymProofData, UProofData []*big.Int) bool {
-	return o.verifyNym(nymProofRandomData, challenge, nymProofData) &&
-		o.verifyU(UProofRandomData, challenge, UProofData) &&
-		o.verifyChallenge(challenge) &&
-		o.verifyUProofDataLengths(UProofData)
+func (o *OrgIssueCredentialVerifier) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof,
+	UProof *qrspecialrsaproofs.RepresentationProof) bool {
+	return o.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
+		o.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
+		o.verifyChallenge(UProof.Challenge) &&
+		o.verifyUProofDataLengths(UProof.ProofData)
 }
 
-func (o *OrgIssueCredentialVerifier) Issue(knownAttrs []*big.Int, n2 *big.Int) (*big.Int, *big.Int, *big.Int,
-		*qrspecialrsaproofs.RepresentationProof) {
-	exp := big.NewInt(int64(o.Org.CLParamSizes.SizeE - 1))
+func (o *OrgIssueCredentialVerifier) IssueCredential(knownAttrs []*big.Int, n2 *big.Int) (*big.Int, *big.Int, *big.Int,
+	*qrspecialrsaproofs.RepresentationProof) {
+	exp := big.NewInt(int64(o.Org.ParamSizes.SizeE - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	var e *big.Int
 	for {
-		er, _ := rand.Prime(rand.Reader, o.Org.CLParamSizes.SizeE1 - 1)
+		er, _ := rand.Prime(rand.Reader, o.Org.ParamSizes.SizeE1-1)
 		e = new(big.Int).Add(er, b)
 		if e.ProbablyPrime(20) { // e needs to be prime
 			break
 		}
 	}
 
-	vr, _ := rand.Prime(rand.Reader, o.Org.CLParamSizes.SizeV-1)
-	exp = big.NewInt(int64(o.Org.CLParamSizes.SizeV - 1))
+	vr, _ := rand.Prime(rand.Reader, o.Org.ParamSizes.SizeV-1)
+	exp = big.NewInt(int64(o.Org.ParamSizes.SizeV - 1))
 	b = new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v11 := new(big.Int).Add(vr, b)
 
@@ -152,14 +153,15 @@ func (o *OrgIssueCredentialVerifier) Issue(knownAttrs []*big.Int, n2 *big.Int) (
 	o.Q = Q
 	o.A = A
 
-	AProof := o.getAProof(n2) // TODO: struct
+	AProof := o.getAProof(n2)
 
 	return A, e, v11, AProof
 }
 
 func (o *OrgIssueCredentialVerifier) getAProof(n2 *big.Int) *qrspecialrsaproofs.RepresentationProof {
-	prover := qrspecialrsaproofs.NewRepresentationProver(o.Org.Group, o.Org.CLParamSizes.SecParam,
+	prover := qrspecialrsaproofs.NewRepresentationProver(o.Org.Group, o.Org.ParamSizes.SecParam,
 		[]*big.Int{o.eInv}, []*big.Int{o.Q}, o.A)
+	o.credentialProver = prover
 	proofRandomData := prover.GetProofRandomData(true)
 	// challenge = hash(context||Q||A||AProofRandomData||n2)
 	context := o.Org.PubKey.GetContext()

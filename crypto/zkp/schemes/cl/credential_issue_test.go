@@ -20,20 +20,11 @@ package cl
 import (
 	"testing"
 
-	//"github.com/stretchr/testify/assert"
-	//"github.com/xlab-si/emmy/crypto/common"
-	//"github.com/xlab-si/emmy/crypto/groups"
-	"fmt"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCLIssue(t *testing.T) {
 	clParamSizes := GetParamSizes()
-	/*
-		clParams, err := GenerateParams(clParamSizes)
-		if err != nil {
-			t.Errorf("error when generating CL params: %v", err)
-		}
-	*/
 
 	orgName := "organization 1"
 	org, err := NewOrg(orgName, clParamSizes)
@@ -51,61 +42,33 @@ func TestCLIssue(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when generating nym: %v", err)
 	}
-	fmt.Println(nym)
 
 	userIssueCredential := NewUserIssueCredentialProver(user)
 	U := userIssueCredential.GetU()
 
 	orgIssueCredential := NewOrgIssueCredentialVerifier(org, nym, U)
 	n1 := orgIssueCredential.GetNonce()
-	fmt.Println(n1)
 
-	// the user must now prove that U was properly computed:
-
-	fmt.Println(U)
-	fmt.Println("================================")
-
-	// nym and U are ready, let's now prepare data to prove that nym and U are properly generated:
-
-	nymProofRandomData, err := userIssueCredential.GetNymProofRandomData(nymName)
+	nymProofData, UProofData, err := userIssueCredential.GetCredentialRequest(nymName, nym, U, n1)
 	if err != nil {
-		t.Errorf("error when obtaining nym proof random data: %v", err)
+		t.Errorf("error when generating credential request: %v", err)
 	}
-	fmt.Println(nymProofRandomData)
-
-	UProofRandomData, err := userIssueCredential.GetUProofRandomData()
-	if err != nil {
-		t.Errorf("error when obtaining U proof random data: %v", err)
-	}
-	fmt.Println(UProofRandomData)
-
-	challenge := userIssueCredential.GetChallenge(U, nym, n1)
-
-	nymProofData, UProofData := userIssueCredential.GetProofData(challenge)
-	fmt.Println(nymProofData)
-	fmt.Println(UProofData)
 
 	// user needs to send to the issuer:
 	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData)
 
 	n2 := userIssueCredential.GetNonce()
 
-	verified := orgIssueCredential.Verify(nymProofRandomData, UProofRandomData, challenge,
-		nymProofData, UProofData)
-	fmt.Println(verified)
+	verified := orgIssueCredential.VerifyCredentialRequest(nymProofData, UProofData)
+	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
 	// TODO: only known attributes (from A_k)
-	A, e, v11, AProof := orgIssueCredential.Issue(user.attrs, n2)
-	fmt.Println(A)
-	fmt.Println(e)
-	fmt.Println(AProof)
+	A, e, v11, AProof := orgIssueCredential.IssueCredential(user.attrs, n2)
 
-	userVerified, err := userIssueCredential.Verify(A, e, v11)
+	userVerified, err := userIssueCredential.VerifyCredential(A, e, v11, AProof, n2)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
-	fmt.Println(userVerified)
 
-	// issuer needs to prove that it knows eInv such that A = Q^eInv (mod n)
-
+	assert.Equal(t, true, userVerified, "credential issuance failed")
 }

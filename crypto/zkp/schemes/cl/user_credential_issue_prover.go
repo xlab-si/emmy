@@ -67,8 +67,8 @@ func (u *UserIssueCredentialProver) GetU() *big.Int { // TODO: should be SetU?
 	return U
 }
 
-// GetNymProofRandomData return proof random data for nym.
-func (u *UserIssueCredentialProver) GetNymProofRandomData(nymName string) (*big.Int, error) {
+// getNymProofRandomData return proof random data for nym.
+func (u *UserIssueCredentialProver) getNymProofRandomData(nymName string) (*big.Int, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{u.User.PedersenParams.Group.G, u.User.PedersenParams.H}
 	committer := u.User.Committers[nymName]
@@ -86,7 +86,7 @@ func (u *UserIssueCredentialProver) GetNymProofRandomData(nymName string) (*big.
 	return nymTilde, nil
 }
 
-func (u *UserIssueCredentialProver) GetUProofRandomData() (*big.Int, error) {
+func (u *UserIssueCredentialProver) getUProofRandomData() (*big.Int, error) {
 	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
 	secrets := append(u.User.attrs, u.v1)
@@ -124,8 +124,34 @@ func (u *UserIssueCredentialProver) GetChallenge(U, nym, n1 *big.Int) *big.Int {
 	return common.Hash(context, U, nym, n1)
 }
 
-func (u *UserIssueCredentialProver) GetProofData(challenge *big.Int) ([]*big.Int, []*big.Int) {
+func (u *UserIssueCredentialProver) getCredentialRequestProoRandomfData(nymName string) (*big.Int, *big.Int, error) {
+	nymProofRandomData, err := u.getNymProofRandomData(nymName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error when obtaining nym proof random data: %v", err)
+	}
+
+	UProofRandomData, err := u.getUProofRandomData()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error when obtaining U proof random data: %v", err)
+	}
+	return nymProofRandomData, UProofRandomData, nil
+}
+
+func (u *UserIssueCredentialProver) getCredentialRequestProofData(challenge *big.Int) ([]*big.Int, []*big.Int) {
 	return u.nymProver.GetProofData(challenge), u.UProver.GetProofData(challenge)
+}
+
+func (u *UserIssueCredentialProver) GetCredentialRequest(nymName string, nym, U, n1 *big.Int) (*dlogproofs.SchnorrProof,
+	*qrspecialrsaproofs.RepresentationProof, error) {
+	nymProofRandomData, UProofRandomData, err := u.getCredentialRequestProoRandomfData(nymName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	challenge := u.GetChallenge(U, nym, n1)
+	nymProofData, UProofData := u.getCredentialRequestProofData(challenge)
+	return dlogproofs.NewSchnorrProof(nymProofRandomData, challenge, nymProofData),
+		qrspecialrsaproofs.NewRepresentationProof(UProofRandomData, challenge, UProofData), nil
 }
 
 func (u *UserIssueCredentialProver) GetNonce() *big.Int {
@@ -138,11 +164,12 @@ func (u *UserIssueCredentialProver) verifySignatureProof(AProofData *qrspecialrs
 	return false, nil
 }
 
-func (u *UserIssueCredentialProver) Verify(A, e, v11 *big.Int) (bool, error) {
+func (u *UserIssueCredentialProver) VerifyCredential(A, e, v11 *big.Int,
+	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
 	// check bit length of e:
-	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE - 1)), nil)
-	b21 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE - 1)), nil)
-	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE1 - 1)), nil)
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE-1)), nil)
+	b21 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE-1)), nil)
+	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE1-1)), nil)
 	b2 := new(big.Int).Add(b21, b22)
 	if (e.Cmp(b1) != 1) || (b2.Cmp(e) != 1) {
 		return false, fmt.Errorf("e is not of the proper bit length")
@@ -157,10 +184,10 @@ func (u *UserIssueCredentialProver) Verify(A, e, v11 *big.Int) (bool, error) {
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j where only attributes from A_k (known)
 	denom := group.Exp(u.User.PubKey.S, v) // s^v
 	/*
-	for i := 0; i < len(u.User.attrs); i++ { // TODO: from not known attributes
-		t1 := group.Exp(u.User.PubKey.R_list[i], u.User.attrs[i]) // TODO: R_list should be replaced with those that correspond to A_k
-		denom = group.Mul(denom, t1)
-	}
+		for i := 0; i < len(u.User.attrs); i++ { // TODO: from not known attributes
+			t1 := group.Exp(u.User.PubKey.R_list[i], u.User.attrs[i]) // TODO: R_list should be replaced with those that correspond to A_k
+			denom = group.Mul(denom, t1)
+		}
 	*/
 
 	denomInv := group.Inv(denom)
@@ -171,6 +198,15 @@ func (u *UserIssueCredentialProver) Verify(A, e, v11 *big.Int) (bool, error) {
 	}
 
 	// verify signature proof:
+	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, u.User.ParamSizes.SecParam)
+	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, A)
+	// check challenge
+	context := u.User.PubKey.GetContext()
+	c := common.Hash(context, Q, A, AProof.ProofRandomData, n2)
+	if AProof.Challenge.Cmp(c) != 0 {
+		return false, fmt.Errorf("challenge is not correct")
+	}
 
-	return true, nil
+	credentialVerifier.SetChallenge(AProof.Challenge)
+	return credentialVerifier.Verify(AProof.ProofData), nil
 }
