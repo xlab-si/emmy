@@ -125,13 +125,13 @@ func (group *SchnorrGroup) Mul(x, y *big.Int) *big.Int {
 
 // Exp computes base^exponent in SchnorrGroup. This means base^exponent mod group.P.
 func (group *SchnorrGroup) Exp(base, exponent *big.Int) *big.Int {
-	expAbs := new(big.Int).Abs(exponent)
-	if expAbs.Cmp(exponent) == 0 {
-		return new(big.Int).Exp(base, exponent, group.P)
-	} else {
+	if exponent.Sign() == -1 { // exponent is negative
+		expAbs := new(big.Int).Abs(exponent)
 		t := new(big.Int).Exp(base, expAbs, group.P)
 		return group.Inv(t)
 	}
+
+	return new(big.Int).Exp(base, exponent, group.P)
 }
 
 // Inv computes inverse of x in SchnorrGroup. This means xInv such that x * xInv = 1 mod group.P.

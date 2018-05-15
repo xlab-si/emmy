@@ -27,7 +27,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
-type UserIssueCredentialProver struct {
+type UserCredentialReceiver struct {
 	User      *User
 	v1        *big.Int // v1 is the random element in U, which is constructed also from clPubKey.R_list and attrs
 	U         *big.Int
@@ -39,72 +39,75 @@ type UserIssueCredentialProver struct {
 	UTilde   *big.Int                                 // proof random data for U (proving that U is of proper form)
 }
 
-func NewUserIssueCredentialProver(user *User) *UserIssueCredentialProver {
-	return &UserIssueCredentialProver{
+func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
+	return &UserCredentialReceiver{
 		User: user,
 	}
 }
 
 // GetU returns U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where v1 is from +-{0,1}^(NLength + SecParam)
-func (u *UserIssueCredentialProver) GetU() *big.Int { // TODO: should be SetU?
-	b := new(big.Int).Exp(big.NewInt(2),
-		big.NewInt(int64(u.User.ParamSizes.NLength+u.User.ParamSizes.SecParam)), nil)
+func (r *UserCredentialReceiver) GetU() *big.Int { // TODO: should be SetU?
+	exp := big.NewInt(int64(r.User.ParamSizes.NLength + r.User.ParamSizes.SecParam))
+	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
-	u.v1 = v1
+	r.v1 = v1
 
-	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
-	U := group.Exp(u.User.PubKey.S, v1)
+	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
+	U := group.Exp(r.User.PubKey.S, v1)
 
 	// the number of attributes, type (A_k - issuer knows an attribute, A_c - issuer knows
 	// a commitment to the attribute, A_h - issuer does not know the attribute)
 	// TODO: currently only for A_k
-	for i, attr := range u.User.attrs {
-		t := group.Exp(u.User.PubKey.R_list[i], attr) // R_i^m_i
+	for i, attr := range r.User.attrs {
+		t := group.Exp(r.User.PubKey.RsKnown[i], attr) // R_i^m_i
 		U = group.Mul(U, t)
 	}
-	u.U = U
+	r.U = U
 
 	return U
 }
 
 // getNymProofRandomData return proof random data for nym.
-func (u *UserIssueCredentialProver) getNymProofRandomData(nymName string) (*big.Int, error) {
+func (rcv *UserCredentialReceiver) getNymProofRandomData(nymName string) (*big.Int, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
-	bases := []*big.Int{u.User.PedersenParams.Group.G, u.User.PedersenParams.H}
-	committer := u.User.Committers[nymName]
+	bases := []*big.Int{
+		rcv.User.PedersenParams.Group.G,
+		rcv.User.PedersenParams.H,
+	}
+	committer := rcv.User.Committers[nymName]
 	val, r := committer.GetDecommitMsg() // val is actually master key
 	secrets := []*big.Int{val, r}
 
-	prover, err := dlogproofs.NewSchnorrProver(u.User.PedersenParams.Group, secrets[:], bases[:],
+	prover, err := dlogproofs.NewSchnorrProver(rcv.User.PedersenParams.Group, secrets[:], bases[:],
 		committer.Commitment)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Schnorr prover: %s", err)
 	}
-	u.nymProver = prover
+	rcv.nymProver = prover
 
 	nymTilde := prover.GetProofRandomData()
 	return nymTilde, nil
 }
 
-func (u *UserIssueCredentialProver) getUProofRandomData() (*big.Int, error) {
-	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
+func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
+	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
-	secrets := append(u.User.attrs, u.v1)
+	secrets := append(r.User.attrs, r.v1)
 
 	// bases are [R_1, ..., R_L, S]
-	bases := append(u.User.PubKey.R_list, u.User.PubKey.S)
+	bases := append(r.User.PubKey.RsKnown, r.User.PubKey.S)
 
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.User.ParamSizes.SecParam,
-		secrets[:], bases[:], u.U)
-	u.UProver = prover
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, r.User.ParamSizes.SecParam,
+		secrets[:], bases[:], r.U)
+	r.UProver = prover
 
 	// boundary for m_tilde
-	b_m := u.User.ParamSizes.AttrBitLen + u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen + 1
+	b_m := r.User.ParamSizes.AttrBitLen + r.User.ParamSizes.SecParam + r.User.ParamSizes.HashBitLen + 1
 	// boundary for v1
-	b_v1 := u.User.ParamSizes.NLength + 2*u.User.ParamSizes.SecParam + u.User.ParamSizes.HashBitLen
+	b_v1 := r.User.ParamSizes.NLength + 2* r.User.ParamSizes.SecParam + r.User.ParamSizes.HashBitLen
 
-	boundaries := make([]int, len(u.User.PubKey.R_list))
-	for i := 0; i < len(u.User.PubKey.R_list); i++ {
+	boundaries := make([]int, len(r.User.PubKey.RsKnown))
+	for i := 0; i < len(r.User.PubKey.RsKnown); i++ {
 		boundaries[i] = b_m
 	}
 	boundaries = append(boundaries, b_v1)
@@ -119,58 +122,53 @@ func (u *UserIssueCredentialProver) getUProofRandomData() (*big.Int, error) {
 
 // GetChallenge returns Hash(context||U||nym||U_tilde||nym_tilde||n1). Thus, Fiat-Shamir is used to
 // generate a challenge, instead of asking verifier to generate it.
-func (u *UserIssueCredentialProver) GetChallenge(U, nym, n1 *big.Int) *big.Int {
-	context := u.User.PubKey.GetContext()
+func (r *UserCredentialReceiver) GetChallenge(U, nym, n1 *big.Int) *big.Int {
+	context := r.User.PubKey.GetContext()
 	return common.Hash(context, U, nym, n1)
 }
 
-func (u *UserIssueCredentialProver) getCredentialRequestProoRandomfData(nymName string) (*big.Int, *big.Int, error) {
-	nymProofRandomData, err := u.getNymProofRandomData(nymName)
+func (r *UserCredentialReceiver) getCredentialRequestProoRandomfData(nymName string) (*big.Int, *big.Int, error) {
+	nymProofRandomData, err := r.getNymProofRandomData(nymName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when obtaining nym proof random data: %v", err)
 	}
 
-	UProofRandomData, err := u.getUProofRandomData()
+	UProofRandomData, err := r.getUProofRandomData()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when obtaining U proof random data: %v", err)
 	}
 	return nymProofRandomData, UProofRandomData, nil
 }
 
-func (u *UserIssueCredentialProver) getCredentialRequestProofData(challenge *big.Int) ([]*big.Int, []*big.Int) {
-	return u.nymProver.GetProofData(challenge), u.UProver.GetProofData(challenge)
+func (r *UserCredentialReceiver) getCredentialRequestProofData(challenge *big.Int) ([]*big.Int, []*big.Int) {
+	return r.nymProver.GetProofData(challenge), r.UProver.GetProofData(challenge)
 }
 
-func (u *UserIssueCredentialProver) GetCredentialRequest(nymName string, nym, U, n1 *big.Int) (*dlogproofs.SchnorrProof,
+func (r *UserCredentialReceiver) GetCredentialRequest(nymName string, nym, U, n1 *big.Int) (*dlogproofs.SchnorrProof,
 	*qrspecialrsaproofs.RepresentationProof, error) {
-	nymProofRandomData, UProofRandomData, err := u.getCredentialRequestProoRandomfData(nymName)
+	nymProofRandomData, UProofRandomData, err := r.getCredentialRequestProoRandomfData(nymName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	challenge := u.GetChallenge(U, nym, n1)
-	nymProofData, UProofData := u.getCredentialRequestProofData(challenge)
+	challenge := r.GetChallenge(U, nym, n1)
+	nymProofData, UProofData := r.getCredentialRequestProofData(challenge)
 	return dlogproofs.NewSchnorrProof(nymProofRandomData, challenge, nymProofData),
 		qrspecialrsaproofs.NewRepresentationProof(UProofRandomData, challenge, UProofData), nil
 }
 
-func (u *UserIssueCredentialProver) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SecParam)), nil)
+func (r *UserCredentialReceiver) GetNonce() *big.Int {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.ParamSizes.SecParam)), nil)
 	return common.GetRandomInt(b)
 }
 
-func (u *UserIssueCredentialProver) verifySignatureProof(AProofData *qrspecialrsaproofs.RepresentationProof) (bool, error) {
-	// TODO
-	return false, nil
-}
-
-func (u *UserIssueCredentialProver) VerifyCredential(A, e, v11 *big.Int,
+func (r *UserCredentialReceiver) VerifyCredential(A, e, v11 *big.Int,
 	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
 	// check bit length of e:
-	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE-1)), nil)
-	b21 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE-1)), nil)
-	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.User.ParamSizes.SizeE1-1)), nil)
-	b2 := new(big.Int).Add(b21, b22)
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.ParamSizes.EBitLen-1)), nil)
+	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.ParamSizes.E1BitLen-1)), nil)
+	b2 := new(big.Int).Add(b1, b22)
+
 	if (e.Cmp(b1) != 1) || (b2.Cmp(e) != 1) {
 		return false, fmt.Errorf("e is not of the proper bit length")
 	}
@@ -179,10 +177,10 @@ func (u *UserIssueCredentialProver) VerifyCredential(A, e, v11 *big.Int,
 		return false, fmt.Errorf("e is not prime")
 	}
 
-	v := new(big.Int).Add(u.v1, v11)
-	group := groups.NewQRSpecialRSAPublic(u.User.PubKey.N)
+	v := new(big.Int).Add(r.v1, v11)
+	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j where only attributes from A_k (known)
-	denom := group.Exp(u.User.PubKey.S, v) // s^v
+	denom := group.Exp(r.User.PubKey.S, v) // s^v
 	/*
 		for i := 0; i < len(u.User.attrs); i++ { // TODO: from not known attributes
 			t1 := group.Exp(u.User.PubKey.R_list[i], u.User.attrs[i]) // TODO: R_list should be replaced with those that correspond to A_k
@@ -191,17 +189,17 @@ func (u *UserIssueCredentialProver) VerifyCredential(A, e, v11 *big.Int,
 	*/
 
 	denomInv := group.Inv(denom)
-	Q := group.Mul(u.User.PubKey.Z, denomInv)
+	Q := group.Mul(r.User.PubKey.Z, denomInv)
 	Q1 := group.Exp(A, e)
 	if Q1.Cmp(Q) != 0 {
 		return false, fmt.Errorf("Q should be A^e (mod n)")
 	}
 
 	// verify signature proof:
-	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, u.User.ParamSizes.SecParam)
+	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.ParamSizes.SecParam)
 	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, A)
 	// check challenge
-	context := u.User.PubKey.GetContext()
+	context := r.User.PubKey.GetContext()
 	c := common.Hash(context, Q, A, AProof.ProofRandomData, n2)
 	if AProof.Challenge.Cmp(c) != 0 {
 		return false, fmt.Errorf("challenge is not correct")

@@ -24,7 +24,7 @@ import (
 )
 
 func TestCLIssue(t *testing.T) {
-	clParamSizes := GetParamSizes()
+	clParamSizes := GetDefaultParamSizes()
 
 	orgName := "organization 1"
 	org, err := NewOrg(orgName, clParamSizes)
@@ -43,13 +43,13 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
-	userIssueCredential := NewUserIssueCredentialProver(user)
-	U := userIssueCredential.GetU()
+	userCredentialReceiver := NewUserCredentialReceiver(user)
+	U := userCredentialReceiver.GetU()
 
-	orgIssueCredential := NewOrgIssueCredentialVerifier(org, nym, U)
-	n1 := orgIssueCredential.GetNonce()
+	orgCredentialIssuer := NewOrgCredentialIssuer(org, nym, U)
+	n1 := orgCredentialIssuer.GetNonce()
 
-	nymProofData, UProofData, err := userIssueCredential.GetCredentialRequest(nymName, nym, U, n1)
+	nymProofData, UProofData, err := userCredentialReceiver.GetCredentialRequest(nymName, nym, U, n1)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
@@ -57,15 +57,15 @@ func TestCLIssue(t *testing.T) {
 	// user needs to send to the issuer:
 	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData)
 
-	n2 := userIssueCredential.GetNonce()
+	n2 := userCredentialReceiver.GetNonce()
 
-	verified := orgIssueCredential.VerifyCredentialRequest(nymProofData, UProofData)
+	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, UProofData)
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
 	// TODO: only known attributes (from A_k)
-	A, e, v11, AProof := orgIssueCredential.IssueCredential(user.attrs, n2)
+	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(user.attrs, n2)
 
-	userVerified, err := userIssueCredential.VerifyCredential(A, e, v11, AProof, n2)
+	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, n2)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}

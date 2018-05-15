@@ -34,7 +34,7 @@ func TestQRSpecialRSA(t *testing.T) {
 		t.Errorf("error when creating QRSpecialRSA group: %v", err)
 	}
 
-	var bases [3]*big.Int
+	bases := make([]*big.Int, 3)
 	for i := 0; i < len(bases); i++ {
 		h, err := group.GetRandomGenerator()
 		if err != nil {
@@ -43,7 +43,7 @@ func TestQRSpecialRSA(t *testing.T) {
 		bases[i] = h
 	}
 
-	var secrets [3]*big.Int
+	secrets := make([]*big.Int, 3)
 	for i := 0; i < 3; i++ {
 		secrets[i] = common.GetRandomInt(group.Order)
 	}
@@ -55,11 +55,11 @@ func TestQRSpecialRSA(t *testing.T) {
 		y = group.Mul(y, f)
 	}
 
-	prover := NewRepresentationProver(group, 80, secrets[:], bases[:], y)
+	prover := NewRepresentationProver(group, 80, secrets, bases, y)
 	verifier := NewRepresentationVerifier(group, 80)
 
 	proofRandomData := prover.GetProofRandomData(false)
-	verifier.SetProofRandomData(proofRandomData, bases[:], y)
+	verifier.SetProofRandomData(proofRandomData, bases, y)
 
 	challenge := verifier.GetChallenge()
 	proofData := prover.GetProofData(challenge)

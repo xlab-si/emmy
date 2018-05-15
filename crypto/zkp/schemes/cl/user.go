@@ -35,10 +35,6 @@ type User struct {
 }
 
 func NewUser(clParamSizes *CLParamSizes, clPubKey *PubKey, pedersenParams *commitments.PedersenParams) *User {
-
-	//committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N, clPubKey.S, clPubKey.Z,
-	//	clPubKey.N, clParamSizes.SecParam)
-
 	return &User{
 		ParamSizes:     clParamSizes,
 		PubKey:         clPubKey,

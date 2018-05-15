@@ -27,29 +27,30 @@ import (
 )
 
 type PubKey struct {
-	N      *big.Int
-	S      *big.Int
-	Z      *big.Int
-	R_list []*big.Int // one R corresponds to one attribute, TODO: not sure what would be the appropriate name?
+	N       *big.Int
+	S       *big.Int
+	Z       *big.Int
+	RsKnown []*big.Int // one R corresponds to one attribute - these R are used for attributes that are known to the issuer
+	// TODO: RsCommitted, RsHidden
 }
 
 func NewCLPubKey(N *big.Int, S, Z *big.Int, R_L []*big.Int) *PubKey {
 	return &PubKey{
-		N:      N,
-		S:      S,
-		Z:      Z,
-		R_list: R_L,
+		N:       N,
+		S:       S,
+		Z:       Z,
+		RsKnown: R_L,
 	}
 }
 
 // GetContext concatenates public parameters and returns a corresponding number.
 func (k *PubKey) GetContext() *big.Int {
-	numbers := make([]*big.Int, len(k.R_list)+3)
+	numbers := make([]*big.Int, len(k.RsKnown)+3)
 	numbers[0] = k.N
 	numbers[1] = k.S
 	numbers[2] = k.Z
-	for i := 0; i < len(k.R_list); i++ {
-		numbers[i+3] = k.R_list[i]
+	for i, r := range k.RsKnown {
+		numbers[i+3] = r
 	}
 	concatenated := common.ConcatenateNumbers(numbers...)
 	return new(big.Int).SetBytes(concatenated)
@@ -89,7 +90,7 @@ func NewOrg(name string, clParamSizes *CLParamSizes) (*Org, error) {
 func NewOrgFromExistingParams(name string, clParamSizes *CLParamSizes, primes *common.SpecialRSAPrimes,
 	pubKey *PubKey, x_Z *big.Int, x_R []*big.Int,
 	pedersenParams *commitments.PedersenParams) (*Org, error) {
-	group, err := groups.NewQRSpecialRSAFromExistingParams(primes)
+	group, err := groups.NewQRSpecialRSAFromParams(primes)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
@@ -101,7 +102,7 @@ func NewOrgFromExistingParams(name string, clParamSizes *CLParamSizes, primes *c
 		PubKey:           pubKey,
 		x_Z:              x_Z,
 		x_R:              x_R,
-		PedersenReceiver: commitments.NewPedersenReceiverFromExistingParams(pedersenParams),
+		PedersenReceiver: commitments.NewPedersenReceiverFromParams(pedersenParams),
 	}, nil
 }
 

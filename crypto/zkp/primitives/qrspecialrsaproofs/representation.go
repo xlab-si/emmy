@@ -57,6 +57,7 @@ func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
 }
 
 // GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and r_i are random values.
+// If alsoNeg is true values r_i can be negative as well.
 func (p *RepresentationProver) GetProofRandomData(alsoNeg bool) *big.Int {
 	nLen := p.group.N.BitLen()
 	exp := big.NewInt(int64(nLen + p.l_r))
@@ -78,8 +79,8 @@ func (p *RepresentationProver) GetProofRandomData(alsoNeg bool) *big.Int {
 	return t
 }
 
-// GetProofRandomData returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and each r_i is a
-// random value of boundariesBitLength[i] bit length.
+// GetProofRandomDataGivenBoundaries returns t = g_1^r_1 * ... * g_k^r_k where g_i are bases and each r_i is a
+// random value of boundariesBitLength[i] bit length. If alsoNeg is true values r_i can be negative as well.
 func (p *RepresentationProver) GetProofRandomDataGivenBoundaries(boundariesBitLength []int,
 	alsoNeg bool) (*big.Int, error) {
 	if len(boundariesBitLength) != len(p.bases) {
