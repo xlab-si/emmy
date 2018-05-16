@@ -84,10 +84,10 @@ func NewOrg(name string, clParamSizes *CLParamSizes) (*Org, error) {
 	}
 
 	primes := common.NewSpecialRSAPrimes(group.P, group.Q, group.P1, group.Q1)
-	return NewOrgFromExistingParams(name, clParamSizes, primes, pubKey, x_Z, x_R, pedersenParams)
+	return NewOrgFromParams(name, clParamSizes, primes, pubKey, x_Z, x_R, pedersenParams)
 }
 
-func NewOrgFromExistingParams(name string, clParamSizes *CLParamSizes, primes *common.SpecialRSAPrimes,
+func NewOrgFromParams(name string, clParamSizes *CLParamSizes, primes *common.SpecialRSAPrimes,
 	pubKey *PubKey, x_Z *big.Int, x_R []*big.Int,
 	pedersenParams *commitments.PedersenParams) (*Org, error) {
 	group, err := groups.NewQRSpecialRSAFromParams(primes)

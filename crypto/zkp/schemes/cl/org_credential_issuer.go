@@ -108,12 +108,12 @@ func (i *OrgCredentialIssuer) verifyUProofDataLengths(UProofData []*big.Int) boo
 	return true
 }
 
-func (v *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof,
+func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof,
 	UProof *qrspecialrsaproofs.RepresentationProof) bool {
-	return v.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
-		v.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
-		v.verifyChallenge(UProof.Challenge) &&
-		v.verifyUProofDataLengths(UProof.ProofData)
+	return i.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
+		i.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
+		i.verifyChallenge(UProof.Challenge) &&
+		i.verifyUProofDataLengths(UProof.ProofData)
 }
 
 func (i *OrgCredentialIssuer) IssueCredential(knownAttrs []*big.Int, n2 *big.Int) (*big.Int, *big.Int, *big.Int,
