@@ -34,11 +34,11 @@ import (
 // is this really needed?
 
 // RepresentationProver is like SchnorrProver but in a QRSpecialRSA group (note that here proof data is
-// is computed in Z, not modulo as in Schnorr). Also, RepresentationProver with only one base and one secret
+// computed in Z, not modulo as in Schnorr). Also, RepresentationProver with only one base and one secret
 // is very similar to the DFCommitmentOpeningProver (RepresentationProver does not have a committer though).
 type RepresentationProver struct {
 	group      *groups.QRSpecialRSA
-	l_r        int // security parameter
+	secParam   int // security parameter
 	secrets    []*big.Int
 	bases      []*big.Int
 	randomVals []*big.Int
@@ -46,10 +46,10 @@ type RepresentationProver struct {
 }
 
 func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
-	l_r int, secrets, bases []*big.Int, y *big.Int) *RepresentationProver {
+	secParam int, secrets, bases []*big.Int, y *big.Int) *RepresentationProver {
 	return &RepresentationProver{
 		group:   qrSpecialRSA,
-		l_r:     l_r,
+		secParam:     secParam,
 		secrets: secrets,
 		bases:   bases,
 		y:       y,
@@ -60,7 +60,7 @@ func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
 // If alsoNeg is true values r_i can be negative as well.
 func (p *RepresentationProver) GetProofRandomData(alsoNeg bool) *big.Int {
 	nLen := p.group.N.BitLen()
-	exp := big.NewInt(int64(nLen + p.l_r))
+	exp := big.NewInt(int64(nLen + p.secParam))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	t := big.NewInt(1)
 	var randomVals = make([]*big.Int, len(p.bases))
