@@ -25,93 +25,109 @@ import (
 	"github.com/xlab-si/emmy/crypto/groups"
 )
 
-// Committer first needs to know H (it gets it from the receiver).
-// Then committer can commit to some value x - it sends to receiver c = g^x * h^r.
+type PedersenECParams struct {
+	Group *groups.ECGroup
+	H     *groups.ECGroupElement
+	a     *big.Int
+	// trapdoor a can be nil (doesn't need to be known), it is rarely needed -
+	// for example in one of techniques to turn sigma to ZKP
+}
+
+func NewPedersenECParams(group *groups.ECGroup, H *groups.ECGroupElement, a *big.Int) *PedersenECParams {
+	return &PedersenECParams{
+		Group: group,
+		H:     H, // H = g^a
+		a:     a,
+	}
+}
+
+func GeneratePedersenECParams(curveType groups.ECurve) *PedersenECParams {
+	group := groups.NewECGroup(curveType)
+	a := common.GetRandomInt(group.Q)
+	return NewPedersenECParams(group, group.ExpBaseG(a), a)
+}
+
+// Committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
 type PedersenECCommitter struct {
-	Group          *groups.ECGroup
-	H              *groups.ECGroupElement
+	Params         *PedersenECParams
+	Commitment     *groups.ECGroupElement
 	committedValue *big.Int
 	r              *big.Int
 }
 
-func NewPedersenECCommitter(curveType groups.ECurve) *PedersenECCommitter {
-	group := groups.NewECGroup(curveType)
+func NewPedersenECCommitter(params *PedersenECParams) *PedersenECCommitter {
 	committer := PedersenECCommitter{
-		Group: group,
+		Params: params,
 	}
 	return &committer
 }
 
-// Value h needs to be obtained from a receiver and then set in a committer.
-func (committer *PedersenECCommitter) SetH(h *groups.ECGroupElement) {
-	committer.H = h
-}
-
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
-func (committer *PedersenECCommitter) GetCommitMsg(val *big.Int) (*groups.ECGroupElement, error) {
-	if val.Cmp(committer.Group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
+func (c *PedersenECCommitter) GetCommitMsg(val *big.Int) (*groups.ECGroupElement, error) {
+	if val.Cmp(c.Params.Group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
 		err := fmt.Errorf("the committed value needs to be in Z_q (order of a base point)")
 		return nil, err
 	}
 
 	// c = g^x * h^r
-	r := common.GetRandomInt(committer.Group.Q)
+	r := common.GetRandomInt(c.Params.Group.Q)
 
-	committer.r = r
-	committer.committedValue = val
-	x1 := committer.Group.ExpBaseG(val)
-	x2 := committer.Group.Exp(committer.H, r)
-	c := committer.Group.Mul(x1, x2)
+	c.r = r
+	c.committedValue = val
+	x1 := c.Params.Group.ExpBaseG(val)
+	x2 := c.Params.Group.Exp(c.Params.H, r)
+	comm := c.Params.Group.Mul(x1, x2)
+	c.Commitment = comm
 
-	return c, nil
+	return comm, nil
 }
 
 // It returns values x and r (commitment was c = g^x * g^r).
-func (committer *PedersenECCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
-	val := committer.committedValue
-	r := committer.r
+func (c *PedersenECCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
+	val := c.committedValue
+	r := c.r
 
 	return val, r
 }
 
-func (committer *PedersenECCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
-	h := committer.Group.ExpBaseG(trapdoor)
-	return h.Equals(committer.H)
+func (c *PedersenECCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
+	h := c.Params.Group.ExpBaseG(trapdoor)
+	return h.Equals(c.Params.H)
 }
 
 type PedersenECReceiver struct {
-	Group      *groups.ECGroup
-	H          *groups.ECGroupElement
-	a          *big.Int
+	Params     *PedersenECParams
 	commitment *groups.ECGroupElement
 }
 
 func NewPedersenECReceiver(curve groups.ECurve) *PedersenECReceiver {
-	group := groups.NewECGroup(curve)
-	a := common.GetRandomInt(group.Q)
 	return &PedersenECReceiver{
-		Group: group,
-		H:     group.ExpBaseG(a),
-		a:     a,
+		Params: GeneratePedersenECParams(curve),
 	}
 }
 
-func (s *PedersenECReceiver) GetTrapdoor() *big.Int {
-	return s.a
+func NewPedersenECReceiverFromParams(params *PedersenECParams) *PedersenECReceiver {
+	return &PedersenECReceiver{
+		Params: params,
+	}
+}
+
+func (rcv *PedersenECReceiver) GetTrapdoor() *big.Int {
+	return rcv.Params.a
 }
 
 // When receiver receives a commitment, it stores the value using SetCommitment method.
-func (s *PedersenECReceiver) SetCommitment(el *groups.ECGroupElement) {
-	s.commitment = el
+func (rcv *PedersenECReceiver) SetCommitment(el *groups.ECGroupElement) {
+	rcv.commitment = el
 }
 
 // When receiver receives a decommitment, CheckDecommitment verifies it against the stored value
 // (stored by SetCommitment).
-func (s *PedersenECReceiver) CheckDecommitment(r, val *big.Int) bool {
-	a := s.Group.ExpBaseG(val) // g^x
-	b := s.Group.Exp(s.H, r)   // h^r
-	c := s.Group.Mul(a, b)     // g^x * h^r
+func (rcv *PedersenECReceiver) CheckDecommitment(r, val *big.Int) bool {
+	a := rcv.Params.Group.ExpBaseG(val)        // g^x
+	b := rcv.Params.Group.Exp(rcv.Params.H, r) // h^r
+	c := rcv.Params.Group.Mul(a, b)            // g^x * h^r
 
-	return c.Equals(s.commitment)
+	return c.Equals(rcv.commitment)
 }

@@ -58,7 +58,7 @@ func TestQRSpecialRSA(t *testing.T) {
 	prover := NewRepresentationProver(group, 80, secrets, bases, y)
 	verifier := NewRepresentationVerifier(group, 80)
 
-	proofRandomData := prover.GetProofRandomData()
+	proofRandomData := prover.GetProofRandomData(false)
 	verifier.SetProofRandomData(proofRandomData, bases, y)
 
 	challenge := verifier.GetChallenge()

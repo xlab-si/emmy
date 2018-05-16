@@ -85,6 +85,11 @@ func (v *SchnorrECVerifier) GetChallenge() *big.Int {
 	return challenge
 }
 
+// SetChallenge is used when Fiat-Shamir is used - when challenge is generated using hash by the prover.
+func (v *SchnorrECVerifier) SetChallenge(challenge *big.Int) {
+	v.challenge = challenge
+}
+
 func (v *SchnorrECVerifier) Verify(z *big.Int) bool {
 	left := v.Group.Exp(v.a, z)
 	r := v.Group.Exp(v.b, v.challenge)
