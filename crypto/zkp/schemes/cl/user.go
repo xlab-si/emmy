@@ -26,22 +26,46 @@ import (
 )
 
 type User struct {
-	ParamSizes     *CLParamSizes
-	PubKey         *PubKey
-	PedersenParams *commitments.PedersenParams               // for pseudonyms - nym is a commitment to the master secret
-	Committers     map[string]*commitments.PedersenCommitter // for generating nyms
-	masterSecret   *big.Int
-	attrs          []*big.Int
+	ParamSizes         *CLParamSizes
+	PubKey             *PubKey
+	PedersenParams     *commitments.PedersenParams               // for pseudonyms - nym is a commitment to the master secret
+	Committers         map[string]*commitments.PedersenCommitter // for generating nyms
+	masterSecret       *big.Int
+	knownAttrs         []*big.Int                              // attributes that are known to the credential receiver and issuer
+	committedAttrs     []*big.Int                              // attributes for which the issuer knows only commitment
+	hiddenAttrs        []*big.Int                              // attributes which are known only to the credential receiver
+	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
+	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
 }
 
-func NewUser(clParamSizes *CLParamSizes, clPubKey *PubKey, pedersenParams *commitments.PedersenParams) *User {
-	return &User{
-		ParamSizes:     clParamSizes,
-		PubKey:         clPubKey,
-		Committers:     make(map[string]*commitments.PedersenCommitter),
-		PedersenParams: pedersenParams,
-		attrs:          []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5)}, // TODO attributes should be read from somewhere and the structure should be loaded too
+func NewUser(clParamSizes *CLParamSizes, clPubKey *PubKey, pedersenParams *commitments.PedersenParams,
+	knownAttrs, committedAttrs, hiddenAttrs []*big.Int) (*User, error) {
+
+	attrsCommitters := make([]*commitments.DamgardFujisakiCommitter, len(committedAttrs))
+	commitmentsOfAttrs := make([]*big.Int, len(committedAttrs))
+	for i, attr := range committedAttrs {
+		//committer := commitments.NewPedersenCommitter(pedersenParams)
+		committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N1, clPubKey.G, clPubKey.H,
+			clPubKey.N1, clParamSizes.SecParam)
+		com, err := committer.GetCommitMsg(attr)
+		if err != nil {
+			return nil, fmt.Errorf("error when creating Pedersen commitment: %s", err)
+		}
+		commitmentsOfAttrs[i] = com
+		attrsCommitters[i] = committer
 	}
+
+	return &User{
+		ParamSizes:         clParamSizes,
+		PubKey:             clPubKey,
+		Committers:         make(map[string]*commitments.PedersenCommitter),
+		PedersenParams:     pedersenParams,
+		knownAttrs:         knownAttrs,
+		committedAttrs:     committedAttrs,
+		hiddenAttrs:        hiddenAttrs,
+		commitmentsOfAttrs: commitmentsOfAttrs,
+		attrsCommitters:    attrsCommitters,
+	}, nil
 }
 
 func (u *User) GenerateMasterSecret() {

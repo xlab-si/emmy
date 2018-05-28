@@ -62,6 +62,10 @@ func NewQRSpecialRSAPublic(N *big.Int) *QRSpecialRSA {
 	}
 }
 
+func (group *QRSpecialRSA) GetSpecialRSAPrimes() *common.SpecialRSAPrimes {
+	return common.NewSpecialRSAPrimes(group.P, group.Q, group.P1, group.Q1)
+}
+
 // GetRandomGenerator returns a random generator of a group of quadratic residues QR_N.
 func (group *QRSpecialRSA) GetRandomGenerator() (*big.Int, error) {
 	// We know Z_n* and Z_p* x Z_q* are isomorphic (Chinese Remainder Theorem).

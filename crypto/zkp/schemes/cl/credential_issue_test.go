@@ -18,6 +18,7 @@
 package cl
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,14 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	user := NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params)
+	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
+	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
+	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
+	user, err := NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params, knownAttrs, committedAttrs,
+		hiddenAttrs)
+	if err != nil {
+		t.Errorf("error when creating a user: %v", err)
+	}
 	user.GenerateMasterSecret()
 	nymName := "nym1"
 
@@ -43,13 +51,11 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
-	userCredentialReceiver := NewUserCredentialReceiver(user)
-	U := userCredentialReceiver.GetU()
-
-	orgCredentialIssuer := NewOrgCredentialIssuer(org, nym, U)
+	orgCredentialIssuer := NewOrgCredentialIssuer(org, nym)
 	n1 := orgCredentialIssuer.GetNonce()
 
-	nymProofData, UProofData, err := userCredentialReceiver.GetCredentialRequest(nymName, nym, U, n1)
+	userCredentialReceiver := NewUserCredentialReceiver(user)
+	nymProofData, U, UProofData, err := userCredentialReceiver.GetCredentialRequest(nymName, nym, n1)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
@@ -59,11 +65,10 @@ func TestCLIssue(t *testing.T) {
 
 	n2 := userCredentialReceiver.GetNonce()
 
-	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, UProofData)
+	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, U, UProofData) // commitmentsofAttrs
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
-	// TODO: only known attributes (from A_k)
-	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(user.attrs, n2)
+	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(user.knownAttrs, user.commitmentsOfAttrs, n2)
 
 	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, n2)
 	if err != nil {

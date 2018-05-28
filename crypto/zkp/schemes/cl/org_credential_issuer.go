@@ -41,11 +41,10 @@ type OrgCredentialIssuer struct {
 	credentialProver *qrspecialrsaproofs.RepresentationProver
 }
 
-func NewOrgCredentialIssuer(org *Org, nym, U *big.Int) *OrgCredentialIssuer {
+func NewOrgCredentialIssuer(org *Org, nym *big.Int) *OrgCredentialIssuer {
 	return &OrgCredentialIssuer{
 		Org:         org,
 		nym:         nym,
-		U:           U,
 		nymVerifier: dlogproofs.NewSchnorrVerifier(org.PedersenReceiver.Params.Group),
 		UVerifier: qrspecialrsaproofs.NewRepresentationVerifier(org.Group,
 			org.ParamSizes.SecParam),
@@ -73,7 +72,7 @@ func (i *OrgCredentialIssuer) verifyNym(nymProofRandomData, challenge *big.Int,
 
 func (i *OrgCredentialIssuer) verifyU(UProofRandomData, challenge *big.Int, UProofData []*big.Int) bool {
 	// bases are [R_1, ..., R_L, S]
-	bases := append(i.Org.PubKey.RsKnown, i.Org.PubKey.S)
+	bases := append(i.Org.PubKey.RsHidden, i.Org.PubKey.S)
 	i.UVerifier.SetProofRandomData(UProofRandomData, bases, i.U)
 	i.UVerifier.SetChallenge(challenge)
 	return i.UVerifier.Verify(UProofData)
@@ -89,7 +88,7 @@ func (i *OrgCredentialIssuer) verifyUProofDataLengths(UProofData []*big.Int) boo
 	// boundary for m_tilde
 	b_m := i.Org.ParamSizes.AttrBitLen + i.Org.ParamSizes.SecParam + i.Org.ParamSizes.HashBitLen + 2
 	// boundary for v1_tilde
-	b_v1 := i.Org.ParamSizes.NLength + 2* i.Org.ParamSizes.SecParam + i.Org.ParamSizes.HashBitLen + 1
+	b_v1 := i.Org.ParamSizes.NLength + 2*i.Org.ParamSizes.SecParam + i.Org.ParamSizes.HashBitLen + 1
 
 	exp := big.NewInt(int64(b_m))
 	b1 := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -97,26 +96,28 @@ func (i *OrgCredentialIssuer) verifyUProofDataLengths(UProofData []*big.Int) boo
 	exp = big.NewInt(int64(b_v1))
 	b2 := new(big.Int).Exp(big.NewInt(2), exp, nil)
 
-	for ind := 0; ind < len(i.Org.PubKey.RsKnown); ind++ {
+	for ind := 0; ind < len(i.Org.PubKey.RsHidden); ind++ {
 		if UProofData[ind].Cmp(b1) > 0 {
 			return false
 		}
 	}
-	if UProofData[len(i.Org.PubKey.RsKnown)].Cmp(b2) > 0 {
+	if UProofData[len(i.Org.PubKey.RsHidden)].Cmp(b2) > 0 {
 		return false
 	}
 	return true
 }
 
-func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof,
+func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
 	UProof *qrspecialrsaproofs.RepresentationProof) bool {
+	i.U = U
 	return i.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
 		i.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
 		i.verifyChallenge(UProof.Challenge) &&
 		i.verifyUProofDataLengths(UProof.ProofData)
 }
 
-func (i *OrgCredentialIssuer) IssueCredential(knownAttrs []*big.Int, n2 *big.Int) (*big.Int, *big.Int, *big.Int,
+func (i *OrgCredentialIssuer) IssueCredential(knownAttrs, commitmentsOfAttrs []*big.Int,
+	n2 *big.Int) (*big.Int, *big.Int, *big.Int,
 	*qrspecialrsaproofs.RepresentationProof) {
 	exp := big.NewInt(int64(i.Org.ParamSizes.EBitLen - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -134,19 +135,23 @@ func (i *OrgCredentialIssuer) IssueCredential(knownAttrs []*big.Int, n2 *big.Int
 	b = new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v11 := new(big.Int).Add(vr, b)
 
-	// num = Z * R_1^attr_1 * ... * R_j^attr_j where only attributes from A_k (known)
-	// denom = U * S^v11
+	// denom = U * S^v11 * R_1^attr_1 * ... * R_j^attr_j where only attributes from knownAttrs and committedAttrs
 	acc := big.NewInt(1)
 	for ind := 0; ind < len(knownAttrs); ind++ {
-		t1 := i.Org.Group.Exp(i.Org.PubKey.RsKnown[ind], knownAttrs[ind]) // TODO: R_list should be replaced with those that correspond to A_k
+		t1 := i.Org.Group.Exp(i.Org.PubKey.RsKnown[ind], knownAttrs[ind])
 		acc = i.Org.Group.Mul(acc, t1)
 	}
-	num := i.Org.Group.Mul(i.Org.PubKey.Z, acc)
+
+	for ind := 0; ind < len(commitmentsOfAttrs); ind++ {
+		t1 := i.Org.Group.Exp(i.Org.PubKey.RsCommitted[ind], commitmentsOfAttrs[ind])
+		acc = i.Org.Group.Mul(acc, t1)
+	}
 
 	t := i.Org.Group.Exp(i.Org.PubKey.S, v11) // s^v11
 	denom := i.Org.Group.Mul(t, i.U)          // U * s^v11
+	denom = i.Org.Group.Mul(denom, acc)       // U * s^v11 * acc
 	denomInv := i.Org.Group.Inv(denom)
-	Q := i.Org.Group.Mul(num, denomInv)
+	Q := i.Org.Group.Mul(i.Org.PubKey.Z, denomInv)
 
 	phiN := new(big.Int).Mul(i.Org.Group.P1, i.Org.Group.Q1)
 	eInv := new(big.Int).ModInverse(e, phiN)

@@ -156,7 +156,8 @@ func NewDFCommitmentPositiveVerifier(receiver *commitments.DamgardFujisakiReceiv
 
 	receivers := make([]*commitments.DamgardFujisakiReceiver, nRoots)
 	for i, comm := range bigCommitments {
-		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA,
+		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(
+			receiver.QRSpecialRSA.GetSpecialRSAPrimes(),
 			receiver.H, receiver.G, receiver.K)
 		if err != nil {
 			return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
