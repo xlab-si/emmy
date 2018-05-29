@@ -60,6 +60,7 @@ type DamgardFujisakiCommitter struct {
 	r              *big.Int
 }
 
+// TODO: switch h and g
 func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCommitter {
 	// n.BitLen() - 2 is used as B
 	return &DamgardFujisakiCommitter{damgardFujisaki: damgardFujisaki{

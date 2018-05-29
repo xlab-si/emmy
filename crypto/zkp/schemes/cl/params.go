@@ -33,6 +33,7 @@ type CLParamSizes struct {
 	EBitLen           int // size of e values of certificates
 	E1BitLen          int // size of the interval the e values are taken from
 	VBitLen           int // size of the v values of the certificates
+	ChallengeSpace    int
 }
 
 // TODO: add method to load params from file or blockchain or wherever they will be stored.
@@ -49,5 +50,6 @@ func GetDefaultParamSizes() *CLParamSizes {
 		EBitLen:           597,
 		E1BitLen:          120,
 		VBitLen:           2724,
+		ChallengeSpace:    80,
 	}
 }

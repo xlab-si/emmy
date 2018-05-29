@@ -21,18 +21,24 @@ import (
 	"crypto/rand"
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 type OrgCredentialIssuer struct {
-	Org         *Org
-	nym         *big.Int
-	U           *big.Int
-	n1          *big.Int
-	nymVerifier *dlogproofs.SchnorrVerifier
-	UVerifier   *qrspecialrsaproofs.RepresentationVerifier
+	Org                *Org
+	nym                *big.Int
+	U                  *big.Int
+	n1                 *big.Int
+	nymVerifier        *dlogproofs.SchnorrVerifier
+	UVerifier          *qrspecialrsaproofs.RepresentationVerifier
+	knownAttrs         []*big.Int
+	commitmentsOfAttrs []*big.Int
+	attrsReceivers     []*commitments.DamgardFujisakiReceiver
+	attrsVerifiers     []*commitmentzkp.DFCommitmentOpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
 	// certificate data: TODO: make it a struct
 	eInv             *big.Int
 	v11              *big.Int
@@ -41,14 +47,34 @@ type OrgCredentialIssuer struct {
 	credentialProver *qrspecialrsaproofs.RepresentationProver
 }
 
-func NewOrgCredentialIssuer(org *Org, nym *big.Int) *OrgCredentialIssuer {
+func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int) (*OrgCredentialIssuer,
+	error) {
+	attrsReceivers := make([]*commitments.DamgardFujisakiReceiver, len(commitmentsOfAttrs))
+	attrsVerifiers := make([]*commitmentzkp.DFCommitmentOpeningVerifier, len(commitmentsOfAttrs))
+	for i, attr := range commitmentsOfAttrs {
+		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(org.attributesSpecialRSAPrimes,
+			org.PubKey.H, org.PubKey.G, org.ParamSizes.SecParam)
+		if err != nil {
+			return nil, err
+		}
+		receiver.SetCommitment(attr)
+		attrsReceivers[i] = receiver
+
+		verifier := commitmentzkp.NewDFCommitmentOpeningVerifier(receiver, org.ParamSizes.ChallengeSpace)
+		attrsVerifiers[i] = verifier
+	}
+
 	return &OrgCredentialIssuer{
 		Org:         org,
 		nym:         nym,
 		nymVerifier: dlogproofs.NewSchnorrVerifier(org.PedersenReceiver.Params.Group),
 		UVerifier: qrspecialrsaproofs.NewRepresentationVerifier(org.Group,
 			org.ParamSizes.SecParam),
-	}
+		knownAttrs:         knownAttrs,
+		commitmentsOfAttrs: commitmentsOfAttrs,
+		attrsReceivers:     attrsReceivers,
+		attrsVerifiers:     attrsVerifiers,
+	}, nil
 }
 
 func (i *OrgCredentialIssuer) GetNonce() *big.Int {
@@ -80,7 +106,9 @@ func (i *OrgCredentialIssuer) verifyU(UProofRandomData, challenge *big.Int, UPro
 
 func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
 	context := i.Org.PubKey.GetContext()
-	c := common.Hash(context, i.U, i.nym, i.n1)
+	l := []*big.Int{context, i.U, i.nym, i.n1}
+	l = append(l, i.commitmentsOfAttrs...)
+	c := common.Hash(l...)
 	return c.Cmp(challenge) == 0
 }
 
@@ -107,17 +135,30 @@ func (i *OrgCredentialIssuer) verifyUProofDataLengths(UProofData []*big.Int) boo
 	return true
 }
 
+func (i *OrgCredentialIssuer) verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof) bool {
+	for i, verifier := range i.attrsVerifiers {
+		verifier.SetProofRandomData(commitmentsOfAttrsProofs[i].ProofRandomData)
+		verifier.SetChallenge(commitmentsOfAttrsProofs[i].Challenge)
+		if !verifier.Verify(commitmentsOfAttrsProofs[i].ProofData1,
+			commitmentsOfAttrsProofs[i].ProofData2) {
+			return false
+		}
+	}
+	return true
+}
+
 func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
-	UProof *qrspecialrsaproofs.RepresentationProof) bool {
+	UProof *qrspecialrsaproofs.RepresentationProof,
+	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof) bool {
 	i.U = U
 	return i.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
 		i.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
+		i.verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs) &&
 		i.verifyChallenge(UProof.Challenge) &&
 		i.verifyUProofDataLengths(UProof.ProofData)
 }
 
-func (i *OrgCredentialIssuer) IssueCredential(knownAttrs, commitmentsOfAttrs []*big.Int,
-	n2 *big.Int) (*big.Int, *big.Int, *big.Int,
+func (i *OrgCredentialIssuer) IssueCredential(n2 *big.Int) (*big.Int, *big.Int, *big.Int,
 	*qrspecialrsaproofs.RepresentationProof) {
 	exp := big.NewInt(int64(i.Org.ParamSizes.EBitLen - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -137,13 +178,13 @@ func (i *OrgCredentialIssuer) IssueCredential(knownAttrs, commitmentsOfAttrs []*
 
 	// denom = U * S^v11 * R_1^attr_1 * ... * R_j^attr_j where only attributes from knownAttrs and committedAttrs
 	acc := big.NewInt(1)
-	for ind := 0; ind < len(knownAttrs); ind++ {
-		t1 := i.Org.Group.Exp(i.Org.PubKey.RsKnown[ind], knownAttrs[ind])
+	for ind := 0; ind < len(i.knownAttrs); ind++ {
+		t1 := i.Org.Group.Exp(i.Org.PubKey.RsKnown[ind], i.knownAttrs[ind])
 		acc = i.Org.Group.Mul(acc, t1)
 	}
 
-	for ind := 0; ind < len(commitmentsOfAttrs); ind++ {
-		t1 := i.Org.Group.Exp(i.Org.PubKey.RsCommitted[ind], commitmentsOfAttrs[ind])
+	for ind := 0; ind < len(i.commitmentsOfAttrs); ind++ {
+		t1 := i.Org.Group.Exp(i.Org.PubKey.RsCommitted[ind], i.commitmentsOfAttrs[ind])
 		acc = i.Org.Group.Mul(acc, t1)
 	}
 

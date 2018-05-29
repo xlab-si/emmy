@@ -23,6 +23,7 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
@@ -33,14 +34,23 @@ type UserCredentialReceiver struct {
 	U         *big.Int
 	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde
-	UProver  *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
-	nymTilde *big.Int                                 // proof random data for nym (proving that nym is of proper form)
-	UTilde   *big.Int                                 // proof random data for U (proving that U is of proper form)
+	UProver                   *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
+	nymTilde                  *big.Int                                 // proof random data for nym (proving that nym is of proper form)
+	UTilde                    *big.Int                                 // proof random data for U (proving that U is of proper form)
+	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
 }
 
 func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
+	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(user.commitmentsOfAttrs))
+	for i, _ := range user.commitmentsOfAttrs {
+		prover := commitmentzkp.NewDFCommitmentOpeningProver(user.attrsCommitters[i],
+			user.ParamSizes.ChallengeSpace)
+		commitmentsOfAttrsProvers[i] = prover
+	}
+
 	return &UserCredentialReceiver{
 		User: user,
+		commitmentsOfAttrsProvers: commitmentsOfAttrsProvers,
 	}
 }
 
@@ -117,11 +127,12 @@ func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 	return UTilde, nil
 }
 
-// GetChallenge returns Hash(context||U||nym||U_tilde||nym_tilde||n1). Thus, Fiat-Shamir is used to
-// generate a challenge, instead of asking verifier to generate it.
-func (r *UserCredentialReceiver) GetChallenge(U, nym, n1 *big.Int) *big.Int {
+// Fiat-Shamir is used to generate a challenge, instead of asking verifier to generate it.
+func (r *UserCredentialReceiver) GetChallenge(nym, n1 *big.Int) *big.Int {
 	context := r.User.PubKey.GetContext()
-	return common.Hash(context, U, nym, n1)
+	l := []*big.Int{context, r.U, nym, n1}
+	l = append(l, r.User.commitmentsOfAttrs...)
+	return common.Hash(l...)
 }
 
 func (r *UserCredentialReceiver) getCredentialRequestProofRandomfData(nymName string) (*big.Int, *big.Int, error) {
@@ -134,26 +145,45 @@ func (r *UserCredentialReceiver) getCredentialRequestProofRandomfData(nymName st
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when obtaining U proof random data: %v", err)
 	}
+
 	return nymProofRandomData, UProofRandomData, nil
 }
 
-func (r *UserCredentialReceiver) getCredentialRequestProofData(challenge *big.Int) ([]*big.Int, []*big.Int) {
-	return r.nymProver.GetProofData(challenge), r.UProver.GetProofData(challenge)
+func (r *UserCredentialReceiver) getCredentialRequestProofData(challenge *big.Int) ([]*big.Int, []*big.Int, error) {
+	return r.nymProver.GetProofData(challenge), r.UProver.GetProofData(challenge), nil
+}
+
+func (r *UserCredentialReceiver) getCommitmentsOfAttrsProof(challenge *big.Int) []*commitmentzkp.DFOpeningProof {
+	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.User.attrsCommitters))
+	for i, prover := range r.commitmentsOfAttrsProvers {
+		proofRandomData := prover.GetProofRandomData()
+		proofData1, proofData2 := prover.GetProofData(challenge)
+		commitmentsOfAttrsProofs[i] = commitmentzkp.NewDFOpeningProof(proofRandomData, challenge,
+			proofData1, proofData2)
+	}
+	return commitmentsOfAttrsProofs
 }
 
 // GetCredentialRequest computes U ...
 func (r *UserCredentialReceiver) GetCredentialRequest(nymName string, nym, n1 *big.Int) (*dlogproofs.SchnorrProof,
-	*big.Int, *qrspecialrsaproofs.RepresentationProof, error) {
+	*big.Int, *qrspecialrsaproofs.RepresentationProof, []*commitmentzkp.DFOpeningProof, error) {
 	r.setU()
 	nymProofRandomData, UProofRandomData, err := r.getCredentialRequestProofRandomfData(nymName)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	challenge := r.GetChallenge(r.U, nym, n1)
-	nymProofData, UProofData := r.getCredentialRequestProofData(challenge)
+	challenge := r.GetChallenge(nym, n1) // TODO: commitmentsOfAttrs
+	nymProofData, UProofData, err := r.getCredentialRequestProofData(challenge)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	commitmentsOfAttrsProofs := r.getCommitmentsOfAttrsProof(challenge)
+
 	return dlogproofs.NewSchnorrProof(nymProofRandomData, challenge, nymProofData),
-		r.U, qrspecialrsaproofs.NewRepresentationProof(UProofRandomData, challenge, UProofData), nil
+		r.U, qrspecialrsaproofs.NewRepresentationProof(UProofRandomData, challenge, UProofData),
+		commitmentsOfAttrsProofs, nil
 }
 
 func (r *UserCredentialReceiver) GetNonce() *big.Int {

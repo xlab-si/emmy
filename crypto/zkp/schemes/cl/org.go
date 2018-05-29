@@ -67,11 +67,12 @@ func (k *PubKey) GetContext() *big.Int {
 }
 
 type Org struct {
-	Name             string
-	ParamSizes       *CLParamSizes
-	Group            *groups.QRSpecialRSA
-	PedersenReceiver *commitments.PedersenReceiver
-	PubKey           *PubKey
+	Name                       string
+	ParamSizes                 *CLParamSizes
+	Group                      *groups.QRSpecialRSA
+	PedersenReceiver           *commitments.PedersenReceiver
+	PubKey                     *PubKey
+	attributesSpecialRSAPrimes *common.SpecialRSAPrimes
 }
 
 func NewOrg(name string, clParamSizes *CLParamSizes) (*Org, error) {
@@ -113,11 +114,12 @@ func NewOrgFromParams(name string, clParamSizes *CLParamSizes, primes *common.Sp
 	}
 
 	return &Org{
-		Name:             name,
-		ParamSizes:       clParamSizes,
-		Group:            group,
-		PubKey:           pubKey,
-		PedersenReceiver: commitments.NewPedersenReceiverFromParams(pedersenParams),
+		Name:                       name,
+		ParamSizes:                 clParamSizes,
+		Group:                      group,
+		PubKey:                     pubKey,
+		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pedersenParams),
+		attributesSpecialRSAPrimes: attributesSpecialRSAPrimes,
 	}, nil
 }
 

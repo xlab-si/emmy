@@ -51,24 +51,28 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
-	orgCredentialIssuer := NewOrgCredentialIssuer(org, nym)
+	orgCredentialIssuer, err := NewOrgCredentialIssuer(org, nym, user.knownAttrs, user.commitmentsOfAttrs)
+	if err != nil {
+		t.Errorf("error when creating credential issuer: %v", err)
+	}
 	n1 := orgCredentialIssuer.GetNonce()
 
 	userCredentialReceiver := NewUserCredentialReceiver(user)
-	nymProofData, U, UProofData, err := userCredentialReceiver.GetCredentialRequest(nymName, nym, n1)
+	nymProofData, U, UProofData, commitmentsOfAttrsProofs, err :=
+		userCredentialReceiver.GetCredentialRequest(nymName, nym, n1)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
 	// user needs to send to the issuer:
-	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData)
+	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
+	// commitmentsOfAttrsProofs)
 
-	n2 := userCredentialReceiver.GetNonce()
-
-	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, U, UProofData) // commitmentsofAttrs
+	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, U, UProofData, commitmentsOfAttrsProofs)
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
-	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(user.knownAttrs, user.commitmentsOfAttrs, n2)
+	n2 := userCredentialReceiver.GetNonce()
+	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(n2)
 
 	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, n2)
 	if err != nil {
