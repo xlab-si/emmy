@@ -32,7 +32,7 @@ type OrgCredentialIssuer struct {
 	Org                *Org
 	nym                *big.Int
 	U                  *big.Int
-	n1                 *big.Int
+	nonceOrg           *big.Int
 	nymVerifier        *dlogproofs.SchnorrVerifier
 	UVerifier          *qrspecialrsaproofs.RepresentationVerifier
 	knownAttrs         []*big.Int
@@ -81,7 +81,8 @@ func (i *OrgCredentialIssuer) GetNonce() *big.Int {
 	secParam := big.NewInt(int64(i.Org.ParamSizes.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
 	n := common.GetRandomInt(b)
-	i.n1 = n
+	i.nonceOrg = n
+
 	return n
 }
 
@@ -93,6 +94,7 @@ func (i *OrgCredentialIssuer) verifyNym(nymProofRandomData, challenge *big.Int,
 	}
 	i.nymVerifier.SetProofRandomData(nymProofRandomData, bases, i.nym)
 	i.nymVerifier.SetChallenge(challenge)
+
 	return i.nymVerifier.Verify(nymProofData)
 }
 
@@ -101,14 +103,16 @@ func (i *OrgCredentialIssuer) verifyU(UProofRandomData, challenge *big.Int, UPro
 	bases := append(i.Org.PubKey.RsHidden, i.Org.PubKey.S)
 	i.UVerifier.SetProofRandomData(UProofRandomData, bases, i.U)
 	i.UVerifier.SetChallenge(challenge)
+
 	return i.UVerifier.Verify(UProofData)
 }
 
 func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
 	context := i.Org.PubKey.GetContext()
-	l := []*big.Int{context, i.U, i.nym, i.n1}
+	l := []*big.Int{context, i.U, i.nym, i.nonceOrg}
 	l = append(l, i.commitmentsOfAttrs...)
 	c := common.Hash(l...)
+
 	return c.Cmp(challenge) == 0
 }
 
@@ -132,18 +136,20 @@ func (i *OrgCredentialIssuer) verifyUProofDataLengths(UProofData []*big.Int) boo
 	if UProofData[len(i.Org.PubKey.RsHidden)].Cmp(b2) > 0 {
 		return false
 	}
+
 	return true
 }
 
 func (i *OrgCredentialIssuer) verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof) bool {
-	for i, verifier := range i.attrsVerifiers {
-		verifier.SetProofRandomData(commitmentsOfAttrsProofs[i].ProofRandomData)
-		verifier.SetChallenge(commitmentsOfAttrsProofs[i].Challenge)
-		if !verifier.Verify(commitmentsOfAttrsProofs[i].ProofData1,
+	for i, v := range i.attrsVerifiers {
+		v.SetProofRandomData(commitmentsOfAttrsProofs[i].ProofRandomData)
+		v.SetChallenge(commitmentsOfAttrsProofs[i].Challenge)
+		if !v.Verify(commitmentsOfAttrsProofs[i].ProofData1,
 			commitmentsOfAttrsProofs[i].ProofData2) {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -151,6 +157,7 @@ func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.Schno
 	UProof *qrspecialrsaproofs.RepresentationProof,
 	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof) bool {
 	i.U = U
+
 	return i.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
 		i.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
 		i.verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs) &&
@@ -158,7 +165,7 @@ func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.Schno
 		i.verifyUProofDataLengths(UProof.ProofData)
 }
 
-func (i *OrgCredentialIssuer) IssueCredential(n2 *big.Int) (*big.Int, *big.Int, *big.Int,
+func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*big.Int, *big.Int, *big.Int,
 	*qrspecialrsaproofs.RepresentationProof) {
 	exp := big.NewInt(int64(i.Org.ParamSizes.EBitLen - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -203,19 +210,19 @@ func (i *OrgCredentialIssuer) IssueCredential(n2 *big.Int) (*big.Int, *big.Int, 
 	i.Q = Q
 	i.A = A
 
-	AProof := i.getAProof(n2)
+	AProof := i.getAProof(nonceUser)
 
 	return A, e, v11, AProof
 }
 
-func (i *OrgCredentialIssuer) getAProof(n2 *big.Int) *qrspecialrsaproofs.RepresentationProof {
+func (i *OrgCredentialIssuer) getAProof(nonceUser *big.Int) *qrspecialrsaproofs.RepresentationProof {
 	prover := qrspecialrsaproofs.NewRepresentationProver(i.Org.Group, i.Org.ParamSizes.SecParam,
 		[]*big.Int{i.eInv}, []*big.Int{i.Q}, i.A)
 	i.credentialProver = prover
 	proofRandomData := prover.GetProofRandomData(true)
-	// challenge = hash(context||Q||A||AProofRandomData||n2)
+	// challenge = hash(context||Q||A||AProofRandomData||nonceUser)
 	context := i.Org.PubKey.GetContext()
-	challenge := common.Hash(context, i.Q, i.A, proofRandomData, n2)
+	challenge := common.Hash(context, i.Q, i.A, proofRandomData, nonceUser)
 	proofData := prover.GetProofData(challenge)
 
 	return qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData)

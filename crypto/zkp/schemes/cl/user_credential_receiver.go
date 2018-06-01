@@ -44,7 +44,7 @@ func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
 	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(user.commitmentsOfAttrs))
 	for i, _ := range user.commitmentsOfAttrs {
 		prover := commitmentzkp.NewDFCommitmentOpeningProver(user.attrsCommitters[i],
-			user.ParamSizes.ChallengeSpace)
+			user.Params.ChallengeSpace)
 		commitmentsOfAttrsProvers[i] = prover
 	}
 
@@ -57,7 +57,7 @@ func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
 // setU sets r.U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where only hiddenAttrs are used and
 // where v1 is from +-{0,1}^(NLength + SecParam)
 func (r *UserCredentialReceiver) setU() *big.Int {
-	exp := big.NewInt(int64(r.User.ParamSizes.NLength + r.User.ParamSizes.SecParam))
+	exp := big.NewInt(int64(r.User.Params.NLength + r.User.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
 	r.v1 = v1
@@ -75,13 +75,13 @@ func (r *UserCredentialReceiver) setU() *big.Int {
 }
 
 // getNymProofRandomData return proof random data for nym.
-func (rcv *UserCredentialReceiver) getNymProofRandomData(nymName string) (*big.Int, error) {
+func (rcv *UserCredentialReceiver) getNymProofRandomData(nymId int32) (*big.Int, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{
 		rcv.User.PedersenParams.Group.G,
 		rcv.User.PedersenParams.H,
 	}
-	committer := rcv.User.Committers[nymName]
+	committer := rcv.User.Committers[nymId]
 	val, r := committer.GetDecommitMsg() // val is actually master key
 	secrets := []*big.Int{val, r}
 
@@ -104,14 +104,14 @@ func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 	// bases are [R_1, ..., R_L, S]
 	bases := append(r.User.PubKey.RsHidden, r.User.PubKey.S)
 
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, r.User.ParamSizes.SecParam,
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, r.User.Params.SecParam,
 		secrets[:], bases[:], r.U)
 	r.UProver = prover
 
 	// boundary for m_tilde
-	b_m := r.User.ParamSizes.AttrBitLen + r.User.ParamSizes.SecParam + r.User.ParamSizes.HashBitLen + 1
+	b_m := r.User.Params.AttrBitLen + r.User.Params.SecParam + r.User.Params.HashBitLen + 1
 	// boundary for v1
-	b_v1 := r.User.ParamSizes.NLength + 2*r.User.ParamSizes.SecParam + r.User.ParamSizes.HashBitLen
+	b_v1 := r.User.Params.NLength + 2*r.User.Params.SecParam + r.User.Params.HashBitLen
 
 	boundaries := make([]int, len(r.User.PubKey.RsHidden))
 	for i := 0; i < len(r.User.PubKey.RsHidden); i++ {
@@ -128,15 +128,16 @@ func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 }
 
 // Fiat-Shamir is used to generate a challenge, instead of asking verifier to generate it.
-func (r *UserCredentialReceiver) GetChallenge(nym, n1 *big.Int) *big.Int {
+func (r *UserCredentialReceiver) GetChallenge(nym, nonceOrg *big.Int) *big.Int {
 	context := r.User.PubKey.GetContext()
-	l := []*big.Int{context, r.U, nym, n1}
+	l := []*big.Int{context, r.U, nym, nonceOrg}
 	l = append(l, r.User.commitmentsOfAttrs...)
+
 	return common.Hash(l...)
 }
 
-func (r *UserCredentialReceiver) getCredentialRequestProofRandomfData(nymName string) (*big.Int, *big.Int, error) {
-	nymProofRandomData, err := r.getNymProofRandomData(nymName)
+func (r *UserCredentialReceiver) getCredentialRequestProofRandomfData(nymId int32) (*big.Int, *big.Int, error) {
+	nymProofRandomData, err := r.getNymProofRandomData(nymId)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when obtaining nym proof random data: %v", err)
 	}
@@ -164,16 +165,20 @@ func (r *UserCredentialReceiver) getCommitmentsOfAttrsProof(challenge *big.Int) 
 	return commitmentsOfAttrsProofs
 }
 
-// GetCredentialRequest computes U ...
-func (r *UserCredentialReceiver) GetCredentialRequest(nymName string, nym, n1 *big.Int) (*dlogproofs.SchnorrProof,
+// GetCredentialRequest computes U and returns:
+// - proof data for proving that nym was properly generated,
+// - U and proof data that U was properly generated,
+// - proof data for proving the knowledge of opening for commitments of attributes (for those attributes
+// for which the committed value is known).
+func (r *UserCredentialReceiver) GetCredentialRequest(nym *Nym, nonceOrg *big.Int) (*dlogproofs.SchnorrProof,
 	*big.Int, *qrspecialrsaproofs.RepresentationProof, []*commitmentzkp.DFOpeningProof, error) {
 	r.setU()
-	nymProofRandomData, UProofRandomData, err := r.getCredentialRequestProofRandomfData(nymName)
+	nymProofRandomData, UProofRandomData, err := r.getCredentialRequestProofRandomfData(nym.Id)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
-	challenge := r.GetChallenge(nym, n1) // TODO: commitmentsOfAttrs
+	challenge := r.GetChallenge(nym.Commitment, nonceOrg)
 	nymProofData, UProofData, err := r.getCredentialRequestProofData(challenge)
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -187,15 +192,15 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nymName string, nym, n1 *b
 }
 
 func (r *UserCredentialReceiver) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.ParamSizes.SecParam)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.SecParam)), nil)
 	return common.GetRandomInt(b)
 }
 
 func (r *UserCredentialReceiver) VerifyCredential(A, e, v11 *big.Int,
 	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
 	// check bit length of e:
-	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.ParamSizes.EBitLen-1)), nil)
-	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.ParamSizes.E1BitLen-1)), nil)
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.EBitLen-1)), nil)
+	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.E1BitLen-1)), nil)
 	b2 := new(big.Int).Add(b1, b22)
 
 	if (e.Cmp(b1) != 1) || (b2.Cmp(e) != 1) {
@@ -233,7 +238,7 @@ func (r *UserCredentialReceiver) VerifyCredential(A, e, v11 *big.Int,
 	}
 
 	// verify signature proof:
-	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.ParamSizes.SecParam)
+	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
 	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, A)
 	// check challenge
 	context := r.User.PubKey.GetContext()

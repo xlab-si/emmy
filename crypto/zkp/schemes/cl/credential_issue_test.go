@@ -41,40 +41,40 @@ func TestCLIssue(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
-	user.GenerateMasterSecret()
-	nymName := "nym1"
 
 	// TODO: if there are more than one organizations, each can have its own PedersenParams (where
 	// nyms are generated, and nyms need to be managed per organization
-	nym, err := user.GenerateNym(nymName)
+	nym, err := user.GenerateNym()
 	if err != nil {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
-	orgCredentialIssuer, err := NewOrgCredentialIssuer(org, nym, user.knownAttrs, user.commitmentsOfAttrs)
+	orgCredentialIssuer, err := NewOrgCredentialIssuer(org, nym.Commitment, user.knownAttrs,
+		user.commitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when creating credential issuer: %v", err)
 	}
-	n1 := orgCredentialIssuer.GetNonce()
+	nonceOrg := orgCredentialIssuer.GetNonce()
 
 	userCredentialReceiver := NewUserCredentialReceiver(user)
 	nymProofData, U, UProofData, commitmentsOfAttrsProofs, err :=
-		userCredentialReceiver.GetCredentialRequest(nymName, nym, n1)
+		userCredentialReceiver.GetCredentialRequest(nym, nonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
 	// user needs to send to the issuer:
-	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
+	// (nonceUser, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
 	// commitmentsOfAttrsProofs)
 
 	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, U, UProofData, commitmentsOfAttrsProofs)
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
-	n2 := userCredentialReceiver.GetNonce()
-	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(n2)
+	nonceUser := userCredentialReceiver.GetNonce()
+	// TODO: implement credential struct when implementing update credential
+	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(nonceUser)
 
-	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, n2)
+	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, nonceUser)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}

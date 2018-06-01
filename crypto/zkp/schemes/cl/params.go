@@ -19,7 +19,7 @@ package cl
 
 import ()
 
-type CLParamSizes struct {
+type CLParams struct {
 	// There are only a few possibilities for RhoBitLen. 256 implies that the modulus
 	// bit length is 2048
 	RhoBitLen         int // bit length of order of the commitment group
@@ -33,12 +33,12 @@ type CLParamSizes struct {
 	EBitLen           int // size of e values of certificates
 	E1BitLen          int // size of the interval the e values are taken from
 	VBitLen           int // size of the v values of the certificates
-	ChallengeSpace    int
+	ChallengeSpace    int // bit length of challenges for DF commitment proofs
 }
 
 // TODO: add method to load params from file or blockchain or wherever they will be stored.
-func GetDefaultParamSizes() *CLParamSizes {
-	return &CLParamSizes{
+func GetDefaultParamSizes() *CLParams {
+	return &CLParams{
 		RhoBitLen:         256,
 		NLength:           2048,
 		KnownAttrsNum:     4,

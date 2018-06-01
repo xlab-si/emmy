@@ -39,32 +39,32 @@ func NewDFCommitmentOpeningProver(committer *commitments.DamgardFujisakiCommitte
 	}
 }
 
-func (prover *DFCommitmentOpeningProver) GetProofRandomData() *big.Int {
+func (p *DFCommitmentOpeningProver) GetProofRandomData() *big.Int {
 	// r1 from [0, T * 2^(NLength + ChallengeSpaceSize))
-	nLen := prover.committer.QRSpecialRSA.N.BitLen()
-	exp := big.NewInt(int64(nLen + prover.challengeSpaceSize))
+	nLen := p.committer.QRSpecialRSA.N.BitLen()
+	exp := big.NewInt(int64(nLen + p.challengeSpaceSize))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
-	b.Mul(b, prover.committer.T)
+	b.Mul(b, p.committer.T)
 	r1 := common.GetRandomInt(b)
-	prover.r1 = r1
+	p.r1 = r1
 	// r2 from [0, 2^(B + 2*NLength + ChallengeSpaceSize))
 	b = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(
-		prover.committer.B+2*nLen+prover.challengeSpaceSize)), nil)
+		p.committer.B+2*nLen+p.challengeSpaceSize)), nil)
 	r2 := common.GetRandomInt(b)
-	prover.r2 = r2
+	p.r2 = r2
 	// G^r1 * H^r2
-	proofRandomData := prover.committer.ComputeCommit(r1, r2)
+	proofRandomData := p.committer.ComputeCommit(r1, r2)
 	return proofRandomData
 }
 
-func (prover *DFCommitmentOpeningProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int) {
+func (p *DFCommitmentOpeningProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int) {
 	// s1 = r1 + challenge*a (in Z, not modulo)
 	// s2 = r2 + challenge*r (in Z, not modulo)
-	a, r := prover.committer.GetDecommitMsg()
+	a, r := p.committer.GetDecommitMsg()
 	s1 := new(big.Int).Mul(challenge, a)
-	s1.Add(s1, prover.r1)
+	s1.Add(s1, p.r1)
 	s2 := new(big.Int).Mul(challenge, r)
-	s2.Add(s2, prover.r2)
+	s2.Add(s2, p.r2)
 	return s1, s2
 }
 
@@ -77,7 +77,7 @@ type DFOpeningProof struct {
 	ProofData2      *big.Int
 }
 
-func NewDFOpeningProof(proofRandomData, challenge *big.Int, proofData1, proofData2 *big.Int) *DFOpeningProof {
+func NewDFOpeningProof(proofRandomData, challenge, proofData1, proofData2 *big.Int) *DFOpeningProof {
 	return &DFOpeningProof{
 		ProofRandomData: proofRandomData,
 		Challenge:       challenge,
@@ -101,27 +101,27 @@ func NewDFCommitmentOpeningVerifier(receiver *commitments.DamgardFujisakiReceive
 	}
 }
 
-func (verifier *DFCommitmentOpeningVerifier) SetProofRandomData(proofRandomData *big.Int) {
-	verifier.proofRandomData = proofRandomData
+func (v *DFCommitmentOpeningVerifier) SetProofRandomData(proofRandomData *big.Int) {
+	v.proofRandomData = proofRandomData
 }
 
-func (verifier *DFCommitmentOpeningVerifier) GetChallenge() *big.Int {
-	exp := big.NewInt(int64(verifier.challengeSpaceSize))
+func (v *DFCommitmentOpeningVerifier) GetChallenge() *big.Int {
+	exp := big.NewInt(int64(v.challengeSpaceSize))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	challenge := common.GetRandomInt(b)
-	verifier.challenge = challenge
+	v.challenge = challenge
 	return challenge
 }
 
 // SetChallenge is used when Fiat-Shamir is used - when challenge is generated using hash by the prover.
-func (verifier *DFCommitmentOpeningVerifier) SetChallenge(challenge *big.Int) {
-	verifier.challenge = challenge
+func (v *DFCommitmentOpeningVerifier) SetChallenge(challenge *big.Int) {
+	v.challenge = challenge
 }
 
-func (verifier *DFCommitmentOpeningVerifier) Verify(s1, s2 *big.Int) bool {
+func (v *DFCommitmentOpeningVerifier) Verify(s1, s2 *big.Int) bool {
 	// verify proofRandomData * verifier.receiver.Commitment^challenge = G^s1 * H^s2 mod n
-	left := verifier.receiver.QRSpecialRSA.Exp(verifier.receiver.Commitment, verifier.challenge)
-	left = verifier.receiver.QRSpecialRSA.Mul(verifier.proofRandomData, left)
-	right := verifier.receiver.ComputeCommit(s1, s2)
+	left := v.receiver.QRSpecialRSA.Exp(v.receiver.Commitment, v.challenge)
+	left = v.receiver.QRSpecialRSA.Mul(v.proofRandomData, left)
+	right := v.receiver.ComputeCommit(s1, s2)
 	return left.Cmp(right) == 0
 }

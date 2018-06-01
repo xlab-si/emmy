@@ -67,15 +67,14 @@ func (k *PubKey) GetContext() *big.Int {
 }
 
 type Org struct {
-	Name                       string
-	ParamSizes                 *CLParamSizes
+	ParamSizes                 *CLParams
 	Group                      *groups.QRSpecialRSA
 	PedersenReceiver           *commitments.PedersenReceiver
 	PubKey                     *PubKey
 	attributesSpecialRSAPrimes *common.SpecialRSAPrimes
 }
 
-func NewOrg(name string, clParamSizes *CLParamSizes) (*Org, error) {
+func NewOrg(name string, clParamSizes *CLParams) (*Org, error) {
 	group, err := groups.NewQRSpecialRSA(clParamSizes.NLength / 2)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
@@ -105,7 +104,7 @@ func NewOrg(name string, clParamSizes *CLParamSizes) (*Org, error) {
 		commitmentReceiver.QRSpecialRSA.GetSpecialRSAPrimes(), commitmentReceiver.G, commitmentReceiver.H)
 }
 
-func NewOrgFromParams(name string, clParamSizes *CLParamSizes, primes *common.SpecialRSAPrimes,
+func NewOrgFromParams(name string, clParamSizes *CLParams, primes *common.SpecialRSAPrimes,
 	pubKey *PubKey, pedersenParams *commitments.PedersenParams,
 	attributesSpecialRSAPrimes *common.SpecialRSAPrimes, G, H *big.Int) (*Org, error) {
 	group, err := groups.NewQRSpecialRSAFromParams(primes)
@@ -114,7 +113,6 @@ func NewOrgFromParams(name string, clParamSizes *CLParamSizes, primes *common.Sp
 	}
 
 	return &Org{
-		Name:                       name,
 		ParamSizes:                 clParamSizes,
 		Group:                      group,
 		PubKey:                     pubKey,
@@ -146,5 +144,6 @@ func generateQuadraticResidues(group *groups.QRSpecialRSA, knownAttrsNum, commit
 	for i, _ := range RsHidden {
 		RsHidden[i] = group.Exp(S, common.GetRandomInt(group.Order))
 	}
+
 	return S, Z, RsKnown, RsCommitted, RsHidden, nil
 }
