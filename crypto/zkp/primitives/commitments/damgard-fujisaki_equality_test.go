@@ -38,12 +38,12 @@ func TestProveDamgardFujisakiCommitmentEquality(t *testing.T) {
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver1.QRSpecialRSA.N, receiver1.QRSpecialRSA.N)
 	committer1 := commitments.NewDamgardFujisakiCommitter(receiver1.QRSpecialRSA.N,
-		receiver1.H, receiver1.G, T, receiver1.K)
+		receiver1.G, receiver1.H, T, receiver1.K)
 
 	receiver2, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
 
 	committer2 := commitments.NewDamgardFujisakiCommitter(receiver2.QRSpecialRSA.N,
-		receiver2.H, receiver2.G, T, receiver2.K)
+		receiver2.G, receiver2.H, T, receiver2.K)
 
 	x := common.GetRandomInt(committer1.T)
 	c1, err := committer1.GetCommitMsg(x)

@@ -53,7 +53,7 @@ func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAtt
 	attrsVerifiers := make([]*commitmentzkp.DFCommitmentOpeningVerifier, len(commitmentsOfAttrs))
 	for i, attr := range commitmentsOfAttrs {
 		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(org.attributesSpecialRSAPrimes,
-			org.PubKey.H, org.PubKey.G, org.ParamSizes.SecParam)
+			org.PubKey.G, org.PubKey.H, org.ParamSizes.SecParam)
 		if err != nil {
 			return nil, err
 		}

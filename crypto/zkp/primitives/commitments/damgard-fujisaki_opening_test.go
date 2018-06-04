@@ -36,7 +36,7 @@ func TestProveDamgardFujisakiCommitmentOpening(t *testing.T) {
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
 	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
-		receiver.H, receiver.G, T, receiver.K)
+		receiver.G, receiver.H, T, receiver.K)
 
 	x := common.GetRandomInt(committer.T)
 	c, err := committer.GetCommitMsg(x)

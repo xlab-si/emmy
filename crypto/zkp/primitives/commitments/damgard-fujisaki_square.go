@@ -46,14 +46,14 @@ func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter
 	// using DFCommitmentEqualityProver.
 
 	committer1 := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
-		committer.H, committer.G, committer.T, committer.K)
+		committer.G, committer.H, committer.T, committer.K)
 	smallCommitment, err := committer1.GetCommitMsg(x)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating commit msg")
 	}
 
 	committer2 := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
-		committer.H, smallCommitment, committer.T, committer.K)
+		smallCommitment, committer.H, committer.T, committer.K)
 	_, r := committer.GetDecommitMsg()
 	_, r1 := committer1.GetDecommitMsg()
 	r1x := new(big.Int).Mul(r1, x)
@@ -82,14 +82,14 @@ func NewDFCommitmentSquareVerifier(receiver *commitments.DamgardFujisakiReceiver
 	c1 *big.Int, challengeSpaceSize int) (*DFCommitmentSquareVerifier, error) {
 
 	receiver1, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetSpecialRSAPrimes(),
-		receiver.H, receiver.G, receiver.K)
+		receiver.G, receiver.H, receiver.K)
 	if err != nil {
 		return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
 	}
 	receiver1.SetCommitment(c1)
 
 	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetSpecialRSAPrimes(),
-		receiver.H, c1, receiver.K)
+		c1, receiver.H, receiver.K)
 	if err != nil {
 		return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
 	}

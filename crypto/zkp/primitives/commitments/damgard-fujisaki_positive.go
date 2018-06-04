@@ -55,7 +55,7 @@ func NewDFCommitmentPositiveProver(committer *commitments.DamgardFujisakiCommitt
 	bigCommitments := make([]*big.Int, nRoots)
 	for i, rand := range rs {
 		committer := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
-			committer.H, committer.G, committer.T, committer.K)
+			committer.G, committer.H, committer.T, committer.K)
 		square := new(big.Int).Mul(roots[i], roots[i])
 		commitment, err := committer.GetCommitMsgWithGivenR(square, rand)
 		bigCommitments[i] = commitment
@@ -158,7 +158,7 @@ func NewDFCommitmentPositiveVerifier(receiver *commitments.DamgardFujisakiReceiv
 	for i, comm := range bigCommitments {
 		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(
 			receiver.QRSpecialRSA.GetSpecialRSAPrimes(),
-			receiver.H, receiver.G, receiver.K)
+			receiver.G, receiver.H, receiver.K)
 		if err != nil {
 			return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
 		}
