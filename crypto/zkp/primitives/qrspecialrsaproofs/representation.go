@@ -48,11 +48,11 @@ type RepresentationProver struct {
 func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
 	secParam int, secrets, bases []*big.Int, y *big.Int) *RepresentationProver {
 	return &RepresentationProver{
-		group:   qrSpecialRSA,
-		secParam:     secParam,
-		secrets: secrets,
-		bases:   bases,
-		y:       y,
+		group:    qrSpecialRSA,
+		secParam: secParam,
+		secrets:  secrets,
+		bases:    bases,
+		y:        y,
 	}
 }
 

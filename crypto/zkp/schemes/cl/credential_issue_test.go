@@ -18,6 +18,7 @@
 package cl
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,40 +33,48 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	user := NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params)
-	user.GenerateMasterSecret()
-	nymName := "nym1"
+	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
+	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
+	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
+	user, err := NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params, knownAttrs, committedAttrs,
+		hiddenAttrs)
+	if err != nil {
+		t.Errorf("error when creating a user: %v", err)
+	}
 
 	// TODO: if there are more than one organizations, each can have its own PedersenParams (where
 	// nyms are generated, and nyms need to be managed per organization
-	nym, err := user.GenerateNym(nymName)
+	nym, err := user.GenerateNym()
 	if err != nil {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
+	orgCredentialIssuer, err := NewOrgCredentialIssuer(org, nym.Commitment, user.knownAttrs,
+		user.commitmentsOfAttrs)
+	if err != nil {
+		t.Errorf("error when creating credential issuer: %v", err)
+	}
+	nonceOrg := orgCredentialIssuer.GetNonce()
+
 	userCredentialReceiver := NewUserCredentialReceiver(user)
-	U := userCredentialReceiver.GetU()
-
-	orgCredentialIssuer := NewOrgCredentialIssuer(org, nym, U)
-	n1 := orgCredentialIssuer.GetNonce()
-
-	nymProofData, UProofData, err := userCredentialReceiver.GetCredentialRequest(nymName, nym, U, n1)
+	nymProofData, U, UProofData, commitmentsOfAttrsProofs, err :=
+		userCredentialReceiver.GetCredentialRequest(nym, nonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
 	// user needs to send to the issuer:
-	// (n2, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData)
+	// (nonceUser, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
+	// commitmentsOfAttrsProofs)
 
-	n2 := userCredentialReceiver.GetNonce()
-
-	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, UProofData)
+	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, U, UProofData, commitmentsOfAttrsProofs)
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
-	// TODO: only known attributes (from A_k)
-	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(user.attrs, n2)
+	nonceUser := userCredentialReceiver.GetNonce()
+	// TODO: implement credential struct when implementing update credential
+	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(nonceUser)
 
-	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, n2)
+	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, nonceUser)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}

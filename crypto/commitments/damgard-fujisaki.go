@@ -39,7 +39,7 @@ type damgardFujisaki struct {
 	QRSpecialRSA *groups.QRSpecialRSA
 	H            *big.Int
 	G            *big.Int // G = H^alpha % QRSpecialRSA.N, where alpha is chosen when Receiver is created (Committer does not know alpha)
-	K            int
+	K            int      // security parameter
 }
 
 // ComputeCommit returns G^a * H^r % group.N for a given a and r. Note that this is exactly
@@ -60,6 +60,7 @@ type DamgardFujisakiCommitter struct {
 	r              *big.Int
 }
 
+// TODO: switch h and g
 func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCommitter {
 	// n.BitLen() - 2 is used as B
 	return &DamgardFujisakiCommitter{damgardFujisaki: damgardFujisaki{
@@ -146,11 +147,16 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 // NewDamgardFujisakiReceiverFromParams returns an instance of a receiver with the
 // parameters as given by input. Different instances are needed because
 // each sets its own Commitment value.
-func NewDamgardFujisakiReceiverFromParams(qrSpecialRSA *groups.QRSpecialRSA, h, g *big.Int,
+func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *common.SpecialRSAPrimes, h, g *big.Int,
 	k int) (
 	*DamgardFujisakiReceiver, error) {
+	group, err := groups.NewQRSpecialRSAFromParams(specialRSAPrimes)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
-		QRSpecialRSA: qrSpecialRSA,
+		QRSpecialRSA: group,
 		H:            h,
 		G:            g,
 		K:            k},
