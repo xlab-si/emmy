@@ -62,19 +62,19 @@ func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
 		t.Errorf("error in instantiating DFCommitmentRangeVerifier: %v", err)
 	}
 
-	proofRandomData := prover.GetProofRandomData()
-	challenges := verifier.GetChallenges()
-	err = verifier.SetProofRandomData(proofRandomData)
+	proofRandomData1, proofRandomData2 := prover.GetProofRandomData()
+	challenges1, challenges2 := verifier.GetChallenges()
+	err = verifier.SetProofRandomData(proofRandomData1, proofRandomData2)
 	if err != nil {
 		t.Errorf("error when calling SetProofRandomData: %v", err)
 	}
 
-	proofData, err := prover.GetProofData(challenges)
+	proofData1, proofData2, err := prover.GetProofData(challenges1, challenges2)
 	if err != nil {
 		t.Errorf("error when calling GetProofData: %v", err)
 	}
 
-	proved, err := verifier.Verify(proofData)
+	proved, err := verifier.Verify(proofData1, proofData2)
 	if err != nil {
 		t.Errorf("error when calling Verify: %v", err)
 	}
