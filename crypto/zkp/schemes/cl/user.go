@@ -60,7 +60,7 @@ func NewUser(clParams *CLParams, clPubKey *PubKey, pedersenParams *commitments.P
 	attrsCommitters := make([]*commitments.DamgardFujisakiCommitter, len(committedAttrs))
 	commitmentsOfAttrs := make([]*big.Int, len(committedAttrs))
 	for i, attr := range committedAttrs {
-		committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N1, clPubKey.H, clPubKey.G,
+		committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N1, clPubKey.G, clPubKey.H,
 			clPubKey.N1, clParams.SecParam)
 		com, err := committer.GetCommitMsg(attr)
 		if err != nil {
