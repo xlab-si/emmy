@@ -86,7 +86,9 @@ func GetGermainPrime(bits int) (p *big.Int) {
 		go germainPrime(bits, c, quit)
 	}
 	msg := <-c
-	close(c)
+	// for small values for parameter bits (which should be small only for testing) it sometimes
+	// happen "send on closed channel" - so we leave the channel c to a garbage collector
+	//close(c)
 	close(quit)
 	return msg
 }
