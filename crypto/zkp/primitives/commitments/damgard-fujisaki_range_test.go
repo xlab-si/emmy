@@ -29,7 +29,7 @@ import (
 // TestProveDamgardFujisakiCommitmentRange demonstrates how to prove that the commitment
 // hides a number x such that a <= x <= b. Given c, prove that c = g^x * h^r (mod n) where a<= x <= b.
 func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
+	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
 	}

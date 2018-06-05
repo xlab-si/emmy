@@ -40,7 +40,7 @@ type CLParams struct {
 func GetDefaultParamSizes() *CLParams {
 	return &CLParams{
 		RhoBitLen:         256,
-		NLength:           2048,
+		NLength:           256, // should be at least 2048 when not testing
 		KnownAttrsNum:     4,
 		CommittedAttrsNum: 2,
 		HiddenAttrsNum:    3,

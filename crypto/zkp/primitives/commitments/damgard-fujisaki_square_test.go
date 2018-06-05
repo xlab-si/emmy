@@ -29,7 +29,7 @@ import (
 // TestProveDamgardFujisakiCommitmentSquare demonstrates how to prove that the commitment
 // hides the square. Given c, prove that c = g^(x^2) * h^r (mod n).
 func TestProveDamgardFujisakiCommitmentSquare(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
+	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}

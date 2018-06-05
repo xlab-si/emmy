@@ -112,14 +112,10 @@ type DamgardFujisakiReceiver struct {
 }
 
 // NewDamgardFujisakiReceiver receives two parameters: safePrimeBitLength tells the length of the
-// primes in QRSpecialRSA group, k is security parameter on which it depends the hiding property
-// (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
+// primes in QRSpecialRSA group and should be at least 1024, k is security parameter on which it depends
+// the hiding property (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
 // c is statistically close to uniform, 2^B is upper bound estimation for group order).
 func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiReceiver, error) {
-	// TODO: check if there are some other places where such errors should be raised
-	if safePrimeBitLength < 1024 {
-		return nil, fmt.Errorf("safe prime bit length is too small")
-	}
 	qr, err := groups.NewQRSpecialRSA(safePrimeBitLength)
 	if err != nil {
 		return nil, err
