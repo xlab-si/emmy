@@ -61,12 +61,12 @@ type DamgardFujisakiCommitter struct {
 }
 
 // TODO: switch h and g
-func NewDamgardFujisakiCommitter(n, h, g, t *big.Int, k int) *DamgardFujisakiCommitter {
+func NewDamgardFujisakiCommitter(n, g, h, t *big.Int, k int) *DamgardFujisakiCommitter {
 	// n.BitLen() - 2 is used as B
 	return &DamgardFujisakiCommitter{damgardFujisaki: damgardFujisaki{
 		QRSpecialRSA: groups.NewQRSpecialRSAPublic(n),
-		H:            h,
 		G:            g,
+		H:            h,
 		K:            k},
 		B: n.BitLen() - 2,
 		T: t}
@@ -112,14 +112,10 @@ type DamgardFujisakiReceiver struct {
 }
 
 // NewDamgardFujisakiReceiver receives two parameters: safePrimeBitLength tells the length of the
-// primes in QRSpecialRSA group, k is security parameter on which it depends the hiding property
-// (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
+// primes in QRSpecialRSA group and should be at least 1024, k is security parameter on which it depends
+// the hiding property (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
 // c is statistically close to uniform, 2^B is upper bound estimation for group order).
 func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiReceiver, error) {
-	// TODO: check if there are some other places where such errors should be raised
-	if safePrimeBitLength < 1024 {
-		return nil, fmt.Errorf("safe prime bit length is too small")
-	}
 	qr, err := groups.NewQRSpecialRSA(safePrimeBitLength)
 	if err != nil {
 		return nil, err
@@ -147,7 +143,7 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 // NewDamgardFujisakiReceiverFromParams returns an instance of a receiver with the
 // parameters as given by input. Different instances are needed because
 // each sets its own Commitment value.
-func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *common.SpecialRSAPrimes, h, g *big.Int,
+func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *common.SpecialRSAPrimes, g, h *big.Int,
 	k int) (
 	*DamgardFujisakiReceiver, error) {
 	group, err := groups.NewQRSpecialRSAFromParams(specialRSAPrimes)
@@ -157,8 +153,8 @@ func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *common.SpecialRSAPri
 
 	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
 		QRSpecialRSA: group,
-		H:            h,
 		G:            g,
+		H:            h,
 		K:            k},
 	}, nil
 }

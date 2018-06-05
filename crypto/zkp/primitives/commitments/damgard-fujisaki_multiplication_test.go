@@ -29,7 +29,7 @@ import (
 // TestProveDamgardFujisakiCommitmentMultiplication demonstrates how to prove that for given commitments
 // c1 = g^x1 * h^r1, c2 = g^x2 * h^r2, c3 = g^x3 * h^r3, it holds x3 = x1 * x2
 func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
-	receiver1, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
+	receiver1, err := commitments.NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
@@ -38,23 +38,23 @@ func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
 	T := new(big.Int).Mul(receiver1.QRSpecialRSA.N, receiver1.QRSpecialRSA.N)
 
 	committer1 := commitments.NewDamgardFujisakiCommitter(receiver1.QRSpecialRSA.N,
-		receiver1.H, receiver1.G, T, receiver1.K)
+		receiver1.G, receiver1.H, T, receiver1.K)
 
 	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver1.QRSpecialRSA.GetSpecialRSAPrimes(),
-		receiver1.H, receiver1.G, receiver1.K)
+		receiver1.G, receiver1.H, receiver1.K)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 	committer2 := commitments.NewDamgardFujisakiCommitter(receiver2.QRSpecialRSA.N,
-		receiver2.H, receiver2.G, T, receiver2.K)
+		receiver2.G, receiver2.H, T, receiver2.K)
 
 	receiver3, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver1.QRSpecialRSA.GetSpecialRSAPrimes(),
-		receiver1.H, receiver1.G, receiver1.K)
+		receiver1.G, receiver1.H, receiver1.K)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 	committer3 := commitments.NewDamgardFujisakiCommitter(receiver3.QRSpecialRSA.N,
-		receiver3.H, receiver3.G, T, receiver3.K)
+		receiver3.G, receiver3.H, T, receiver3.K)
 
 	x1 := common.GetRandomInt(committer1.QRSpecialRSA.N)
 	x1.Neg(x1) // test with negative

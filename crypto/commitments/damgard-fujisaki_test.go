@@ -26,13 +26,13 @@ import (
 
 // TestDamgardFujisaki demonstrates how a value can be committed and later opened (decommitted).
 func TestDamgardFujisaki(t *testing.T) {
-	receiver, err := NewDamgardFujisakiReceiver(1024, 80)
+	receiver, err := NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
 	}
 
 	// n is used for T - but any other value can be used as well
-	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.H, receiver.G,
+	committer := NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N, receiver.G, receiver.H,
 		receiver.QRSpecialRSA.N, receiver.K)
 
 	a := common.GetRandomInt(receiver.QRSpecialRSA.N)

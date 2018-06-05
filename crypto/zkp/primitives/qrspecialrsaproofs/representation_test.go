@@ -29,7 +29,7 @@ import (
 // TestQRSpecialRSA demonstrates how to prove that for a given y you know secrets x_1,...,x_k
 // such that y = g_1^x_1 * ... * g_k^x_k where g_i are given generators (bases) of QRSpecialRSA.
 func TestQRSpecialRSA(t *testing.T) {
-	group, err := groups.NewQRSpecialRSA(1024)
+	group, err := groups.NewQRSpecialRSA(128)
 	if err != nil {
 		t.Errorf("error when creating QRSpecialRSA group: %v", err)
 	}

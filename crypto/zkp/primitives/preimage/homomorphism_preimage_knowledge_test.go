@@ -25,7 +25,7 @@ import (
 )
 
 func TestHomomorphismPreimage(t *testing.T) {
-	homomorphism, _, H, _, err := commitments.GenerateRSABasedQOneWay(1024)
+	homomorphism, _, H, _, err := commitments.GenerateRSABasedQOneWay(256)
 	if err != nil {
 		t.Errorf("Error when generating RSABasedQOneWay homomorphism")
 	}

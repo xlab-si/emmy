@@ -29,7 +29,7 @@ import (
 // TestProveDamgardFujisakiCommitmentRange demonstrates how to prove that the commitment
 // hides a number x such that a <= x <= b. Given c, prove that c = g^x * h^r (mod n) where a<= x <= b.
 func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(1024, 80)
+	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
 	if err != nil {
 		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
 	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
-		receiver.H, receiver.G, T, receiver.K)
+		receiver.G, receiver.H, T, receiver.K)
 
 	x := common.GetRandomInt(committer.QRSpecialRSA.N)
 	a := new(big.Int).Sub(x, big.NewInt(10))
@@ -62,19 +62,19 @@ func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
 		t.Errorf("error in instantiating DFCommitmentRangeVerifier: %v", err)
 	}
 
-	proofRandomData := prover.GetProofRandomData()
-	challenges := verifier.GetChallenges()
-	err = verifier.SetProofRandomData(proofRandomData)
+	proofRandomData1, proofRandomData2 := prover.GetProofRandomData()
+	challenges1, challenges2 := verifier.GetChallenges()
+	err = verifier.SetProofRandomData(proofRandomData1, proofRandomData2)
 	if err != nil {
 		t.Errorf("error when calling SetProofRandomData: %v", err)
 	}
 
-	proofData, err := prover.GetProofData(challenges)
+	proofData1, proofData2, err := prover.GetProofData(challenges1, challenges2)
 	if err != nil {
 		t.Errorf("error when calling GetProofData: %v", err)
 	}
 
-	proved, err := verifier.Verify(proofData)
+	proved, err := verifier.Verify(proofData1, proofData2)
 	if err != nil {
 		t.Errorf("error when calling Verify: %v", err)
 	}
