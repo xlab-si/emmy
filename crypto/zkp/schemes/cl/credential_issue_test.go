@@ -49,6 +49,7 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
+	// TODO: change API - move issuer into org, receiver into user
 	orgCredentialIssuer, err := NewOrgCredentialIssuer(org, nym.Commitment, user.knownAttrs,
 		user.commitmentsOfAttrs)
 	if err != nil {
@@ -57,8 +58,7 @@ func TestCLIssue(t *testing.T) {
 	nonceOrg := orgCredentialIssuer.GetNonce()
 
 	userCredentialReceiver := NewUserCredentialReceiver(user)
-	nymProofData, U, UProofData, commitmentsOfAttrsProofs, err :=
-		userCredentialReceiver.GetCredentialRequest(nym, nonceOrg)
+	credentialRequest, err := userCredentialReceiver.GetCredentialRequest(nym, nonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
@@ -67,17 +67,28 @@ func TestCLIssue(t *testing.T) {
 	// (nonceUser, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
 	// commitmentsOfAttrsProofs)
 
-	verified := orgCredentialIssuer.VerifyCredentialRequest(nymProofData, U, UProofData, commitmentsOfAttrsProofs)
+	verified := orgCredentialIssuer.VerifyCredentialRequest(credentialRequest)
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
 	nonceUser := userCredentialReceiver.GetNonce()
-	// TODO: implement credential struct when implementing update credential
-	A, e, v11, AProof := orgCredentialIssuer.IssueCredential(nonceUser)
+	credential, AProof := orgCredentialIssuer.IssueCredential(nonceUser)
 
-	userVerified, err := userCredentialReceiver.VerifyCredential(A, e, v11, AProof, nonceUser)
+	userVerified, err := userCredentialReceiver.VerifyCredential(credential, AProof, nonceUser)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
 
 	assert.Equal(t, true, userVerified, "credential issuance failed")
+
+	nonceUser1 := userCredentialReceiver.GetNonce()
+	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
+	credential1, AProof1 := orgCredentialIssuer.UpdateCredential(nonceUser1, newKnownAttrs)
+	user.knownAttrs = newKnownAttrs
+
+	userVerified, err = userCredentialReceiver.VerifyCredential(credential1, AProof1, nonceUser1)
+	if err != nil {
+		t.Errorf("error when verifying updated credential: %v", err)
+	}
+
+	assert.Equal(t, true, userVerified, "credential update failed")
 }

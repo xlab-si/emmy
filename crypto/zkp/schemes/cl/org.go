@@ -72,6 +72,7 @@ type Org struct {
 	PedersenReceiver           *commitments.PedersenReceiver
 	PubKey                     *PubKey
 	attributesSpecialRSAPrimes *common.SpecialRSAPrimes
+	receiverRecords            map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
 }
 
 func NewOrg(name string, clParamSizes *CLParams) (*Org, error) {
@@ -118,7 +119,39 @@ func NewOrgFromParams(name string, clParamSizes *CLParams, primes *common.Specia
 		PubKey:                     pubKey,
 		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pedersenParams),
 		attributesSpecialRSAPrimes: attributesSpecialRSAPrimes,
+		receiverRecords:            make(map[*big.Int]*ReceiverRecord), // TODO: will be replace with DB
 	}, nil
+}
+
+type ReceiverRecord struct {
+	KnownAttrs []*big.Int
+	Q          *big.Int
+	V11        *big.Int
+	Context    *big.Int
+}
+
+// Returns ReceiverRecord which contains user data needed when updating the credential for this user.
+func NewReceiverRecord(knownAttrs []*big.Int, Q, v11, context *big.Int) *ReceiverRecord {
+	return &ReceiverRecord{
+		KnownAttrs: knownAttrs,
+		Q:          Q,
+		V11:        v11,
+		Context:    context,
+	}
+}
+
+type Credential struct {
+	A   *big.Int
+	e   *big.Int
+	v11 *big.Int
+}
+
+func NewCredential(A, e, v11 *big.Int) *Credential {
+	return &Credential{
+		A:   A,
+		e:   e,
+		v11: v11,
+	}
 }
 
 func generateQuadraticResidues(group *groups.QRSpecialRSA, knownAttrsNum, committedAttrsNum,

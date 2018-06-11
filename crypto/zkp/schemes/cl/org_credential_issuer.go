@@ -40,10 +40,6 @@ type OrgCredentialIssuer struct {
 	attrsReceivers     []*commitments.DamgardFujisakiReceiver
 	attrsVerifiers     []*commitmentzkp.DFCommitmentOpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
 	// certificate data: TODO: make it a struct
-	eInv             *big.Int
-	v11              *big.Int
-	Q                *big.Int
-	A                *big.Int
 	credentialProver *qrspecialrsaproofs.RepresentationProver
 }
 
@@ -86,25 +82,24 @@ func (i *OrgCredentialIssuer) GetNonce() *big.Int {
 	return n
 }
 
-func (i *OrgCredentialIssuer) verifyNym(nymProofRandomData, challenge *big.Int,
-	nymProofData []*big.Int) bool {
+func (i *OrgCredentialIssuer) verifyNym(nymProof *dlogproofs.SchnorrProof) bool {
 	bases := []*big.Int{
 		i.Org.PedersenReceiver.Params.Group.G,
 		i.Org.PedersenReceiver.Params.H,
 	}
-	i.nymVerifier.SetProofRandomData(nymProofRandomData, bases, i.nym)
-	i.nymVerifier.SetChallenge(challenge)
+	i.nymVerifier.SetProofRandomData(nymProof.ProofRandomData, bases, i.nym)
+	i.nymVerifier.SetChallenge(nymProof.Challenge)
 
-	return i.nymVerifier.Verify(nymProofData)
+	return i.nymVerifier.Verify(nymProof.ProofData)
 }
 
-func (i *OrgCredentialIssuer) verifyU(UProofRandomData, challenge *big.Int, UProofData []*big.Int) bool {
+func (i *OrgCredentialIssuer) verifyU(UProof *qrspecialrsaproofs.RepresentationProof) bool {
 	// bases are [R_1, ..., R_L, S]
 	bases := append(i.Org.PubKey.RsHidden, i.Org.PubKey.S)
-	i.UVerifier.SetProofRandomData(UProofRandomData, bases, i.U)
-	i.UVerifier.SetChallenge(challenge)
+	i.UVerifier.SetProofRandomData(UProof.ProofRandomData, bases, i.U)
+	i.UVerifier.SetChallenge(UProof.Challenge)
 
-	return i.UVerifier.Verify(UProofData)
+	return i.UVerifier.Verify(UProof.ProofData)
 }
 
 func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
@@ -153,20 +148,17 @@ func (i *OrgCredentialIssuer) verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs 
 	return true
 }
 
-func (i *OrgCredentialIssuer) VerifyCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
-	UProof *qrspecialrsaproofs.RepresentationProof,
-	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof) bool {
-	i.U = U
+func (i *OrgCredentialIssuer) VerifyCredentialRequest(credentialRequest *CredentialRequest) bool {
+	i.U = credentialRequest.U
 
-	return i.verifyNym(nymProof.ProofRandomData, nymProof.Challenge, nymProof.ProofData) &&
-		i.verifyU(UProof.ProofRandomData, UProof.Challenge, UProof.ProofData) &&
-		i.verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs) &&
-		i.verifyChallenge(UProof.Challenge) &&
-		i.verifyUProofDataLengths(UProof.ProofData)
+	return i.verifyNym(credentialRequest.NymProof) &&
+		i.verifyU(credentialRequest.UProof) &&
+		i.verifyCommitmentsOfAttrs(credentialRequest.CommitmentsOfAttrsProofs) &&
+		i.verifyChallenge(credentialRequest.UProof.Challenge) &&
+		i.verifyUProofDataLengths(credentialRequest.UProof.ProofData)
 }
 
-func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*big.Int, *big.Int, *big.Int,
-	*qrspecialrsaproofs.RepresentationProof) {
+func (i *OrgCredentialIssuer) chooseCredentialRandoms() (*big.Int, *big.Int) {
 	exp := big.NewInt(int64(i.Org.ParamSizes.EBitLen - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	var e *big.Int
@@ -182,6 +174,13 @@ func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*big.Int, *bi
 	exp = big.NewInt(int64(i.Org.ParamSizes.VBitLen - 1))
 	b = new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v11 := new(big.Int).Add(vr, b)
+
+	return e, v11
+}
+
+func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof) {
+	e, v11 := i.chooseCredentialRandoms()
 
 	// denom = U * S^v11 * R_1^attr_1 * ... * R_j^attr_j where only attributes from knownAttrs and committedAttrs
 	acc := big.NewInt(1)
@@ -205,25 +204,51 @@ func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*big.Int, *bi
 	eInv := new(big.Int).ModInverse(e, phiN)
 	A := i.Org.Group.Exp(Q, eInv)
 
-	i.eInv = eInv
-	i.v11 = v11
-	i.Q = Q
-	i.A = A
+	context := i.Org.PubKey.GetContext()
+	AProof := i.getAProof(nonceUser, context, eInv, Q, A)
+	receiverRecord := NewReceiverRecord(i.knownAttrs, Q, v11, context)
+	i.Org.receiverRecords[i.nym] = receiverRecord
 
-	AProof := i.getAProof(nonceUser)
-
-	return A, e, v11, AProof
+	return NewCredential(A, e, v11), AProof
 }
 
-func (i *OrgCredentialIssuer) getAProof(nonceUser *big.Int) *qrspecialrsaproofs.RepresentationProof {
+func (i *OrgCredentialIssuer) getAProof(nonceUser, context, eInv, Q, A *big.Int) *qrspecialrsaproofs.RepresentationProof {
 	prover := qrspecialrsaproofs.NewRepresentationProver(i.Org.Group, i.Org.ParamSizes.SecParam,
-		[]*big.Int{i.eInv}, []*big.Int{i.Q}, i.A)
+		[]*big.Int{eInv}, []*big.Int{Q}, A)
 	i.credentialProver = prover
 	proofRandomData := prover.GetProofRandomData(true)
 	// challenge = hash(context||Q||A||AProofRandomData||nonceUser)
-	context := i.Org.PubKey.GetContext()
-	challenge := common.Hash(context, i.Q, i.A, proofRandomData, nonceUser)
+	challenge := common.Hash(context, Q, A, proofRandomData, nonceUser)
 	proofData := prover.GetProofData(challenge)
 
 	return qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData)
+}
+
+func (i *OrgCredentialIssuer) UpdateCredential(nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof) {
+	receiverRecord := i.Org.receiverRecords[i.nym]
+	e, v11 := i.chooseCredentialRandoms()
+	v11Diff := new(big.Int).Sub(v11, receiverRecord.V11)
+
+	acc := big.NewInt(1)
+	for ind := 0; ind < len(i.knownAttrs); ind++ {
+		t1 := i.Org.Group.Exp(i.Org.PubKey.RsKnown[ind],
+			new(big.Int).Sub(newKnownAttrs[ind], i.knownAttrs[ind]))
+		acc = i.Org.Group.Mul(acc, t1)
+	}
+	t := i.Org.Group.Exp(i.Org.PubKey.S, v11Diff)
+	denom := i.Org.Group.Mul(acc, t)
+	denomInv := i.Org.Group.Inv(denom)
+	newQ := i.Org.Group.Mul(receiverRecord.Q, denomInv)
+
+	phiN := new(big.Int).Mul(i.Org.Group.P1, i.Org.Group.Q1)
+	eInv := new(big.Int).ModInverse(e, phiN)
+	newA := i.Org.Group.Exp(newQ, eInv)
+
+	context := i.Org.PubKey.GetContext()
+	AProof := i.getAProof(nonceUser, context, eInv, newQ, newA)
+	receiverRecord = NewReceiverRecord(newKnownAttrs, newQ, v11, context)
+	i.Org.receiverRecords[i.nym] = receiverRecord
+
+	return NewCredential(newA, e, v11), AProof
 }
