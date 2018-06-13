@@ -212,22 +212,22 @@ func (r *UserCredentialReceiver) GetNonce() *big.Int {
 	return common.GetRandomInt(b)
 }
 
-func (r *UserCredentialReceiver) VerifyCredential(c *Credential,
+func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
 	// check bit length of e:
 	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.EBitLen-1)), nil)
 	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.E1BitLen-1)), nil)
 	b2 := new(big.Int).Add(b1, b22)
 
-	if (c.e.Cmp(b1) != 1) || (b2.Cmp(c.e) != 1) {
+	if (cred.e.Cmp(b1) != 1) || (b2.Cmp(cred.e) != 1) {
 		return false, fmt.Errorf("e is not of the proper bit length")
 	}
 	// check that e is prime
-	if !c.e.ProbablyPrime(20) {
+	if !cred.e.ProbablyPrime(20) {
 		return false, fmt.Errorf("e is not prime")
 	}
 
-	v := new(big.Int).Add(r.v1, c.v11)
+	v := new(big.Int).Add(r.v1, cred.v11)
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
 	denom := group.Exp(r.User.PubKey.S, v) // s^v
@@ -248,17 +248,17 @@ func (r *UserCredentialReceiver) VerifyCredential(c *Credential,
 
 	denomInv := group.Inv(denom)
 	Q := group.Mul(r.User.PubKey.Z, denomInv)
-	Q1 := group.Exp(c.A, c.e)
+	Q1 := group.Exp(cred.A, cred.e)
 	if Q1.Cmp(Q) != 0 {
 		return false, fmt.Errorf("Q should be A^e (mod n)")
 	}
 
 	// verify signature proof:
 	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
-	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, c.A)
+	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
 	// check challenge
 	context := r.User.PubKey.GetContext()
-	c := common.Hash(context, Q, c.A, AProof.ProofRandomData, n2)
+	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, n2)
 	if AProof.Challenge.Cmp(c) != 0 {
 		return false, fmt.Errorf("challenge is not correct")
 	}
