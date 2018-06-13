@@ -111,3 +111,7 @@ func (u *User) GenerateNym() (*Nym, error) {
 	u.Committers[nym.Id] = committer
 	return nym, nil
 }
+
+func (u *User) UpdateCredential(knownAttrs []*big.Int) {
+	u.knownAttrs = knownAttrs
+}
