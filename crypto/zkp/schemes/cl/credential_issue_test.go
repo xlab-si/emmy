@@ -82,8 +82,8 @@ func TestCLIssue(t *testing.T) {
 
 	nonceUser1 := userCredentialReceiver.GetNonce()
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
+	user.UpdateCredential(newKnownAttrs)
 	credential1, AProof1 := orgCredentialIssuer.UpdateCredential(nonceUser1, newKnownAttrs)
-	user.knownAttrs = newKnownAttrs
 
 	userVerified, err = userCredentialReceiver.VerifyCredential(credential1, AProof1, nonceUser1)
 	if err != nil {

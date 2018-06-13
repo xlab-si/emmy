@@ -148,14 +148,14 @@ func (i *OrgCredentialIssuer) verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs 
 	return true
 }
 
-func (i *OrgCredentialIssuer) VerifyCredentialRequest(credentialRequest *CredentialRequest) bool {
-	i.U = credentialRequest.U
+func (i *OrgCredentialIssuer) VerifyCredentialRequest(cr *CredentialRequest) bool {
+	i.U = cr.U
 
-	return i.verifyNym(credentialRequest.NymProof) &&
-		i.verifyU(credentialRequest.UProof) &&
-		i.verifyCommitmentsOfAttrs(credentialRequest.CommitmentsOfAttrsProofs) &&
-		i.verifyChallenge(credentialRequest.UProof.Challenge) &&
-		i.verifyUProofDataLengths(credentialRequest.UProof.ProofData)
+	return i.verifyNym(cr.NymProof) &&
+		i.verifyU(cr.UProof) &&
+		i.verifyCommitmentsOfAttrs(cr.CommitmentsOfAttrsProofs) &&
+		i.verifyChallenge(cr.UProof.Challenge) &&
+		i.verifyUProofDataLengths(cr.UProof.ProofData)
 }
 
 func (i *OrgCredentialIssuer) chooseCredentialRandoms() (*big.Int, *big.Int) {
