@@ -25,6 +25,8 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 type User struct {
@@ -115,3 +117,71 @@ func (u *User) GenerateNym() (*Nym, error) {
 func (u *User) UpdateCredential(knownAttrs []*big.Int) {
 	u.knownAttrs = knownAttrs
 }
+
+func (u *User) randomizeCredential(cred *Credential) *Credential {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.NLength + u.Params.SecParam)), nil)
+	r := common.GetRandomInt(b)
+	group := groups.NewQRSpecialRSAPublic(u.PubKey.N)
+	t := group.Exp(u.PubKey.S, r)
+	A := group.Mul(cred.A, t) // cred.A * S^r
+	t = new(big.Int).Mul(cred.e, r)
+	v11 := new(big.Int).Sub(cred.v11, t)// cred.v11 - e*r (in Z)
+
+	t = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.EBitLen-1)), nil)
+	e := new(big.Int).Sub(cred.e, t) // cred.e - 2^(EBitLen-1)
+
+	return NewCredential(A, e, v11) // TODO: or return the old e?
+}
+
+func (u *User) GetChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
+	context := u.PubKey.GetContext()
+	l := []*big.Int{context, credProofRandomData}
+	//l = append(l, ...) // TODO: add other values
+
+	return common.Hash(l...)
+}
+
+func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*qrspecialrsaproofs.RepresentationProof, error){
+	rCred := u.randomizeCredential(cred)
+	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
+	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
+	group := groups.NewQRSpecialRSAPublic(u.PubKey.N)
+	// bases for representation proof are: R_i, rCred.A, S
+	bases := append(u.PubKey.RsKnown, u.PubKey.RsCommitted...)
+	bases = append(bases, u.PubKey.RsHidden...)
+	bases = append(bases, rCred.A)
+	bases = append(bases, u.PubKey.S)
+	// secrets are m_i (all attributes), rCred.e, rCred.v11
+	secrets := append(u.knownAttrs, u.committedAttrs...)
+	secrets = append(secrets, u.hiddenAttrs...)
+	secrets = append(secrets, rCred.e)
+	secrets = append(secrets, rCred.v11)
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.Params.SecParam,
+		secrets, bases, u.PubKey.Z)
+
+	// boundary for m_tilde
+	b_m := u.Params.AttrBitLen + u.Params.SecParam + u.Params.HashBitLen
+	// boundary for e1
+	b_e := u.Params.EBitLen + u.Params.SecParam + u.Params.HashBitLen
+	// boundary for v1
+	b_v1 := u.Params.VBitLen + u.Params.SecParam + u.Params.HashBitLen
+
+	numAttrs := len(u.PubKey.RsKnown) + len(u.PubKey.RsCommitted) + len(u.PubKey.RsHidden)
+	boundaries := make([]int, numAttrs)
+	for i := 0; i < numAttrs; i++ {
+		boundaries[i] = b_m
+	}
+	boundaries = append(boundaries, b_e)
+	boundaries = append(boundaries, b_v1)
+
+	proofRandomData, err := prover.GetProofRandomDataGivenBoundaries(boundaries, true)
+	if err != nil {
+		return nil, fmt.Errorf("error when generating representation proof random data: %s", err)
+	}
+
+	challenge := u.GetChallenge(proofRandomData, nonceOrg)
+	proofData := prover.GetProofData(challenge)
+
+	return qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
+}
+

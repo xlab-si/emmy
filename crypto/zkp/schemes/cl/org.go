@@ -55,12 +55,20 @@ func NewPubKey(N *big.Int, S, Z *big.Int, RsKnown, RsCommitted, RsHidden []*big.
 
 // GetContext concatenates public parameters and returns a corresponding number.
 func (k *PubKey) GetContext() *big.Int {
-	numbers := make([]*big.Int, len(k.RsKnown)+3)
+	numbers := make([]*big.Int, len(k.RsKnown) + len(k.RsCommitted) + len(k.RsHidden) + 3)
+	numbers = append(numbers, k.RsCommitted...)
+	numbers = append(numbers, k.RsHidden...)
 	numbers[0] = k.N
 	numbers[1] = k.S
 	numbers[2] = k.Z
 	for i, r := range k.RsKnown {
 		numbers[i+3] = r
+	}
+	for i, r := range k.RsCommitted {
+		numbers[i+3+len(k.RsKnown)] = r
+	}
+	for i, r := range k.RsHidden {
+		numbers[i+3+len(k.RsKnown)+len(k.RsCommitted)] = r
 	}
 	concatenated := common.ConcatenateNumbers(numbers...)
 	return new(big.Int).SetBytes(concatenated)
@@ -121,6 +129,19 @@ func NewOrgFromParams(name string, clParamSizes *CLParams, primes *common.Specia
 		attributesSpecialRSAPrimes: attributesSpecialRSAPrimes,
 		receiverRecords:            make(map[*big.Int]*ReceiverRecord), // TODO: will be replace with DB
 	}, nil
+}
+
+func (o *Org) GetNonce() *big.Int {
+	secParam := big.NewInt(int64(o.ParamSizes.SecParam))
+	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
+	n := common.GetRandomInt(b)
+
+	return n
+}
+
+func (o *Org) VerifyCredential() bool {
+
+	return false
 }
 
 type ReceiverRecord struct {

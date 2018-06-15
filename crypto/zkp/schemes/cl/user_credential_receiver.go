@@ -131,7 +131,7 @@ func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 func (r *UserCredentialReceiver) GetChallenge(nym, nonceOrg *big.Int) *big.Int {
 	context := r.User.PubKey.GetContext()
 	l := []*big.Int{context, r.U, nym, nonceOrg}
-	l = append(l, r.User.commitmentsOfAttrs...)
+	l = append(l, r.User.commitmentsOfAttrs...) // TODO: add other values
 
 	return common.Hash(l...)
 }

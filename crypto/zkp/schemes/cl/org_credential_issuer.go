@@ -74,12 +74,10 @@ func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAtt
 }
 
 func (i *OrgCredentialIssuer) GetNonce() *big.Int {
-	secParam := big.NewInt(int64(i.Org.ParamSizes.SecParam))
-	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
-	n := common.GetRandomInt(b)
-	i.nonceOrg = n
+	nonce := i.Org.GetNonce()
+	i.nonceOrg = nonce
 
-	return n
+	return nonce
 }
 
 func (i *OrgCredentialIssuer) verifyNym(nymProof *dlogproofs.SchnorrProof) bool {
