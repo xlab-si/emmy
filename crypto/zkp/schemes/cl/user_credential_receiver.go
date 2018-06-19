@@ -30,7 +30,7 @@ import (
 
 type UserCredentialReceiver struct {
 	User      *User
-	v1        *big.Int // v1 is the random element in U, which is constructed also from clPubKey.R_list and attrs
+	v1        *big.Int // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	U         *big.Int
 	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde
@@ -254,8 +254,8 @@ func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 	}
 
 	// verify signature proof:
-	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
-	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
+	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
+	ver.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
 	// check challenge
 	context := r.User.PubKey.GetContext()
 	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, n2)
@@ -263,6 +263,6 @@ func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 		return false, fmt.Errorf("challenge is not correct")
 	}
 
-	credentialVerifier.SetChallenge(AProof.Challenge)
-	return credentialVerifier.Verify(AProof.ProofData), nil
+	ver.SetChallenge(AProof.Challenge)
+	return ver.Verify(AProof.ProofData), nil
 }

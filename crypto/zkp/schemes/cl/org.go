@@ -24,6 +24,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 type PubKey struct {
@@ -55,7 +56,7 @@ func NewPubKey(N *big.Int, S, Z *big.Int, RsKnown, RsCommitted, RsHidden []*big.
 
 // GetContext concatenates public parameters and returns a corresponding number.
 func (k *PubKey) GetContext() *big.Int {
-	numbers := make([]*big.Int, len(k.RsKnown) + len(k.RsCommitted) + len(k.RsHidden) + 3)
+	numbers := make([]*big.Int, len(k.RsKnown)+len(k.RsCommitted)+len(k.RsHidden)+3)
 	numbers = append(numbers, k.RsCommitted...)
 	numbers = append(numbers, k.RsHidden...)
 	numbers[0] = k.N
@@ -75,7 +76,7 @@ func (k *PubKey) GetContext() *big.Int {
 }
 
 type Org struct {
-	ParamSizes                 *CLParams
+	Params                     *Params
 	Group                      *groups.QRSpecialRSA
 	PedersenReceiver           *commitments.PedersenReceiver
 	PubKey                     *PubKey
@@ -83,7 +84,7 @@ type Org struct {
 	receiverRecords            map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
 }
 
-func NewOrg(name string, clParamSizes *CLParams) (*Org, error) {
+func NewOrg(name string, clParamSizes *Params) (*Org, error) {
 	group, err := groups.NewQRSpecialRSA(clParamSizes.NLength / 2)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
@@ -113,7 +114,7 @@ func NewOrg(name string, clParamSizes *CLParams) (*Org, error) {
 		commitmentReceiver.QRSpecialRSA.GetSpecialRSAPrimes(), commitmentReceiver.G, commitmentReceiver.H)
 }
 
-func NewOrgFromParams(name string, clParamSizes *CLParams, primes *common.SpecialRSAPrimes,
+func NewOrgFromParams(name string, clParamSizes *Params, primes *common.SpecialRSAPrimes,
 	pubKey *PubKey, pedersenParams *commitments.PedersenParams,
 	attributesSpecialRSAPrimes *common.SpecialRSAPrimes, G, H *big.Int) (*Org, error) {
 	group, err := groups.NewQRSpecialRSAFromParams(primes)
@@ -122,7 +123,7 @@ func NewOrgFromParams(name string, clParamSizes *CLParams, primes *common.Specia
 	}
 
 	return &Org{
-		ParamSizes:                 clParamSizes,
+		Params:                     clParamSizes,
 		Group:                      group,
 		PubKey:                     pubKey,
 		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pedersenParams),
@@ -132,16 +133,44 @@ func NewOrgFromParams(name string, clParamSizes *CLParams, primes *common.Specia
 }
 
 func (o *Org) GetNonce() *big.Int {
-	secParam := big.NewInt(int64(o.ParamSizes.SecParam))
+	secParam := big.NewInt(int64(o.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
 	n := common.GetRandomInt(b)
 
 	return n
 }
 
-func (o *Org) VerifyCredential() bool {
+func (o *Org) VerifyCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
+	nonceOrg *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) { // TODO: attrs passed differently
+	ver := qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+	bases := append(o.PubKey.RsHidden, A)
+	bases = append(bases, o.PubKey.S)
 
-	return false
+	denom := big.NewInt(1)
+	for i := 0; i < len(knownAttrs); i++ {
+		t1 := o.Group.Exp(o.PubKey.RsKnown[i], knownAttrs[i])
+		denom = o.Group.Mul(denom, t1)
+	}
+
+	for i := 0; i < len(commitmentsOfAttrs); i++ {
+		t1 := o.Group.Exp(o.PubKey.RsCommitted[i], commitmentsOfAttrs[i])
+		denom = o.Group.Mul(denom, t1)
+	}
+	denomInv := o.Group.Inv(denom)
+	y := o.Group.Mul(o.PubKey.Z, denomInv)
+	ver.SetProofRandomData(proof.ProofRandomData, bases, y)
+
+	context := o.PubKey.GetContext()
+	l := []*big.Int{context, proof.ProofRandomData, nonceOrg}
+	//l = append(l, ...) // TODO: add other values
+
+	c := common.Hash(l...) // TODO: function for GetChallenge
+	if proof.Challenge.Cmp(c) != 0 {
+		return false, fmt.Errorf("challenge is not correct")
+	}
+
+	ver.SetChallenge(proof.Challenge)
+	return ver.Verify(proof.ProofData), nil
 }
 
 type ReceiverRecord struct {

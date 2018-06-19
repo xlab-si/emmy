@@ -30,7 +30,7 @@ import (
 )
 
 type User struct {
-	Params             *CLParams
+	Params             *Params
 	PubKey             *PubKey
 	PedersenParams     *commitments.PedersenParams              // for pseudonyms - nym is a commitment to the master secret
 	Committers         map[int32]*commitments.PedersenCommitter // for generating nyms
@@ -42,7 +42,7 @@ type User struct {
 	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
 }
 
-func checkAttributesLength(attributes []*big.Int, params *CLParams) bool {
+func checkAttributesLength(attributes []*big.Int, params *Params) bool {
 	for _, attr := range attributes {
 		if attr.BitLen() > params.AttrBitLen {
 			return false
@@ -52,7 +52,7 @@ func checkAttributesLength(attributes []*big.Int, params *CLParams) bool {
 	return true
 }
 
-func NewUser(clParams *CLParams, clPubKey *PubKey, pedersenParams *commitments.PedersenParams,
+func NewUser(clParams *Params, clPubKey *PubKey, pedersenParams *commitments.PedersenParams,
 	knownAttrs, committedAttrs, hiddenAttrs []*big.Int) (*User, error) {
 	if !checkAttributesLength(knownAttrs, clParams) || !checkAttributesLength(committedAttrs, clParams) ||
 		!checkAttributesLength(hiddenAttrs, clParams) {
@@ -119,45 +119,55 @@ func (u *User) UpdateCredential(knownAttrs []*big.Int) {
 }
 
 func (u *User) randomizeCredential(cred *Credential) *Credential {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.NLength + u.Params.SecParam)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.NLength+u.Params.SecParam)), nil)
 	r := common.GetRandomInt(b)
 	group := groups.NewQRSpecialRSAPublic(u.PubKey.N)
 	t := group.Exp(u.PubKey.S, r)
 	A := group.Mul(cred.A, t) // cred.A * S^r
 	t = new(big.Int).Mul(cred.e, r)
-	v11 := new(big.Int).Sub(cred.v11, t)// cred.v11 - e*r (in Z)
+	v11 := new(big.Int).Sub(cred.v11, t) // cred.v11 - e*r (in Z)
 
 	t = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.EBitLen-1)), nil)
-	e := new(big.Int).Sub(cred.e, t) // cred.e - 2^(EBitLen-1)
+	//e1 := new(big.Int).Sub(cred.e, t) // cred.e - 2^(EBitLen-1) // TODO: when is this needed?
 
-	return NewCredential(A, e, v11) // TODO: or return the old e?
+	return NewCredential(A, cred.e, v11)
 }
 
 func (u *User) GetChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
 	context := u.PubKey.GetContext()
-	l := []*big.Int{context, credProofRandomData}
+	l := []*big.Int{context, credProofRandomData, nonceOrg}
 	//l = append(l, ...) // TODO: add other values
 
 	return common.Hash(l...)
 }
 
-func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*qrspecialrsaproofs.RepresentationProof, error){
+func (u *User) BuildCredentialProof(cred *Credential, nonceOrg, v1 *big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof, error) {
 	rCred := u.randomizeCredential(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
 	group := groups.NewQRSpecialRSAPublic(u.PubKey.N)
-	// bases for representation proof are: R_i, rCred.A, S
-	bases := append(u.PubKey.RsKnown, u.PubKey.RsCommitted...)
-	bases = append(bases, u.PubKey.RsHidden...)
-	bases = append(bases, rCred.A)
+	bases := append(u.PubKey.RsHidden, rCred.A)
 	bases = append(bases, u.PubKey.S)
-	// secrets are m_i (all attributes), rCred.e, rCred.v11
-	secrets := append(u.knownAttrs, u.committedAttrs...)
-	secrets = append(secrets, u.hiddenAttrs...)
-	secrets = append(secrets, rCred.e)
-	secrets = append(secrets, rCred.v11)
+	secrets := append(u.hiddenAttrs, rCred.e)
+	v := new(big.Int).Add(rCred.v11, v1)
+	secrets = append(secrets, v)
+
+	denom := big.NewInt(1)
+	for i := 0; i < len(u.knownAttrs); i++ {
+		t1 := group.Exp(u.PubKey.RsKnown[i], u.knownAttrs[i])
+		denom = group.Mul(denom, t1)
+	}
+
+	for i := 0; i < len(u.committedAttrs); i++ {
+		t1 := group.Exp(u.PubKey.RsCommitted[i], u.commitmentsOfAttrs[i])
+		denom = group.Mul(denom, t1)
+	}
+	denomInv := group.Inv(denom)
+	y := group.Mul(u.PubKey.Z, denomInv)
+
 	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.Params.SecParam,
-		secrets, bases, u.PubKey.Z)
+		secrets, bases, y)
 
 	// boundary for m_tilde
 	b_m := u.Params.AttrBitLen + u.Params.SecParam + u.Params.HashBitLen
@@ -166,9 +176,8 @@ func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*qrspe
 	// boundary for v1
 	b_v1 := u.Params.VBitLen + u.Params.SecParam + u.Params.HashBitLen
 
-	numAttrs := len(u.PubKey.RsKnown) + len(u.PubKey.RsCommitted) + len(u.PubKey.RsHidden)
-	boundaries := make([]int, numAttrs)
-	for i := 0; i < numAttrs; i++ {
+	boundaries := make([]int, len(u.PubKey.RsHidden))
+	for i, _ := range u.PubKey.RsHidden {
 		boundaries[i] = b_m
 	}
 	boundaries = append(boundaries, b_e)
@@ -176,12 +185,12 @@ func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*qrspe
 
 	proofRandomData, err := prover.GetProofRandomDataGivenBoundaries(boundaries, true)
 	if err != nil {
-		return nil, fmt.Errorf("error when generating representation proof random data: %s", err)
+		return nil, nil, fmt.Errorf("error when generating representation proof random data: %s", err)
 	}
 
 	challenge := u.GetChallenge(proofRandomData, nonceOrg)
 	proofData := prover.GetProofData(challenge)
 
-	return qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
-}
+	return rCred, qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
 
+}

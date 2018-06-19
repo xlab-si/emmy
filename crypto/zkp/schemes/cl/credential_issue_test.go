@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"fmt"
 )
 
 func TestCLIssue(t *testing.T) {
@@ -94,10 +93,16 @@ func TestCLIssue(t *testing.T) {
 	assert.Equal(t, true, userVerified, "credential update failed")
 
 	nonce := org.GetNonce()
-	proof, err := user.BuildCredentialProof(credential, nonce)
+	randCred, proof, err := user.BuildCredentialProof(credential1, nonce, userCredentialReceiver.v1) // TODO: remove v1
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)
 	}
 
-	fmt.Println(proof)
+	cVerified, err := org.VerifyCredential(randCred.A, proof, nonce, newKnownAttrs,
+		orgCredentialIssuer.commitmentsOfAttrs)
+	if err != nil {
+		t.Errorf("error when verifying credential: %v", err)
+	}
+
+	assert.Equal(t, true, cVerified, "credential verification failed")
 }
