@@ -57,8 +57,7 @@ func TestCLIssue(t *testing.T) {
 	}
 	nonceOrg := orgCredentialIssuer.GetNonce()
 
-	userCredentialReceiver := NewUserCredentialReceiver(user)
-	credentialRequest, err := userCredentialReceiver.GetCredentialRequest(nym, nonceOrg)
+	credentialRequest, err := user.GetCredentialRequest(nym, nonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
@@ -70,30 +69,33 @@ func TestCLIssue(t *testing.T) {
 	verified := orgCredentialIssuer.VerifyCredentialRequest(credentialRequest)
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
-	nonceUser := userCredentialReceiver.GetNonce()
+	nonceUser := user.GetNonce()
 	credential, AProof := orgCredentialIssuer.IssueCredential(nonceUser)
 
-	userVerified, err := userCredentialReceiver.VerifyCredential(credential, AProof, nonceUser)
+	userVerified, err := user.VerifyCredential(credential, AProof, nonceUser)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
 
 	assert.Equal(t, true, userVerified, "credential issuance failed")
 
-	nonceUser1 := userCredentialReceiver.GetNonce()
+	nonceUser1 := user.GetNonce()
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	user.UpdateCredential(newKnownAttrs)
 	credential1, AProof1 := orgCredentialIssuer.UpdateCredential(nonceUser1, newKnownAttrs)
 
-	userVerified, err = userCredentialReceiver.VerifyCredential(credential1, AProof1, nonceUser1)
+	userVerified, err = user.VerifyCredential(credential1, AProof1, nonceUser1)
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
 
 	assert.Equal(t, true, userVerified, "credential update failed")
 
+	// TODO: before proving the possesion of a credential, create a new User object (obtaining and proving
+	// credential usually don't happen at the same time) - this means passing attributes and v1 into NewUser
+
 	nonce := org.GetNonce()
-	randCred, proof, err := user.BuildCredentialProof(credential1, nonce, userCredentialReceiver.v1) // TODO: remove v1
+	randCred, proof, err := user.BuildCredentialProof(credential1, nonce)
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)
 	}

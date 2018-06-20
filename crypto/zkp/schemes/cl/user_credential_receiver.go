@@ -30,7 +30,6 @@ import (
 
 type UserCredentialReceiver struct {
 	User      *User
-	v1        *big.Int // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	U         *big.Int
 	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde
@@ -60,7 +59,7 @@ func (r *UserCredentialReceiver) setU() *big.Int {
 	exp := big.NewInt(int64(r.User.Params.NLength + r.User.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
-	r.v1 = v1
+	r.User.v1 = v1
 
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	U := group.Exp(r.User.PubKey.S, v1)
@@ -71,7 +70,7 @@ func (r *UserCredentialReceiver) setU() *big.Int {
 	}
 	r.U = U
 
-	return U
+	return v1
 }
 
 // getNymProofRandomData return proof random data for nym.
@@ -99,7 +98,7 @@ func (rcv *UserCredentialReceiver) getNymProofRandomData(nymId int32) (*big.Int,
 func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
-	secrets := append(r.User.hiddenAttrs, r.v1)
+	secrets := append(r.User.hiddenAttrs, r.User.v1)
 
 	// bases are [R_1, ..., R_L, S]
 	bases := append(r.User.PubKey.RsHidden, r.User.PubKey.S)
@@ -207,11 +206,6 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nym *Nym, nonceOrg *big.In
 		commitmentsOfAttrsProofs), nil
 }
 
-func (r *UserCredentialReceiver) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.SecParam)), nil)
-	return common.GetRandomInt(b)
-}
-
 func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
 	// check bit length of e:
@@ -227,7 +221,7 @@ func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 		return false, fmt.Errorf("e is not prime")
 	}
 
-	v := new(big.Int).Add(r.v1, cred.v11)
+	v := new(big.Int).Add(r.User.v1, cred.v11)
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
 	denom := group.Exp(r.User.PubKey.S, v) // s^v

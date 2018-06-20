@@ -32,12 +32,18 @@ import (
 type User struct {
 	Params             *Params
 	PubKey             *PubKey
-	PedersenParams     *commitments.PedersenParams              // for pseudonyms - nym is a commitment to the master secret
+	PedersenParams     *commitments.PedersenParams // for pseudonyms - nym is a commitment to the master secret
+	credentialReceiver *UserCredentialReceiver
+	// TODO: it might be better to have only one PedersenCommitter and simply create a new user
+	// for a new nym
 	Committers         map[int32]*commitments.PedersenCommitter // for generating nyms
 	masterSecret       *big.Int
 	knownAttrs         []*big.Int                              // attributes that are known to the credential receiver and issuer
 	committedAttrs     []*big.Int                              // attributes for which the issuer knows only commitment
 	hiddenAttrs        []*big.Int                              // attributes which are known only to the credential receiver
+	// v1 is a random element in credential - it is generated in GetCredentialRequest and needed when
+	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
+	v1        *big.Int // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
 	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
 }
@@ -114,6 +120,29 @@ func (u *User) GenerateNym() (*Nym, error) {
 	return nym, nil
 }
 
+func (u *User) GetNonce() *big.Int {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.SecParam)), nil)
+	return common.GetRandomInt(b)
+}
+
+func (u *User) GetCredentialRequest(nym *Nym, nonceOrg *big.Int) (*CredentialRequest, error) {
+	u.credentialReceiver = NewUserCredentialReceiver(u)
+	credReq, err := u.credentialReceiver.GetCredentialRequest(nym, nonceOrg)
+	if err != nil {
+		return nil, err
+	}
+	return credReq, nil
+}
+
+func (u *User) VerifyCredential(cred *Credential,
+	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
+	verified, err := u.credentialReceiver.VerifyCredential(cred, AProof, n2)
+	if err != nil {
+		return false, err
+	}
+	return verified, nil
+}
+
 func (u *User) UpdateCredential(knownAttrs []*big.Int) {
 	u.knownAttrs = knownAttrs
 }
@@ -141,8 +170,11 @@ func (u *User) GetChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
 	return common.Hash(l...)
 }
 
-func (u *User) BuildCredentialProof(cred *Credential, nonceOrg, v1 *big.Int) (*Credential,
+func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Credential,
 	*qrspecialrsaproofs.RepresentationProof, error) {
+	if u.v1 == nil {
+		return nil, nil, fmt.Errorf("v1 is not set in User (generated in GetCredentialRequest)")
+	}
 	rCred := u.randomizeCredential(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
@@ -150,7 +182,7 @@ func (u *User) BuildCredentialProof(cred *Credential, nonceOrg, v1 *big.Int) (*C
 	bases := append(u.PubKey.RsHidden, rCred.A)
 	bases = append(bases, u.PubKey.S)
 	secrets := append(u.hiddenAttrs, rCred.e)
-	v := new(big.Int).Add(rCred.v11, v1)
+	v := new(big.Int).Add(rCred.v11, u.v1)
 	secrets = append(secrets, v)
 
 	denom := big.NewInt(1)
