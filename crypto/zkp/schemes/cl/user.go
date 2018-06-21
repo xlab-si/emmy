@@ -213,7 +213,3 @@ func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Crede
 	return rCred, qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
 
 }
-
-func (u *User) UpdateCredential(knownAttrs []*big.Int) {
-	u.knownAttrs = knownAttrs
-}
