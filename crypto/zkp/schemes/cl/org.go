@@ -81,6 +81,9 @@ type Org struct {
 	PedersenReceiver           *commitments.PedersenReceiver
 	PubKey                     *PubKey
 	attributesSpecialRSAPrimes *common.SpecialRSAPrimes
+	credentialIssuer *OrgCredentialIssuer
+	credentialIssueNonceOrg *big.Int
+	proveCredentialNonceOrg *big.Int
 	receiverRecords            map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
 }
 
@@ -128,11 +131,11 @@ func NewOrgFromParams(name string, clParamSizes *Params, primes *common.SpecialR
 		PubKey:                     pubKey,
 		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pedersenParams),
 		attributesSpecialRSAPrimes: attributesSpecialRSAPrimes,
-		receiverRecords:            make(map[*big.Int]*ReceiverRecord), // TODO: will be replace with DB
+		receiverRecords:            make(map[*big.Int]*ReceiverRecord), // TODO: will be replaced with DB
 	}, nil
 }
 
-func (o *Org) GetNonce() *big.Int {
+func (o *Org) getNonce() *big.Int {
 	secParam := big.NewInt(int64(o.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
 	n := common.GetRandomInt(b)
@@ -140,8 +143,43 @@ func (o *Org) GetNonce() *big.Int {
 	return n
 }
 
-func (o *Org) VerifyCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
-	nonceOrg *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) { // TODO: attrs passed differently
+func (o *Org) GetCredentialIssueNonce() *big.Int {
+	nonce := o.getNonce()
+	o.credentialIssueNonceOrg = nonce
+
+	return nonce
+}
+
+func (o *Org) VerifyCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int,
+	cr *CredentialRequest) (bool, error) {
+	credentialIssuer, err := NewOrgCredentialIssuer(o, nym, knownAttrs, commitmentsOfAttrs)
+	if err != nil {
+		return false, fmt.Errorf("error when creating credential issuer: %v", err)
+	}
+	o.credentialIssuer = credentialIssuer
+
+	return o.credentialIssuer.VerifyCredentialRequest(cr), nil
+}
+
+func (o *Org) IssueCredential(nonceUser *big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof) {
+	return o.credentialIssuer.IssueCredential(nonceUser)
+}
+
+func (o *Org) UpdateCredential(nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof) {
+	return o.credentialIssuer.UpdateCredential(nonceUser, newKnownAttrs)
+}
+
+func (o *Org) GetProveCredentialNonce() *big.Int {
+	nonce := o.getNonce()
+	o.proveCredentialNonceOrg = nonce
+
+	return nonce
+}
+
+func (o *Org) ProveCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
+	knownAttrs []*big.Int) (bool, error) {
 	ver := qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	bases := append(o.PubKey.RsHidden, A)
 	bases = append(bases, o.PubKey.S)
@@ -152,8 +190,8 @@ func (o *Org) VerifyCredential(A *big.Int, proof *qrspecialrsaproofs.Representat
 		denom = o.Group.Mul(denom, t1)
 	}
 
-	for i := 0; i < len(commitmentsOfAttrs); i++ {
-		t1 := o.Group.Exp(o.PubKey.RsCommitted[i], commitmentsOfAttrs[i])
+	for i := 0; i < len(o.credentialIssuer.commitmentsOfAttrs); i++ {
+		t1 := o.Group.Exp(o.PubKey.RsCommitted[i], o.credentialIssuer.commitmentsOfAttrs[i])
 		denom = o.Group.Mul(denom, t1)
 	}
 	denomInv := o.Group.Inv(denom)
@@ -161,7 +199,7 @@ func (o *Org) VerifyCredential(A *big.Int, proof *qrspecialrsaproofs.Representat
 	ver.SetProofRandomData(proof.ProofRandomData, bases, y)
 
 	context := o.PubKey.GetContext()
-	l := []*big.Int{context, proof.ProofRandomData, nonceOrg}
+	l := []*big.Int{context, proof.ProofRandomData, o.proveCredentialNonceOrg}
 	//l = append(l, ...) // TODO: add other values
 
 	c := common.Hash(l...) // TODO: function for GetChallenge
@@ -170,6 +208,7 @@ func (o *Org) VerifyCredential(A *big.Int, proof *qrspecialrsaproofs.Representat
 	}
 
 	ver.SetChallenge(proof.Challenge)
+
 	return ver.Verify(proof.ProofData), nil
 }
 

@@ -73,13 +73,6 @@ func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAtt
 	}, nil
 }
 
-func (i *OrgCredentialIssuer) GetNonce() *big.Int {
-	nonce := i.Org.GetNonce()
-	i.nonceOrg = nonce
-
-	return nonce
-}
-
 func (i *OrgCredentialIssuer) verifyNym(nymProof *dlogproofs.SchnorrProof) bool {
 	bases := []*big.Int{
 		i.Org.PedersenReceiver.Params.Group.G,
@@ -102,7 +95,7 @@ func (i *OrgCredentialIssuer) verifyU(UProof *qrspecialrsaproofs.RepresentationP
 
 func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
 	context := i.Org.PubKey.GetContext()
-	l := []*big.Int{context, i.U, i.nym, i.nonceOrg}
+	l := []*big.Int{context, i.U, i.nym, i.Org.credentialIssueNonceOrg}
 	l = append(l, i.commitmentsOfAttrs...)
 	c := common.Hash(l...)
 

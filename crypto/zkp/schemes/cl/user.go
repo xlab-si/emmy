@@ -29,14 +29,15 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
+// User should be created when a credential is to be issued, updated or proved. If a new credential under
+// a new nym is needed, new User instance is needed.
 type User struct {
 	Params             *Params
 	PubKey             *PubKey
 	PedersenParams     *commitments.PedersenParams // for pseudonyms - nym is a commitment to the master secret
 	credentialReceiver *UserCredentialReceiver
-	// TODO: it might be better to have only one PedersenCommitter and simply create a new user
-	// for a new nym
-	Committers         map[int32]*commitments.PedersenCommitter // for generating nyms
+	nymCommitter       *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
+	nym *big.Int
 	masterSecret       *big.Int
 	knownAttrs         []*big.Int                              // attributes that are known to the credential receiver and issuer
 	committedAttrs     []*big.Int                              // attributes for which the issuer knows only commitment
@@ -82,7 +83,6 @@ func NewUser(clParams *Params, clPubKey *PubKey, pedersenParams *commitments.Ped
 	return &User{
 		Params:             clParams,
 		PubKey:             clPubKey,
-		Committers:         make(map[int32]*commitments.PedersenCommitter),
 		PedersenParams:     pedersenParams,
 		knownAttrs:         knownAttrs,
 		committedAttrs:     committedAttrs,
@@ -93,54 +93,41 @@ func NewUser(clParams *Params, clPubKey *PubKey, pedersenParams *commitments.Ped
 	}, nil
 }
 
-type Nym struct {
-	Id         int32    // nym identifier
-	Commitment *big.Int // actual nym that will be known to the organisation - it is in the form of Pedersen commitment
-}
-
-func NewNym(commitment *big.Int) *Nym {
-	return &Nym{
-		Id:         rand.Int31(),
-		Commitment: commitment,
-	}
-}
-
-// GenerateNym creates a pseudonym to be used with a given organization. Multiple pseudonyms
-// can be generated for the same organization (on the contrary domain pseudonym can be only
-// one per organization - not implemented yet). Authentication can be done with respect to
-// the pseudonym or not (depends on the server configuration).
-func (u *User) GenerateNym() (*Nym, error) {
+// GenerateNym creates a pseudonym to be used with a given organization. Authentication can be done
+// with respect to the pseudonym or not (depends on the server configuration).
+func (u *User) GenerateNym() (*big.Int, error) {
 	committer := commitments.NewPedersenCommitter(u.PedersenParams)
-	com, err := committer.GetCommitMsg(u.masterSecret)
+	nym, err := committer.GetCommitMsg(u.masterSecret)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Pedersen commitment: %s", err)
 	}
-	nym := NewNym(com)
-	u.Committers[nym.Id] = committer
+	u.nym = nym
+	u.nymCommitter = committer
+
 	return nym, nil
 }
 
-func (u *User) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.SecParam)), nil)
-	return common.GetRandomInt(b)
-}
-
-func (u *User) GetCredentialRequest(nym *Nym, nonceOrg *big.Int) (*CredentialRequest, error) {
+func (u *User) GetCredentialRequest(nym *big.Int, nonceOrg *big.Int) (*CredentialRequest, error) {
 	u.credentialReceiver = NewUserCredentialReceiver(u)
 	credReq, err := u.credentialReceiver.GetCredentialRequest(nym, nonceOrg)
 	if err != nil {
 		return nil, err
 	}
+
 	return credReq, nil
 }
 
+func (u *User) GetCredentialIssueNonce() *big.Int {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.SecParam)), nil)
+	nonce := common.GetRandomInt(b)
+	u.credentialReceiver.credentialIssueNonce = nonce
+
+	return nonce
+}
+
 func (u *User) VerifyCredential(cred *Credential,
-	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
-	verified, err := u.credentialReceiver.VerifyCredential(cred, AProof, n2)
-	if err != nil {
-		return false, err
-	}
-	return verified, nil
+	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
+	return u.credentialReceiver.VerifyCredential(cred, AProof)
 }
 
 func (u *User) UpdateCredential(knownAttrs []*big.Int) {
