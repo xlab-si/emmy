@@ -37,14 +37,14 @@ type User struct {
 	PedersenParams     *commitments.PedersenParams // for pseudonyms - nym is a commitment to the master secret
 	credentialReceiver *UserCredentialReceiver
 	nymCommitter       *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
-	nym *big.Int
+	nym                *big.Int
 	masterSecret       *big.Int
-	knownAttrs         []*big.Int                              // attributes that are known to the credential receiver and issuer
-	committedAttrs     []*big.Int                              // attributes for which the issuer knows only commitment
-	hiddenAttrs        []*big.Int                              // attributes which are known only to the credential receiver
+	knownAttrs         []*big.Int // attributes that are known to the credential receiver and issuer
+	committedAttrs     []*big.Int // attributes for which the issuer knows only commitment
+	hiddenAttrs        []*big.Int // attributes which are known only to the credential receiver
 	// v1 is a random element in credential - it is generated in GetCredentialRequest and needed when
 	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
-	v1        *big.Int // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
+	v1                 *big.Int                                // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
 	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
 }
@@ -190,7 +190,7 @@ func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Crede
 
 	// boundary for m_tilde
 	b_m := u.Params.AttrBitLen + u.Params.SecParam + u.Params.HashBitLen
-	// boundary for e1
+	// boundary for e
 	b_e := u.Params.EBitLen + u.Params.SecParam + u.Params.HashBitLen
 	// boundary for v1
 	b_v1 := u.Params.VBitLen + u.Params.SecParam + u.Params.HashBitLen

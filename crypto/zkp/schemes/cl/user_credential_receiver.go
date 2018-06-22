@@ -37,7 +37,7 @@ type UserCredentialReceiver struct {
 	nymTilde                  *big.Int                                 // proof random data for nym (proving that nym is of proper form)
 	UTilde                    *big.Int                                 // proof random data for U (proving that U is of proper form)
 	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
-	credentialIssueNonce *big.Int
+	credentialIssueNonce      *big.Int
 }
 
 func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {

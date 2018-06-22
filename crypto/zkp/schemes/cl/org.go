@@ -56,21 +56,10 @@ func NewPubKey(N *big.Int, S, Z *big.Int, RsKnown, RsCommitted, RsHidden []*big.
 
 // GetContext concatenates public parameters and returns a corresponding number.
 func (k *PubKey) GetContext() *big.Int {
-	numbers := make([]*big.Int, len(k.RsKnown)+len(k.RsCommitted)+len(k.RsHidden)+3)
+	numbers := []*big.Int{k.N, k.S, k.Z}
+	numbers = append(numbers, k.RsKnown...)
 	numbers = append(numbers, k.RsCommitted...)
 	numbers = append(numbers, k.RsHidden...)
-	numbers[0] = k.N
-	numbers[1] = k.S
-	numbers[2] = k.Z
-	for i, r := range k.RsKnown {
-		numbers[i+3] = r
-	}
-	for i, r := range k.RsCommitted {
-		numbers[i+3+len(k.RsKnown)] = r
-	}
-	for i, r := range k.RsHidden {
-		numbers[i+3+len(k.RsKnown)+len(k.RsCommitted)] = r
-	}
 	concatenated := common.ConcatenateNumbers(numbers...)
 	return new(big.Int).SetBytes(concatenated)
 }
@@ -81,9 +70,9 @@ type Org struct {
 	PedersenReceiver           *commitments.PedersenReceiver
 	PubKey                     *PubKey
 	attributesSpecialRSAPrimes *common.SpecialRSAPrimes
-	credentialIssuer *OrgCredentialIssuer
-	credentialIssueNonceOrg *big.Int
-	proveCredentialNonceOrg *big.Int
+	credentialIssuer           *OrgCredentialIssuer
+	credentialIssueNonceOrg    *big.Int
+	proveCredentialNonceOrg    *big.Int
 	receiverRecords            map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
 }
 
@@ -138,9 +127,8 @@ func NewOrgFromParams(name string, clParamSizes *Params, primes *common.SpecialR
 func (o *Org) getNonce() *big.Int {
 	secParam := big.NewInt(int64(o.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
-	n := common.GetRandomInt(b)
 
-	return n
+	return common.GetRandomInt(b)
 }
 
 func (o *Org) GetCredentialIssueNonce() *big.Int {
