@@ -42,23 +42,14 @@ func TestCLIssue(t *testing.T) {
 		t.Errorf("error when creating a user: %v", err)
 	}
 
-	// TODO: if there are more than one organizations, each can have its own PedersenParams (where
-	// nyms are generated, and nyms need to be managed per organization
 	nym, err := user.GenerateNym()
 	if err != nil {
 		t.Errorf("error when generating nym: %v", err)
 	}
 
-	// TODO: change API - move issuer into org, receiver into user
-	orgCredentialIssuer, err := NewOrgCredentialIssuer(org, nym.Commitment, user.knownAttrs,
-		user.commitmentsOfAttrs)
-	if err != nil {
-		t.Errorf("error when creating credential issuer: %v", err)
-	}
-	nonceOrg := orgCredentialIssuer.GetNonce()
+	credIssueNonceOrg := org.GetCredentialIssueNonce()
 
-	userCredentialReceiver := NewUserCredentialReceiver(user)
-	credentialRequest, err := userCredentialReceiver.GetCredentialRequest(nym, nonceOrg)
+	credentialRequest, err := user.GetCredentialRequest(nym, credIssueNonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
@@ -67,28 +58,47 @@ func TestCLIssue(t *testing.T) {
 	// (nonceUser, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
 	// commitmentsOfAttrsProofs)
 
-	verified := orgCredentialIssuer.VerifyCredentialRequest(credentialRequest)
+	verified, err := org.VerifyCredentialRequest(nym, user.knownAttrs, user.commitmentsOfAttrs, credentialRequest)
+	if err != nil {
+		t.Errorf("error when verifying credential request: %v", err)
+	}
 	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
 
-	nonceUser := userCredentialReceiver.GetNonce()
-	credential, AProof := orgCredentialIssuer.IssueCredential(nonceUser)
+	credIssueNonceUser := user.GetCredentialIssueNonce()
+	credential, AProof := org.IssueCredential(credIssueNonceUser)
 
-	userVerified, err := userCredentialReceiver.VerifyCredential(credential, AProof, nonceUser)
+	userVerified, err := user.VerifyCredential(credential, AProof)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
 
 	assert.Equal(t, true, userVerified, "credential issuance failed")
 
-	nonceUser1 := userCredentialReceiver.GetNonce()
+	updateCredentialNonce := user.GetCredentialIssueNonce()
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	user.UpdateCredential(newKnownAttrs)
-	credential1, AProof1 := orgCredentialIssuer.UpdateCredential(nonceUser1, newKnownAttrs)
+	credential1, AProof1 := org.UpdateCredential(updateCredentialNonce, newKnownAttrs)
 
-	userVerified, err = userCredentialReceiver.VerifyCredential(credential1, AProof1, nonceUser1)
+	userVerified, err = user.VerifyCredential(credential1, AProof1)
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
 
 	assert.Equal(t, true, userVerified, "credential update failed")
+
+	// TODO: before proving the possesion of a credential, create a new User object (obtaining and proving
+	// credential usually don't happen at the same time) - this means passing attributes and v1 into NewUser
+
+	nonce := org.GetProveCredentialNonce()
+	randCred, proof, err := user.BuildCredentialProof(credential1, nonce)
+	if err != nil {
+		t.Errorf("error when building credential proof: %v", err)
+	}
+
+	cVerified, err := org.ProveCredential(randCred.A, proof, newKnownAttrs)
+	if err != nil {
+		t.Errorf("error when verifying credential: %v", err)
+	}
+
+	assert.Equal(t, true, cVerified, "credential verification failed")
 }

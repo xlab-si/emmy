@@ -19,7 +19,7 @@ package cl
 
 import ()
 
-type CLParams struct {
+type Params struct {
 	// There are only a few possibilities for RhoBitLen. 256 implies that the modulus
 	// bit length is 2048
 	RhoBitLen         int // bit length of order of the commitment group
@@ -37,8 +37,8 @@ type CLParams struct {
 }
 
 // TODO: add method to load params from file or blockchain or wherever they will be stored.
-func GetDefaultParamSizes() *CLParams {
-	return &CLParams{
+func GetDefaultParamSizes() *Params {
+	return &Params{
 		RhoBitLen:         256,
 		NLength:           256, // should be at least 2048 when not testing
 		KnownAttrsNum:     4,

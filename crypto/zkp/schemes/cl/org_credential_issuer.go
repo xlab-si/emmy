@@ -49,14 +49,14 @@ func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAtt
 	attrsVerifiers := make([]*commitmentzkp.DFCommitmentOpeningVerifier, len(commitmentsOfAttrs))
 	for i, attr := range commitmentsOfAttrs {
 		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(org.attributesSpecialRSAPrimes,
-			org.PubKey.G, org.PubKey.H, org.ParamSizes.SecParam)
+			org.PubKey.G, org.PubKey.H, org.Params.SecParam)
 		if err != nil {
 			return nil, err
 		}
 		receiver.SetCommitment(attr)
 		attrsReceivers[i] = receiver
 
-		verifier := commitmentzkp.NewDFCommitmentOpeningVerifier(receiver, org.ParamSizes.ChallengeSpace)
+		verifier := commitmentzkp.NewDFCommitmentOpeningVerifier(receiver, org.Params.ChallengeSpace)
 		attrsVerifiers[i] = verifier
 	}
 
@@ -65,21 +65,12 @@ func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAtt
 		nym:         nym,
 		nymVerifier: dlogproofs.NewSchnorrVerifier(org.PedersenReceiver.Params.Group),
 		UVerifier: qrspecialrsaproofs.NewRepresentationVerifier(org.Group,
-			org.ParamSizes.SecParam),
+			org.Params.SecParam),
 		knownAttrs:         knownAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
 		attrsReceivers:     attrsReceivers,
 		attrsVerifiers:     attrsVerifiers,
 	}, nil
-}
-
-func (i *OrgCredentialIssuer) GetNonce() *big.Int {
-	secParam := big.NewInt(int64(i.Org.ParamSizes.SecParam))
-	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
-	n := common.GetRandomInt(b)
-	i.nonceOrg = n
-
-	return n
 }
 
 func (i *OrgCredentialIssuer) verifyNym(nymProof *dlogproofs.SchnorrProof) bool {
@@ -104,7 +95,7 @@ func (i *OrgCredentialIssuer) verifyU(UProof *qrspecialrsaproofs.RepresentationP
 
 func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
 	context := i.Org.PubKey.GetContext()
-	l := []*big.Int{context, i.U, i.nym, i.nonceOrg}
+	l := []*big.Int{context, i.U, i.nym, i.Org.credentialIssueNonceOrg}
 	l = append(l, i.commitmentsOfAttrs...)
 	c := common.Hash(l...)
 
@@ -113,9 +104,9 @@ func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
 
 func (i *OrgCredentialIssuer) verifyUProofDataLengths(UProofData []*big.Int) bool {
 	// boundary for m_tilde
-	b_m := i.Org.ParamSizes.AttrBitLen + i.Org.ParamSizes.SecParam + i.Org.ParamSizes.HashBitLen + 2
+	b_m := i.Org.Params.AttrBitLen + i.Org.Params.SecParam + i.Org.Params.HashBitLen + 2
 	// boundary for v1_tilde
-	b_v1 := i.Org.ParamSizes.NLength + 2*i.Org.ParamSizes.SecParam + i.Org.ParamSizes.HashBitLen + 1
+	b_v1 := i.Org.Params.NLength + 2*i.Org.Params.SecParam + i.Org.Params.HashBitLen + 1
 
 	exp := big.NewInt(int64(b_m))
 	b1 := new(big.Int).Exp(big.NewInt(2), exp, nil)
@@ -159,19 +150,19 @@ func (i *OrgCredentialIssuer) VerifyCredentialRequest(cr *CredentialRequest) boo
 }
 
 func (i *OrgCredentialIssuer) chooseCredentialRandoms() (*big.Int, *big.Int) {
-	exp := big.NewInt(int64(i.Org.ParamSizes.EBitLen - 1))
+	exp := big.NewInt(int64(i.Org.Params.EBitLen - 1))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	var e *big.Int
 	for {
-		er, _ := rand.Prime(rand.Reader, i.Org.ParamSizes.E1BitLen-1)
+		er, _ := rand.Prime(rand.Reader, i.Org.Params.E1BitLen-1)
 		e = new(big.Int).Add(er, b)
 		if e.ProbablyPrime(20) { // e needs to be prime
 			break
 		}
 	}
 
-	vr, _ := rand.Prime(rand.Reader, i.Org.ParamSizes.VBitLen-1)
-	exp = big.NewInt(int64(i.Org.ParamSizes.VBitLen - 1))
+	vr, _ := rand.Prime(rand.Reader, i.Org.Params.VBitLen-1)
+	exp = big.NewInt(int64(i.Org.Params.VBitLen - 1))
 	b = new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v11 := new(big.Int).Add(vr, b)
 
@@ -213,7 +204,7 @@ func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*Credential,
 }
 
 func (i *OrgCredentialIssuer) getAProof(nonceUser, context, eInv, Q, A *big.Int) *qrspecialrsaproofs.RepresentationProof {
-	prover := qrspecialrsaproofs.NewRepresentationProver(i.Org.Group, i.Org.ParamSizes.SecParam,
+	prover := qrspecialrsaproofs.NewRepresentationProver(i.Org.Group, i.Org.Params.SecParam,
 		[]*big.Int{eInv}, []*big.Int{Q}, A)
 	i.credentialProver = prover
 	proofRandomData := prover.GetProofRandomData(true)

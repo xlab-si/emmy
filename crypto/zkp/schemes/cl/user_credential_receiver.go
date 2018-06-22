@@ -30,7 +30,6 @@ import (
 
 type UserCredentialReceiver struct {
 	User      *User
-	v1        *big.Int // v1 is the random element in U, which is constructed also from clPubKey.R_list and attrs
 	U         *big.Int
 	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde
@@ -38,6 +37,7 @@ type UserCredentialReceiver struct {
 	nymTilde                  *big.Int                                 // proof random data for nym (proving that nym is of proper form)
 	UTilde                    *big.Int                                 // proof random data for U (proving that U is of proper form)
 	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
+	credentialIssueNonce      *big.Int
 }
 
 func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
@@ -60,7 +60,7 @@ func (r *UserCredentialReceiver) setU() *big.Int {
 	exp := big.NewInt(int64(r.User.Params.NLength + r.User.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
-	r.v1 = v1
+	r.User.v1 = v1
 
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	U := group.Exp(r.User.PubKey.S, v1)
@@ -71,17 +71,17 @@ func (r *UserCredentialReceiver) setU() *big.Int {
 	}
 	r.U = U
 
-	return U
+	return v1
 }
 
-// getNymProofRandomData return proof random data for nym.
-func (rcv *UserCredentialReceiver) getNymProofRandomData(nymId int32) (*big.Int, error) {
+// getNymProofRandomData returns proof random data for nym.
+func (rcv *UserCredentialReceiver) getNymProofRandomData() (*big.Int, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{
 		rcv.User.PedersenParams.Group.G,
 		rcv.User.PedersenParams.H,
 	}
-	committer := rcv.User.Committers[nymId]
+	committer := rcv.User.nymCommitter
 	val, r := committer.GetDecommitMsg() // val is actually master key
 	secrets := []*big.Int{val, r}
 
@@ -99,7 +99,7 @@ func (rcv *UserCredentialReceiver) getNymProofRandomData(nymId int32) (*big.Int,
 func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
-	secrets := append(r.User.hiddenAttrs, r.v1)
+	secrets := append(r.User.hiddenAttrs, r.User.v1)
 
 	// bases are [R_1, ..., R_L, S]
 	bases := append(r.User.PubKey.RsHidden, r.User.PubKey.S)
@@ -131,13 +131,13 @@ func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 func (r *UserCredentialReceiver) GetChallenge(nym, nonceOrg *big.Int) *big.Int {
 	context := r.User.PubKey.GetContext()
 	l := []*big.Int{context, r.U, nym, nonceOrg}
-	l = append(l, r.User.commitmentsOfAttrs...)
+	l = append(l, r.User.commitmentsOfAttrs...) // TODO: add other values
 
 	return common.Hash(l...)
 }
 
-func (r *UserCredentialReceiver) getCredentialRequestProofRandomfData(nymId int32) (*big.Int, *big.Int, error) {
-	nymProofRandomData, err := r.getNymProofRandomData(nymId)
+func (r *UserCredentialReceiver) getCredentialRequestProofRandomfData() (*big.Int, *big.Int, error) {
+	nymProofRandomData, err := r.getNymProofRandomData()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when obtaining nym proof random data: %v", err)
 	}
@@ -187,14 +187,14 @@ func NewCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
 // - U and proof data that U was properly generated,
 // - proof data for proving the knowledge of opening for commitments of attributes (for those attributes
 // for which the committed value is known).
-func (r *UserCredentialReceiver) GetCredentialRequest(nym *Nym, nonceOrg *big.Int) (*CredentialRequest, error) {
+func (r *UserCredentialReceiver) GetCredentialRequest(nym *big.Int, nonceOrg *big.Int) (*CredentialRequest, error) {
 	r.setU()
-	nymProofRandomData, UProofRandomData, err := r.getCredentialRequestProofRandomfData(nym.Id)
+	nymProofRandomData, UProofRandomData, err := r.getCredentialRequestProofRandomfData()
 	if err != nil {
 		return nil, err
 	}
 
-	challenge := r.GetChallenge(nym.Commitment, nonceOrg)
+	challenge := r.GetChallenge(nym, nonceOrg)
 	nymProofData, UProofData, err := r.getCredentialRequestProofData(challenge)
 	if err != nil {
 		return nil, err
@@ -207,13 +207,8 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nym *Nym, nonceOrg *big.In
 		commitmentsOfAttrsProofs), nil
 }
 
-func (r *UserCredentialReceiver) GetNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.SecParam)), nil)
-	return common.GetRandomInt(b)
-}
-
 func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
-	AProof *qrspecialrsaproofs.RepresentationProof, n2 *big.Int) (bool, error) {
+	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
 	// check bit length of e:
 	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.EBitLen-1)), nil)
 	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.E1BitLen-1)), nil)
@@ -227,7 +222,7 @@ func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 		return false, fmt.Errorf("e is not prime")
 	}
 
-	v := new(big.Int).Add(r.v1, cred.v11)
+	v := new(big.Int).Add(r.User.v1, cred.v11)
 	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
 	denom := group.Exp(r.User.PubKey.S, v) // s^v
@@ -254,15 +249,15 @@ func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 	}
 
 	// verify signature proof:
-	credentialVerifier := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
-	credentialVerifier.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
+	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
+	ver.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
 	// check challenge
 	context := r.User.PubKey.GetContext()
-	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, n2)
+	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, r.credentialIssueNonce)
 	if AProof.Challenge.Cmp(c) != 0 {
 		return false, fmt.Errorf("challenge is not correct")
 	}
 
-	credentialVerifier.SetChallenge(AProof.Challenge)
-	return credentialVerifier.Verify(AProof.ProofData), nil
+	ver.SetChallenge(AProof.Challenge)
+	return ver.Verify(AProof.ProofData), nil
 }
