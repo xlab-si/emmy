@@ -36,6 +36,10 @@ service PseudonymSystem {
 	rpc TransferCredential_EC (stream Message) returns (stream Message) {}
 }
 
+service CL {
+	rpc GetCredentialIssueNonce (stream Message) returns (stream Message) {}
+}
+
 service Info {
 	rpc GetServiceInfo(google.protobuf.Empty) returns (ServiceInfo) {}
 }
