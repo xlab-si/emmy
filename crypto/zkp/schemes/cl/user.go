@@ -59,18 +59,17 @@ func checkAttributesLength(attributes []*big.Int, params *Params) bool {
 	return true
 }
 
-func NewUser(clParams *Params, clPubKey *PubKey, pedersenParams *commitments.PedersenParams,
-	knownAttrs, committedAttrs, hiddenAttrs []*big.Int) (*User, error) {
-	if !checkAttributesLength(knownAttrs, clParams) || !checkAttributesLength(committedAttrs, clParams) ||
-		!checkAttributesLength(hiddenAttrs, clParams) {
+func NewUser(params *Params, pubKey *PubKey, knownAttrs, committedAttrs, hiddenAttrs []*big.Int) (*User, error) {
+	if !checkAttributesLength(knownAttrs, params) || !checkAttributesLength(committedAttrs, params) ||
+		!checkAttributesLength(hiddenAttrs, params) {
 		return nil, fmt.Errorf("attributes length not ok")
 	}
 
 	attrsCommitters := make([]*commitments.DamgardFujisakiCommitter, len(committedAttrs))
 	commitmentsOfAttrs := make([]*big.Int, len(committedAttrs))
 	for i, attr := range committedAttrs {
-		committer := commitments.NewDamgardFujisakiCommitter(clPubKey.N1, clPubKey.G, clPubKey.H,
-			clPubKey.N1, clParams.SecParam)
+		committer := commitments.NewDamgardFujisakiCommitter(pubKey.N1, pubKey.G, pubKey.H,
+			pubKey.N1, params.SecParam)
 		com, err := committer.GetCommitMsg(attr)
 		if err != nil {
 			return nil, fmt.Errorf("error when creating Pedersen commitment: %s", err)
@@ -81,15 +80,15 @@ func NewUser(clParams *Params, clPubKey *PubKey, pedersenParams *commitments.Ped
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	return &User{
-		Params:             clParams,
-		PubKey:             clPubKey,
-		PedersenParams:     pedersenParams,
+		Params:             params,
+		PubKey:             pubKey,
+		PedersenParams:     pubKey.PedersenParams,
 		knownAttrs:         knownAttrs,
 		committedAttrs:     committedAttrs,
 		hiddenAttrs:        hiddenAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
 		attrsCommitters:    attrsCommitters,
-		masterSecret:       common.GetRandomInt(pedersenParams.Group.Q),
+		masterSecret:       common.GetRandomInt(pubKey.PedersenParams.Group.Q),
 	}, nil
 }
 

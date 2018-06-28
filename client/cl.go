@@ -18,16 +18,16 @@
 package client
 
 import (
-	"math/big"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
+	"math/big"
 	/*
-	"fmt"
+		"fmt"
 
-	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
+		"github.com/xlab-si/emmy/crypto/common"
+		"github.com/xlab-si/emmy/crypto/groups"
+		"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+		"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	*/
 	"fmt"
 )
@@ -52,23 +52,15 @@ func (c *CLClient) GetCredentialIssueNonce() (*big.Int, error) {
 
 	initMsg := &pb.Message{
 		ClientId: c.id,
-		Content: &pb.Message_Bigint{
-			&pb.BigInt{
-				X1: big.NewInt(2).Bytes(),
-			},
-		},
 	}
 
 	resp, err := c.getResponseTo(initMsg)
-	fmt.Println("__-----------------------------__________________________--------------")
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("------------------")
-	fmt.Println(resp)
+	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
+	fmt.Println(nonce)
 
-	return nil, nil
+	return nonce, nil
 }
-
-

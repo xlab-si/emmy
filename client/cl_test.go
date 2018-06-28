@@ -18,23 +18,22 @@
 package client
 
 import (
+	"math/big"
 	"testing"
-	//"math/big"
 	/*
-	"time"
+		"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/server"
+		"github.com/stretchr/testify/assert"
+		"github.com/xlab-si/emmy/config"
+		"github.com/xlab-si/emmy/server"
 	*/
-	//"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 	"fmt"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
 // TestCL requires a running server.
 func TestCL(t *testing.T) {
 
-	/*
 	clParamSizes := cl.GetDefaultParamSizes()
 
 	orgName := "organization 1"
@@ -43,11 +42,13 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
+	//secKey := new(cl.SecKey)
+	//cl.ReadGob("testdata/clSecKey.gob", secKey)
+
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	user, err := cl.NewUser(clParamSizes, org.PubKey, org.PedersenReceiver.Params, knownAttrs, committedAttrs,
-		hiddenAttrs)
+	user, err := cl.NewUser(clParamSizes, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
@@ -56,21 +57,21 @@ func TestCL(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when generating nym: %v", err)
 	}
-	*/
 
 	clClient, err := NewCLClient(testGrpcClientConn)
 	if err != nil {
 		t.Errorf("Error when initializing NewCLClient")
 	}
 
-	bla, err := clClient.GetCredentialIssueNonce()
+	credIssueNonceOrg, err := clClient.GetCredentialIssueNonce()
+
+	credentialRequest, err := user.GetCredentialRequest(nym, credIssueNonceOrg)
+	if err != nil {
+		t.Errorf("error when generating credential request: %v", err)
+	}
 
 	fmt.Println("++++++++++++++++++")
-	fmt.Println(err)
+	fmt.Println(nym)
+	fmt.Println(credentialRequest)
 
-	fmt.Println("??")
-	fmt.Println(bla)
-
-	fmt.Println(clClient)
 }
-

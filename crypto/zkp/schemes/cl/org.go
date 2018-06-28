@@ -18,8 +18,10 @@
 package cl
 
 import (
+	"encoding/gob"
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
@@ -28,30 +30,68 @@ import (
 )
 
 type PubKey struct {
-	N           *big.Int
-	S           *big.Int
-	Z           *big.Int
-	RsKnown     []*big.Int // one R corresponds to one attribute - these attributes are known to both - receiver and issuer
-	RsCommitted []*big.Int // issuer knows only commitments of these attributes
-	RsHidden    []*big.Int // only receiver knows these attributes
+	N              *big.Int
+	S              *big.Int
+	Z              *big.Int
+	RsKnown        []*big.Int // one R corresponds to one attribute - these attributes are known to both - receiver and issuer
+	RsCommitted    []*big.Int // issuer knows only commitments of these attributes
+	RsHidden       []*big.Int // only receiver knows these attributes
+	PedersenParams *commitments.PedersenParams
 	// the fields below are for commitments of the (committed) attributes
 	N1 *big.Int
 	G  *big.Int
 	H  *big.Int
 }
 
-func NewPubKey(N *big.Int, S, Z *big.Int, RsKnown, RsCommitted, RsHidden []*big.Int, N1, G, H *big.Int) *PubKey {
+func NewPubKey(N *big.Int, S, Z *big.Int, RsKnown, RsCommitted, RsHidden []*big.Int, N1, G, H *big.Int,
+	pedersenParams *commitments.PedersenParams) *PubKey {
 	return &PubKey{
-		N:           N,
-		S:           S,
-		Z:           Z,
-		RsKnown:     RsKnown,
-		RsCommitted: RsCommitted,
-		RsHidden:    RsHidden,
-		N1:          N1,
-		G:           G,
-		H:           H,
+		N:              N,
+		S:              S,
+		Z:              Z,
+		RsKnown:        RsKnown,
+		RsCommitted:    RsCommitted,
+		RsHidden:       RsHidden,
+		PedersenParams: pedersenParams,
+		N1:             N1,
+		G:              G,
+		H:              H,
 	}
+}
+
+type SecKey struct {
+	RsaPrimes                  *common.SpecialRSAPrimes
+	AttributesSpecialRSAPrimes *common.SpecialRSAPrimes
+}
+
+func NewSecKey(rsaPrimes, attributesSpecialRSAPrimes *common.SpecialRSAPrimes) *SecKey {
+	return &SecKey{
+		RsaPrimes:                  rsaPrimes,
+		AttributesSpecialRSAPrimes: attributesSpecialRSAPrimes,
+	}
+}
+
+// TODO: where should we put WriteGob and ReadGob?
+func WriteGob(filePath string, object interface{}) error {
+	file, err := os.Create(filePath)
+	if err == nil {
+		encoder := gob.NewEncoder(file)
+		encoder.Encode(object)
+	}
+	file.Close()
+
+	return err
+}
+
+func ReadGob(filePath string, object interface{}) error {
+	file, err := os.Open(filePath)
+	if err == nil {
+		decoder := gob.NewDecoder(file)
+		err = decoder.Decode(object)
+	}
+	file.Close()
+
+	return err
 }
 
 // GetContext concatenates public parameters and returns a corresponding number.
@@ -66,60 +106,59 @@ func (k *PubKey) GetContext() *big.Int {
 
 type Org struct {
 	Params                     *Params
-	Group                      *groups.QRSpecialRSA
-	PedersenReceiver           *commitments.PedersenReceiver
+	Group                      *groups.QRSpecialRSA          // in this group attributes will be used as exponents (basis is PubKey.Rs...)
+	PedersenReceiver           *commitments.PedersenReceiver // used for nyms (nym is Pedersen commitment)
 	PubKey                     *PubKey
-	attributesSpecialRSAPrimes *common.SpecialRSAPrimes
+	SecKey                     *SecKey
 	credentialIssuer           *OrgCredentialIssuer
 	credentialIssueNonceOrg    *big.Int
 	proveCredentialNonceOrg    *big.Int
 	receiverRecords            map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
 }
 
-func NewOrg(name string, clParamSizes *Params) (*Org, error) {
-	group, err := groups.NewQRSpecialRSA(clParamSizes.NLength / 2)
+func NewOrg(name string, params *Params) (*Org, error) {
+	group, err := groups.NewQRSpecialRSA(params.NLength / 2)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
-	S, Z, RsKnown, RsCommitted, RsHidden, err := generateQuadraticResidues(group, clParamSizes.KnownAttrsNum,
-		clParamSizes.CommittedAttrsNum, clParamSizes.HiddenAttrsNum)
+	S, Z, RsKnown, RsCommitted, RsHidden, err := generateQuadraticResidues(group, params.KnownAttrsNum,
+		params.CommittedAttrsNum, params.HiddenAttrsNum)
 
 	// for commitments of (committed) attributes:
-	commitmentReceiver, err := commitments.NewDamgardFujisakiReceiver(clParamSizes.NLength/2, clParamSizes.SecParam)
+	commitmentReceiver, err := commitments.NewDamgardFujisakiReceiver(params.NLength/2, params.SecParam)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating DF commitment receiver: %s", err)
 	}
 
-	pubKey := NewPubKey(group.N, S, Z, RsKnown, RsCommitted, RsHidden, commitmentReceiver.QRSpecialRSA.N,
-		commitmentReceiver.G, commitmentReceiver.H)
-	if err != nil {
-		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
-	}
-
-	pedersenParams, err := commitments.GeneratePedersenParams(clParamSizes.RhoBitLen)
+	pedersenParams, err := commitments.GeneratePedersenParams(params.RhoBitLen)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Pedersen receiver: %s", err)
 	}
 
-	return NewOrgFromParams(name, clParamSizes, group.GetSpecialRSAPrimes(), pubKey, pedersenParams,
-		commitmentReceiver.QRSpecialRSA.GetSpecialRSAPrimes(), commitmentReceiver.G, commitmentReceiver.H)
+	pubKey := NewPubKey(group.N, S, Z, RsKnown, RsCommitted, RsHidden, commitmentReceiver.QRSpecialRSA.N,
+		commitmentReceiver.G, commitmentReceiver.H, pedersenParams)
+	if err != nil {
+		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
+	}
+
+	secKey := NewSecKey(group.GetSpecialRSAPrimes(), commitmentReceiver.QRSpecialRSA.GetSpecialRSAPrimes())
+
+	return NewOrgFromParams(name, params, pubKey, secKey)
 }
 
-func NewOrgFromParams(name string, clParamSizes *Params, primes *common.SpecialRSAPrimes,
-	pubKey *PubKey, pedersenParams *commitments.PedersenParams,
-	attributesSpecialRSAPrimes *common.SpecialRSAPrimes, G, H *big.Int) (*Org, error) {
-	group, err := groups.NewQRSpecialRSAFromParams(primes)
+func NewOrgFromParams(name string, params *Params, pubKey *PubKey, secKey *SecKey) (*Org, error) {
+	group, err := groups.NewQRSpecialRSAFromParams(secKey.RsaPrimes)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
 	return &Org{
-		Params:                     clParamSizes,
-		Group:                      group,
+		Params:                     params,
 		PubKey:                     pubKey,
-		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pedersenParams),
-		attributesSpecialRSAPrimes: attributesSpecialRSAPrimes,
+		SecKey:                     secKey,
+		Group:                      group,
+		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams),
 		receiverRecords:            make(map[*big.Int]*ReceiverRecord), // TODO: will be replaced with DB
 	}, nil
 }

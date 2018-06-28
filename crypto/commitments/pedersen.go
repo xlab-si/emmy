@@ -46,7 +46,7 @@ type PedersenParams struct {
 func NewPedersenParams(group *groups.SchnorrGroup, H, a *big.Int) *PedersenParams {
 	return &PedersenParams{
 		Group: group,
-		H:     H, // H = g^a
+		H:     H, // H = group.G^a
 		a:     a,
 	}
 }

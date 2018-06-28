@@ -18,30 +18,37 @@
 package server
 
 import (
-	"math/big"
+	//"math/big"
 
 	pb "github.com/xlab-si/emmy/proto"
 	/*
-	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+		"github.com/xlab-si/emmy/config"
+		"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+		"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
+		"google.golang.org/grpc/codes"
+		"google.golang.org/grpc/status"
 	*/
 	"fmt"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
 func (s *Server) GetCredentialIssueNonce(stream pb.CL_GetCredentialIssueNonceServer) error {
-	req, err := s.receive(stream)
+	/*
+		req, err := s.receive(stream)
+		if err != nil {
+			return err
+		}
+	*/
+
+	clParamSizes := cl.GetDefaultParamSizes()
+
+	orgName := "organization 1"
+	org, err := cl.NewOrg(orgName, clParamSizes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error when generating CL org: %v", err)
 	}
 
-	tra := req.GetBigint()
-	fmt.Println("---------")
-	fmt.Println(tra)
-
-	nonce := big.NewInt(3) // TODO
+	nonce := org.GetCredentialIssueNonce()
 
 	resp := &pb.Message{
 		Content: &pb.Message_Bigint{
@@ -51,13 +58,9 @@ func (s *Server) GetCredentialIssueNonce(stream pb.CL_GetCredentialIssueNonceSer
 		},
 	}
 
-	fmt.Println("?????????????????????????????????????????")
-
 	if err := s.send(resp, stream); err != nil {
 		return err
 	}
 
 	return nil
 }
-
-
