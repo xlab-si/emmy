@@ -26,6 +26,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
+	"fmt"
 )
 
 type OrgCredentialIssuer struct {
@@ -170,7 +171,7 @@ func (i *OrgCredentialIssuer) chooseCredentialRandoms() (*big.Int, *big.Int) {
 }
 
 func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*Credential,
-	*qrspecialrsaproofs.RepresentationProof) {
+	*qrspecialrsaproofs.RepresentationProof, error) {
 	e, v11 := i.chooseCredentialRandoms()
 
 	// denom = U * S^v11 * R_1^attr_1 * ... * R_j^attr_j where only attributes from knownAttrs and committedAttrs
@@ -200,7 +201,13 @@ func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*Credential,
 	receiverRecord := NewReceiverRecord(i.knownAttrs, Q, v11, context)
 	i.Org.receiverRecords[i.nym] = receiverRecord
 
-	return NewCredential(A, e, v11), AProof
+	err := i.Org.dbManager.Set(i.nym.String(), receiverRecord, 0).Err()
+	if err != nil {
+		return nil, nil, err
+	}
+
+
+	return NewCredential(A, e, v11), AProof, nil
 }
 
 func (i *OrgCredentialIssuer) getAProof(nonceUser, context, eInv, Q, A *big.Int) *qrspecialrsaproofs.RepresentationProof {
@@ -215,9 +222,23 @@ func (i *OrgCredentialIssuer) getAProof(nonceUser, context, eInv, Q, A *big.Int)
 	return qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData)
 }
 
-func (i *OrgCredentialIssuer) UpdateCredential(nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
-	*qrspecialrsaproofs.RepresentationProof) {
-	receiverRecord := i.Org.receiverRecords[i.nym]
+func (i *OrgCredentialIssuer) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof, error) {
+	//receiverRecord := i.Org.receiverRecords[nym]
+
+	fmt.Println("-------------------------")
+	fmt.Print(i.Org)
+
+	data, err := i.Org.dbManager.Get(nym.String()).Result()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var receiverRecord *ReceiverRecord
+	if err := receiverRecord.UnmarshalBinary([]byte(data)); err != nil {
+		return nil, nil, err
+	}
+
 	e, v11 := i.chooseCredentialRandoms()
 	v11Diff := new(big.Int).Sub(v11, receiverRecord.V11)
 
@@ -241,5 +262,5 @@ func (i *OrgCredentialIssuer) UpdateCredential(nonceUser *big.Int, newKnownAttrs
 	receiverRecord = NewReceiverRecord(newKnownAttrs, newQ, v11, context)
 	i.Org.receiverRecords[i.nym] = receiverRecord
 
-	return NewCredential(newA, e, v11), AProof
+	return NewCredential(newA, e, v11), AProof, nil
 }

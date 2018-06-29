@@ -170,15 +170,18 @@ type CredentialRequest struct {
 	U                        *big.Int
 	UProof                   *qrspecialrsaproofs.RepresentationProof
 	CommitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof
+	Nonce                    *big.Int
 }
 
 func NewCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
-	UProof *qrspecialrsaproofs.RepresentationProof, commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof) *CredentialRequest {
+	UProof *qrspecialrsaproofs.RepresentationProof, commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof,
+	nonce *big.Int) *CredentialRequest {
 	return &CredentialRequest{
 		NymProof: nymProof,
 		U:        U,
 		UProof:   UProof,
 		CommitmentsOfAttrsProofs: commitmentsOfAttrsProofs,
+		Nonce: nonce,
 	}
 }
 
@@ -202,9 +205,13 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nym *big.Int, nonceOrg *bi
 
 	commitmentsOfAttrsProofs := r.getCommitmentsOfAttrsProof(challenge)
 
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.SecParam)), nil)
+	nonce := common.GetRandomInt(b)
+	r.credentialIssueNonce = nonce
+
 	return NewCredentialRequest(dlogproofs.NewSchnorrProof(nymProofRandomData, challenge, nymProofData),
 		r.U, qrspecialrsaproofs.NewRepresentationProof(UProofRandomData, challenge, UProofData),
-		commitmentsOfAttrsProofs), nil
+		commitmentsOfAttrsProofs, nonce), nil
 }
 
 func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,

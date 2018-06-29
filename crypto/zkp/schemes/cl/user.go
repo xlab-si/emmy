@@ -116,14 +116,6 @@ func (u *User) GetCredentialRequest(nym *big.Int, nonceOrg *big.Int) (*Credentia
 	return credReq, nil
 }
 
-func (u *User) GetCredentialIssueNonce() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.SecParam)), nil)
-	nonce := common.GetRandomInt(b)
-	u.credentialReceiver.credentialIssueNonce = nonce
-
-	return nonce
-}
-
 func (u *User) VerifyCredential(cred *Credential,
 	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
 	return u.credentialReceiver.VerifyCredential(cred, AProof)

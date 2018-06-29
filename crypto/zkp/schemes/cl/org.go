@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"encoding/json"
 
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
@@ -105,15 +107,16 @@ func (k *PubKey) GetContext() *big.Int {
 }
 
 type Org struct {
-	Params                     *Params
-	Group                      *groups.QRSpecialRSA          // in this group attributes will be used as exponents (basis is PubKey.Rs...)
-	PedersenReceiver           *commitments.PedersenReceiver // used for nyms (nym is Pedersen commitment)
-	PubKey                     *PubKey
-	SecKey                     *SecKey
-	credentialIssuer           *OrgCredentialIssuer
-	credentialIssueNonceOrg    *big.Int
-	proveCredentialNonceOrg    *big.Int
-	receiverRecords            map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
+	Params                  *Params
+	Group                   *groups.QRSpecialRSA          // in this group attributes will be used as exponents (basis is PubKey.Rs...)
+	PedersenReceiver        *commitments.PedersenReceiver // used for nyms (nym is Pedersen commitment)
+	PubKey                  *PubKey
+	SecKey                  *SecKey
+	credentialIssuer        *OrgCredentialIssuer
+	credentialIssueNonceOrg *big.Int
+	proveCredentialNonceOrg *big.Int
+	receiverRecords         map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
+	dbManager               *DBManager
 }
 
 func NewOrg(name string, params *Params) (*Org, error) {
@@ -153,13 +156,19 @@ func NewOrgFromParams(name string, params *Params, pubKey *PubKey, secKey *SecKe
 		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
 	}
 
+	dbManager, err := NewDBManager(config.LoadRegistrationDBAddress())
+	if err != nil {
+		return nil, err
+	}
+
 	return &Org{
-		Params:                     params,
-		PubKey:                     pubKey,
-		SecKey:                     secKey,
-		Group:                      group,
-		PedersenReceiver:           commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams),
-		receiverRecords:            make(map[*big.Int]*ReceiverRecord), // TODO: will be replaced with DB
+		Params:           params,
+		PubKey:           pubKey,
+		SecKey:           secKey,
+		Group:            group,
+		PedersenReceiver: commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams),
+		receiverRecords:  make(map[*big.Int]*ReceiverRecord), // TODO: will be replaced with DB
+		dbManager: dbManager,
 	}, nil
 }
 
@@ -188,14 +197,28 @@ func (o *Org) VerifyCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAtt
 	return o.credentialIssuer.VerifyCredentialRequest(cr), nil
 }
 
-func (o *Org) IssueCredential(nonceUser *big.Int) (*Credential,
-	*qrspecialrsaproofs.RepresentationProof) {
-	return o.credentialIssuer.IssueCredential(nonceUser)
+func (o *Org) IssueCredential(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int,
+	credReq *CredentialRequest) (*Credential, *qrspecialrsaproofs.RepresentationProof, error) {
+
+	verified, err := o.VerifyCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, credReq)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error when verifying credential request: %v", err)
+	}
+	if !verified {
+		return nil, nil, fmt.Errorf("credential request not valid")
+	}
+
+	cred, credProof, err := o.credentialIssuer.IssueCredential(credReq.Nonce)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error when issuing credential: %v", err)
+	}
+
+	return cred, credProof, nil
 }
 
-func (o *Org) UpdateCredential(nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
-	*qrspecialrsaproofs.RepresentationProof) {
-	return o.credentialIssuer.UpdateCredential(nonceUser, newKnownAttrs)
+func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
+	*qrspecialrsaproofs.RepresentationProof, error) {
+	return o.credentialIssuer.UpdateCredential(nym, nonceUser, newKnownAttrs)
 }
 
 func (o *Org) GetProveCredentialNonce() *big.Int {
@@ -254,6 +277,19 @@ func NewReceiverRecord(knownAttrs []*big.Int, Q, v11, context *big.Int) *Receive
 		V11:        v11,
 		Context:    context,
 	}
+}
+
+
+func (r *ReceiverRecord) MarshalBinary() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+func (r *ReceiverRecord) UnmarshalBinary(data []byte) error {
+	if err := json.Unmarshal(data, &r); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type Credential struct {

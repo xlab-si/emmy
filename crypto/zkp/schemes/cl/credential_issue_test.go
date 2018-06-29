@@ -25,10 +25,10 @@ import (
 )
 
 func TestCL(t *testing.T) {
-	clParamSizes := GetDefaultParamSizes()
+	params := GetDefaultParamSizes()
 
 	orgName := "organization 1"
-	org, err := NewOrg(orgName, clParamSizes)
+	org, err := NewOrg(orgName, params)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestCL(t *testing.T) {
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	user, err := NewUser(clParamSizes, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
+	user, err := NewUser(params, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
@@ -53,30 +53,30 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
-	// user needs to send to the issuer:
-	// (nonceUser, challenge, nymProofRandomData, nymProofData, UProofRandomData, UProofData, commitmentsOfAttrs,
-	// commitmentsOfAttrsProofs)
-
-	verified, err := org.VerifyCredentialRequest(nym, user.knownAttrs, user.commitmentsOfAttrs, credentialRequest)
+	credential, AProof, err := org.IssueCredential(nym, user.knownAttrs, user.commitmentsOfAttrs, credentialRequest)
 	if err != nil {
-		t.Errorf("error when verifying credential request: %v", err)
+		t.Errorf("error when issuing credential: %v", err)
 	}
-	assert.Equal(t, true, verified, "credential request sent to the credential issuer not correct")
-
-	credIssueNonceUser := user.GetCredentialIssueNonce()
-	credential, AProof := org.IssueCredential(credIssueNonceUser)
 
 	userVerified, err := user.VerifyCredential(credential, AProof)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
+	assert.Equal(t, true, userVerified, "credential proof not valid")
 
-	assert.Equal(t, true, userVerified, "credential issuance failed")
+	// Before updating a credential, create a new Org object (obtaining and updating
+	// credential usually don't happen at the same time)
+	org, err = NewOrgFromParams(orgName, params, org.PubKey, org.SecKey)
+	if err != nil {
+		t.Errorf("error when generating CL org: %v", err)
+	}
 
-	updateCredentialNonce := user.GetCredentialIssueNonce()
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	user.UpdateCredential(newKnownAttrs)
-	credential1, AProof1 := org.UpdateCredential(updateCredentialNonce, newKnownAttrs)
+	credential1, AProof1, err := org.UpdateCredential(nym, credentialRequest.Nonce, newKnownAttrs)
+	if err != nil {
+		t.Errorf("error when updating credential: %v", err)
+	}
 
 	userVerified, err = user.VerifyCredential(credential1, AProof1)
 	if err != nil {

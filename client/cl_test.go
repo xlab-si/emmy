@@ -36,19 +36,13 @@ func TestCL(t *testing.T) {
 
 	clParamSizes := cl.GetDefaultParamSizes()
 
-	orgName := "organization 1"
-	org, err := cl.NewOrg(orgName, clParamSizes)
-	if err != nil {
-		t.Errorf("error when generating CL org: %v", err)
-	}
-
-	//secKey := new(cl.SecKey)
-	//cl.ReadGob("testdata/clSecKey.gob", secKey)
+	pubKey := new(cl.PubKey)
+	cl.ReadGob("testdata/clPubKey.gob", pubKey)
 
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	user, err := cl.NewUser(clParamSizes, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
+	user, err := cl.NewUser(clParamSizes, pubKey, knownAttrs, committedAttrs, hiddenAttrs)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
