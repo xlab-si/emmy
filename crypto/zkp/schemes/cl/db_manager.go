@@ -19,6 +19,7 @@ package cl
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/go-redis/redis"
 )
@@ -36,4 +37,19 @@ func NewDBManager(address string) (*DBManager, error) {
 		return nil, fmt.Errorf("unable to connect to redis database (%s)", err)
 	}
 	return &DBManager{redisClient}, nil
+}
+
+func (m *DBManager) SetReceiverRecord(nym *big.Int, r *ReceiverRecord) error {
+	return m.Set(nym.String(), r, 0).Err()
+}
+
+func (m *DBManager) GetReceiverRecord(nym *big.Int) (*ReceiverRecord, error) {
+	r, err := m.Get(nym.String()).Result()
+	if err != nil {
+		return nil, err
+	}
+	var rec ReceiverRecord
+	rec.UnmarshalBinary([]byte(r))
+
+	return &rec, nil
 }

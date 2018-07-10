@@ -26,7 +26,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
-	"fmt"
 )
 
 type OrgCredentialIssuer struct {
@@ -40,8 +39,7 @@ type OrgCredentialIssuer struct {
 	commitmentsOfAttrs []*big.Int
 	attrsReceivers     []*commitments.DamgardFujisakiReceiver
 	attrsVerifiers     []*commitmentzkp.DFCommitmentOpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
-	// certificate data: TODO: make it a struct
-	credentialProver *qrspecialrsaproofs.RepresentationProver
+	credentialProver   *qrspecialrsaproofs.RepresentationProver
 }
 
 func NewOrgCredentialIssuer(org *Org, nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int) (*OrgCredentialIssuer,
@@ -198,14 +196,13 @@ func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*Credential,
 
 	context := i.Org.PubKey.GetContext()
 	AProof := i.getAProof(nonceUser, context, eInv, Q, A)
-	receiverRecord := NewReceiverRecord(i.knownAttrs, Q, v11, context)
+	receiverRecord := NewReceiverRecord(i.knownAttrs, i.commitmentsOfAttrs, Q, v11, context)
 	i.Org.receiverRecords[i.nym] = receiverRecord
 
-	err := i.Org.dbManager.Set(i.nym.String(), receiverRecord, 0).Err()
+	err := i.Org.dbManager.SetReceiverRecord(i.nym, receiverRecord)
 	if err != nil {
 		return nil, nil, err
 	}
-
 
 	return NewCredential(A, e, v11), AProof, nil
 }
@@ -224,23 +221,14 @@ func (i *OrgCredentialIssuer) getAProof(nonceUser, context, eInv, Q, A *big.Int)
 
 func (i *OrgCredentialIssuer) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
 	*qrspecialrsaproofs.RepresentationProof, error) {
-	//receiverRecord := i.Org.receiverRecords[nym]
 
-	fmt.Println("-------------------------")
-	fmt.Print(i.Org)
-
-	data, err := i.Org.dbManager.Get(nym.String()).Result()
+	rec, err := i.Org.dbManager.GetReceiverRecord(nym)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var receiverRecord *ReceiverRecord
-	if err := receiverRecord.UnmarshalBinary([]byte(data)); err != nil {
-		return nil, nil, err
-	}
-
 	e, v11 := i.chooseCredentialRandoms()
-	v11Diff := new(big.Int).Sub(v11, receiverRecord.V11)
+	v11Diff := new(big.Int).Sub(v11, rec.V11)
 
 	acc := big.NewInt(1)
 	for ind := 0; ind < len(i.knownAttrs); ind++ {
@@ -251,7 +239,7 @@ func (i *OrgCredentialIssuer) UpdateCredential(nym, nonceUser *big.Int, newKnown
 	t := i.Org.Group.Exp(i.Org.PubKey.S, v11Diff)
 	denom := i.Org.Group.Mul(acc, t)
 	denomInv := i.Org.Group.Inv(denom)
-	newQ := i.Org.Group.Mul(receiverRecord.Q, denomInv)
+	newQ := i.Org.Group.Mul(rec.Q, denomInv)
 
 	phiN := new(big.Int).Mul(i.Org.Group.P1, i.Org.Group.Q1)
 	eInv := new(big.Int).ModInverse(e, phiN)
@@ -259,8 +247,9 @@ func (i *OrgCredentialIssuer) UpdateCredential(nym, nonceUser *big.Int, newKnown
 
 	context := i.Org.PubKey.GetContext()
 	AProof := i.getAProof(nonceUser, context, eInv, newQ, newA)
-	receiverRecord = NewReceiverRecord(newKnownAttrs, newQ, v11, context)
-	i.Org.receiverRecords[i.nym] = receiverRecord
+	// currently commitmentsOfAttrs cannot be updated
+	rec = NewReceiverRecord(newKnownAttrs, rec.CommitmentsOfAttrs, newQ, v11, context)
+	i.Org.receiverRecords[i.nym] = rec
 
 	return NewCredential(newA, e, v11), AProof, nil
 }

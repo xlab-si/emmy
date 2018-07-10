@@ -19,10 +19,10 @@ package cl
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
-	"encoding/json"
 
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/commitments"
@@ -168,7 +168,7 @@ func NewOrgFromParams(name string, params *Params, pubKey *PubKey, secKey *SecKe
 		Group:            group,
 		PedersenReceiver: commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams),
 		receiverRecords:  make(map[*big.Int]*ReceiverRecord), // TODO: will be replaced with DB
-		dbManager: dbManager,
+		dbManager:        dbManager,
 	}, nil
 }
 
@@ -218,6 +218,21 @@ func (o *Org) IssueCredential(nym *big.Int, knownAttrs, commitmentsOfAttrs []*bi
 
 func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
 	*qrspecialrsaproofs.RepresentationProof, error) {
+
+	if o.credentialIssuer == nil { // for example when Org is instantiated and there is no call to IssueCredential
+		r, err := o.dbManager.GetReceiverRecord(nym)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		credentialIssuer, err := NewOrgCredentialIssuer(o, nym, newKnownAttrs, r.CommitmentsOfAttrs)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error when creating credential issuer: %v", err)
+		}
+		o.credentialIssuer = credentialIssuer
+
+	}
+
 	return o.credentialIssuer.UpdateCredential(nym, nonceUser, newKnownAttrs)
 }
 
@@ -263,22 +278,23 @@ func (o *Org) ProveCredential(A *big.Int, proof *qrspecialrsaproofs.Representati
 }
 
 type ReceiverRecord struct {
-	KnownAttrs []*big.Int
-	Q          *big.Int
-	V11        *big.Int
-	Context    *big.Int
+	KnownAttrs         []*big.Int
+	CommitmentsOfAttrs []*big.Int
+	Q                  *big.Int
+	V11                *big.Int
+	Context            *big.Int
 }
 
 // Returns ReceiverRecord which contains user data needed when updating the credential for this user.
-func NewReceiverRecord(knownAttrs []*big.Int, Q, v11, context *big.Int) *ReceiverRecord {
+func NewReceiverRecord(knownAttrs, commitmentsOfAttrs []*big.Int, Q, v11, context *big.Int) *ReceiverRecord {
 	return &ReceiverRecord{
-		KnownAttrs: knownAttrs,
-		Q:          Q,
-		V11:        v11,
-		Context:    context,
+		KnownAttrs:         knownAttrs,
+		CommitmentsOfAttrs: commitmentsOfAttrs,
+		Q:                  Q,
+		V11:                v11,
+		Context:            context,
 	}
 }
-
 
 func (r *ReceiverRecord) MarshalBinary() ([]byte, error) {
 	return json.Marshal(r)
