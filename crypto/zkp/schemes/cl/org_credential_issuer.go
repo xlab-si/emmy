@@ -233,7 +233,7 @@ func (i *OrgCredentialIssuer) UpdateCredential(nym, nonceUser *big.Int, newKnown
 	acc := big.NewInt(1)
 	for ind := 0; ind < len(i.knownAttrs); ind++ {
 		t1 := i.Org.Group.Exp(i.Org.PubKey.RsKnown[ind],
-			new(big.Int).Sub(newKnownAttrs[ind], i.knownAttrs[ind]))
+			new(big.Int).Sub(newKnownAttrs[ind], rec.KnownAttrs[ind]))
 		acc = i.Org.Group.Mul(acc, t1)
 	}
 	t := i.Org.Group.Exp(i.Org.PubKey.S, v11Diff)

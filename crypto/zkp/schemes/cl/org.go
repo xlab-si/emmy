@@ -230,7 +230,6 @@ func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int
 			return nil, nil, fmt.Errorf("error when creating credential issuer: %v", err)
 		}
 		o.credentialIssuer = credentialIssuer
-
 	}
 
 	return o.credentialIssuer.UpdateCredential(nym, nonceUser, newKnownAttrs)
