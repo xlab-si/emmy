@@ -36,29 +36,25 @@ func TestCL(t *testing.T) {
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	user, err := NewUser(params, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
+	credManager, err := NewCredentialManager(params, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
 
-	nym, err := user.GenerateNym()
-	if err != nil {
-		t.Errorf("error when generating nym: %v", err)
-	}
-
 	credIssueNonceOrg := org.GetCredentialIssueNonce()
 
-	credentialRequest, err := user.GetCredentialRequest(nym, credIssueNonceOrg)
+	credReq, err := credManager.GetCredentialRequest(credIssueNonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
-	credential, AProof, err := org.IssueCredential(nym, user.knownAttrs, user.commitmentsOfAttrs, credentialRequest)
+	credential, AProof, err := org.IssueCredential(credManager.nym, credManager.knownAttrs,
+		credManager.commitmentsOfAttrs, credReq)
 	if err != nil {
 		t.Errorf("error when issuing credential: %v", err)
 	}
 
-	userVerified, err := user.VerifyCredential(credential, AProof)
+	userVerified, err := credManager.VerifyCredential(credential, AProof)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
@@ -72,13 +68,13 @@ func TestCL(t *testing.T) {
 	}
 
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-	user.UpdateCredential(newKnownAttrs)
-	credential1, AProof1, err := org.UpdateCredential(nym, credentialRequest.Nonce, newKnownAttrs)
+	credManager.UpdateCredential(newKnownAttrs)
+	credential1, AProof1, err := org.UpdateCredential(credManager.nym, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
 
-	userVerified, err = user.VerifyCredential(credential1, AProof1)
+	userVerified, err = credManager.VerifyCredential(credential1, AProof1)
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
@@ -89,7 +85,7 @@ func TestCL(t *testing.T) {
 	// credential usually don't happen at the same time) - this means passing attributes and v1 into NewUser
 
 	nonce := org.GetProveCredentialNonce()
-	randCred, proof, err := user.BuildCredentialProof(credential1, nonce)
+	randCred, proof, err := credManager.BuildCredentialProof(credential1, nonce)
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)
 	}

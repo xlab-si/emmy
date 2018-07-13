@@ -29,9 +29,9 @@ import (
 )
 
 type UserCredentialReceiver struct {
-	User      *User
-	U         *big.Int
-	nymProver *dlogproofs.SchnorrProver // for proving that nym is of the proper form
+	CredentialManager         *CredentialManager
+	U                         *big.Int
+	nymProver                 *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde
 	UProver                   *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
 	nymTilde                  *big.Int                                 // proof random data for nym (proving that nym is of proper form)
@@ -40,7 +40,7 @@ type UserCredentialReceiver struct {
 	credentialIssueNonce      *big.Int
 }
 
-func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
+func NewUserCredentialReceiver(user *CredentialManager) *UserCredentialReceiver {
 	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(user.commitmentsOfAttrs))
 	for i, _ := range user.commitmentsOfAttrs {
 		prover := commitmentzkp.NewDFCommitmentOpeningProver(user.attrsCommitters[i],
@@ -49,7 +49,7 @@ func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
 	}
 
 	return &UserCredentialReceiver{
-		User: user,
+		CredentialManager: user,
 		commitmentsOfAttrsProvers: commitmentsOfAttrsProvers,
 	}
 }
@@ -57,16 +57,16 @@ func NewUserCredentialReceiver(user *User) *UserCredentialReceiver {
 // setU sets r.U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where only hiddenAttrs are used and
 // where v1 is from +-{0,1}^(NLength + SecParam)
 func (r *UserCredentialReceiver) setU() *big.Int {
-	exp := big.NewInt(int64(r.User.Params.NLength + r.User.Params.SecParam))
+	exp := big.NewInt(int64(r.CredentialManager.Params.NLength + r.CredentialManager.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
-	r.User.v1 = v1
+	r.CredentialManager.v1 = v1
 
-	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
-	U := group.Exp(r.User.PubKey.S, v1)
+	group := groups.NewQRSpecialRSAPublic(r.CredentialManager.PubKey.N)
+	U := group.Exp(r.CredentialManager.PubKey.S, v1)
 
-	for i, attr := range r.User.hiddenAttrs {
-		t := group.Exp(r.User.PubKey.RsHidden[i], attr) // R_i^m_i
+	for i, attr := range r.CredentialManager.hiddenAttrs {
+		t := group.Exp(r.CredentialManager.PubKey.RsHidden[i], attr) // R_i^m_i
 		U = group.Mul(U, t)
 	}
 	r.U = U
@@ -78,14 +78,14 @@ func (r *UserCredentialReceiver) setU() *big.Int {
 func (rcv *UserCredentialReceiver) getNymProofRandomData() (*big.Int, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{
-		rcv.User.PedersenParams.Group.G,
-		rcv.User.PedersenParams.H,
+		rcv.CredentialManager.PubKey.PedersenParams.Group.G,
+		rcv.CredentialManager.PubKey.PedersenParams.H,
 	}
-	committer := rcv.User.nymCommitter
+	committer := rcv.CredentialManager.nymCommitter
 	val, r := committer.GetDecommitMsg() // val is actually master key
 	secrets := []*big.Int{val, r}
 
-	prover, err := dlogproofs.NewSchnorrProver(rcv.User.PedersenParams.Group, secrets[:], bases[:],
+	prover, err := dlogproofs.NewSchnorrProver(rcv.CredentialManager.PubKey.PedersenParams.Group, secrets[:], bases[:],
 		committer.Commitment)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Schnorr prover: %s", err)
@@ -97,24 +97,24 @@ func (rcv *UserCredentialReceiver) getNymProofRandomData() (*big.Int, error) {
 }
 
 func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
-	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
+	group := groups.NewQRSpecialRSAPublic(r.CredentialManager.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
-	secrets := append(r.User.hiddenAttrs, r.User.v1)
+	secrets := append(r.CredentialManager.hiddenAttrs, r.CredentialManager.v1)
 
 	// bases are [R_1, ..., R_L, S]
-	bases := append(r.User.PubKey.RsHidden, r.User.PubKey.S)
+	bases := append(r.CredentialManager.PubKey.RsHidden, r.CredentialManager.PubKey.S)
 
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, r.User.Params.SecParam,
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, r.CredentialManager.Params.SecParam,
 		secrets[:], bases[:], r.U)
 	r.UProver = prover
 
 	// boundary for m_tilde
-	b_m := r.User.Params.AttrBitLen + r.User.Params.SecParam + r.User.Params.HashBitLen + 1
+	b_m := r.CredentialManager.Params.AttrBitLen + r.CredentialManager.Params.SecParam + r.CredentialManager.Params.HashBitLen + 1
 	// boundary for v1
-	b_v1 := r.User.Params.NLength + 2*r.User.Params.SecParam + r.User.Params.HashBitLen
+	b_v1 := r.CredentialManager.Params.NLength + 2*r.CredentialManager.Params.SecParam + r.CredentialManager.Params.HashBitLen
 
-	boundaries := make([]int, len(r.User.PubKey.RsHidden))
-	for i := 0; i < len(r.User.PubKey.RsHidden); i++ {
+	boundaries := make([]int, len(r.CredentialManager.PubKey.RsHidden))
+	for i := 0; i < len(r.CredentialManager.PubKey.RsHidden); i++ {
 		boundaries[i] = b_m
 	}
 	boundaries = append(boundaries, b_v1)
@@ -129,9 +129,9 @@ func (r *UserCredentialReceiver) getUProofRandomData() (*big.Int, error) {
 
 // Fiat-Shamir is used to generate a challenge, instead of asking verifier to generate it.
 func (r *UserCredentialReceiver) GetChallenge(nym, nonceOrg *big.Int) *big.Int {
-	context := r.User.PubKey.GetContext()
+	context := r.CredentialManager.PubKey.GetContext()
 	l := []*big.Int{context, r.U, nym, nonceOrg}
-	l = append(l, r.User.commitmentsOfAttrs...) // TODO: add other values
+	l = append(l, r.CredentialManager.commitmentsOfAttrs...) // TODO: add other values
 
 	return common.Hash(l...)
 }
@@ -155,7 +155,7 @@ func (r *UserCredentialReceiver) getCredentialRequestProofData(challenge *big.In
 }
 
 func (r *UserCredentialReceiver) getCommitmentsOfAttrsProof(challenge *big.Int) []*commitmentzkp.DFOpeningProof {
-	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.User.attrsCommitters))
+	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.CredentialManager.attrsCommitters))
 	for i, prover := range r.commitmentsOfAttrsProvers {
 		proofRandomData := prover.GetProofRandomData()
 		proofData1, proofData2 := prover.GetProofData(challenge)
@@ -205,7 +205,7 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nym *big.Int, nonceOrg *bi
 
 	commitmentsOfAttrsProofs := r.getCommitmentsOfAttrsProof(challenge)
 
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.SecParam)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.CredentialManager.Params.SecParam)), nil)
 	nonce := common.GetRandomInt(b)
 	r.credentialIssueNonce = nonce
 
@@ -217,8 +217,8 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nym *big.Int, nonceOrg *bi
 func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
 	// check bit length of e:
-	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.EBitLen-1)), nil)
-	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.User.Params.E1BitLen-1)), nil)
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.CredentialManager.Params.EBitLen-1)), nil)
+	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.CredentialManager.Params.E1BitLen-1)), nil)
 	b2 := new(big.Int).Add(b1, b22)
 
 	if (cred.e.Cmp(b1) != 1) || (b2.Cmp(cred.e) != 1) {
@@ -229,37 +229,37 @@ func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
 		return false, fmt.Errorf("e is not prime")
 	}
 
-	v := new(big.Int).Add(r.User.v1, cred.v11)
-	group := groups.NewQRSpecialRSAPublic(r.User.PubKey.N)
+	v := new(big.Int).Add(r.CredentialManager.v1, cred.v11)
+	group := groups.NewQRSpecialRSAPublic(r.CredentialManager.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
-	denom := group.Exp(r.User.PubKey.S, v) // s^v
-	for i := 0; i < len(r.User.knownAttrs); i++ {
-		t1 := group.Exp(r.User.PubKey.RsKnown[i], r.User.knownAttrs[i])
+	denom := group.Exp(r.CredentialManager.PubKey.S, v) // s^v
+	for i := 0; i < len(r.CredentialManager.knownAttrs); i++ {
+		t1 := group.Exp(r.CredentialManager.PubKey.RsKnown[i], r.CredentialManager.knownAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
-	for i := 0; i < len(r.User.committedAttrs); i++ {
-		t1 := group.Exp(r.User.PubKey.RsCommitted[i], r.User.commitmentsOfAttrs[i])
+	for i := 0; i < len(r.CredentialManager.committedAttrs); i++ {
+		t1 := group.Exp(r.CredentialManager.PubKey.RsCommitted[i], r.CredentialManager.commitmentsOfAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
-	for i := 0; i < len(r.User.hiddenAttrs); i++ {
-		t1 := group.Exp(r.User.PubKey.RsHidden[i], r.User.hiddenAttrs[i])
+	for i := 0; i < len(r.CredentialManager.hiddenAttrs); i++ {
+		t1 := group.Exp(r.CredentialManager.PubKey.RsHidden[i], r.CredentialManager.hiddenAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
 	denomInv := group.Inv(denom)
-	Q := group.Mul(r.User.PubKey.Z, denomInv)
+	Q := group.Mul(r.CredentialManager.PubKey.Z, denomInv)
 	Q1 := group.Exp(cred.A, cred.e)
 	if Q1.Cmp(Q) != 0 {
 		return false, fmt.Errorf("Q should be A^e (mod n)")
 	}
 
 	// verify signature proof:
-	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, r.User.Params.SecParam)
+	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, r.CredentialManager.Params.SecParam)
 	ver.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
 	// check challenge
-	context := r.User.PubKey.GetContext()
+	context := r.CredentialManager.PubKey.GetContext()
 	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, r.credentialIssueNonce)
 	if AProof.Challenge.Cmp(c) != 0 {
 		return false, fmt.Errorf("challenge is not correct")

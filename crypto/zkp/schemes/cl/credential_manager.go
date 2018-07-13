@@ -20,8 +20,6 @@ package cl
 import (
 	"fmt"
 	"math/big"
-	"math/rand"
-	"time"
 
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
@@ -29,12 +27,11 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
-// User should be created when a credential is to be issued, updated or proved. If a new credential under
-// a new nym is needed, new User instance is needed.
-type User struct {
+// CredentialManager should be created by a user when a credential is to be issued, updated or proved.
+// If a new credential under a new nym is needed, new CredentialManager instance is needed.
+type CredentialManager struct {
 	Params             *Params
 	PubKey             *PubKey
-	PedersenParams     *commitments.PedersenParams // for pseudonyms - nym is a commitment to the master secret
 	credentialReceiver *UserCredentialReceiver
 	nymCommitter       *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
 	nym                *big.Int
@@ -59,7 +56,8 @@ func checkAttributesLength(attributes []*big.Int, params *Params) bool {
 	return true
 }
 
-func NewUser(params *Params, pubKey *PubKey, knownAttrs, committedAttrs, hiddenAttrs []*big.Int) (*User, error) {
+func NewCredentialManager(params *Params, pubKey *PubKey, knownAttrs, committedAttrs,
+	hiddenAttrs []*big.Int) (*CredentialManager, error) {
 	if !checkAttributesLength(knownAttrs, params) || !checkAttributesLength(committedAttrs, params) ||
 		!checkAttributesLength(hiddenAttrs, params) {
 		return nil, fmt.Errorf("attributes length not ok")
@@ -77,12 +75,32 @@ func NewUser(params *Params, pubKey *PubKey, knownAttrs, committedAttrs, hiddenA
 		commitmentsOfAttrs[i] = com
 		attrsCommitters[i] = committer
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
 
-	return &User{
+	credManager := CredentialManager{
 		Params:             params,
 		PubKey:             pubKey,
-		PedersenParams:     pubKey.PedersenParams,
+		knownAttrs:         knownAttrs,
+		committedAttrs:     committedAttrs,
+		hiddenAttrs:        hiddenAttrs,
+		commitmentsOfAttrs: commitmentsOfAttrs,
+		attrsCommitters:    attrsCommitters,
+		masterSecret:       common.GetRandomInt(pubKey.PedersenParams.Group.Q),
+	}
+	credManager.generateNym()
+
+	return &credManager, nil
+}
+
+
+func NewCredentialManagerFromExisting(params *Params, pubKey *PubKey, knownAttrs, committedAttrs,
+	hiddenAttrs []*big.Int) (*CredentialManager, error) {
+
+	// committer is needed only for IssueCredential (when proving that nym can be opened), so we do not need it here
+
+	/*
+	return &CredentialManager{
+		Params:             params,
+		PubKey:             pubKey,
 		knownAttrs:         knownAttrs,
 		committedAttrs:     committedAttrs,
 		hiddenAttrs:        hiddenAttrs,
@@ -90,25 +108,28 @@ func NewUser(params *Params, pubKey *PubKey, knownAttrs, committedAttrs, hiddenA
 		attrsCommitters:    attrsCommitters,
 		masterSecret:       common.GetRandomInt(pubKey.PedersenParams.Group.Q),
 	}, nil
+	*/
+
+	return nil, nil
 }
 
-// GenerateNym creates a pseudonym to be used with a given organization. Authentication can be done
-// with respect to the pseudonym or not (depends on the server configuration).
-func (u *User) GenerateNym() (*big.Int, error) {
-	committer := commitments.NewPedersenCommitter(u.PedersenParams)
-	nym, err := committer.GetCommitMsg(u.masterSecret)
+// generateNym creates a pseudonym to be used with a given organization. Authentication can be done
+// with respect to the pseudonym or not.
+func (m *CredentialManager) generateNym() error {
+	committer := commitments.NewPedersenCommitter(m.PubKey.PedersenParams)
+	nym, err := committer.GetCommitMsg(m.masterSecret)
 	if err != nil {
-		return nil, fmt.Errorf("error when creating Pedersen commitment: %s", err)
+		return fmt.Errorf("error when creating Pedersen commitment: %s", err)
 	}
-	u.nym = nym
-	u.nymCommitter = committer
+	m.nym = nym
+	m.nymCommitter = committer
 
-	return nym, nil
+	return nil
 }
 
-func (u *User) GetCredentialRequest(nym *big.Int, nonceOrg *big.Int) (*CredentialRequest, error) {
-	u.credentialReceiver = NewUserCredentialReceiver(u)
-	credReq, err := u.credentialReceiver.GetCredentialRequest(nym, nonceOrg)
+func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*CredentialRequest, error) {
+	m.credentialReceiver = NewUserCredentialReceiver(m)
+	credReq, err := m.credentialReceiver.GetCredentialRequest(m.nym, nonceOrg)
 	if err != nil {
 		return nil, err
 	}
@@ -116,78 +137,78 @@ func (u *User) GetCredentialRequest(nym *big.Int, nonceOrg *big.Int) (*Credentia
 	return credReq, nil
 }
 
-func (u *User) VerifyCredential(cred *Credential,
+func (m *CredentialManager) VerifyCredential(cred *Credential,
 	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
-	return u.credentialReceiver.VerifyCredential(cred, AProof)
+	return m.credentialReceiver.VerifyCredential(cred, AProof)
 }
 
-func (u *User) UpdateCredential(knownAttrs []*big.Int) {
-	u.knownAttrs = knownAttrs
+func (m *CredentialManager) UpdateCredential(knownAttrs []*big.Int) {
+	m.knownAttrs = knownAttrs
 }
 
-func (u *User) randomizeCredential(cred *Credential) *Credential {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.NLength+u.Params.SecParam)), nil)
+func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.NLength+ m.Params.SecParam)), nil)
 	r := common.GetRandomInt(b)
-	group := groups.NewQRSpecialRSAPublic(u.PubKey.N)
-	t := group.Exp(u.PubKey.S, r)
+	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	t := group.Exp(m.PubKey.S, r)
 	A := group.Mul(cred.A, t) // cred.A * S^r
 	t = new(big.Int).Mul(cred.e, r)
 	v11 := new(big.Int).Sub(cred.v11, t) // cred.v11 - e*r (in Z)
 
-	t = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(u.Params.EBitLen-1)), nil)
+	t = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.EBitLen-1)), nil)
 	//e1 := new(big.Int).Sub(cred.e, t) // cred.e - 2^(EBitLen-1) // TODO: when is this needed?
 
 	return NewCredential(A, cred.e, v11)
 }
 
-func (u *User) GetChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
-	context := u.PubKey.GetContext()
+func (m *CredentialManager) GetChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
+	context := m.PubKey.GetContext()
 	l := []*big.Int{context, credProofRandomData, nonceOrg}
 	//l = append(l, ...) // TODO: add other values
 
 	return common.Hash(l...)
 }
 
-func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Credential,
+func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Credential,
 	*qrspecialrsaproofs.RepresentationProof, error) {
-	if u.v1 == nil {
+	if m.v1 == nil {
 		return nil, nil, fmt.Errorf("v1 is not set in User (generated in GetCredentialRequest)")
 	}
-	rCred := u.randomizeCredential(cred)
+	rCred := m.randomizeCredential(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
-	group := groups.NewQRSpecialRSAPublic(u.PubKey.N)
-	bases := append(u.PubKey.RsHidden, rCred.A)
-	bases = append(bases, u.PubKey.S)
-	secrets := append(u.hiddenAttrs, rCred.e)
-	v := new(big.Int).Add(rCred.v11, u.v1)
+	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	bases := append(m.PubKey.RsHidden, rCred.A)
+	bases = append(bases, m.PubKey.S)
+	secrets := append(m.hiddenAttrs, rCred.e)
+	v := new(big.Int).Add(rCred.v11, m.v1)
 	secrets = append(secrets, v)
 
 	denom := big.NewInt(1)
-	for i := 0; i < len(u.knownAttrs); i++ {
-		t1 := group.Exp(u.PubKey.RsKnown[i], u.knownAttrs[i])
+	for i := 0; i < len(m.knownAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsKnown[i], m.knownAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
-	for i := 0; i < len(u.committedAttrs); i++ {
-		t1 := group.Exp(u.PubKey.RsCommitted[i], u.commitmentsOfAttrs[i])
+	for i := 0; i < len(m.committedAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsCommitted[i], m.commitmentsOfAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 	denomInv := group.Inv(denom)
-	y := group.Mul(u.PubKey.Z, denomInv)
+	y := group.Mul(m.PubKey.Z, denomInv)
 
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, u.Params.SecParam,
+	prover := qrspecialrsaproofs.NewRepresentationProver(group, m.Params.SecParam,
 		secrets, bases, y)
 
 	// boundary for m_tilde
-	b_m := u.Params.AttrBitLen + u.Params.SecParam + u.Params.HashBitLen
+	b_m := m.Params.AttrBitLen + m.Params.SecParam + m.Params.HashBitLen
 	// boundary for e
-	b_e := u.Params.EBitLen + u.Params.SecParam + u.Params.HashBitLen
+	b_e := m.Params.EBitLen + m.Params.SecParam + m.Params.HashBitLen
 	// boundary for v1
-	b_v1 := u.Params.VBitLen + u.Params.SecParam + u.Params.HashBitLen
+	b_v1 := m.Params.VBitLen + m.Params.SecParam + m.Params.HashBitLen
 
-	boundaries := make([]int, len(u.PubKey.RsHidden))
-	for i, _ := range u.PubKey.RsHidden {
+	boundaries := make([]int, len(m.PubKey.RsHidden))
+	for i, _ := range m.PubKey.RsHidden {
 		boundaries[i] = b_m
 	}
 	boundaries = append(boundaries, b_e)
@@ -198,9 +219,8 @@ func (u *User) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Crede
 		return nil, nil, fmt.Errorf("error when generating representation proof random data: %s", err)
 	}
 
-	challenge := u.GetChallenge(proofRandomData, nonceOrg)
+	challenge := m.GetChallenge(proofRandomData, nonceOrg)
 	proofData := prover.GetProofData(challenge)
 
 	return rCred, qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
-
 }

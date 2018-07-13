@@ -42,14 +42,9 @@ func TestCL(t *testing.T) {
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	user, err := cl.NewUser(clParamSizes, pubKey, knownAttrs, committedAttrs, hiddenAttrs)
+	credManager, err := cl.NewCredentialManager(clParamSizes, pubKey, knownAttrs, committedAttrs, hiddenAttrs)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
-	}
-
-	nym, err := user.GenerateNym()
-	if err != nil {
-		t.Errorf("error when generating nym: %v", err)
 	}
 
 	clClient, err := NewCLClient(testGrpcClientConn)
@@ -59,13 +54,12 @@ func TestCL(t *testing.T) {
 
 	credIssueNonceOrg, err := clClient.GetCredentialIssueNonce()
 
-	credentialRequest, err := user.GetCredentialRequest(nym, credIssueNonceOrg)
+	credentialRequest, err := credManager.GetCredentialRequest(credIssueNonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
 	fmt.Println("++++++++++++++++++")
-	fmt.Println(nym)
 	fmt.Println(credentialRequest)
 
 }
