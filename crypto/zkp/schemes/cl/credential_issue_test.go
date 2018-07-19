@@ -33,10 +33,13 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
+	masterSecret := org.PubKey.GenerateUserMasterSecret()
+
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := NewCredentialManager(params, org.PubKey, knownAttrs, committedAttrs, hiddenAttrs)
+	credManager, err := NewCredentialManager(params, org.PubKey, masterSecret, knownAttrs, committedAttrs,
+		hiddenAttrs)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
@@ -66,6 +69,16 @@ func TestCL(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
+
+	// create new CredentialManager (updating or proving usually does not happen at the same time
+	// as issuing)
+	/*
+	credManager, err = NewCredentialManagerFromExisting(params, org.PubKey, masterSecret, knownAttrs, committedAttrs,
+		hiddenAttrs, credManager.commitmentsOfAttrs, credReq.Nonce)
+	if err != nil {
+		t.Errorf("error when calling NewCredentialManagerFromExisting: %v", err)
+	}
+	*/
 
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	credManager.UpdateCredential(newKnownAttrs)

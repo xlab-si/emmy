@@ -44,6 +44,7 @@ type CredentialManager struct {
 	v1                 *big.Int                                // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
 	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
+	credReqNonce       *big.Int
 }
 
 func checkAttributesLength(attributes []*big.Int, params *Params) bool {
@@ -56,7 +57,7 @@ func checkAttributesLength(attributes []*big.Int, params *Params) bool {
 	return true
 }
 
-func NewCredentialManager(params *Params, pubKey *PubKey, knownAttrs, committedAttrs,
+func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int, knownAttrs, committedAttrs,
 	hiddenAttrs []*big.Int) (*CredentialManager, error) {
 	if !checkAttributesLength(knownAttrs, params) || !checkAttributesLength(committedAttrs, params) ||
 		!checkAttributesLength(hiddenAttrs, params) {
@@ -84,20 +85,19 @@ func NewCredentialManager(params *Params, pubKey *PubKey, knownAttrs, committedA
 		hiddenAttrs:        hiddenAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
 		attrsCommitters:    attrsCommitters,
-		masterSecret:       common.GetRandomInt(pubKey.PedersenParams.Group.Q),
+		masterSecret:       masterSecret,
 	}
 	credManager.generateNym()
 
 	return &credManager, nil
 }
 
+func NewCredentialManagerFromExisting(params *Params, pubKey *PubKey, masterSecret *big.Int, knownAttrs, committedAttrs,
+	hiddenAttrs, commitmentsOfAttrs []*big.Int, credReqNonce *big.Int) (*CredentialManager, error) {
 
-func NewCredentialManagerFromExisting(params *Params, pubKey *PubKey, knownAttrs, committedAttrs,
-	hiddenAttrs []*big.Int) (*CredentialManager, error) {
+	// nymCommitter is needed only for IssueCredential (when proving that nym can be opened), so we do not need it here
+	// the same for attrsCommitters
 
-	// committer is needed only for IssueCredential (when proving that nym can be opened), so we do not need it here
-
-	/*
 	return &CredentialManager{
 		Params:             params,
 		PubKey:             pubKey,
@@ -105,12 +105,10 @@ func NewCredentialManagerFromExisting(params *Params, pubKey *PubKey, knownAttrs
 		committedAttrs:     committedAttrs,
 		hiddenAttrs:        hiddenAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
-		attrsCommitters:    attrsCommitters,
-		masterSecret:       common.GetRandomInt(pubKey.PedersenParams.Group.Q),
+		//attrsCommitters:    attrsCommitters,
+		masterSecret: masterSecret,
+		credReqNonce: credReqNonce,
 	}, nil
-	*/
-
-	return nil, nil
 }
 
 // generateNym creates a pseudonym to be used with a given organization. Authentication can be done
@@ -133,13 +131,65 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 	if err != nil {
 		return nil, err
 	}
+	m.credReqNonce = credReq.Nonce
 
 	return credReq, nil
 }
 
 func (m *CredentialManager) VerifyCredential(cred *Credential,
 	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
-	return m.credentialReceiver.VerifyCredential(cred, AProof)
+	// check bit length of e:
+	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.EBitLen-1)), nil)
+	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.E1BitLen-1)), nil)
+	b2 := new(big.Int).Add(b1, b22)
+
+	if (cred.e.Cmp(b1) != 1) || (b2.Cmp(cred.e) != 1) {
+		return false, fmt.Errorf("e is not of the proper bit length")
+	}
+	// check that e is prime
+	if !cred.e.ProbablyPrime(20) {
+		return false, fmt.Errorf("e is not prime")
+	}
+
+	v := new(big.Int).Add(m.v1, cred.v11)
+	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
+	denom := group.Exp(m.PubKey.S, v) // s^v
+	for i := 0; i < len(m.knownAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsKnown[i], m.knownAttrs[i])
+		denom = group.Mul(denom, t1)
+	}
+
+	for i := 0; i < len(m.committedAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsCommitted[i], m.commitmentsOfAttrs[i])
+		denom = group.Mul(denom, t1)
+	}
+
+	for i := 0; i < len(m.hiddenAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsHidden[i], m.hiddenAttrs[i])
+		denom = group.Mul(denom, t1)
+	}
+
+	denomInv := group.Inv(denom)
+	Q := group.Mul(m.PubKey.Z, denomInv)
+	Q1 := group.Exp(cred.A, cred.e)
+	if Q1.Cmp(Q) != 0 {
+		return false, fmt.Errorf("Q should be A^e (mod n)")
+	}
+
+	// verify signature proof:
+	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, m.Params.SecParam)
+	ver.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
+	// check challenge
+	context := m.PubKey.GetContext()
+	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, m.credReqNonce)
+	if AProof.Challenge.Cmp(c) != 0 {
+		return false, fmt.Errorf("challenge is not correct")
+	}
+
+	ver.SetChallenge(AProof.Challenge)
+
+	return ver.Verify(AProof.ProofData), nil
 }
 
 func (m *CredentialManager) UpdateCredential(knownAttrs []*big.Int) {
@@ -147,7 +197,7 @@ func (m *CredentialManager) UpdateCredential(knownAttrs []*big.Int) {
 }
 
 func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.NLength+ m.Params.SecParam)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.NLength+m.Params.SecParam)), nil)
 	r := common.GetRandomInt(b)
 	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
 	t := group.Exp(m.PubKey.S, r)

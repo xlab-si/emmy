@@ -29,27 +29,26 @@ import (
 )
 
 type UserCredentialReceiver struct {
-	CredentialManager         *CredentialManager
-	U                         *big.Int
-	nymProver                 *dlogproofs.SchnorrProver // for proving that nym is of the proper form
+	CredentialManager *CredentialManager
+	U                 *big.Int
+	nymProver         *dlogproofs.SchnorrProver // for proving that nym is of the proper form
 	// TODO: not sure what would be the most appropriate name for UProver and UTilde
 	UProver                   *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
 	nymTilde                  *big.Int                                 // proof random data for nym (proving that nym is of proper form)
 	UTilde                    *big.Int                                 // proof random data for U (proving that U is of proper form)
 	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
-	credentialIssueNonce      *big.Int
 }
 
-func NewUserCredentialReceiver(user *CredentialManager) *UserCredentialReceiver {
-	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(user.commitmentsOfAttrs))
-	for i, _ := range user.commitmentsOfAttrs {
-		prover := commitmentzkp.NewDFCommitmentOpeningProver(user.attrsCommitters[i],
-			user.Params.ChallengeSpace)
+func NewUserCredentialReceiver(cm *CredentialManager) *UserCredentialReceiver {
+	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(cm.commitmentsOfAttrs))
+	for i, _ := range cm.commitmentsOfAttrs {
+		prover := commitmentzkp.NewDFCommitmentOpeningProver(cm.attrsCommitters[i],
+			cm.Params.ChallengeSpace)
 		commitmentsOfAttrsProvers[i] = prover
 	}
 
 	return &UserCredentialReceiver{
-		CredentialManager: user,
+		CredentialManager:         cm,
 		commitmentsOfAttrsProvers: commitmentsOfAttrsProvers,
 	}
 }
@@ -155,13 +154,14 @@ func (r *UserCredentialReceiver) getCredentialRequestProofData(challenge *big.In
 }
 
 func (r *UserCredentialReceiver) getCommitmentsOfAttrsProof(challenge *big.Int) []*commitmentzkp.DFOpeningProof {
-	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.CredentialManager.attrsCommitters))
+	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.commitmentsOfAttrsProvers))
 	for i, prover := range r.commitmentsOfAttrsProvers {
 		proofRandomData := prover.GetProofRandomData()
 		proofData1, proofData2 := prover.GetProofData(challenge)
 		commitmentsOfAttrsProofs[i] = commitmentzkp.NewDFOpeningProof(proofRandomData, challenge,
 			proofData1, proofData2)
 	}
+
 	return commitmentsOfAttrsProofs
 }
 
@@ -207,64 +207,8 @@ func (r *UserCredentialReceiver) GetCredentialRequest(nym *big.Int, nonceOrg *bi
 
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.CredentialManager.Params.SecParam)), nil)
 	nonce := common.GetRandomInt(b)
-	r.credentialIssueNonce = nonce
 
 	return NewCredentialRequest(dlogproofs.NewSchnorrProof(nymProofRandomData, challenge, nymProofData),
 		r.U, qrspecialrsaproofs.NewRepresentationProof(UProofRandomData, challenge, UProofData),
 		commitmentsOfAttrsProofs, nonce), nil
-}
-
-func (r *UserCredentialReceiver) VerifyCredential(cred *Credential,
-	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
-	// check bit length of e:
-	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.CredentialManager.Params.EBitLen-1)), nil)
-	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(r.CredentialManager.Params.E1BitLen-1)), nil)
-	b2 := new(big.Int).Add(b1, b22)
-
-	if (cred.e.Cmp(b1) != 1) || (b2.Cmp(cred.e) != 1) {
-		return false, fmt.Errorf("e is not of the proper bit length")
-	}
-	// check that e is prime
-	if !cred.e.ProbablyPrime(20) {
-		return false, fmt.Errorf("e is not prime")
-	}
-
-	v := new(big.Int).Add(r.CredentialManager.v1, cred.v11)
-	group := groups.NewQRSpecialRSAPublic(r.CredentialManager.PubKey.N)
-	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
-	denom := group.Exp(r.CredentialManager.PubKey.S, v) // s^v
-	for i := 0; i < len(r.CredentialManager.knownAttrs); i++ {
-		t1 := group.Exp(r.CredentialManager.PubKey.RsKnown[i], r.CredentialManager.knownAttrs[i])
-		denom = group.Mul(denom, t1)
-	}
-
-	for i := 0; i < len(r.CredentialManager.committedAttrs); i++ {
-		t1 := group.Exp(r.CredentialManager.PubKey.RsCommitted[i], r.CredentialManager.commitmentsOfAttrs[i])
-		denom = group.Mul(denom, t1)
-	}
-
-	for i := 0; i < len(r.CredentialManager.hiddenAttrs); i++ {
-		t1 := group.Exp(r.CredentialManager.PubKey.RsHidden[i], r.CredentialManager.hiddenAttrs[i])
-		denom = group.Mul(denom, t1)
-	}
-
-	denomInv := group.Inv(denom)
-	Q := group.Mul(r.CredentialManager.PubKey.Z, denomInv)
-	Q1 := group.Exp(cred.A, cred.e)
-	if Q1.Cmp(Q) != 0 {
-		return false, fmt.Errorf("Q should be A^e (mod n)")
-	}
-
-	// verify signature proof:
-	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, r.CredentialManager.Params.SecParam)
-	ver.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
-	// check challenge
-	context := r.CredentialManager.PubKey.GetContext()
-	c := common.Hash(context, Q, cred.A, AProof.ProofRandomData, r.credentialIssueNonce)
-	if AProof.Challenge.Cmp(c) != 0 {
-		return false, fmt.Errorf("challenge is not correct")
-	}
-
-	ver.SetChallenge(AProof.Challenge)
-	return ver.Verify(AProof.ProofData), nil
 }

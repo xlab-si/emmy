@@ -61,6 +61,22 @@ func NewPubKey(N *big.Int, S, Z *big.Int, RsKnown, RsCommitted, RsHidden []*big.
 	}
 }
 
+// GenerateUserMasterSecret generates a secret key that needs to be encoded into every user's credential as a
+// sharing prevention mechanism.
+func (k *PubKey) GenerateUserMasterSecret() *big.Int {
+	return common.GetRandomInt(k.PedersenParams.Group.Q)
+}
+
+// GetContext concatenates public parameters and returns a corresponding number.
+func (k *PubKey) GetContext() *big.Int {
+	numbers := []*big.Int{k.N, k.S, k.Z}
+	numbers = append(numbers, k.RsKnown...)
+	numbers = append(numbers, k.RsCommitted...)
+	numbers = append(numbers, k.RsHidden...)
+	concatenated := common.ConcatenateNumbers(numbers...)
+	return new(big.Int).SetBytes(concatenated)
+}
+
 type SecKey struct {
 	RsaPrimes                  *common.SpecialRSAPrimes
 	AttributesSpecialRSAPrimes *common.SpecialRSAPrimes
@@ -94,16 +110,6 @@ func ReadGob(filePath string, object interface{}) error {
 	file.Close()
 
 	return err
-}
-
-// GetContext concatenates public parameters and returns a corresponding number.
-func (k *PubKey) GetContext() *big.Int {
-	numbers := []*big.Int{k.N, k.S, k.Z}
-	numbers = append(numbers, k.RsKnown...)
-	numbers = append(numbers, k.RsCommitted...)
-	numbers = append(numbers, k.RsHidden...)
-	concatenated := common.ConcatenateNumbers(numbers...)
-	return new(big.Int).SetBytes(concatenated)
 }
 
 type Org struct {
