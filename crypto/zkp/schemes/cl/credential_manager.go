@@ -24,7 +24,9 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 )
 
 // CredentialManager should be created by a user when a credential is to be issued, updated or proved.
@@ -32,7 +34,6 @@ import (
 type CredentialManager struct {
 	Params             *Params
 	PubKey             *PubKey
-	credentialReceiver *UserCredentialReceiver
 	nymCommitter       *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
 	nym                *big.Int
 	masterSecret       *big.Int
@@ -42,8 +43,9 @@ type CredentialManager struct {
 	// v1 is a random element in credential - it is generated in GetCredentialRequest and needed when
 	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
 	v1                 *big.Int                                // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
-	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
 	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
+	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
+	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
 	credReqNonce       *big.Int
 }
 
@@ -76,6 +78,11 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 		commitmentsOfAttrs[i] = com
 		attrsCommitters[i] = committer
 	}
+	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(commitmentsOfAttrs))
+	for i, _ := range commitmentsOfAttrs {
+		prover := commitmentzkp.NewDFCommitmentOpeningProver(attrsCommitters[i], params.ChallengeSpace)
+		commitmentsOfAttrsProvers[i] = prover
+	}
 
 	credManager := CredentialManager{
 		Params:             params,
@@ -85,6 +92,7 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 		hiddenAttrs:        hiddenAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
 		attrsCommitters:    attrsCommitters,
+		commitmentsOfAttrsProvers: commitmentsOfAttrsProvers,
 		masterSecret:       masterSecret,
 	}
 	credManager.generateNym()
@@ -126,15 +134,36 @@ func (m *CredentialManager) generateNym() error {
 	return nil
 }
 
+// GetCredentialRequest computes U and returns CredentialRequest which contains:
+// - proof data for proving that nym was properly generated,
+// - U and proof data that U was properly generated,
+// - proof data for proving the knowledge of opening for commitments of attributes (for those attributes
+// for which the committed value is known).
 func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*CredentialRequest, error) {
-	m.credentialReceiver = NewUserCredentialReceiver(m)
-	credReq, err := m.credentialReceiver.GetCredentialRequest(m.nym, nonceOrg)
+	U, v1 := m.computeU()
+	m.v1 = v1
+	nymProver, uProver, err := m.getCredReqProvers(U)
 	if err != nil {
 		return nil, err
 	}
-	m.credReqNonce = credReq.Nonce
 
-	return credReq, nil
+	challenge := m.getCredReqChallenge(U, m.nym, nonceOrg)
+	commitmentsOfAttrsProofs := m.getCommitmentsOfAttrsProof(challenge)
+
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.SecParam)), nil)
+	nonce := common.GetRandomInt(b)
+	m.credReqNonce = nonce
+
+	uProofRandomData, err := m.getUProofRandomData(uProver)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCredentialRequest(dlogproofs.NewSchnorrProof(nymProver.GetProofRandomData(), challenge,
+			nymProver.GetProofData(challenge)), U,
+			qrspecialrsaproofs.NewRepresentationProof(uProofRandomData, challenge,
+			uProver.GetProofData(challenge)),
+		commitmentsOfAttrsProofs, nonce), nil
 }
 
 func (m *CredentialManager) VerifyCredential(cred *Credential,
@@ -212,7 +241,7 @@ func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
 	return NewCredential(A, cred.e, v11)
 }
 
-func (m *CredentialManager) GetChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
+func (m *CredentialManager) GetCredProofChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
 	context := m.PubKey.GetContext()
 	l := []*big.Int{context, credProofRandomData, nonceOrg}
 	//l = append(l, ...) // TODO: add other values
@@ -270,7 +299,7 @@ func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big
 		return nil, nil, fmt.Errorf("error when generating representation proof random data: %s", err)
 	}
 
-	challenge := m.GetChallenge(proofRandomData, nonceOrg)
+	challenge := m.GetCredProofChallenge(proofRandomData, nonceOrg)
 	proofData := prover.GetProofData(challenge)
 
 	return rCred, qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
