@@ -149,4 +149,3 @@ func (m *CredentialManager) getCommitmentsOfAttrsProof(challenge *big.Int) []*co
 
 	return commitmentsOfAttrsProofs
 }
-

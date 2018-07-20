@@ -196,9 +196,8 @@ func (i *OrgCredentialIssuer) IssueCredential(nonceUser *big.Int) (*Credential,
 
 	context := i.Org.PubKey.GetContext()
 	AProof := i.getAProof(nonceUser, context, eInv, Q, A)
-	receiverRecord := NewReceiverRecord(i.knownAttrs, i.commitmentsOfAttrs, Q, v11, context)
-	i.Org.receiverRecords[i.nym] = receiverRecord
 
+	receiverRecord := NewReceiverRecord(i.knownAttrs, i.commitmentsOfAttrs, Q, v11, context)
 	err := i.Org.dbManager.SetReceiverRecord(i.nym, receiverRecord)
 	if err != nil {
 		return nil, nil, err
@@ -249,7 +248,10 @@ func (i *OrgCredentialIssuer) UpdateCredential(nym, nonceUser *big.Int, newKnown
 	AProof := i.getAProof(nonceUser, context, eInv, newQ, newA)
 	// currently commitmentsOfAttrs cannot be updated
 	rec = NewReceiverRecord(newKnownAttrs, rec.CommitmentsOfAttrs, newQ, v11, context)
-	i.Org.receiverRecords[i.nym] = rec
+	err = i.Org.dbManager.SetReceiverRecord(i.nym, rec)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return NewCredential(newA, e, v11), AProof, nil
 }

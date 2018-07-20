@@ -24,29 +24,29 @@ import (
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 )
 
 // CredentialManager should be created by a user when a credential is to be issued, updated or proved.
 // If a new credential under a new nym is needed, new CredentialManager instance is needed.
 type CredentialManager struct {
-	Params             *Params
-	PubKey             *PubKey
-	nymCommitter       *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
-	nym                *big.Int
-	masterSecret       *big.Int
-	knownAttrs         []*big.Int // attributes that are known to the credential receiver and issuer
-	committedAttrs     []*big.Int // attributes for which the issuer knows only commitment
-	hiddenAttrs        []*big.Int // attributes which are known only to the credential receiver
+	Params         *Params
+	PubKey         *PubKey
+	nymCommitter   *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
+	nym            *big.Int
+	masterSecret   *big.Int
+	knownAttrs     []*big.Int // attributes that are known to the credential receiver and issuer
+	committedAttrs []*big.Int // attributes for which the issuer knows only commitment
+	hiddenAttrs    []*big.Int // attributes which are known only to the credential receiver
 	// v1 is a random element in credential - it is generated in GetCredentialRequest and needed when
 	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
-	v1                 *big.Int                                // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
-	commitmentsOfAttrs []*big.Int                              // commitments of committedAttrs
-	attrsCommitters    []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
+	v1                        *big.Int                                // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
+	commitmentsOfAttrs        []*big.Int                              // commitments of committedAttrs
+	attrsCommitters           []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
 	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
-	credReqNonce       *big.Int
+	credReqNonce              *big.Int
 }
 
 func checkAttributesLength(attributes []*big.Int, params *Params) bool {
@@ -85,15 +85,15 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 	}
 
 	credManager := CredentialManager{
-		Params:             params,
-		PubKey:             pubKey,
-		knownAttrs:         knownAttrs,
-		committedAttrs:     committedAttrs,
-		hiddenAttrs:        hiddenAttrs,
-		commitmentsOfAttrs: commitmentsOfAttrs,
-		attrsCommitters:    attrsCommitters,
+		Params:                    params,
+		PubKey:                    pubKey,
+		knownAttrs:                knownAttrs,
+		committedAttrs:            committedAttrs,
+		hiddenAttrs:               hiddenAttrs,
+		commitmentsOfAttrs:        commitmentsOfAttrs,
+		attrsCommitters:           attrsCommitters,
 		commitmentsOfAttrsProvers: commitmentsOfAttrsProvers,
-		masterSecret:       masterSecret,
+		masterSecret:              masterSecret,
 	}
 	credManager.generateNym()
 
@@ -101,7 +101,7 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 }
 
 func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Params, pubKey *PubKey, masterSecret *big.Int,
-	knownAttrs, committedAttrs, hiddenAttrs, commitmentsOfAttrs []*big.Int, ) (*CredentialManager, error) {
+	knownAttrs, committedAttrs, hiddenAttrs, commitmentsOfAttrs []*big.Int) (*CredentialManager, error) {
 
 	// nymCommitter is needed only for IssueCredential (when proving that nym can be opened), so we do not need it here
 	// the same for attrsCommitters
@@ -113,10 +113,10 @@ func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Pa
 		committedAttrs:     committedAttrs,
 		hiddenAttrs:        hiddenAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
-		masterSecret: masterSecret,
-		nym: nym,
-		v1: v1,
-		credReqNonce: credReqNonce,
+		masterSecret:       masterSecret,
+		nym:                nym,
+		v1:                 v1,
+		credReqNonce:       credReqNonce,
 	}, nil
 }
 
@@ -160,8 +160,8 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 	}
 
 	return NewCredentialRequest(dlogproofs.NewSchnorrProof(nymProver.GetProofRandomData(), challenge,
-			nymProver.GetProofData(challenge)), U,
-			qrspecialrsaproofs.NewRepresentationProof(uProofRandomData, challenge,
+		nymProver.GetProofData(challenge)), U,
+		qrspecialrsaproofs.NewRepresentationProof(uProofRandomData, challenge,
 			uProver.GetProofData(challenge)),
 		commitmentsOfAttrsProofs, nonce), nil
 }

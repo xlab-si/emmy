@@ -121,7 +121,6 @@ type Org struct {
 	credentialIssuer        *OrgCredentialIssuer
 	credentialIssueNonceOrg *big.Int
 	proveCredentialNonceOrg *big.Int
-	receiverRecords         map[*big.Int]*ReceiverRecord // contains a record for each credential - needed for update credential; TODO: use some DB
 	dbManager               *DBManager
 }
 
@@ -173,7 +172,6 @@ func NewOrgFromParams(name string, params *Params, pubKey *PubKey, secKey *SecKe
 		SecKey:           secKey,
 		Group:            group,
 		PedersenReceiver: commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams),
-		receiverRecords:  make(map[*big.Int]*ReceiverRecord), // TODO: will be replaced with DB
 		dbManager:        dbManager,
 	}, nil
 }
