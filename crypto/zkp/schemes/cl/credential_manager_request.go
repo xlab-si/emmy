@@ -28,11 +28,30 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
+type CredentialRequest struct {
+	NymProof                 *dlogproofs.SchnorrProof
+	U                        *big.Int
+	UProof                   *qrspecialrsaproofs.RepresentationProof
+	CommitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof
+	Nonce                    *big.Int
+}
+
+func NewCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
+	UProof *qrspecialrsaproofs.RepresentationProof, commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof,
+	nonce *big.Int) *CredentialRequest {
+	return &CredentialRequest{
+		NymProof: nymProof,
+		U:        U,
+		UProof:   UProof,
+		CommitmentsOfAttrsProofs: commitmentsOfAttrsProofs,
+		Nonce: nonce,
+	}
+}
+
 type UserCredentialReceiver struct {
 	CredentialManager *CredentialManager
 	U                 *big.Int
 	nymProver         *dlogproofs.SchnorrProver // for proving that nym is of the proper form
-	// TODO: not sure what would be the most appropriate name for UProver and UTilde
 	UProver                   *qrspecialrsaproofs.RepresentationProver // for proving that U is of the proper form
 	nymTilde                  *big.Int                                 // proof random data for nym (proving that nym is of proper form)
 	UTilde                    *big.Int                                 // proof random data for U (proving that U is of proper form)
@@ -163,26 +182,6 @@ func (r *UserCredentialReceiver) getCommitmentsOfAttrsProof(challenge *big.Int) 
 	}
 
 	return commitmentsOfAttrsProofs
-}
-
-type CredentialRequest struct {
-	NymProof                 *dlogproofs.SchnorrProof
-	U                        *big.Int
-	UProof                   *qrspecialrsaproofs.RepresentationProof
-	CommitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof
-	Nonce                    *big.Int
-}
-
-func NewCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
-	UProof *qrspecialrsaproofs.RepresentationProof, commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof,
-	nonce *big.Int) *CredentialRequest {
-	return &CredentialRequest{
-		NymProof: nymProof,
-		U:        U,
-		UProof:   UProof,
-		CommitmentsOfAttrsProofs: commitmentsOfAttrsProofs,
-		Nonce: nonce,
-	}
 }
 
 // GetCredentialRequest computes U and returns CredentialRequest which contains:

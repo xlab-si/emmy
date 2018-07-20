@@ -92,8 +92,8 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 	return &credManager, nil
 }
 
-func NewCredentialManagerFromExisting(params *Params, pubKey *PubKey, masterSecret *big.Int, knownAttrs, committedAttrs,
-	hiddenAttrs, commitmentsOfAttrs []*big.Int, credReqNonce *big.Int) (*CredentialManager, error) {
+func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Params, pubKey *PubKey, masterSecret *big.Int,
+	knownAttrs, committedAttrs, hiddenAttrs, commitmentsOfAttrs []*big.Int, ) (*CredentialManager, error) {
 
 	// nymCommitter is needed only for IssueCredential (when proving that nym can be opened), so we do not need it here
 	// the same for attrsCommitters
@@ -105,8 +105,9 @@ func NewCredentialManagerFromExisting(params *Params, pubKey *PubKey, masterSecr
 		committedAttrs:     committedAttrs,
 		hiddenAttrs:        hiddenAttrs,
 		commitmentsOfAttrs: commitmentsOfAttrs,
-		//attrsCommitters:    attrsCommitters,
 		masterSecret: masterSecret,
+		nym: nym,
+		v1: v1,
 		credReqNonce: credReqNonce,
 	}, nil
 }
@@ -222,7 +223,7 @@ func (m *CredentialManager) GetChallenge(credProofRandomData, nonceOrg *big.Int)
 func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Credential,
 	*qrspecialrsaproofs.RepresentationProof, error) {
 	if m.v1 == nil {
-		return nil, nil, fmt.Errorf("v1 is not set in User (generated in GetCredentialRequest)")
+		return nil, nil, fmt.Errorf("v1 is not set (generated in GetCredentialRequest)")
 	}
 	rCred := m.randomizeCredential(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l

@@ -72,16 +72,16 @@ func TestCL(t *testing.T) {
 
 	// create new CredentialManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	/*
-	credManager, err = NewCredentialManagerFromExisting(params, org.PubKey, masterSecret, knownAttrs, committedAttrs,
-		hiddenAttrs, credManager.commitmentsOfAttrs, credReq.Nonce)
+	credManager, err = NewCredentialManagerFromExisting(credManager.nym, credManager.v1, credReq.Nonce,
+		params, org.PubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
+		credManager.commitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when calling NewCredentialManagerFromExisting: %v", err)
 	}
-	*/
 
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	credManager.UpdateCredential(newKnownAttrs)
+
 	credential1, AProof1, err := org.UpdateCredential(credManager.nym, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
@@ -91,11 +91,7 @@ func TestCL(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
-
 	assert.Equal(t, true, userVerified, "credential update failed")
-
-	// TODO: before proving the possesion of a credential, create a new User object (obtaining and proving
-	// credential usually don't happen at the same time) - this means passing attributes and v1 into NewUser
 
 	nonce := org.GetProveCredentialNonce()
 	randCred, proof, err := credManager.BuildCredentialProof(credential1, nonce)
