@@ -51,8 +51,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
-	credential, AProof, err := org.IssueCredential(credManager.nym, credManager.knownAttrs,
-		credManager.commitmentsOfAttrs, credReq)
+	credential, AProof, err := org.IssueCredential(credReq)
 	if err != nil {
 		t.Errorf("error when issuing credential: %v", err)
 	}
@@ -72,9 +71,9 @@ func TestCL(t *testing.T) {
 
 	// create new CredentialManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = NewCredentialManagerFromExisting(credManager.nym, credManager.v1, credReq.Nonce,
+	credManager, err = NewCredentialManagerFromExisting(credManager.Nym, credManager.v1, credReq.Nonce,
 		params, org.PubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
-		credManager.commitmentsOfAttrs)
+		credManager.CommitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when calling NewCredentialManagerFromExisting: %v", err)
 	}
@@ -82,7 +81,7 @@ func TestCL(t *testing.T) {
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	credManager.UpdateCredential(newKnownAttrs)
 
-	credential1, AProof1, err := org.UpdateCredential(credManager.nym, credReq.Nonce, newKnownAttrs)
+	credential1, AProof1, err := org.UpdateCredential(credManager.Nym, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}

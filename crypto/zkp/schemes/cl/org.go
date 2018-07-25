@@ -176,6 +176,21 @@ func NewOrgFromParams(name string, params *Params, pubKey *PubKey, secKey *SecKe
 	}, nil
 }
 
+func LoadOrg(orgName, secKeyPath, pubKeyPath string) (*Org, error) {
+	pubKey := new(PubKey)
+	ReadGob(pubKeyPath, pubKey)
+	secKey := new(SecKey)
+	ReadGob(secKeyPath, secKey)
+
+	params := GetDefaultParamSizes()
+	org, err := NewOrgFromParams(orgName, params, pubKey, secKey)
+	if err != nil {
+		return nil, fmt.Errorf("error when loading CL org: %v", err)
+	}
+
+	return org, nil
+}
+
 func (o *Org) getNonce() *big.Int {
 	secParam := big.NewInt(int64(o.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), secParam, nil)
@@ -190,9 +205,8 @@ func (o *Org) GetCredentialIssueNonce() *big.Int {
 	return nonce
 }
 
-func (o *Org) VerifyCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int,
-	cr *CredentialRequest) (bool, error) {
-	credentialIssuer, err := NewOrgCredentialIssuer(o, nym, knownAttrs, commitmentsOfAttrs)
+func (o *Org) VerifyCredentialRequest(cr *CredentialRequest) (bool, error) {
+	credentialIssuer, err := NewOrgCredentialIssuer(o, cr.Nym, cr.KnownAttrs, cr.CommitmentsOfAttrs)
 	if err != nil {
 		return false, fmt.Errorf("error when creating credential issuer: %v", err)
 	}
@@ -201,10 +215,9 @@ func (o *Org) VerifyCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAtt
 	return o.credentialIssuer.VerifyCredentialRequest(cr), nil
 }
 
-func (o *Org) IssueCredential(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int,
-	credReq *CredentialRequest) (*Credential, *qrspecialrsaproofs.RepresentationProof, error) {
+func (o *Org) IssueCredential(credReq *CredentialRequest) (*Credential, *qrspecialrsaproofs.RepresentationProof, error) {
 
-	verified, err := o.VerifyCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, credReq)
+	verified, err := o.VerifyCredentialRequest(credReq)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when verifying credential request: %v", err)
 	}

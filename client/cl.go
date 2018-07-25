@@ -30,6 +30,9 @@ import (
 		"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	*/
 	"fmt"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
+	"github.com/xlab-si/emmy/proto"
 )
 
 type CLClient struct {
@@ -63,4 +66,30 @@ func (c *CLClient) GetCredentialIssueNonce() (*big.Int, error) {
 	fmt.Println(nonce)
 
 	return nonce, nil
+}
+
+func (c *CLClient) IssueCredential(credReq *cl.CredentialRequest) (*cl.Credential,
+	*qrspecialrsaproofs.RepresentationProof, error) {
+	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
+		return nil, nil, err
+	}
+	defer c.closeStream()
+
+	cReq := proto.ToPbCredentialRequest(credReq)
+
+	initMsg := &pb.Message{
+		ClientId: c.id,
+		Content: &pb.Message_CLCredReq{cReq},
+	}
+	resp, err := c.getResponseTo(initMsg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fmt.Println("response:")
+	fmt.Println(resp)
+
+
+
+	return nil, nil, nil
 }

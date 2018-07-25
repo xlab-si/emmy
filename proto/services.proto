@@ -38,6 +38,7 @@ service PseudonymSystem {
 
 service CL {
 	rpc GetCredentialIssueNonce (stream Message) returns (stream Message) {}
+	rpc IssueCredential (stream Message) returns (stream Message) {}
 }
 
 service Info {

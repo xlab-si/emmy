@@ -32,18 +32,18 @@ import (
 // CredentialManager should be created by a user when a credential is to be issued, updated or proved.
 // If a new credential under a new nym is needed, new CredentialManager instance is needed.
 type CredentialManager struct {
-	Params         *Params
-	PubKey         *PubKey
-	nymCommitter   *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
-	nym            *big.Int
-	masterSecret   *big.Int
-	knownAttrs     []*big.Int // attributes that are known to the credential receiver and issuer
-	committedAttrs []*big.Int // attributes for which the issuer knows only commitment
-	hiddenAttrs    []*big.Int // attributes which are known only to the credential receiver
-	// v1 is a random element in credential - it is generated in GetCredentialRequest and needed when
-	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
-	v1                        *big.Int                                // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
-	commitmentsOfAttrs        []*big.Int                              // commitments of committedAttrs
+	Params             *Params
+	PubKey             *PubKey
+	nymCommitter       *commitments.PedersenCommitter                 // nym is actually a commitment to masterSecret
+	Nym                *big.Int
+	masterSecret       *big.Int
+	KnownAttrs         []*big.Int                                     // attributes that are known to the credential receiver and issuer
+	committedAttrs     []*big.Int                                     // attributes for which the issuer knows only commitment
+	CommitmentsOfAttrs []*big.Int                                     // commitments of committedAttrs
+	hiddenAttrs        []*big.Int                                     // attributes which are known only to the credential receiver
+									  // v1 is a random element in credential - it is generated in GetCredentialRequest and needed when
+									  // proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
+	v1                 *big.Int                                       // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	attrsCommitters           []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
 	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
 	credReqNonce              *big.Int
@@ -87,10 +87,10 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 	credManager := CredentialManager{
 		Params:                    params,
 		PubKey:                    pubKey,
-		knownAttrs:                knownAttrs,
+		KnownAttrs:                knownAttrs,
 		committedAttrs:            committedAttrs,
 		hiddenAttrs:               hiddenAttrs,
-		commitmentsOfAttrs:        commitmentsOfAttrs,
+		CommitmentsOfAttrs:        commitmentsOfAttrs,
 		attrsCommitters:           attrsCommitters,
 		commitmentsOfAttrsProvers: commitmentsOfAttrsProvers,
 		masterSecret:              masterSecret,
@@ -109,12 +109,12 @@ func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Pa
 	return &CredentialManager{
 		Params:             params,
 		PubKey:             pubKey,
-		knownAttrs:         knownAttrs,
+		KnownAttrs:         knownAttrs,
 		committedAttrs:     committedAttrs,
 		hiddenAttrs:        hiddenAttrs,
-		commitmentsOfAttrs: commitmentsOfAttrs,
+		CommitmentsOfAttrs: commitmentsOfAttrs,
 		masterSecret:       masterSecret,
-		nym:                nym,
+		Nym:                nym,
 		v1:                 v1,
 		credReqNonce:       credReqNonce,
 	}, nil
@@ -128,7 +128,7 @@ func (m *CredentialManager) generateNym() error {
 	if err != nil {
 		return fmt.Errorf("error when creating Pedersen commitment: %s", err)
 	}
-	m.nym = nym
+	m.Nym = nym
 	m.nymCommitter = committer
 
 	return nil
@@ -147,7 +147,7 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 		return nil, err
 	}
 
-	challenge := m.getCredReqChallenge(U, m.nym, nonceOrg)
+	challenge := m.getCredReqChallenge(U, m.Nym, nonceOrg)
 	commitmentsOfAttrsProofs := m.getCommitmentsOfAttrsProof(challenge)
 
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.SecParam)), nil)
@@ -159,7 +159,8 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 		return nil, err
 	}
 
-	return NewCredentialRequest(dlogproofs.NewSchnorrProof(nymProver.GetProofRandomData(), challenge,
+	return NewCredentialRequest(m.Nym, m.KnownAttrs, m.CommitmentsOfAttrs,
+		dlogproofs.NewSchnorrProof(nymProver.GetProofRandomData(), challenge,
 		nymProver.GetProofData(challenge)), U,
 		qrspecialrsaproofs.NewRepresentationProof(uProofRandomData, challenge,
 			uProver.GetProofData(challenge)),
@@ -185,13 +186,13 @@ func (m *CredentialManager) VerifyCredential(cred *Credential,
 	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
 	denom := group.Exp(m.PubKey.S, v) // s^v
-	for i := 0; i < len(m.knownAttrs); i++ {
-		t1 := group.Exp(m.PubKey.RsKnown[i], m.knownAttrs[i])
+	for i := 0; i < len(m.KnownAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsKnown[i], m.KnownAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
 	for i := 0; i < len(m.committedAttrs); i++ {
-		t1 := group.Exp(m.PubKey.RsCommitted[i], m.commitmentsOfAttrs[i])
+		t1 := group.Exp(m.PubKey.RsCommitted[i], m.CommitmentsOfAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
@@ -223,7 +224,7 @@ func (m *CredentialManager) VerifyCredential(cred *Credential,
 }
 
 func (m *CredentialManager) UpdateCredential(knownAttrs []*big.Int) {
-	m.knownAttrs = knownAttrs
+	m.KnownAttrs = knownAttrs
 }
 
 func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
@@ -265,13 +266,13 @@ func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big
 	secrets = append(secrets, v)
 
 	denom := big.NewInt(1)
-	for i := 0; i < len(m.knownAttrs); i++ {
-		t1 := group.Exp(m.PubKey.RsKnown[i], m.knownAttrs[i])
+	for i := 0; i < len(m.KnownAttrs); i++ {
+		t1 := group.Exp(m.PubKey.RsKnown[i], m.KnownAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 
 	for i := 0; i < len(m.committedAttrs); i++ {
-		t1 := group.Exp(m.PubKey.RsCommitted[i], m.commitmentsOfAttrs[i])
+		t1 := group.Exp(m.PubKey.RsCommitted[i], m.CommitmentsOfAttrs[i])
 		denom = group.Mul(denom, t1)
 	}
 	denomInv := group.Inv(denom)

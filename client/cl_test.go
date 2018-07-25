@@ -34,15 +34,19 @@ import (
 // TestCL requires a running server.
 func TestCL(t *testing.T) {
 
-	clParamSizes := cl.GetDefaultParamSizes()
+	params := cl.GetDefaultParamSizes()
 
 	pubKey := new(cl.PubKey)
 	cl.ReadGob("testdata/clPubKey.gob", pubKey)
 
+	masterSecret := pubKey.GenerateUserMasterSecret()
+
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := cl.NewCredentialManager(clParamSizes, pubKey, knownAttrs, committedAttrs, hiddenAttrs)
+	credManager, err := cl.NewCredentialManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
+		hiddenAttrs)
+
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
@@ -54,12 +58,18 @@ func TestCL(t *testing.T) {
 
 	credIssueNonceOrg, err := clClient.GetCredentialIssueNonce()
 
-	credentialRequest, err := credManager.GetCredentialRequest(credIssueNonceOrg)
+	credReq, err := credManager.GetCredentialRequest(credIssueNonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
+	cred, AProof, err := clClient.IssueCredential(credReq)
+	if err != nil {
+		t.Errorf("error when calling IssueCredential: %v", err)
+	}
+
 	fmt.Println("++++++++++++++++++")
-	fmt.Println(credentialRequest)
+	fmt.Println(cred)
+	fmt.Println(AProof)
 
 }

@@ -42,6 +42,8 @@ message Message {
 		PseudonymsysIssueProofRandomDataEC pseudonymsys_issue_proof_random_data_ec = 22;
 		PseudonymsysTransferCredentialDataEC pseudonymsys_transfer_credential_data_ec = 23;
 		SessionKey SessionKey = 30;
+		CLCredReq CLCredReq = 31;
+		CLCredential CLCredential = 32;
 	}
 	int32 clientId = 28;
 }
@@ -240,4 +242,16 @@ message CSPaillierPubKey {
 
 message SessionKey {
 	string value = 1;
+}
+
+message CLCredReq {
+	bytes Nym = 1;
+	repeated bytes KnownAttrs = 2;
+	repeated bytes CommitmentsOfAttrs = 3;
+}
+
+message CLCredential {
+	bytes A = 1;
+	bytes E = 2;
+	bytes V11 = 3;
 }

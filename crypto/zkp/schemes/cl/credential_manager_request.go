@@ -29,6 +29,9 @@ import (
 )
 
 type CredentialRequest struct {
+	Nym *big.Int
+	KnownAttrs []*big.Int
+	CommitmentsOfAttrs []*big.Int
 	NymProof                 *dlogproofs.SchnorrProof
 	U                        *big.Int
 	UProof                   *qrspecialrsaproofs.RepresentationProof
@@ -36,10 +39,13 @@ type CredentialRequest struct {
 	Nonce                    *big.Int
 }
 
-func NewCredentialRequest(nymProof *dlogproofs.SchnorrProof, U *big.Int,
-	UProof *qrspecialrsaproofs.RepresentationProof, commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof,
-	nonce *big.Int) *CredentialRequest {
+func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nymProof *dlogproofs.SchnorrProof,
+	U *big.Int, UProof *qrspecialrsaproofs.RepresentationProof,
+	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof, nonce *big.Int) *CredentialRequest {
 	return &CredentialRequest{
+		Nym: nym,
+		KnownAttrs: knownAttrs,
+		CommitmentsOfAttrs: commitmentsOfAttrs,
 		NymProof: nymProof,
 		U:        U,
 		UProof:   UProof,
@@ -122,7 +128,7 @@ func (m *CredentialManager) getUProofRandomData(prover *qrspecialrsaproofs.Repre
 func (m *CredentialManager) getCredReqChallenge(U, nym, nonceOrg *big.Int) *big.Int {
 	context := m.PubKey.GetContext()
 	l := []*big.Int{context, U, nym, nonceOrg}
-	l = append(l, m.commitmentsOfAttrs...) // TODO: add other values
+	l = append(l, m.CommitmentsOfAttrs...) // TODO: add other values
 
 	return common.Hash(l...)
 }

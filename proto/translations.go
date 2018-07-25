@@ -22,6 +22,7 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
 type PbConvertibleType interface {
@@ -52,4 +53,36 @@ func ToPbPair(el *common.Pair) *Pair {
 		A: el.A.Bytes(),
 		B: el.B.Bytes(),
 	}
+}
+
+func ToPbCredentialRequest(r *cl.CredentialRequest) *CLCredReq {
+	knownAttrs := make([][]byte, len(r.KnownAttrs))
+	for i, a := range(r.KnownAttrs){
+		knownAttrs[i] = a.Bytes()
+	}
+	commitmentsOfAttrs := make([][]byte, len(r.CommitmentsOfAttrs))
+	for i, a := range(r.CommitmentsOfAttrs){
+		commitmentsOfAttrs[i] = a.Bytes()
+	}
+
+	return &CLCredReq{
+		Nym: r.Nym.Bytes(),
+		KnownAttrs: knownAttrs,
+		CommitmentsOfAttrs: commitmentsOfAttrs,
+	}
+}
+
+func (r *CLCredReq) GetNativeType() *cl.CredentialRequest {
+	nym := new(big.Int).SetBytes(r.Nym)
+	knownAttrs := make([]*big.Int, len(r.KnownAttrs))
+	for i, a := range(r.KnownAttrs){
+		knownAttrs[i] = new(big.Int).SetBytes(a)
+	}
+	commitmentsOfAttrs := make([]*big.Int, len(r.CommitmentsOfAttrs))
+	for i, a := range(r.CommitmentsOfAttrs){
+		commitmentsOfAttrs[i] = new(big.Int).SetBytes(a)
+	}
+
+
+	return cl.NewCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, nil, nil, nil, nil, nil)
 }

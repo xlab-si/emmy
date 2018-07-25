@@ -33,23 +33,12 @@ import (
 )
 
 func (s *Server) GetCredentialIssueNonce(stream pb.CL_GetCredentialIssueNonceServer) error {
-	/*
-		req, err := s.receive(stream)
-		if err != nil {
-			return err
-		}
-	*/
-
-	clParamSizes := cl.GetDefaultParamSizes()
-
-	orgName := "organization 1"
-	org, err := cl.NewOrg(orgName, clParamSizes)
+	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
 	if err != nil {
-		return fmt.Errorf("error when generating CL org: %v", err)
+		return err
 	}
 
 	nonce := org.GetCredentialIssueNonce()
-
 	resp := &pb.Message{
 		Content: &pb.Message_Bigint{
 			&pb.BigInt{
@@ -61,6 +50,41 @@ func (s *Server) GetCredentialIssueNonce(stream pb.CL_GetCredentialIssueNonceSer
 	if err := s.send(resp, stream); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
+	fmt.Println("------------sss-----------------------------")
+	req, err := s.receive(stream)
+	fmt.Println(err)
+	if err != nil {
+		return err
+	}
+
+	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	if err != nil {
+		return err
+	}
+
+	cReq := req.GetCLCredReq()
+	credReq := cReq.GetNativeType()
+
+	fmt.Println("????????????/////")
+	fmt.Println(credReq.KnownAttrs)
+
+
+	credential, AProof, err := org.IssueCredential(credReq)
+	if err != nil {
+		return fmt.Errorf("error when issuing credential: %v", err)
+	}
+
+
+	fmt.Println("===================")
+	fmt.Println(credential)
+	fmt.Println(AProof)
+
+
 
 	return nil
 }
