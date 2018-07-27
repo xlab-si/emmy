@@ -45,7 +45,7 @@ type CredentialManager struct {
 									  // proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
 	v1                 *big.Int                                       // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	attrsCommitters           []*commitments.DamgardFujisakiCommitter // committers for committedAttrs
-	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver
+	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver // for proving that you know how to open CommitmentsOfAttrs
 	credReqNonce              *big.Int
 }
 

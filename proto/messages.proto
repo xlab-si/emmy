@@ -96,6 +96,15 @@ message SchnorrProofData {
 	bytes Z = 1;
 }
 
+message SchnorrProof {
+	// Note that here we don't have A and B as in SchnorrProofRandomData because usually when proving
+	// the knowledge of X such that A^X = B, A is known beforehand (as part of public key).
+	// So here ProofRandomData is actually only X.
+	bytes ProofRandomData = 1;
+	bytes Challenge = 2;
+	repeated bytes ProofData = 3;
+}
+
 message SchnorrECProofRandomData {
 	ECGroupElement X = 1;
 	ECGroupElement A = 2;
@@ -248,6 +257,8 @@ message CLCredReq {
 	bytes Nym = 1;
 	repeated bytes KnownAttrs = 2;
 	repeated bytes CommitmentsOfAttrs = 3;
+	SchnorrProof NymProof = 4;
+	bytes U = 5;
 }
 
 message CLCredential {

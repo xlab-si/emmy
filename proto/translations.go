@@ -23,6 +23,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/groups"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
+	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type PbConvertibleType interface {
@@ -65,10 +66,22 @@ func ToPbCredentialRequest(r *cl.CredentialRequest) *CLCredReq {
 		commitmentsOfAttrs[i] = a.Bytes()
 	}
 
+	pData := make([][]byte, len(r.NymProof.ProofData))
+	for i, p := range(r.NymProof.ProofData){
+		pData[i] = p.Bytes()
+	}
+	nymProof := &SchnorrProof{
+		ProofRandomData: r.NymProof.ProofRandomData.Bytes(),
+		Challenge: r.NymProof.Challenge.Bytes(),
+		ProofData: pData,
+	}
+
 	return &CLCredReq{
 		Nym: r.Nym.Bytes(),
 		KnownAttrs: knownAttrs,
 		CommitmentsOfAttrs: commitmentsOfAttrs,
+		NymProof: nymProof,
+		U: r.U.Bytes(),
 	}
 }
 
@@ -83,6 +96,14 @@ func (r *CLCredReq) GetNativeType() *cl.CredentialRequest {
 		commitmentsOfAttrs[i] = new(big.Int).SetBytes(a)
 	}
 
+	pData := make([]*big.Int, len(r.NymProof.ProofData))
+	for i, p := range(r.NymProof.ProofData){
+		pData[i] = new(big.Int).SetBytes(p)
+	}
+	schnorrProof := dlogproofs.NewSchnorrProof(new(big.Int).SetBytes(r.NymProof.ProofRandomData),
+		new(big.Int).SetBytes(r.NymProof.Challenge), pData)
 
-	return cl.NewCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, nil, nil, nil, nil, nil)
+	U := new(big.Int).SetBytes(r.U)
+
+	return cl.NewCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, schnorrProof, U, nil, nil, nil)
 }
