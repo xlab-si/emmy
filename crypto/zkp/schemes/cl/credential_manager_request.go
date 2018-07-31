@@ -98,7 +98,6 @@ func (m *CredentialManager) getUProver(U *big.Int) *qrspecialrsaproofs.Represent
 
 	// bases are [R_1, ..., R_L, S]
 	bases := append(m.PubKey.RsHidden, m.PubKey.S)
-
 	prover := qrspecialrsaproofs.NewRepresentationProver(group, m.Params.SecParam,
 		secrets[:], bases[:], U)
 	return prover

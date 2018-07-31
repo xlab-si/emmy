@@ -32,7 +32,12 @@ import (
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
-func (s *Server) GetCredentialIssueNonce(stream pb.CL_GetCredentialIssueNonceServer) error {
+func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
 	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
 	if err != nil {
 		return err
@@ -51,28 +56,16 @@ func (s *Server) GetCredentialIssueNonce(stream pb.CL_GetCredentialIssueNonceSer
 		return err
 	}
 
-	return nil
-}
-
-func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
-	fmt.Println("------------sss-----------------------------")
-	req, err := s.receive(stream)
-	fmt.Println(err)
-	if err != nil {
-		return err
-	}
-
-	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	req, err = s.receive(stream)
 	if err != nil {
 		return err
 	}
 
 	cReq := req.GetCLCredReq()
-	credReq := cReq.GetNativeType()
-
-	fmt.Println("????????????/////")
-	fmt.Println(credReq.KnownAttrs)
-
+	credReq, err := cReq.GetNativeType()
+	if err != nil {
+		return err
+	}
 
 	credential, AProof, err := org.IssueCredential(credReq)
 	if err != nil {

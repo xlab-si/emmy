@@ -96,13 +96,22 @@ message SchnorrProofData {
 	bytes Z = 1;
 }
 
-message SchnorrProof {
+message FiatShamir {
+    // Used for example for SchnorrProof and RepresentationProof where challenge is constructed by prover
+	// using hash function.
 	// Note that here we don't have A and B as in SchnorrProofRandomData because usually when proving
 	// the knowledge of X such that A^X = B, A is known beforehand (as part of public key).
 	// So here ProofRandomData is actually only X.
 	bytes ProofRandomData = 1;
 	bytes Challenge = 2;
 	repeated bytes ProofData = 3;
+}
+
+message FiatShamirAlsoNeg {
+    // For proofs where proof data can be negative (see RepresentationProof).
+	bytes ProofRandomData = 1;
+	bytes Challenge = 2;
+	repeated string ProofData = 3;
 }
 
 message SchnorrECProofRandomData {
@@ -257,8 +266,11 @@ message CLCredReq {
 	bytes Nym = 1;
 	repeated bytes KnownAttrs = 2;
 	repeated bytes CommitmentsOfAttrs = 3;
-	SchnorrProof NymProof = 4;
+	FiatShamir NymProof = 4;
 	bytes U = 5;
+	FiatShamirAlsoNeg UProof = 6;
+	repeated FiatShamir CommitmentsOfAttrsProofs = 7;
+	bytes Nonce = 8;
 }
 
 message CLCredential {

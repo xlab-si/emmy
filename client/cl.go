@@ -47,9 +47,10 @@ func NewCLClient(conn *grpc.ClientConn) (*CLClient, error) {
 	}, nil
 }
 
-func (c *CLClient) GetCredentialIssueNonce() (*big.Int, error) {
-	if err := c.openStream(c.grpcClient, "GetCredentialIssueNonce"); err != nil {
-		return nil, err
+func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Credential,
+	*qrspecialrsaproofs.RepresentationProof, error) {
+	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
+		return nil, nil, err
 	}
 	defer c.closeStream()
 
@@ -59,29 +60,23 @@ func (c *CLClient) GetCredentialIssueNonce() (*big.Int, error) {
 
 	resp, err := c.getResponseTo(initMsg)
 	if err != nil {
-		return nil, err
-	}
-
-	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
-	fmt.Println(nonce)
-
-	return nonce, nil
-}
-
-func (c *CLClient) IssueCredential(credReq *cl.CredentialRequest) (*cl.Credential,
-	*qrspecialrsaproofs.RepresentationProof, error) {
-	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
 		return nil, nil, err
 	}
-	defer c.closeStream()
+
+	credIssueNonceOrg := new(big.Int).SetBytes(resp.GetBigint().X1)
+
+	credReq, err := credManager.GetCredentialRequest(credIssueNonceOrg)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	cReq := proto.ToPbCredentialRequest(credReq)
 
-	initMsg := &pb.Message{
+	credReqMsg := &pb.Message{
 		ClientId: c.id,
 		Content: &pb.Message_CLCredReq{cReq},
 	}
-	resp, err := c.getResponseTo(initMsg)
+	resp, err = c.getResponseTo(credReqMsg)
 	if err != nil {
 		return nil, nil, err
 	}

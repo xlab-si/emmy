@@ -97,7 +97,6 @@ func (i *OrgCredentialIssuer) verifyChallenge(challenge *big.Int) bool {
 	l := []*big.Int{context, i.U, i.nym, i.Org.credentialIssueNonceOrg}
 	l = append(l, i.commitmentsOfAttrs...)
 	c := common.Hash(l...)
-
 	return c.Cmp(challenge) == 0
 }
 
@@ -140,7 +139,6 @@ func (i *OrgCredentialIssuer) verifyCommitmentsOfAttrs(commitmentsOfAttrsProofs 
 
 func (i *OrgCredentialIssuer) VerifyCredentialRequest(cr *CredentialRequest) bool {
 	i.U = cr.U
-
 	return i.verifyNym(cr.NymProof) &&
 		i.verifyU(cr.UProof) &&
 		i.verifyCommitmentsOfAttrs(cr.CommitmentsOfAttrsProofs) &&

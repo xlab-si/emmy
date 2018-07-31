@@ -56,14 +56,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("Error when initializing NewCLClient")
 	}
 
-	credIssueNonceOrg, err := clClient.GetCredentialIssueNonce()
-
-	credReq, err := credManager.GetCredentialRequest(credIssueNonceOrg)
-	if err != nil {
-		t.Errorf("error when generating credential request: %v", err)
-	}
-
-	cred, AProof, err := clClient.IssueCredential(credReq)
+	cred, AProof, err := clClient.IssueCredential(credManager)
 	if err != nil {
 		t.Errorf("error when calling IssueCredential: %v", err)
 	}
