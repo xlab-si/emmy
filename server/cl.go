@@ -18,18 +18,9 @@
 package server
 
 import (
-	//"math/big"
-
-	pb "github.com/xlab-si/emmy/proto"
-	/*
-		"github.com/xlab-si/emmy/config"
-		"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-		"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
-		"google.golang.org/grpc/codes"
-		"google.golang.org/grpc/status"
-	*/
 	"fmt"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
+	pb "github.com/xlab-si/emmy/proto"
 )
 
 func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
@@ -67,17 +58,97 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
-	credential, AProof, err := org.IssueCredential(credReq)
+	cred, AProof, err := org.IssueCredential(credReq)
 	if err != nil {
 		return fmt.Errorf("error when issuing credential: %v", err)
 	}
 
+	pbCred := pb.ToPbCLCredential(cred, AProof)
+	resp = &pb.Message{
+		Content: &pb.Message_CLCredential{pbCred},
+	}
 
-	fmt.Println("===================")
-	fmt.Println(credential)
-	fmt.Println(AProof)
+	if err := s.send(resp, stream); err != nil {
+		return err
+	}
 
+	return nil
+}
 
+func (s *Server) UpdateCredential(stream pb.CL_UpdateCredentialServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
+	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	if err != nil {
+		return err
+	}
+
+	u := req.GetUpdateClCredential()
+	nym, nonce, newKnownAttrs := u.GetNativeType()
+
+	cred, AProof, err := org.UpdateCredential(nym, nonce, newKnownAttrs)
+	if err != nil {
+		return fmt.Errorf("error when updating credential: %v", err)
+	}
+
+	pbCred := pb.ToPbCLCredential(cred, AProof)
+	resp := &pb.Message{
+		Content: &pb.Message_CLCredential{pbCred},
+	}
+
+	if err := s.send(resp, stream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
+	req, err := s.receive(stream)
+	if err != nil {
+		return err
+	}
+
+	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	if err != nil {
+		return err
+	}
+
+	nonce := org.GetProveCredentialNonce()
+	resp := &pb.Message{
+		Content: &pb.Message_Bigint{
+			&pb.BigInt{
+				X1: nonce.Bytes(),
+			},
+		},
+	}
+
+	if err := s.send(resp, stream); err != nil {
+		return err
+	}
+
+	req, err = s.receive(stream)
+	if err != nil {
+		return err
+	}
+
+	pReq := req.GetProveClCredential()
+	A, proof, knownAttrs, commitmentsOfAttrs, err := pReq.GetNativeType()
+	if err != nil {
+		return err
+	}
+
+	verified, err := org.ProveCredential(A, proof, knownAttrs, commitmentsOfAttrs)
+
+	resp = &pb.Message{
+		Content: &pb.Message_Status{&pb.Status{Success: verified}},
+	}
+	if err = s.send(resp, stream); err != nil {
+		return err
+	}
 
 	return nil
 }

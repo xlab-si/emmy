@@ -20,14 +20,8 @@ package client
 import (
 	"math/big"
 	"testing"
-	/*
-		"time"
 
-		"github.com/stretchr/testify/assert"
-		"github.com/xlab-si/emmy/config"
-		"github.com/xlab-si/emmy/server"
-	*/
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
@@ -56,13 +50,37 @@ func TestCL(t *testing.T) {
 		t.Errorf("Error when initializing NewCLClient")
 	}
 
-	cred, AProof, err := clClient.IssueCredential(credManager)
+	cred, err := clClient.IssueCredential(credManager)
 	if err != nil {
 		t.Errorf("error when calling IssueCredential: %v", err)
 	}
 
-	fmt.Println("++++++++++++++++++")
-	fmt.Println(cred)
-	fmt.Println(AProof)
+	// create new CredentialManager (updating or proving usually does not happen at the same time
+	// as issuing)
+	credManager, err = cl.NewCredentialManagerFromExisting(credManager.Nym, credManager.V1,
+		credManager.CredReqNonce, params, pubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
+		credManager.CommitmentsOfAttrs)
+	if err != nil {
+		t.Errorf("error when calling NewCredentialManagerFromExisting: %v", err)
+	}
 
+	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
+
+	cred1, err := clClient.UpdateCredential(credManager, newKnownAttrs)
+	if err != nil {
+		t.Errorf("error when updating credential: %v", err)
+	}
+
+	proved, err := clClient.ProveCredential(credManager, cred, knownAttrs)
+	if err != nil {
+		t.Errorf("error when proving possession of a credential: %v", err)
+	}
+	assert.Equal(t, true, proved, "possesion of a credential proof failed")
+
+	proved1, err := clClient.ProveCredential(credManager, cred1, newKnownAttrs)
+	if err != nil {
+		t.Errorf("error when proving possession of an updated credential: %v", err)
+	}
+
+	assert.Equal(t, true, proved1, "possesion of an updated credential proof failed")
 }

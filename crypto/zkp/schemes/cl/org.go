@@ -216,7 +216,6 @@ func (o *Org) VerifyCredentialRequest(cr *CredentialRequest) (bool, error) {
 }
 
 func (o *Org) IssueCredential(credReq *CredentialRequest) (*Credential, *qrspecialrsaproofs.RepresentationProof, error) {
-
 	verified, err := o.VerifyCredentialRequest(credReq)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when verifying credential request: %v", err)
@@ -260,7 +259,7 @@ func (o *Org) GetProveCredentialNonce() *big.Int {
 }
 
 func (o *Org) ProveCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
-	knownAttrs []*big.Int) (bool, error) {
+	knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
 	ver := qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	bases := append(o.PubKey.RsHidden, A)
 	bases = append(bases, o.PubKey.S)
@@ -271,8 +270,8 @@ func (o *Org) ProveCredential(A *big.Int, proof *qrspecialrsaproofs.Representati
 		denom = o.Group.Mul(denom, t1)
 	}
 
-	for i := 0; i < len(o.credentialIssuer.commitmentsOfAttrs); i++ {
-		t1 := o.Group.Exp(o.PubKey.RsCommitted[i], o.credentialIssuer.commitmentsOfAttrs[i])
+	for i := 0; i < len(commitmentsOfAttrs); i++ {
+		t1 := o.Group.Exp(o.PubKey.RsCommitted[i], commitmentsOfAttrs[i])
 		denom = o.Group.Mul(denom, t1)
 	}
 	denomInv := o.Group.Inv(denom)
@@ -326,15 +325,15 @@ func (r *ReceiverRecord) UnmarshalBinary(data []byte) error {
 
 type Credential struct {
 	A   *big.Int
-	e   *big.Int
-	v11 *big.Int
+	E   *big.Int
+	V11 *big.Int
 }
 
 func NewCredential(A, e, v11 *big.Int) *Credential {
 	return &Credential{
 		A:   A,
-		e:   e,
-		v11: v11,
+		E:   e,
+		V11: v11,
 	}
 }
 

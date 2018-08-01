@@ -71,7 +71,7 @@ func TestCL(t *testing.T) {
 
 	// create new CredentialManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = NewCredentialManagerFromExisting(credManager.Nym, credManager.v1, credReq.Nonce,
+	credManager, err = NewCredentialManagerFromExisting(credManager.Nym, credManager.V1, credManager.CredReqNonce,
 		params, org.PubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
 		credManager.CommitmentsOfAttrs)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when building credential proof: %v", err)
 	}
 
-	cVerified, err := org.ProveCredential(randCred.A, proof, newKnownAttrs)
+	cVerified, err := org.ProveCredential(randCred.A, proof, newKnownAttrs, credManager.CommitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}

@@ -18,21 +18,13 @@
 package client
 
 import (
-	pb "github.com/xlab-si/emmy/proto"
-	"google.golang.org/grpc"
-	"math/big"
-	/*
-		"fmt"
-
-		"github.com/xlab-si/emmy/crypto/common"
-		"github.com/xlab-si/emmy/crypto/groups"
-		"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-		"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
-	*/
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
+	"math/big"
+
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 	"github.com/xlab-si/emmy/proto"
+	pb "github.com/xlab-si/emmy/proto"
+	"google.golang.org/grpc"
 )
 
 type CLClient struct {
@@ -47,10 +39,9 @@ func NewCLClient(conn *grpc.ClientConn) (*CLClient, error) {
 	}, nil
 }
 
-func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Credential,
-	*qrspecialrsaproofs.RepresentationProof, error) {
+func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Credential, error) {
 	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer c.closeStream()
 
@@ -60,31 +51,114 @@ func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Crede
 
 	resp, err := c.getResponseTo(initMsg)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	credIssueNonceOrg := new(big.Int).SetBytes(resp.GetBigint().X1)
 
 	credReq, err := credManager.GetCredentialRequest(credIssueNonceOrg)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	cReq := proto.ToPbCredentialRequest(credReq)
 
 	credReqMsg := &pb.Message{
 		ClientId: c.id,
-		Content: &pb.Message_CLCredReq{cReq},
+		Content:  &pb.Message_CLCredReq{proto.ToPbCredentialRequest(credReq)},
 	}
 	resp, err = c.getResponseTo(credReqMsg)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	fmt.Println("response:")
-	fmt.Println(resp)
+	pbCred := resp.GetCLCredential()
+	credential, AProof, err := pbCred.GetNativeType()
+	if err != nil {
+		return nil, err
+	}
 
+	userVerified, err := credManager.VerifyCredential(credential, AProof)
+	if err != nil {
+		return nil, err
+	}
 
+	if userVerified {
+		return credential, nil
+	} else {
+		return nil, fmt.Errorf("credential not valid")
+	}
+}
 
-	return nil, nil, nil
+func (c *CLClient) UpdateCredential(credManager *cl.CredentialManager, newKnownAttrs []*big.Int) (*cl.Credential,
+	error) {
+	credManager.UpdateCredential(newKnownAttrs)
+
+	if err := c.openStream(c.grpcClient, "UpdateCredential"); err != nil {
+		return nil, err
+	}
+	defer c.closeStream()
+
+	initMsg := &pb.Message{
+		ClientId: c.id,
+		Content: &pb.Message_UpdateClCredential{
+			pb.ToPbUpdateCLCredential(credManager.Nym, credManager.CredReqNonce, newKnownAttrs),
+		},
+	}
+
+	resp, err := c.getResponseTo(initMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	pbCred := resp.GetCLCredential()
+	credential, AProof, err := pbCred.GetNativeType()
+	if err != nil {
+		return nil, err
+	}
+
+	userVerified, err := credManager.VerifyCredential(credential, AProof)
+	if err != nil {
+		return nil, err
+	}
+
+	if userVerified {
+		return credential, nil
+	} else {
+		return nil, fmt.Errorf("credential not valid")
+	}
+}
+
+func (c *CLClient) ProveCredential(credManager *cl.CredentialManager, cred *cl.Credential,
+	knownAttrs []*big.Int) (bool, error) {
+	if err := c.openStream(c.grpcClient, "ProveCredential"); err != nil {
+		return false, err
+	}
+	defer c.closeStream()
+
+	initMsg := &pb.Message{
+		ClientId: c.id,
+	}
+
+	resp, err := c.getResponseTo(initMsg)
+	if err != nil {
+		return false, err
+	}
+
+	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
+
+	randCred, proof, err := credManager.BuildCredentialProof(cred, nonce)
+	if err != nil {
+		return false, fmt.Errorf("error when building credential proof: %v", err)
+	}
+
+	proveMsg := &pb.Message{
+		ClientId: c.id,
+		Content: &pb.Message_ProveClCredential{proto.ToPbProveCLCredential(randCred.A, proof, knownAttrs,
+			credManager.CommitmentsOfAttrs)},
+	}
+	resp, err = c.getResponseTo(proveMsg)
+	if err != nil {
+		return false, err
+	}
+
+	return resp.GetStatus().Success, nil
 }

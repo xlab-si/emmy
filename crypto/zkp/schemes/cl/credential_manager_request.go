@@ -29,9 +29,9 @@ import (
 )
 
 type CredentialRequest struct {
-	Nym *big.Int
-	KnownAttrs []*big.Int
-	CommitmentsOfAttrs []*big.Int
+	Nym                      *big.Int
+	KnownAttrs               []*big.Int
+	CommitmentsOfAttrs       []*big.Int
 	NymProof                 *dlogproofs.SchnorrProof
 	U                        *big.Int
 	UProof                   *qrspecialrsaproofs.RepresentationProof
@@ -43,12 +43,12 @@ func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.In
 	U *big.Int, UProof *qrspecialrsaproofs.RepresentationProof,
 	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof, nonce *big.Int) *CredentialRequest {
 	return &CredentialRequest{
-		Nym: nym,
-		KnownAttrs: knownAttrs,
+		Nym:                nym,
+		KnownAttrs:         knownAttrs,
 		CommitmentsOfAttrs: commitmentsOfAttrs,
-		NymProof: nymProof,
-		U:        U,
-		UProof:   UProof,
+		NymProof:           nymProof,
+		U:                  U,
+		UProof:             UProof,
 		CommitmentsOfAttrsProofs: commitmentsOfAttrsProofs,
 		Nonce: nonce,
 	}
@@ -94,7 +94,7 @@ func (m *CredentialManager) getNymProver() (*dlogproofs.SchnorrProver, error) {
 func (m *CredentialManager) getUProver(U *big.Int) *qrspecialrsaproofs.RepresentationProver {
 	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
-	secrets := append(m.hiddenAttrs, m.v1)
+	secrets := append(m.hiddenAttrs, m.V1)
 
 	// bases are [R_1, ..., R_L, S]
 	bases := append(m.PubKey.RsHidden, m.PubKey.S)

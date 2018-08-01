@@ -156,3 +156,110 @@ func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
 	return cl.NewCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, nymProof, U, UProof,
 		commitmentsOfAttrsProofs, new(big.Int).SetBytes(r.Nonce)), nil
 }
+
+func ToPbCLCredential(cred *cl.Credential, AProof *qrspecialrsaproofs.RepresentationProof) *CLCredential {
+	AProofFS := &FiatShamirAlsoNeg{
+		ProofRandomData: AProof.ProofRandomData.Bytes(),
+		Challenge:       AProof.Challenge.Bytes(),
+		ProofData:       []string{AProof.ProofData[0].String()},
+	}
+
+	return &CLCredential{
+		A:      cred.A.Bytes(),
+		E:      cred.E.Bytes(),
+		V11:    cred.V11.Bytes(),
+		AProof: AProofFS,
+	}
+}
+
+func (cred *CLCredential) GetNativeType() (*cl.Credential, *qrspecialrsaproofs.RepresentationProof, error) {
+	si, success := new(big.Int).SetString(cred.AProof.ProofData[0], 10)
+	if !success {
+		return nil, nil, fmt.Errorf("error when initializing big.Int from string")
+	}
+
+	AProof := qrspecialrsaproofs.NewRepresentationProof(new(big.Int).SetBytes(cred.AProof.ProofRandomData),
+		new(big.Int).SetBytes(cred.AProof.Challenge), []*big.Int{si})
+
+	return cl.NewCredential(new(big.Int).SetBytes(cred.A), new(big.Int).SetBytes(cred.E),
+		new(big.Int).SetBytes(cred.V11)), AProof, nil
+}
+
+func ToPbUpdateCLCredential(nym, nonce *big.Int, newKnownAttrs []*big.Int) *UpdateCLCredential {
+	knownAttrs := make([][]byte, len(newKnownAttrs))
+	for i, a := range newKnownAttrs {
+		knownAttrs[i] = a.Bytes()
+	}
+
+	return &UpdateCLCredential{
+		Nym:           nym.Bytes(),
+		Nonce:         nonce.Bytes(),
+		NewKnownAttrs: knownAttrs,
+	}
+}
+
+func (u *UpdateCLCredential) GetNativeType() (*big.Int, *big.Int, []*big.Int) {
+	attrs := make([]*big.Int, len(u.NewKnownAttrs))
+	for i, a := range u.NewKnownAttrs {
+		attrs[i] = new(big.Int).SetBytes(a)
+	}
+
+	return new(big.Int).SetBytes(u.Nym), new(big.Int).SetBytes(u.Nonce), attrs
+}
+
+func ToPbProveCLCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
+	knownAttrs, commitmentsOfAttrs []*big.Int) *ProveCLCredential {
+
+	pData := make([]string, len(proof.ProofData))
+	for i, p := range proof.ProofData {
+		pData[i] = p.String()
+	}
+	proofFS := &FiatShamirAlsoNeg{
+		ProofRandomData: proof.ProofRandomData.Bytes(),
+		Challenge:       proof.Challenge.Bytes(),
+		ProofData:       pData,
+	}
+
+	kAttrs := make([][]byte, len(knownAttrs))
+	for i, a := range knownAttrs {
+		kAttrs[i] = a.Bytes()
+	}
+
+	cAttrs := make([][]byte, len(commitmentsOfAttrs))
+	for i, a := range commitmentsOfAttrs {
+		cAttrs[i] = a.Bytes()
+	}
+
+	return &ProveCLCredential{
+		A:                  A.Bytes(),
+		Proof:              proofFS,
+		KnownAttrs:         kAttrs,
+		CommitmentsOfAttrs: cAttrs,
+	}
+}
+
+func (p *ProveCLCredential) GetNativeType() (*big.Int, *qrspecialrsaproofs.RepresentationProof, []*big.Int,
+	[]*big.Int, error) {
+	attrs := make([]*big.Int, len(p.KnownAttrs))
+	for i, a := range p.KnownAttrs {
+		attrs[i] = new(big.Int).SetBytes(a)
+	}
+
+	cAttrs := make([]*big.Int, len(p.CommitmentsOfAttrs))
+	for i, a := range p.CommitmentsOfAttrs {
+		cAttrs[i] = new(big.Int).SetBytes(a)
+	}
+
+	pData := make([]*big.Int, len(p.Proof.ProofData))
+	for i, p := range p.Proof.ProofData {
+		si, success := new(big.Int).SetString(p, 10)
+		if !success {
+			return nil, nil, nil, nil, fmt.Errorf("error when initializing big.Int from string")
+		}
+		pData[i] = si
+	}
+	proof := qrspecialrsaproofs.NewRepresentationProof(new(big.Int).SetBytes(p.Proof.ProofRandomData),
+		new(big.Int).SetBytes(p.Proof.Challenge), pData)
+
+	return new(big.Int).SetBytes(p.A), proof, attrs, cAttrs, nil
+}

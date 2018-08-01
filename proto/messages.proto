@@ -44,6 +44,8 @@ message Message {
 		SessionKey SessionKey = 30;
 		CLCredReq CLCredReq = 31;
 		CLCredential CLCredential = 32;
+		UpdateCLCredential update_cl_credential = 33;
+		ProveCLCredential prove_cl_credential = 34;
 	}
 	int32 clientId = 28;
 }
@@ -277,4 +279,18 @@ message CLCredential {
 	bytes A = 1;
 	bytes E = 2;
 	bytes V11 = 3;
+	FiatShamirAlsoNeg AProof = 4;
+}
+
+message UpdateCLCredential {
+	bytes Nym = 1;
+	bytes Nonce = 2;
+	repeated bytes NewKnownAttrs = 3;
+}
+
+message ProveCLCredential {
+	bytes A = 1;
+	FiatShamirAlsoNeg Proof = 2;
+	repeated bytes KnownAttrs = 3;
+	repeated bytes CommitmentsOfAttrs = 4;
 }
