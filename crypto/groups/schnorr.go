@@ -74,31 +74,6 @@ func NewSchnorrGroupFromParams(p, g, q *big.Int) *SchnorrGroup {
 	}
 }
 
-// NewSchnorrSafePrimeGroup generates random SchnorrGroup with generator G and
-// parameters P and Q where P = 2 * Q + 1. Order of G is Q.
-// Note that this group is a special case of group returned by GetSchnorrGroup (R = 2).
-func NewSchnorrSafePrimeGroup(modulusBitLength int) (*SchnorrGroup, error) {
-	p, err := common.GetSafePrime(modulusBitLength)
-	if err != nil {
-		return nil, err
-	}
-	pMin := new(big.Int)
-	pMin.Sub(p, big.NewInt(1))
-	q := new(big.Int).Div(pMin, big.NewInt(2))
-	// p = 2 * q + 1
-
-	g, err := common.GetGeneratorOfZnSubgroup(p, pMin, q)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SchnorrGroup{
-		P: p,
-		G: g,
-		Q: q,
-	}, nil
-}
-
 // GetRandomElement returns a random element from this group. Note that elements from this group
 // are integers smaller than group.P, but not all - only Q of them. GetRandomElement returns
 // one (random) of these Q elements.
