@@ -285,7 +285,7 @@ certificate store location beforehand.
  * Camenisch-Lysyanskaya scheme for anonymous credentials [2]
  * Camenisch-Lysyanskaya scheme based on pairings [14]
  * Efficient attributes for anonymous credentials [15]
- * for all proofs use Damgard technique [13] to turn sigma protocol in ZKP (Schnorr protocol actually already contains a technique to turn sigma protocol into ZKP, but other technique will be used and applied for all proofs)
+ * for all proofs use Damgård technique [13] to turn sigma protocol in ZKP (Schnorr protocol actually already contains a technique to turn sigma protocol into ZKP, but other technique will be used and applied for all proofs)
  * refactor proofs to set all parameters in a constructor (see comment in Schnorr prover)
  * optional: generator of communication layer code (automatic generation of code in client and server packages)
 
@@ -313,9 +313,9 @@ certificate store location beforehand.
 
 [11] Helger Lipmaa. On diophantine complexity and statistical zero-knowledge arguments. In ASIACRYPT, volume 2894 of Lecture Notes in Computer Science, pages 398–415. Springer, 2003.
 
-[12] I. Damgard and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
+[12] I. Damgård and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
 
-[13] I. Damgard. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
+[13] I. Damgård. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
 
 [14] Camenisch, Jan, and Anna Lysyanskaya. "Signature schemes and anonymous credentials from bilinear maps." Annual International Cryptology Conference. Springer, Berlin, Heidelberg, 2004.
 

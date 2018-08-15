@@ -27,8 +27,7 @@ import (
 func TestCL(t *testing.T) {
 	params := GetDefaultParamSizes()
 
-	orgName := "organization 1"
-	org, err := NewOrg(orgName, params)
+	org, err := NewOrg(params)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
@@ -64,7 +63,7 @@ func TestCL(t *testing.T) {
 
 	// Before updating a credential, create a new Org object (obtaining and updating
 	// credential usually don't happen at the same time)
-	org, err = NewOrgFromParams(orgName, params, org.PubKey, org.SecKey)
+	org, err = NewOrgFromParams(params, org.PubKey, org.SecKey)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
@@ -91,6 +90,13 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
 	assert.Equal(t, true, userVerified, "credential update failed")
+
+	// Some other organization which would like to verify the credential can instantiate org without sec key.
+	// It only needs pub key of the organization that issued a credential.
+	org, err = NewOrgFromParams(params, org.PubKey, nil)
+	if err != nil {
+		t.Errorf("error when generating CL org: %v", err)
+	}
 
 	nonce := org.GetProveCredentialNonce()
 	randCred, proof, err := credManager.BuildCredentialProof(credential1, nonce)
