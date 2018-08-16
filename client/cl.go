@@ -127,8 +127,19 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredentialManager, newKnownA
 	}
 }
 
+// TODO: remove this function (double in org.go)
+func contains(arr []int, el int) bool {
+	for _, i := range arr {
+		if el == i {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *CLClient) ProveCredential(credManager *cl.CredentialManager, cred *cl.Credential,
-	knownAttrs []*big.Int) (bool, error) {
+	knownAttrs []*big.Int, revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) (bool, error) {
 	if err := c.openStream(c.grpcClient, "ProveCredential"); err != nil {
 		return false, err
 	}
@@ -145,15 +156,29 @@ func (c *CLClient) ProveCredential(credManager *cl.CredentialManager, cred *cl.C
 
 	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
 
-	randCred, proof, err := credManager.BuildCredentialProof(cred, nonce)
+	randCred, proof, err := credManager.BuildCredentialProof(cred, revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		return false, fmt.Errorf("error when building credential proof: %v", err)
 	}
 
+	filteredKnownAttrs := []*big.Int{}
+	for i := 0; i < len(knownAttrs); i++ {
+		if contains(revealedKnownAttrsIndices, i)  {
+			filteredKnownAttrs = append(filteredKnownAttrs, knownAttrs[i])
+		}
+	}
+	filteredCommitmentsOfAttrs := []*big.Int{}
+	for i := 0; i < len(credManager.CommitmentsOfAttrs); i++ {
+		if contains(revealedCommitmentsOfAttrsIndices, i)  {
+			filteredCommitmentsOfAttrs = append(filteredCommitmentsOfAttrs, credManager.CommitmentsOfAttrs[i])
+		}
+	}
+
 	proveMsg := &pb.Message{
 		ClientId: c.id,
-		Content: &pb.Message_ProveClCredential{proto.ToPbProveCLCredential(randCred.A, proof, knownAttrs,
-			credManager.CommitmentsOfAttrs)},
+		Content: &pb.Message_ProveClCredential{proto.ToPbProveCLCredential(randCred.A, proof, filteredKnownAttrs,
+			filteredCommitmentsOfAttrs, revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices)},
 	}
 	resp, err = c.getResponseTo(proveMsg)
 	if err != nil {

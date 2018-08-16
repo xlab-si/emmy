@@ -108,6 +108,48 @@ While anonymity is obviously a MUST in e-voting, it might gradually become more 
  
 ### CL API
  
+Let's say University issues to each student a credential where the following attributes are written: name, gender, age,
+student status (graduate/postgraduate). University has its own public and secret key and plays the role of organization
+(when a student connects to the University, a new `Org` from `crypto/zkp/schemes/cl/org.go` is instantiated and 
+responsible for issuing a credential).
+
+First, a student needs to create a master secret key:
+
+```
+masterSecret := pubKey.GenerateUserMasterSecret() // pubKey is University public key
+```
+
+Now let's say variables `name`, `gender`, `age`, `studentStatus` contain big.Int representations for name, gender,
+age, studentStatus (support for different attribute is on TODO list). A student now creates `CredentialManager` which
+will interact with `Org` to obtain a credential (see test code in `client/cl_test.go`):
+
+```
+knownAttrs := []*big.Int{name, gender, age, studentStatus}
+committedAttrs := []*big.Int{}
+hiddenAttrs := []*big.Int{}
+credManager, err := cl.NewCredentialManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
+    hiddenAttrs)
+```
+
+Note that `committedAttrs` and `hiddentAttrs` are empty - these are needed for attributes for which the organization
+should know only commitments or nothing at all.
+
+Now a student instantiates a communication client:
+
+```
+clClient, err := NewCLClient(testGrpcClientConn)
+```
+
+Student now asks for credential:
+
+```
+cred, err := clClient.IssueCredential(credManager)
+```
+
+Now a student has a credential which can be used 
+
+
+
  
 ### How does CL work
  
@@ -118,6 +160,8 @@ While anonymity is obviously a MUST in e-voting, it might gradually become more 
  * Database layer
  * Refactor Camenisch-Lysyanskaya scheme (database records, challenge generation ... )
  * Additional proofs for Camenisch-Lysyanskaya scheme (range proof for attributes ... )
+ * Revocation for Camenisch-Lysyanskaya scheme
+ * Attribute types in Camenisch-Lysyanskaya scheme (string, int, date, enum)
  * Performance optimization
  * Efficient attributes for anonymous credentials [15]
  * Camenisch-Lysyanskaya scheme based on pairings [14]

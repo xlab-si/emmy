@@ -208,7 +208,8 @@ func (u *UpdateCLCredential) GetNativeType() (*big.Int, *big.Int, []*big.Int) {
 }
 
 func ToPbProveCLCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
-	knownAttrs, commitmentsOfAttrs []*big.Int) *ProveCLCredential {
+	knownAttrs, commitmentsOfAttrs []*big.Int,
+	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) *ProveCLCredential {
 
 	pData := make([]string, len(proof.ProofData))
 	for i, p := range proof.ProofData {
@@ -230,16 +231,28 @@ func ToPbProveCLCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationP
 		cAttrs[i] = a.Bytes()
 	}
 
+	revealedKnownAttrs := make([]int32, len(revealedKnownAttrsIndices))
+	for i, a := range revealedKnownAttrsIndices {
+		revealedKnownAttrs[i] = int32(a)
+	}
+
+	revealedCommitmentsOfAttrs := make([]int32, len(revealedCommitmentsOfAttrsIndices))
+	for i, a := range revealedCommitmentsOfAttrsIndices {
+		revealedCommitmentsOfAttrs[i] = int32(a)
+	}
+
 	return &ProveCLCredential{
 		A:                  A.Bytes(),
 		Proof:              proofFS,
 		KnownAttrs:         kAttrs,
 		CommitmentsOfAttrs: cAttrs,
+		RevealedKnownAttrs: revealedKnownAttrs,
+		RevealedCommitmentsOfAttrs: revealedCommitmentsOfAttrs,
 	}
 }
 
 func (p *ProveCLCredential) GetNativeType() (*big.Int, *qrspecialrsaproofs.RepresentationProof, []*big.Int,
-	[]*big.Int, error) {
+	[]*big.Int, []int, []int, error) {
 	attrs := make([]*big.Int, len(p.KnownAttrs))
 	for i, a := range p.KnownAttrs {
 		attrs[i] = new(big.Int).SetBytes(a)
@@ -254,12 +267,23 @@ func (p *ProveCLCredential) GetNativeType() (*big.Int, *qrspecialrsaproofs.Repre
 	for i, p := range p.Proof.ProofData {
 		si, success := new(big.Int).SetString(p, 10)
 		if !success {
-			return nil, nil, nil, nil, fmt.Errorf("error when initializing big.Int from string")
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("error when initializing big.Int from string")
 		}
 		pData[i] = si
 	}
 	proof := qrspecialrsaproofs.NewRepresentationProof(new(big.Int).SetBytes(p.Proof.ProofRandomData),
 		new(big.Int).SetBytes(p.Proof.Challenge), pData)
 
-	return new(big.Int).SetBytes(p.A), proof, attrs, cAttrs, nil
+	revealedKnownAttrsIndices := make([]int, len(p.RevealedKnownAttrs))
+	for i, a := range p.RevealedKnownAttrs {
+		revealedKnownAttrsIndices[i] = int(a)
+	}
+
+	revealedCommitmentsOfAttrsIndices := make([]int, len(p.RevealedCommitmentsOfAttrs))
+	for i, a := range p.RevealedCommitmentsOfAttrs {
+		revealedCommitmentsOfAttrsIndices[i] = int(a)
+	}
+
+	return new(big.Int).SetBytes(p.A), proof, attrs, cAttrs, revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices, nil
 }

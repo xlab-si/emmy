@@ -293,4 +293,6 @@ message ProveCLCredential {
 	FiatShamirAlsoNeg Proof = 2;
 	repeated bytes KnownAttrs = 3;
 	repeated bytes CommitmentsOfAttrs = 4;
+	repeated int32 RevealedKnownAttrs = 5;
+	repeated int32 RevealedCommitmentsOfAttrs = 6;
 }

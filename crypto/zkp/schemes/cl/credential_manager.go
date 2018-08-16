@@ -249,7 +249,8 @@ func (m *CredentialManager) GetCredProofChallenge(credProofRandomData, nonceOrg 
 	return common.Hash(l...)
 }
 
-func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big.Int) (*Credential,
+func (m *CredentialManager) BuildCredentialProof(cred *Credential, revealedKnownAttrsIndices,
+revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
 	*qrspecialrsaproofs.RepresentationProof, error) {
 	if m.V1 == nil {
 		return nil, nil, fmt.Errorf("v1 is not set (generated in GetCredentialRequest)")
@@ -258,21 +259,45 @@ func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
 	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
-	bases := append(m.PubKey.RsHidden, rCred.A)
+
+	bases := []*big.Int{}
+	unrevealedKnownAttrs := []*big.Int{}
+	unrevealedCommitmentsOfAttrs := []*big.Int{}
+	for i := 0; i < len(m.KnownAttrs); i++ {
+		if !contains(revealedKnownAttrsIndices, i)  {
+			bases = append(bases, m.PubKey.RsKnown[i])
+			unrevealedKnownAttrs = append(unrevealedKnownAttrs, m.KnownAttrs[i])
+		}
+	}
+	for i := 0; i < len(m.CommitmentsOfAttrs); i++ {
+		if !contains(revealedCommitmentsOfAttrsIndices, i)  {
+			bases = append(bases, m.PubKey.RsCommitted[i])
+			unrevealedCommitmentsOfAttrs = append(unrevealedCommitmentsOfAttrs, m.CommitmentsOfAttrs[i])
+		}
+	}
+	bases = append(bases, m.PubKey.RsHidden...)
+	bases = append(bases, rCred.A)
 	bases = append(bases, m.PubKey.S)
-	secrets := append(m.hiddenAttrs, rCred.E)
+
+	secrets := append(unrevealedKnownAttrs, unrevealedCommitmentsOfAttrs...)
+	secrets = append(secrets, m.hiddenAttrs...)
+	secrets = append(secrets, rCred.E)
 	v := new(big.Int).Add(rCred.V11, m.V1)
 	secrets = append(secrets, v)
 
 	denom := big.NewInt(1)
 	for i := 0; i < len(m.KnownAttrs); i++ {
-		t1 := group.Exp(m.PubKey.RsKnown[i], m.KnownAttrs[i])
-		denom = group.Mul(denom, t1)
+		if contains(revealedKnownAttrsIndices, i) {
+			t1 := group.Exp(m.PubKey.RsKnown[i], m.KnownAttrs[i])
+			denom = group.Mul(denom, t1)
+		}
 	}
 
 	for i := 0; i < len(m.committedAttrs); i++ {
-		t1 := group.Exp(m.PubKey.RsCommitted[i], m.CommitmentsOfAttrs[i])
-		denom = group.Mul(denom, t1)
+		if contains(revealedCommitmentsOfAttrsIndices, i) {
+			t1 := group.Exp(m.PubKey.RsCommitted[i], m.CommitmentsOfAttrs[i])
+			denom = group.Mul(denom, t1)
+		}
 	}
 	denomInv := group.Inv(denom)
 	y := group.Mul(m.PubKey.Z, denomInv)
@@ -287,9 +312,15 @@ func (m *CredentialManager) BuildCredentialProof(cred *Credential, nonceOrg *big
 	// boundary for v1
 	b_v1 := m.Params.VBitLen + m.Params.SecParam + m.Params.HashBitLen
 
-	boundaries := make([]int, len(m.PubKey.RsHidden))
-	for i, _ := range m.PubKey.RsHidden {
-		boundaries[i] = b_m
+	boundaries := []int{}
+	for i := 0; i < len(unrevealedKnownAttrs); i++ {
+		boundaries = append(boundaries, b_m)
+	}
+	for i := 0; i < len(unrevealedCommitmentsOfAttrs); i++ {
+		boundaries = append(boundaries, b_m)
+	}
+	for _, _ = range m.PubKey.RsHidden {
+		boundaries = append(boundaries, b_m)
 	}
 	boundaries = append(boundaries, b_e)
 	boundaries = append(boundaries, b_v1)

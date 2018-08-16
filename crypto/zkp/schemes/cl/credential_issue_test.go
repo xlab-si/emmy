@@ -98,13 +98,19 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
+	revealedKnownAttrsIndices := []int{1, 2} // reveal only the second and third known attribute
+	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
 	nonce := org.GetProveCredentialNonce()
-	randCred, proof, err := credManager.BuildCredentialProof(credential1, nonce)
+	randCred, proof, err := credManager.BuildCredentialProof(credential1, revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)
 	}
 
-	cVerified, err := org.ProveCredential(randCred.A, proof, newKnownAttrs, credManager.CommitmentsOfAttrs)
+	revealedKnownAttrs := newKnownAttrs
+	revealedCommitmentsOfAttrs := credManager.CommitmentsOfAttrs
+	cVerified, err := org.ProveCredential(randCred.A, proof, revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices, revealedKnownAttrs, revealedCommitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}

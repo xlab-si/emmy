@@ -136,12 +136,14 @@ func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
 	}
 
 	pReq := req.GetProveClCredential()
-	A, proof, knownAttrs, commitmentsOfAttrs, err := pReq.GetNativeType()
+	A, proof, knownAttrs, commitmentsOfAttrs, revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices, err := pReq.GetNativeType()
 	if err != nil {
 		return err
 	}
 
-	verified, err := org.ProveCredential(A, proof, knownAttrs, commitmentsOfAttrs)
+	verified, err := org.ProveCredential(A, proof, revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices, knownAttrs, commitmentsOfAttrs)
 
 	resp = &pb.Message{
 		Content: &pb.Message_Status{&pb.Status{Success: verified}},
