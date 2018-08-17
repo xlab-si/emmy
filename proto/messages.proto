@@ -42,6 +42,10 @@ message Message {
 		PseudonymsysIssueProofRandomDataEC pseudonymsys_issue_proof_random_data_ec = 22;
 		PseudonymsysTransferCredentialDataEC pseudonymsys_transfer_credential_data_ec = 23;
 		SessionKey SessionKey = 30;
+		CLCredReq CLCredReq = 31;
+		CLCredential CLCredential = 32;
+		UpdateCLCredential update_cl_credential = 33;
+		ProveCLCredential prove_cl_credential = 34;
 	}
 	int32 clientId = 28;
 }
@@ -92,6 +96,24 @@ message SchnorrProofRandomData {
 
 message SchnorrProofData {
 	bytes Z = 1;
+}
+
+message FiatShamir {
+    // Used for example for SchnorrProof and RepresentationProof where challenge is constructed by prover
+	// using hash function.
+	// Note that here we don't have A and B as in SchnorrProofRandomData because usually when proving
+	// the knowledge of X such that A^X = B, A is known beforehand (as part of public key).
+	// So here ProofRandomData is actually only X.
+	bytes ProofRandomData = 1;
+	bytes Challenge = 2;
+	repeated bytes ProofData = 3;
+}
+
+message FiatShamirAlsoNeg {
+    // For proofs where proof data can be negative (see RepresentationProof).
+	bytes ProofRandomData = 1;
+	bytes Challenge = 2;
+	repeated string ProofData = 3;
 }
 
 message SchnorrECProofRandomData {
@@ -240,4 +262,37 @@ message CSPaillierPubKey {
 
 message SessionKey {
 	string value = 1;
+}
+
+message CLCredReq {
+	bytes Nym = 1;
+	repeated bytes KnownAttrs = 2;
+	repeated bytes CommitmentsOfAttrs = 3;
+	FiatShamir NymProof = 4;
+	bytes U = 5;
+	FiatShamirAlsoNeg UProof = 6;
+	repeated FiatShamir CommitmentsOfAttrsProofs = 7;
+	bytes Nonce = 8;
+}
+
+message CLCredential {
+	bytes A = 1;
+	bytes E = 2;
+	bytes V11 = 3;
+	FiatShamirAlsoNeg AProof = 4;
+}
+
+message UpdateCLCredential {
+	bytes Nym = 1;
+	bytes Nonce = 2;
+	repeated bytes NewKnownAttrs = 3;
+}
+
+message ProveCLCredential {
+	bytes A = 1;
+	FiatShamirAlsoNeg Proof = 2;
+	repeated bytes KnownAttrs = 3;
+	repeated bytes CommitmentsOfAttrs = 4;
+	repeated int32 RevealedKnownAttrs = 5;
+	repeated int32 RevealedCommitmentsOfAttrs = 6;
 }

@@ -93,3 +93,14 @@ func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
 		return false, err
 	}
 }
+
+// Contains returns true if array contains a given element, otherwise false.
+func Contains(arr []int, el int) bool {
+	for _, i := range arr {
+		if el == i {
+			return true
+		}
+	}
+
+	return false
+}

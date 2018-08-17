@@ -1,4 +1,4 @@
-# emmy - Library for sigma protocols and zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
+# emmy - Library for zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
 Emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
 Zero-knowledge proofs are **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on 
@@ -6,10 +6,9 @@ the role of the client, and the verifier takes on the role of the server) where 
 of a secret without actually revealing the secret.
   
 Emmy also implements a communication layer supporting the execution of these protocols. 
-Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. 
-
-The library comes with a convenient CLI for running *emmy server* and *emmy client*s that 
-demonstrates the execution of selected interactive protocols between clients and the server.
+Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). 
+Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. Currently, the communication 
+is implemented for the two anonymous credential schemes (see [Currently offered cryptographic schemes](#currently-offered-cryptograhpic-schemes)).
 
 In addition, Emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
 package providing client wrappers and types that can be used for generating language bindings for 
@@ -22,8 +21,9 @@ various parts of Emmy library, please refer to additional documentation in the *
 Emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
 
 <!-- toc -->
+- [Currently offered cryptographic primitives](#currently-offered-cryptographic-primitives)
+- [Currently offered cryptographic schemes](#currently-offered-cryptograhpic-schemes)
 - [Installation](#installation)
-- [Currently supported crypto primitives](#currently-supported-crypto-primitives)
 - [Emmy CLI tool](#using-the-emmy-cli-tool)
   * [Emmy server](#emmy-server)
   * [Emmy clients](#emmy-clients)
@@ -31,6 +31,169 @@ Emmy library is named after a German mathematician [Emmy Noether](https://en.wik
 - [Further documentation](#documentation)
 <!-- tocstop -->
 
+# Currently offered cryptographic primitives
+
+The library supports building complex cryptographic schemes. To enable this various layers are needed:
+
+ * mathematical groups in which the operations take place (see `crypto/groups`)
+ * utilities for generating safe primes, group generators, for decomposing integers into squares (`crypto/common`)
+ * commitments (to commit to a chosen value while keeping it hidden to others, see `crypto/commitments`)
+ * zero-knowledge proofs as building blocks for schemes (protocols which are used as subprotocols in schemes, see `crypto/zkp`)
+ * communication layer to enable client-server interaction (for messages exchanged in protocols)
+ 
+## Groups
+
+The following groups are offered:
+
+ * &#8484;<sub>n</sub>* - group of all integers smaller than _n_ and coprime with _n_
+ * Schnorr group - cyclic subgroup of &#8484;<sub>p</sub>; the order of Schnorr group is _q_ where _p = qr + 1_ for some _r_ (_p_, _q_ are primes); 
+ the order of Schnorr group is smaller than of &#8484;<sub>p</sub> which means faster computations
+ * `RSA` - group of all integers smaller than _n_ and coprime with _n_, where _n_ is a product of two distinct large primes
+ * `QRRSA` - group of quadratic residues modulo _n_ where _n_ is a product of two primes
+ * `QRSpecialRSA` - group of quadratic residues modulo _n_ where _n_ is a product of two safe primes
+ * `ECGroup` - wrapper around Go `elliptic.Curve`
+ 
+## Commitments
+
+The following commitments are offered:
+
+ * Pedersen - for commitments in Schnorr group (supported &#8484;<sub>p</sub> and EC groups) 
+ * Damgard-Fujisaki [12] - for commitments in QRSpecialRSA group
+ * Q-One-Way based [9] (Damgard-Fujisaki should be used instead)
+ 
+## Zero-knowledge proofs
+
+ * Schnorr proofs (`crypto/zkp/primitives/dlogproofs`) - for proving the knowledge of dlog [5],
+dlog equality [7], dlog equality blinded transcript [4], partial dlog knowledge [8] (for all proofs &#8484;<sub>p</sub> and EC groups are supported)
+ * Proof of knowledge of representation (generalized Schnorr for multiple bases) [10]
+ * Damgard-Fujisaki proofs (`crypto/zkp/primitives/commitments`) [12] - for proving that you can open a commitment, 
+ that two commitments hide the same value, that a commitment contains a multiplication of two committed values, 
+ that the committed value is positive, that the committed value is a square, commitment range based on Lipmaa [11]
+ * QRSpecialRSA representation proof (like Schnorr but in QRSpecialRSA group, see `crypto/primitives/qrspecialrsaproofs`)
+ * Quadratic residuosity and nonresiduosity [6]
+ * Camenisch-Shoup verifiable encryption [1]
+ 
+## Communication
+
+Client-server communication code (based on gRPC) which enables execution of protocols over the internet is in 
+`client` and `server` packages. The messages and services are defined in `proto` folder. Translations between
+gRPC and native emmy messages are in `proto/translations.go`.
+
+# Currently offered cryptographic schemes
+
+Currently two anonymous credentials schemes are offered:
+ 
+ * Pseudonym system [4] (see `crypto/zkp/schemes/pseudonymsys`) (offered in &#8484;<sub>p</sub> and EC groups)
+ * Camenisch-Lysyanskaya anonymous credentials [2][15] (see `crypto/zkp/schemes/cl`) - work in progress
+ 
+Pseudonym system [4] was the first anonymous credential scheme and was superseded by Camenisch-Lysyanskaya scheme [2].
+
+## Camenisch-Lysyanskaya anonymous credentials
+
+What are anonymous credentials:
+
+ * user gets a certificate which contains personal data (name, gender, nationality, age ... )
+ * the same certificate can be used to connect to different services (even if the databases are joined service providers 
+ cannot map/link the users)
+ * when connecting to a service, user can choose which data to reveal - some services might require only the possession 
+ of a certificate (e.g. certifying that user paid for something), others might require some subset of data contained in certificate
+ 
+While anonymity is obviously a MUST in e-voting, it might gradually become more important in other scenarios as well: 
+
+ * online subscriptions 
+ * wearable healthcare (for example sending diabetes data to a research team)
+ * vehicle communications - cars sending out data about traffic
+ 
+### Example - using CL scheme
+ 
+Let's say University issues to each student a credential where the following attributes are written: name, gender, age,
+student status (undergraduate/graduate). University has its own public and secret key and plays the role of organization
+(when a student connects to the University, a new `Org` from `crypto/zkp/schemes/cl/org.go` is instantiated and 
+responsible for issuing a credential).
+
+First, a student needs to create a master secret key:
+
+```
+masterSecret := pubKey.GenerateUserMasterSecret() // pubKey is University public key
+```
+
+Now let's say variables `name`, `gender`, `age`, `studentStatus` contain big integer (`*big.Int`) representations for name, gender,
+age, studentStatus (different types of attributes will be supported in the future - string, date, enum). 
+A student now creates `CredentialManager` which will interact with `Org` to obtain a credential (see test code 
+in `client/cl_test.go`):
+
+```
+knownAttrs := []*big.Int{name, gender, age, studentStatus}
+committedAttrs := []*big.Int{}
+hiddenAttrs := []*big.Int{}
+credManager, err := cl.NewCredentialManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
+    hiddenAttrs)
+```
+
+Note that `committedAttrs` and `hiddentAttrs` are empty - these are needed for attributes for which the organization
+should know only commitments or nothing at all.
+
+Now a student instantiates a communication client:
+
+```
+client, err := NewCLClient(testGrpcClientConn)
+```
+
+Student now asks for credential:
+
+```
+cred, err := client.IssueCredential(credManager)
+```
+
+Now a student has a credential which can be used to connect to other organizations or to prove them some claims. For 
+example there might be a shop which has a special discount for graduate students. The shop should run its own emmy
+server and act as organization which accepts University credentials. A student can reveal only the student status and 
+nothing else when buying in this shop. After `client` (connection to the shop server) and `credManager` are created:
+
+```
+revealedKnownAttrsIndices := []int{3} // reveal only the fourth attribute (student status)
+revealedCommitmentsOfAttrsIndices := []int{}
+
+proved, err := client.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,
+    revealedCommitmentsOfAttrsIndices)
+```
+
+### CL scheme - brief overview how it works
+
+There are public parameters _Z_, _S_, _R1_, ... , _Rl_.
+
+Issuer (of a credential) computes _Q_ based on public parameters, user attributes and random _v_:
+
+```
+Q = (Z / (R1^attr1 * ... * Rl^attrl * S^v)
+```
+
+Issuer then chooses random prime _e_ (which is as public key in RSA algorithm), computes _d_ such that:
+
+```
+x^(e*d) = x (mod n)
+```
+
+Issuer then computes _A_ (as in RSA signature):
+
+```
+A = Q^d
+```
+
+The credential in the form of a triplet _(A, e, v)_ is then given to a user.
+
+The organization that checks the validation of a user's credential checks whether:
+
+```
+A^e = Q = (Z / (R1^attr1 * ... * Rl^attrl * S^v) 
+```
+
+If only a subset of attributes are revealed, zero-knowledge proof is applied - on the right side of the equation only
+a subset of attributes is known, thus the user needs to prove the knowledge of attributes such that the equation holds.
+
+# Warning
+_All components of Emmy cryptography library are a work in progress. At this point, the library can be used to build proof of concept implementations for research purposes and **should never be used in production**. Project's code organization and library APIs are **not stable** - they are expected to undergo major changes, and may be changed at any point._
+ 
 # Installation
 To install emmy, run 
 
@@ -45,37 +208,6 @@ You can run the unit tests to see if everything is working properly with:
 ```
 $ go test ./...
 ```
-
-# Currently supported crypto primitives
-
-The crypto primitives and schemes (schemes are primitives combined in some more complex protocol) supported by emmy are listed in the table below.
-ZKP primitives and schemes are collected in `crypto/zkp/primitives` and `crypto/zkp/schemes` respectively.
-Client-server communication code (based on gRPC) which enables execution of ZKPs over the internet is in `client` and `server` packages.
-
->**Note**: &#8484;<sub>p</sub> = multiplicative group of integers modulo prime p, EC = Elliptic Curve, ZKP = Zero Knowledge Proof, ZKPOK = Zero Knowledge Proof Of Knowledge
-
-| Primitives |
-| ----- |
-| Schnorr protocol [5] (&#8484;<sub>p</sub> and EC)(sigma protocol can be turned into ZKP and ZKPOK) |
-| Pedersen commitments (&#8484;<sub>p</sub> and EC) |
-| ZKP of quadratic residuosity [6] |
-| ZKP of quadratic nonresiduosity [6] |
-| Chaum-Pedersen for proving dlog equality [7] (&#8484;<sub>p</sub> and EC) |
-| DLog Equality Blinded Transcript [4] (&#8484;<sub>p</sub> and EC) |
-| Proof of partial dlog knowledge [8] (&#8484;<sub>p</sub> and EC) |
-| Camenisch-Shoup verifiable encryption (cspaillier) [1] |
-| Camenisch-Lysyanskaya signature [2] |
-| Damgard-Fujisaki commitment scheme for groups with hidden order and associated proofs [12] |
-| Damgard-Fujisaki commitment associated proofs - opening, equality, multiplication, positiveness |
-| Lipmaa decomposition and Damgard-Fujisaki commitment range proof based on Lipmaa [11] |
-| Q-One-Way based commitments (with bit commitment and multiplication proof) [9] |
-| Proof of knowledge of representation (generalized Schnorr for multiple bases) [10] |
-| Shamir's secret sharing scheme |
-
-| Schemes |
-| ----- |
-| Pseudonym system [4] (&#8484;<sub>p</sub> and EC) |
-| Anonymous credentials [2][15] - work in progress  |
 
 # Using the emmy CLI tool
 
@@ -280,14 +412,17 @@ certificate store location beforehand.
 * [A short overview of the theory Emmy is based on](./docs/theory.md) 
 * [Developing Emmy (draft)](./docs/develop.md) 
 
-# TODO
+# Roadmap
 
- * Camenisch-Lysyanskaya scheme for anonymous credentials [2]
- * Camenisch-Lysyanskaya scheme based on pairings [14]
+ * Improve the database layer supporting persistence of cryptographic material (credentials, pseudonyms, ...)
+ * Refactor Camenisch-Lysyanskaya scheme (database records, challenge generation ... )
+ * Additional proofs for Camenisch-Lysyanskaya scheme (range proof for attributes ... )
+ * Revocation for Camenisch-Lysyanskaya scheme
+ * Attribute types in Camenisch-Lysyanskaya scheme (string, int, date, enum)
+ * Performance optimization (find bottlenecks and fix them)
  * Efficient attributes for anonymous credentials [15]
- * for all proofs use Damgard technique [13] to turn sigma protocol in ZKP (Schnorr protocol actually already contains a technique to turn sigma protocol into ZKP, but other technique will be used and applied for all proofs)
- * refactor proofs to set all parameters in a constructor (see comment in Schnorr prover)
- * optional: generator of communication layer code (automatic generation of code in client and server packages)
+ * Camenisch-Lysyanskaya scheme based on pairings [14]
+ * Fix Camenisch-Shoup verifiable encryption (it was implemented before many of the primitives were available)
 
 # References
 
@@ -313,9 +448,9 @@ certificate store location beforehand.
 
 [11] Helger Lipmaa. On diophantine complexity and statistical zero-knowledge arguments. In ASIACRYPT, volume 2894 of Lecture Notes in Computer Science, pages 398–415. Springer, 2003.
 
-[12] I. Damgard and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
+[12] I. Damgård and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
 
-[13] I. Damgard. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
+[13] I. Damgård. Efficient concurrent zero-knowledge in the auxiliary string model. In B. Preneel, editor, Advances in Cryptology — EUROCRYPT 2000, volume 1807 of Lecture Notes in Computer Science, pages 431–444. Springer Verlag, 2000.
 
 [14] Camenisch, Jan, and Anna Lysyanskaya. "Signature schemes and anonymous credentials from bilinear maps." Annual International Cryptology Conference. Springer, Berlin, Heidelberg, 2004.
 
