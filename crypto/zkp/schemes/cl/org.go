@@ -333,16 +333,6 @@ func (o *Org) GetProveCredentialNonce() *big.Int {
 	return nonce
 }
 
-func contains(arr []int, el int) bool {
-	for _, i := range arr {
-		if el == i {
-			return true
-		}
-	}
-
-	return false
-}
-
 // ProveCredential proves the possession of a valid credential and reveals only the attributes the user desires
 // to reveal. Which knownAttrs and commitmentsOfAttrs are to be revealed are given by revealedKnownAttrsIndices and
 // revealedCommitmentsOfAttrsIndices parameters. Parameters knownAttrs and commitmentsOfAttrs must contain only
@@ -353,13 +343,13 @@ revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
 knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
 	ver := qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	bases := []*big.Int{}
-	for i := 0; i < len(knownAttrs); i++ {
-		if !contains(revealedKnownAttrsIndices, i)  {
+	for i := 0; i < len(o.PubKey.RsKnown); i++ {
+		if !common.Contains(revealedKnownAttrsIndices, i)  {
 			bases = append(bases, o.PubKey.RsKnown[i])
 		}
 	}
-	for i := 0; i < len(commitmentsOfAttrs); i++ {
-		if !contains(revealedCommitmentsOfAttrsIndices, i)  {
+	for i := 0; i < len(o.PubKey.RsCommitted); i++ {
+		if !common.Contains(revealedCommitmentsOfAttrsIndices, i)  {
 			bases = append(bases, o.PubKey.RsCommitted[i])
 		}
 	}
@@ -369,17 +359,15 @@ knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
 
 	denom := big.NewInt(1)
 	for i := 0; i < len(knownAttrs); i++ {
-		if contains(revealedKnownAttrsIndices, i) {
-			t1 := o.Group.Exp(o.PubKey.RsKnown[i], knownAttrs[i])
-			denom = o.Group.Mul(denom, t1)
-		}
+		rInd := revealedKnownAttrsIndices[i]
+		t1 := o.Group.Exp(o.PubKey.RsKnown[rInd], knownAttrs[i])
+		denom = o.Group.Mul(denom, t1)
 	}
 
 	for i := 0; i < len(commitmentsOfAttrs); i++ {
-		if contains(revealedCommitmentsOfAttrsIndices, i) {
-			t1 := o.Group.Exp(o.PubKey.RsCommitted[i], commitmentsOfAttrs[i])
-			denom = o.Group.Mul(denom, t1)
-		}
+		rInd := revealedCommitmentsOfAttrsIndices[i]
+		t1 := o.Group.Exp(o.PubKey.RsCommitted[rInd], commitmentsOfAttrs[i])
+		denom = o.Group.Mul(denom, t1)
 	}
 	denomInv := o.Group.Inv(denom)
 	y := o.Group.Mul(o.PubKey.Z, denomInv)

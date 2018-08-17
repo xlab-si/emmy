@@ -45,12 +45,12 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when creating a user: %v", err)
 	}
 
-	clClient, err := NewCLClient(testGrpcClientConn)
+	client, err := NewCLClient(testGrpcClientConn)
 	if err != nil {
 		t.Errorf("Error when initializing NewCLClient")
 	}
 
-	cred, err := clClient.IssueCredential(credManager)
+	cred, err := client.IssueCredential(credManager)
 	if err != nil {
 		t.Errorf("error when calling IssueCredential: %v", err)
 	}
@@ -64,27 +64,27 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when calling NewCredentialManagerFromExisting: %v", err)
 	}
 
-	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-
-	cred1, err := clClient.UpdateCredential(credManager, newKnownAttrs)
-	if err != nil {
-		t.Errorf("error when updating credential: %v", err)
-	}
-
 	revealedKnownAttrsIndices := []int{1, 2} // reveal only the second and third known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
-	proved, err := clClient.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,
+
+	proved, err := client.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices)
 	if err != nil {
 		t.Errorf("error when proving possession of a credential: %v", err)
 	}
-	assert.Equal(t, true, proved, "possesion of a credential proof failed")
+	assert.True(t, proved, "possesion of a credential proof failed")
 
-	proved1, err := clClient.ProveCredential(credManager, cred1, newKnownAttrs, revealedKnownAttrsIndices,
+	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
+	cred1, err := client.UpdateCredential(credManager, newKnownAttrs)
+	if err != nil {
+		t.Errorf("error when updating credential: %v", err)
+	}
+
+	proved1, err := client.ProveCredential(credManager, cred1, newKnownAttrs, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices)
 	if err != nil {
 		t.Errorf("error when proving possession of an updated credential: %v", err)
 	}
 
-	assert.Equal(t, true, proved1, "possesion of an updated credential proof failed")
+	assert.True(t, proved1, "possesion of an updated credential proof failed")
 }

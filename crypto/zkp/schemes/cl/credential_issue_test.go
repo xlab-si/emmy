@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -100,6 +101,20 @@ func TestCL(t *testing.T) {
 
 	revealedKnownAttrsIndices := []int{1, 2} // reveal only the second and third known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
+
+	revealedKnownAttrs := []*big.Int{}
+	revealedCommitmentsOfAttrs := []*big.Int{}
+	for i := 0; i < len(knownAttrs); i++ {
+		if common.Contains(revealedKnownAttrsIndices, i)  {
+			revealedKnownAttrs = append(revealedKnownAttrs, newKnownAttrs[i])
+		}
+	}
+	for i := 0; i < len(credManager.CommitmentsOfAttrs); i++ {
+		if common.Contains(revealedCommitmentsOfAttrsIndices, i)  {
+			revealedCommitmentsOfAttrs = append(revealedCommitmentsOfAttrs, credManager.CommitmentsOfAttrs[i])
+		}
+	}
+
 	nonce := org.GetProveCredentialNonce()
 	randCred, proof, err := credManager.BuildCredentialProof(credential1, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
@@ -107,8 +122,6 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when building credential proof: %v", err)
 	}
 
-	revealedKnownAttrs := newKnownAttrs
-	revealedCommitmentsOfAttrs := credManager.CommitmentsOfAttrs
 	cVerified, err := org.ProveCredential(randCred.A, proof, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, revealedKnownAttrs, revealedCommitmentsOfAttrs)
 	if err != nil {

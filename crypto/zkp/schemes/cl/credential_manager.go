@@ -264,13 +264,13 @@ revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
 	unrevealedKnownAttrs := []*big.Int{}
 	unrevealedCommitmentsOfAttrs := []*big.Int{}
 	for i := 0; i < len(m.KnownAttrs); i++ {
-		if !contains(revealedKnownAttrsIndices, i)  {
+		if !common.Contains(revealedKnownAttrsIndices, i)  {
 			bases = append(bases, m.PubKey.RsKnown[i])
 			unrevealedKnownAttrs = append(unrevealedKnownAttrs, m.KnownAttrs[i])
 		}
 	}
 	for i := 0; i < len(m.CommitmentsOfAttrs); i++ {
-		if !contains(revealedCommitmentsOfAttrsIndices, i)  {
+		if !common.Contains(revealedCommitmentsOfAttrsIndices, i)  {
 			bases = append(bases, m.PubKey.RsCommitted[i])
 			unrevealedCommitmentsOfAttrs = append(unrevealedCommitmentsOfAttrs, m.CommitmentsOfAttrs[i])
 		}
@@ -287,14 +287,14 @@ revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
 
 	denom := big.NewInt(1)
 	for i := 0; i < len(m.KnownAttrs); i++ {
-		if contains(revealedKnownAttrsIndices, i) {
+		if common.Contains(revealedKnownAttrsIndices, i) {
 			t1 := group.Exp(m.PubKey.RsKnown[i], m.KnownAttrs[i])
 			denom = group.Mul(denom, t1)
 		}
 	}
 
 	for i := 0; i < len(m.committedAttrs); i++ {
-		if contains(revealedCommitmentsOfAttrsIndices, i) {
+		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
 			t1 := group.Exp(m.PubKey.RsCommitted[i], m.CommitmentsOfAttrs[i])
 			denom = group.Mul(denom, t1)
 		}
