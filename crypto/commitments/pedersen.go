@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 // TODO: might be better to have only one method (like GetCommitment) instead of
@@ -36,14 +36,14 @@ import (
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
 
 type PedersenParams struct {
-	Group *groups.SchnorrGroup
+	Group *schnorr.Group
 	H     *big.Int
 	a     *big.Int
 	// trapdoor a can be nil (doesn't need to be known), it is rarely needed -
 	// for example in one of techniques to turn sigma to ZKP
 }
 
-func NewPedersenParams(group *groups.SchnorrGroup, H, a *big.Int) *PedersenParams {
+func NewPedersenParams(group *schnorr.Group, H, a *big.Int) *PedersenParams {
 	return &PedersenParams{
 		Group: group,
 		H:     H, // H = group.G^a
@@ -52,7 +52,7 @@ func NewPedersenParams(group *groups.SchnorrGroup, H, a *big.Int) *PedersenParam
 }
 
 func GeneratePedersenParams(bitLengthGroupOrder int) (*PedersenParams, error) {
-	group, err := groups.NewSchnorrGroup(bitLengthGroupOrder)
+	group, err := schnorr.NewGroup(bitLengthGroupOrder)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating SchnorrGroup: %s", err)
 	}

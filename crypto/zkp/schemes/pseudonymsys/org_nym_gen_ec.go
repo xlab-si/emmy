@@ -23,16 +23,16 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type PseudonymEC struct {
-	A *groups.ECGroupElement
-	B *groups.ECGroupElement
+	A *ec.GroupElement
+	B *ec.GroupElement
 }
 
-func NewPseudonymEC(a, b *groups.ECGroupElement) *PseudonymEC {
+func NewPseudonymEC(a, b *ec.GroupElement) *PseudonymEC {
 	return &PseudonymEC{
 		A: a,
 		B: b,
@@ -42,10 +42,10 @@ func NewPseudonymEC(a, b *groups.ECGroupElement) *PseudonymEC {
 type OrgNymGenEC struct {
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
 	caPubKey         *PubKey
-	curveType        groups.ECurve
+	curveType        ec.Curve
 }
 
-func NewOrgNymGenEC(pubKey *PubKey, curveType groups.ECurve) *OrgNymGenEC {
+func NewOrgNymGenEC(pubKey *PubKey, curveType ec.Curve) *OrgNymGenEC {
 	verifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgNymGenEC{
 		EqualityVerifier: verifier,
@@ -56,8 +56,8 @@ func NewOrgNymGenEC(pubKey *PubKey, curveType groups.ECurve) *OrgNymGenEC {
 }
 
 func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
-	x1, x2 *groups.ECGroupElement, r, s *big.Int) (*big.Int, error) {
-	c := groups.GetEllipticCurve(org.curveType)
+	x1, x2 *ec.GroupElement, r, s *big.Int) (*big.Int, error) {
+	c := ec.GetCurve(org.curveType)
 	pubKey := ecdsa.PublicKey{Curve: c, X: org.caPubKey.H1, Y: org.caPubKey.H2}
 
 	hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)

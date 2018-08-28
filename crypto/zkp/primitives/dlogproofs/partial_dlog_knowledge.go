@@ -21,12 +21,12 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 // ProvePartialDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
 // the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
-func ProvePartialDLogKnowledge(group *groups.SchnorrGroup, secret1, a1, a2, b2 *big.Int) bool {
+func ProvePartialDLogKnowledge(group *schnorr.Group, secret1, a1, a2, b2 *big.Int) bool {
 	prover := NewPartialDLogProver(group)
 	verifier := NewPartialDLogVerifier(group)
 
@@ -44,7 +44,7 @@ func ProvePartialDLogKnowledge(group *groups.SchnorrGroup, secret1, a1, a2, b2 *
 // Proving that it knows either secret1 such that a1^secret1 = b1 (mod p1) or
 //  secret2 such that a2^secret2 = b2 (mod p2).
 type PartialDLogProver struct {
-	Group   *groups.SchnorrGroup
+	Group   *schnorr.Group
 	secret1 *big.Int
 	a1      *big.Int
 	a2      *big.Int
@@ -54,7 +54,7 @@ type PartialDLogProver struct {
 	ord     int
 }
 
-func NewPartialDLogProver(group *groups.SchnorrGroup) *PartialDLogProver {
+func NewPartialDLogProver(group *schnorr.Group) *PartialDLogProver {
 	return &PartialDLogProver{
 		Group: group,
 	}
@@ -108,13 +108,13 @@ func (prover *PartialDLogProver) GetProofData(challenge *big.Int) (*big.Int, *bi
 }
 
 type PartialDLogVerifier struct {
-	Group     *groups.SchnorrGroup
+	Group     *schnorr.Group
 	triple1   *common.Triple // contains x1, a1, b1
 	triple2   *common.Triple // contains x2, a2, b2
 	challenge *big.Int
 }
 
-func NewPartialDLogVerifier(group *groups.SchnorrGroup) *PartialDLogVerifier {
+func NewPartialDLogVerifier(group *schnorr.Group) *PartialDLogVerifier {
 	return &PartialDLogVerifier{
 		Group: group,
 	}

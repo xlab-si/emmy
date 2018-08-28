@@ -21,15 +21,15 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 // Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
 // and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
 // by verifier.
-func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve groups.ECurve,
-	g1, t1, G2, T2 *groups.ECGroupElement) bool {
-	group := groups.NewECGroup(curve)
+func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve ec.Curve,
+	g1, t1, G2, T2 *ec.GroupElement) bool {
+	group := ec.NewGroup(curve)
 
 	// check hash:
 	hashNum := common.Hash(transcript.Alpha_1, transcript.Alpha_2,
@@ -43,12 +43,12 @@ func VerifyBlindedTranscriptEC(transcript *TranscriptEC, curve groups.ECurve,
 	// G2^(z+alpha) = (beta11, beta12) * T2^(c-beta)
 	left1 := group.Exp(g1, transcript.ZAlpha)
 	right1 := group.Exp(t1, transcript.Hash)
-	Alpha := groups.NewECGroupElement(transcript.Alpha_1, transcript.Alpha_2)
+	Alpha := ec.NewGroupElement(transcript.Alpha_1, transcript.Alpha_2)
 	right1 = group.Mul(Alpha, right1)
 
 	left2 := group.Exp(G2, transcript.ZAlpha)
 	right2 := group.Exp(T2, transcript.Hash)
-	Beta := groups.NewECGroupElement(transcript.Beta_1, transcript.Beta_2)
+	Beta := ec.NewGroupElement(transcript.Beta_1, transcript.Beta_2)
 	right2 = group.Mul(Beta, right2)
 
 	return left1.Equals(right1) && left2.Equals(right2)
@@ -75,15 +75,15 @@ func NewTranscriptEC(alpha_1, alpha_2, beta_1, beta_2, hash, zAlpha *big.Int) *T
 }
 
 type ECDLogEqualityBTranscriptProver struct {
-	Group  *groups.ECGroup
+	Group  *ec.Group
 	r      *big.Int
 	secret *big.Int
-	g1     *groups.ECGroupElement
-	g2     *groups.ECGroupElement
+	g1     *ec.GroupElement
+	g2     *ec.GroupElement
 }
 
-func NewECDLogEqualityBTranscriptProver(curve groups.ECurve) *ECDLogEqualityBTranscriptProver {
-	group := groups.NewECGroup(curve)
+func NewECDLogEqualityBTranscriptProver(curve ec.Curve) *ECDLogEqualityBTranscriptProver {
+	group := ec.NewGroup(curve)
 	prover := ECDLogEqualityBTranscriptProver{
 		Group: group,
 	}
@@ -92,7 +92,7 @@ func NewECDLogEqualityBTranscriptProver(curve groups.ECurve) *ECDLogEqualityBTra
 
 // Prove that you know dlog_g1(h1), dlog_g2(h2) and that dlog_g1(h1) = dlog_g2(h2).
 func (prover *ECDLogEqualityBTranscriptProver) GetProofRandomData(secret *big.Int,
-	g1, g2 *groups.ECGroupElement) (*groups.ECGroupElement, *groups.ECGroupElement) {
+	g1, g2 *ec.GroupElement) (*ec.GroupElement, *ec.GroupElement) {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -117,22 +117,22 @@ func (prover *ECDLogEqualityBTranscriptProver) GetProofData(challenge *big.Int) 
 }
 
 type ECDLogEqualityBTranscriptVerifier struct {
-	Group      *groups.ECGroup
+	Group      *ec.Group
 	gamma      *big.Int
 	challenge  *big.Int
-	g1         *groups.ECGroupElement
-	g2         *groups.ECGroupElement
-	x1         *groups.ECGroupElement
-	x2         *groups.ECGroupElement
-	t1         *groups.ECGroupElement
-	t2         *groups.ECGroupElement
+	g1         *ec.GroupElement
+	g2         *ec.GroupElement
+	x1         *ec.GroupElement
+	x2         *ec.GroupElement
+	t1         *ec.GroupElement
+	t2         *ec.GroupElement
 	alpha      *big.Int
 	transcript *TranscriptEC
 }
 
-func NewECDLogEqualityBTranscriptVerifier(curve groups.ECurve,
+func NewECDLogEqualityBTranscriptVerifier(curve ec.Curve,
 	gamma *big.Int) *ECDLogEqualityBTranscriptVerifier {
-	group := groups.NewECGroup(curve)
+	group := ec.NewGroup(curve)
 	if gamma == nil {
 		gamma = common.GetRandomInt(group.Q)
 	}
@@ -145,7 +145,7 @@ func NewECDLogEqualityBTranscriptVerifier(curve groups.ECurve,
 }
 
 func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, x1,
-	x2 *groups.ECGroupElement) *big.Int {
+	x2 *ec.GroupElement) *big.Int {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -189,7 +189,7 @@ func (verifier *ECDLogEqualityBTranscriptVerifier) GetChallenge(g1, g2, t1, t2, 
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
 func (verifier *ECDLogEqualityBTranscriptVerifier) Verify(z *big.Int) (bool, *TranscriptEC,
-	*groups.ECGroupElement, *groups.ECGroupElement) {
+	*ec.GroupElement, *ec.GroupElement) {
 	left1 := verifier.Group.Exp(verifier.g1, z)
 	left2 := verifier.Group.Exp(verifier.g2, z)
 

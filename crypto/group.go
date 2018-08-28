@@ -15,29 +15,21 @@
  *
  */
 
-package common
+package crypto
 
 import (
 	"math/big"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestGetGeneratorOfZnSubgroup(t *testing.T) {
-	p, err := GetSafePrime(512)
-	if err != nil {
-		t.Errorf("Error in GetSafePrime: %v", err)
-	}
-	pMin := new(big.Int)
-	pMin.Sub(p, big.NewInt(1))
-	p1 := new(big.Int).Div(pMin, big.NewInt(2))
-
-	g, err := GetGeneratorOfZnSubgroup(p, pMin, p1)
-	if err != nil {
-		t.Errorf("Error in GetGeneratorOfZnSubgroup: %v", err)
-	}
-	g.Exp(g, big.NewInt(0).Sub(p1, big.NewInt(1)), p1) // g^(p1-1) % p1 should be 1
-
-	assert.Equal(t, g, big.NewInt(1), "not a generator")
+// Group interface is used to enable the usage of different groups in some schemes.
+// For example when we have a homomorphism f between two groups and
+// we are proving that we know an f-preimage of an element - meaning that for a given v we
+// know u such that f(u) = v.
+// Note that this is an interface for modular arithmetic groups. For elliptic curve
+// groups at the moment there is no need for an interface.
+type Group interface {
+	GetRandomElement() *big.Int
+	Mul(*big.Int, *big.Int) *big.Int
+	Exp(*big.Int, *big.Int) *big.Int
+	Inv(*big.Int) *big.Int
 }

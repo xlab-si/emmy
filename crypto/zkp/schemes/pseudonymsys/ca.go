@@ -24,12 +24,12 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 type CA struct {
-	SchnorrVerifier *dlogproofs.SchnorrVerifier
+	SchnorrVerifier *schnorr.Verifier
 	a               *big.Int
 	b               *big.Int
 	privateKey      *ecdsa.PrivateKey
@@ -51,12 +51,12 @@ func NewCACertificate(blindedA, blindedB, r, s *big.Int) *CACertificate {
 	}
 }
 
-func NewCA(group *groups.SchnorrGroup, d *big.Int, caPubKey *PubKey) *CA {
-	c := groups.GetEllipticCurve(groups.P256)
+func NewCA(group *schnorr.Group, d *big.Int, caPubKey *PubKey) *CA {
+	c := ec.GetCurve(ec.P256)
 	pubKey := ecdsa.PublicKey{Curve: c, X: caPubKey.H1, Y: caPubKey.H2}
 	privateKey := ecdsa.PrivateKey{PublicKey: pubKey, D: d}
 
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group)
+	schnorrVerifier := schnorr.NewVerifier(group)
 	ca := CA{
 		SchnorrVerifier: schnorrVerifier,
 		privateKey:      &privateKey,

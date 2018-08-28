@@ -23,11 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 func TestPseudonymsysEC(t *testing.T) {
-	curveType := groups.P256
+	curveType := ec.P256
 	caClient, err := NewPseudonymsysCAClientEC(testGrpcClientConn, curveType)
 	if err != nil {
 		t.Errorf("Error when initializing NewPseudonymsysCAClientEC")

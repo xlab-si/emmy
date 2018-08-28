@@ -21,7 +21,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 type Transcript struct {
@@ -43,7 +43,7 @@ func NewTranscript(a, b, hash, zAlpha *big.Int) *Transcript {
 // Verifies that the blinded transcript is valid. That means the knowledge of log_g1(t1), log_G2(T2)
 // and log_g1(t1) = log_G2(T2). Note that G2 = g2^gamma, T2 = t2^gamma where gamma was chosen
 // by verifier.
-func VerifyBlindedTranscript(transcript *Transcript, group *groups.SchnorrGroup, g1, t1, G2, T2 *big.Int) bool {
+func VerifyBlindedTranscript(transcript *Transcript, group *schnorr.Group, g1, t1, G2, T2 *big.Int) bool {
 	// Transcript should be in the following form: [alpha1, beta1, hash(alpha1, beta1), z+alpha]
 
 	// check hash:
@@ -71,14 +71,14 @@ func VerifyBlindedTranscript(transcript *Transcript, group *groups.SchnorrGroup,
 }
 
 type DLogEqualityBTranscriptProver struct {
-	Group  *groups.SchnorrGroup
+	Group  *schnorr.Group
 	r      *big.Int
 	secret *big.Int
 	g1     *big.Int
 	g2     *big.Int
 }
 
-func NewDLogEqualityBTranscriptProver(group *groups.SchnorrGroup) *DLogEqualityBTranscriptProver {
+func NewDLogEqualityBTranscriptProver(group *schnorr.Group) *DLogEqualityBTranscriptProver {
 	prover := DLogEqualityBTranscriptProver{
 		Group: group,
 	}
@@ -112,7 +112,7 @@ func (prover *DLogEqualityBTranscriptProver) GetProofData(challenge *big.Int) *b
 }
 
 type DLogEqualityBTranscriptVerifier struct {
-	Group      *groups.SchnorrGroup
+	Group      *schnorr.Group
 	gamma      *big.Int
 	challenge  *big.Int
 	g1         *big.Int
@@ -125,7 +125,7 @@ type DLogEqualityBTranscriptVerifier struct {
 	transcript *Transcript
 }
 
-func NewDLogEqualityBTranscriptVerifier(group *groups.SchnorrGroup,
+func NewDLogEqualityBTranscriptVerifier(group *schnorr.Group,
 	gamma *big.Int) *DLogEqualityBTranscriptVerifier {
 	if gamma == nil {
 		gamma = common.GetRandomInt(group.Q)

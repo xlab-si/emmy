@@ -23,7 +23,8 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
@@ -44,7 +45,7 @@ type OrgNymGen struct {
 	caPubKey         *PubKey
 }
 
-func NewOrgNymGen(group *groups.SchnorrGroup, caPubKey *PubKey) *OrgNymGen {
+func NewOrgNymGen(group *schnorr.Group, caPubKey *PubKey) *OrgNymGen {
 	verifier := dlogproofs.NewDLogEqualityVerifier(group)
 	org := OrgNymGen{
 		EqualityVerifier: verifier,
@@ -55,7 +56,7 @@ func NewOrgNymGen(group *groups.SchnorrGroup, caPubKey *PubKey) *OrgNymGen {
 
 func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
 	r, s *big.Int) (*big.Int, error) {
-	c := groups.GetEllipticCurve(groups.P256)
+	c := ec.GetCurve(ec.P256)
 	pubKey := ecdsa.PublicKey{Curve: c, X: org.caPubKey.H1, Y: org.caPubKey.H2}
 
 	hashed := common.HashIntoBytes(blindedA, blindedB)

@@ -15,7 +15,7 @@
  *
  */
 
-package dlogproofs
+package qr_test
 
 import (
 	"math/big"
@@ -23,26 +23,29 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
 )
 
-// TestDLogKnowledge demonstrates how the prover proves that it knows (x_1,...,x_k)
-// such that y = g_1^x_1 * ... * g_k^x_k where g_i are given generators of cyclic group G.
-func TestDLogKnowledge(t *testing.T) {
-	group, err := groups.NewSchnorrGroup(256)
+// TestSpecialRSA demonstrates how to prove that for a given y you know secrets x_1,...,x_k
+// such that y = g_1^x_1 * ... * g_k^x_k where g_i are given generators (bases) of RSASpecial.
+func TestSpecialRSA(t *testing.T) {
+	group, err := qr.NewRSASpecial(128)
 	if err != nil {
-		t.Errorf("error when creating Schnorr group: %v", err)
+		t.Errorf("error when creating RSASpecial group: %v", err)
 	}
 
-	var bases [3]*big.Int
+	bases := make([]*big.Int, 3)
 	for i := 0; i < len(bases); i++ {
-		r := common.GetRandomInt(group.Q)
-		bases[i] = group.Exp(group.G, r)
+		h, err := group.GetRandomGenerator()
+		if err != nil {
+			t.Errorf("error when generating RSASpecial generator: %v", err)
+		}
+		bases[i] = h
 	}
 
-	var secrets [3]*big.Int
+	secrets := make([]*big.Int, 3)
 	for i := 0; i < 3; i++ {
-		secrets[i] = common.GetRandomInt(group.Q)
+		secrets[i] = common.GetRandomInt(group.Order)
 	}
 
 	// y = g_1^x_1 * ... * g_k^x_k where g_i are bases and x_i are secrets
@@ -52,18 +55,15 @@ func TestDLogKnowledge(t *testing.T) {
 		y = group.Mul(y, f)
 	}
 
-	prover, err := NewSchnorrProver(group, secrets[:], bases[:], y)
-	if err != nil {
-		t.Errorf("error when creating SchnorrProver: %v", err)
-	}
-	verifier := NewSchnorrVerifier(group)
+	prover := qr.NewRepresentationProver(group, 80, secrets, bases, y)
+	verifier := qr.NewRepresentationVerifier(group, 80)
 
-	proofRandomData := prover.GetProofRandomData()
-	verifier.SetProofRandomData(proofRandomData, bases[:], y)
+	proofRandomData := prover.GetProofRandomData(false)
+	verifier.SetProofRandomData(proofRandomData, bases, y)
 
 	challenge := verifier.GetChallenge()
 	proofData := prover.GetProofData(challenge)
-	verified := verifier.Verify(proofData)
+	proved := verifier.Verify(proofData)
 
-	assert.Equal(t, verified, true, "Schnorr proof does not work correctly")
+	assert.Equal(t, true, proved, "Representation proof failed.")
 }

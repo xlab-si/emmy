@@ -20,13 +20,13 @@ package preimage
 import (
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 // ProvePreimageKnowledge demonstrates how given homomorphism f:H->G and element u from G
 // prover can prove the knowledge of v such that f(v) = u.
-func ProveHomomorphismPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H groups.Group,
+func ProveHomomorphismPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	u, v *big.Int, iterations int) bool {
 	prover := NewHomomorphismPreimageProver(homomorphism, H, v)
 	verifier := NewHomomorphismPreimageVerifier(homomorphism, H, u)
@@ -55,12 +55,12 @@ func ProveHomomorphismPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H 
 // challenges need to be used to enable extractor (more to be added in docs).
 type HomomorphismPreimageProver struct {
 	Homomorphism func(*big.Int) *big.Int
-	H            groups.Group
+	H            crypto.Group
 	v            *big.Int
 	r            *big.Int
 }
 
-func NewHomomorphismPreimageProver(homomorphism func(*big.Int) *big.Int, H groups.Group,
+func NewHomomorphismPreimageProver(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	v *big.Int) *HomomorphismPreimageProver {
 	return &HomomorphismPreimageProver{
 		Homomorphism: homomorphism,
@@ -91,13 +91,13 @@ func (prover *HomomorphismPreimageProver) GetProofData(challenge *big.Int) *big.
 
 type HomomorphismPreimageVerifier struct {
 	Homomorphism func(*big.Int) *big.Int
-	H            groups.Group
+	H            crypto.Group
 	challenge    *big.Int
 	u            *big.Int
 	x            *big.Int
 }
 
-func NewHomomorphismPreimageVerifier(homomorphism func(*big.Int) *big.Int, H groups.Group,
+func NewHomomorphismPreimageVerifier(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	u *big.Int) *HomomorphismPreimageVerifier {
 	return &HomomorphismPreimageVerifier{
 		Homomorphism: homomorphism,

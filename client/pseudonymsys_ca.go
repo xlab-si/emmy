@@ -20,8 +20,7 @@ package client
 import (
 	"math/big"
 
-	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
@@ -30,12 +29,12 @@ import (
 type PseudonymsysCAClient struct {
 	genericClient
 	grpcClient pb.PseudonymSystemCAClient
-	group      *groups.SchnorrGroup
-	prover     *dlogproofs.SchnorrProver
+	group      *schnorr.Group
+	prover     *schnorr.Prover
 }
 
 func NewPseudonymsysCAClient(conn *grpc.ClientConn,
-	group *groups.SchnorrGroup) (*PseudonymsysCAClient, error) {
+	group *schnorr.Group) (*PseudonymsysCAClient, error) {
 	return &PseudonymsysCAClient{
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
@@ -60,7 +59,7 @@ func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pse
 	}
 	defer c.closeStream()
 
-	prover, err := dlogproofs.NewSchnorrProver(c.group, []*big.Int{userSecret}, []*big.Int{nym.A}, nym.B)
+	prover, err := schnorr.NewProver(c.group, []*big.Int{userSecret}, []*big.Int{nym.A}, nym.B)
 	if err != nil {
 		return nil, err
 	}

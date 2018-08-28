@@ -20,8 +20,8 @@ package client
 import (
 	"math/big"
 
-	"github.com/xlab-si/emmy/crypto/groups"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/ecschnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
@@ -30,23 +30,23 @@ import (
 type PseudonymsysCAClientEC struct {
 	genericClient
 	grpcClient pb.PseudonymSystemCAClient
-	curve      groups.ECurve
-	prover     *dlogproofs.SchnorrECProver
+	curve      ec.Curve
+	prover     *ecschnorr.Prover
 }
 
-func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*PseudonymsysCAClientEC, error) {
+func NewPseudonymsysCAClientEC(conn *grpc.ClientConn, curve ec.Curve) (*PseudonymsysCAClientEC, error) {
 	return &PseudonymsysCAClientEC{
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemCAClient(conn),
 		curve:         curve,
-		prover:        dlogproofs.NewSchnorrECProver(curve),
+		prover:        ecschnorr.NewProver(curve),
 	}, nil
 }
 
 // GenerateMasterNym generates a master pseudonym to be used with GenerateCertificate.
 func (c *PseudonymsysCAClientEC) GenerateMasterNym(secret *big.Int) *pseudonymsys.PseudonymEC {
-	group := groups.NewECGroup(c.curve)
-	a := groups.NewECGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
+	group := ec.NewGroup(c.curve)
+	a := ec.NewGroupElement(group.Curve.Params().Gx, group.Curve.Params().Gy)
 	b := group.Exp(a, secret)
 	return pseudonymsys.NewPseudonymEC(a, b)
 }

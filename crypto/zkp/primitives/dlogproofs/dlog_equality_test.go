@@ -18,21 +18,21 @@
 package dlogproofs
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
+	"github.com/xlab-si/emmy/crypto/zn"
 )
 
 func TestDLogEquality(t *testing.T) {
-	group, _ := groups.NewSchnorrGroup(256)
+	group, _ := schnorr.NewGroup(256)
+	zp, _ := zn.NewGroupZp(group.P)
 
 	secret := common.GetRandomInt(group.Q)
-	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))
-	g1, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
-	g2, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
+	g1, _ := zp.GetGeneratorOfSubgroup(group.Q)
+	g2, _ := zp.GetGeneratorOfSubgroup(group.Q)
 
 	t1 := group.Exp(g1, secret)
 	t2 := group.Exp(g2, secret)

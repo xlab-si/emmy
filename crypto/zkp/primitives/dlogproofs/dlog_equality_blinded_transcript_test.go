@@ -18,24 +18,25 @@
 package dlogproofs
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
+	"github.com/xlab-si/emmy/crypto/zn"
 )
 
 func TestDLogEqualityBlindedTranscript(t *testing.T) {
-	group, _ := groups.NewSchnorrGroup(256)
+	schnorrGroup, _ := schnorr.NewGroup(256)
+	zp, _ := zn.NewGroupZp(schnorrGroup.P)
 
-	eProver := NewDLogEqualityBTranscriptProver(group)
-	eVerifier := NewDLogEqualityBTranscriptVerifier(group, nil)
+	eProver := NewDLogEqualityBTranscriptProver(schnorrGroup)
+	eVerifier := NewDLogEqualityBTranscriptVerifier(schnorrGroup, nil)
 
-	secret := common.GetRandomInt(group.Q)
-	groupOrder := new(big.Int).Sub(eProver.Group.P, big.NewInt(1))
-	g1, _ := common.GetGeneratorOfZnSubgroup(eProver.Group.P, groupOrder, eProver.Group.Q)
-	g2, _ := common.GetGeneratorOfZnSubgroup(eProver.Group.P, groupOrder, eProver.Group.Q)
+	secret := common.GetRandomInt(schnorrGroup.Q)
+	//groupOrder := new(big.Int).Sub(eProver.Group.P, big.NewInt(1))
+	g1, _ := zp.GetGeneratorOfSubgroup(eProver.Group.Q)
+	g2, _ := zp.GetGeneratorOfSubgroup(eProver.Group.Q)
 
 	t1 := eProver.Group.Exp(g1, secret)
 	t2 := eProver.Group.Exp(g2, secret)

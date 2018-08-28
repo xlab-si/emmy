@@ -24,7 +24,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	pb "github.com/xlab-si/emmy/proto"
 	"github.com/xlab-si/emmy/storage"
 )
@@ -61,7 +62,7 @@ type CSPaillierSecretKey struct {
 	X2 *big.Int
 	X3 *big.Int
 	// the parameters below are for verifiable encryption
-	Gamma                *groups.SchnorrGroup // for discrete logarithm
+	Gamma                *schnorr.Group // for discrete logarithm
 	VerifiableEncGroupN  *big.Int
 	VerifiableEncGroupG1 *big.Int
 	VerifiableEncGroupH1 *big.Int
@@ -79,7 +80,7 @@ type CSPaillierPubKey struct {
 	Y2 *big.Int
 	Y3 *big.Int
 	// the parameters below are for verifiable encryption
-	Gamma                *groups.SchnorrGroup // for discrete logarithm
+	Gamma                *schnorr.Group // for discrete logarithm
 	VerifiableEncGroupN  *big.Int
 	VerifiableEncGroupG1 *big.Int
 	VerifiableEncGroupH1 *big.Int
@@ -137,7 +138,7 @@ func NewCSPaillierFromSecKey(path string) (*CSPaillier, error) {
 		return nil, err
 	}
 
-	gamma := groups.NewSchnorrGroupFromParams(new(big.Int).SetBytes(sKey.DLogP),
+	gamma := schnorr.NewGroupFromParams(new(big.Int).SetBytes(sKey.DLogP),
 		new(big.Int).SetBytes(sKey.DLogG), new(big.Int).SetBytes(sKey.DLogQ))
 	secKey := CSPaillierSecretKey{
 		N:                    new(big.Int).SetBytes(sKey.N),
@@ -178,7 +179,7 @@ func NewCSPaillierFromPubKeyFile(path string) (*CSPaillier, error) {
 		return nil, err
 	}
 
-	gamma := groups.NewSchnorrGroupFromParams(new(big.Int).SetBytes(pKey.DLogP),
+	gamma := schnorr.NewGroupFromParams(new(big.Int).SetBytes(pKey.DLogP),
 		new(big.Int).SetBytes(pKey.DLogG), new(big.Int).SetBytes(pKey.DLogQ))
 	pubKey := CSPaillierPubKey{
 		N:                    new(big.Int).SetBytes(pKey.N),
@@ -380,7 +381,7 @@ func (cspaillier *CSPaillier) generateKey() {
 	}
 
 	// for verifiable encryption:
-	Gamma, err := groups.NewSchnorrGroup(cspaillier.SecParams.RoLength)
+	Gamma, err := schnorr.NewGroup(cspaillier.SecParams.RoLength)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -409,8 +410,9 @@ func (cspaillier *CSPaillier) generateKey() {
 	// Now we need to compute two generators in Z_n* subgroup of order n1.
 	// Note that here a different n might be used from the one in encryption,
 	// however as above we assume the same (the paper says it can be the same).
-	orderOfZn := new(big.Int).Mul(big.NewInt(4), cspaillier.n1)
-	verifiableEncGroup, err := NewVerifiableEncGroup(n, orderOfZn, cspaillier.n1)
+
+	primes := qr.NewRSASpecialPrimes(p, q, p1, q1)
+	verifiableEncGroup, err := NewVerifiableEncGroup(primes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -667,31 +669,32 @@ func (cspaillier *CSPaillier) SetProofRandomData(u1, e1, v1, delta1, l1, c *big.
 }
 
 type VerifiableEncGroup struct {
-	N  *big.Int
-	N1 *big.Int
+	*qr.RSASpecial
 	G1 *big.Int
 	H1 *big.Int
 	l  *big.Int
 }
 
-func NewVerifiableEncGroup(n, orderOfZn, n1 *big.Int) (*VerifiableEncGroup, error) {
-	g1, err := common.GetGeneratorOfZnSubgroup(n, orderOfZn, n1)
+func NewVerifiableEncGroup(primes *qr.RSASpecialPrimes) (*VerifiableEncGroup, error) {
+	rsaSpecial, err := qr.NewRSASpecialFromParams(primes)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
-	h1, err := common.GetGeneratorOfZnSubgroup(n, orderOfZn, n1)
+	g1, err := rsaSpecial.GetRandomGenerator()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+
+	h1, err := rsaSpecial.GetRandomGenerator()
+	if err != nil {
 		return nil, err
 	}
 
 	group := VerifiableEncGroup{
-		N:  n,
-		N1: n1,
-		G1: g1,
-		H1: h1,
+		RSASpecial: rsaSpecial,
+		G1:         g1,
+		H1:         h1,
 	}
 	return &group, nil
 }

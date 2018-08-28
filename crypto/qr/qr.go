@@ -15,7 +15,7 @@
  *
  */
 
-package qrproofs
+package qr
 
 // Zero-knowledge proof	of quadratic residousity (implemented for historical reasons)
 
@@ -25,14 +25,14 @@ import (
 	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 // ProveQR demonstrates how the prover can prove that y1^2 is QR.
-func ProveQR(y1 *big.Int, group *groups.SchnorrGroup) bool {
+func ProveQR(y1 *big.Int, group *schnorr.Group) bool {
 	y := group.Mul(y1, y1)
-	prover := NewQRProver(group, y1)
-	verifier := NewQRVerifier(y, group)
+	prover := NewProver(group, y1)
+	verifier := NewVerifier(y, group)
 	m := group.P.BitLen()
 
 	for i := 0; i < m; i++ {
@@ -49,35 +49,35 @@ func ProveQR(y1 *big.Int, group *groups.SchnorrGroup) bool {
 	return true
 }
 
-type QRProver struct {
-	Group *groups.SchnorrGroup
+type Prover struct {
+	Group *schnorr.Group
 	Y     *big.Int
 	y1    *big.Int
 	r     *big.Int
 }
 
-func NewQRProver(group *groups.SchnorrGroup, y1 *big.Int) *QRProver {
+func NewProver(group *schnorr.Group, y1 *big.Int) *Prover {
 	y := group.Mul(y1, y1)
-	return &QRProver{
+	return &Prover{
 		Group: group,
 		Y:     y,
 		y1:    y1,
 	}
 }
 
-func (prover *QRProver) GetProofRandomData() *big.Int {
-	r := common.GetRandomInt(prover.Group.P)
-	prover.r = r
-	x := prover.Group.Exp(r, big.NewInt(2))
+func (p *Prover) GetProofRandomData() *big.Int {
+	r := common.GetRandomInt(p.Group.P)
+	p.r = r
+	x := p.Group.Exp(r, big.NewInt(2))
 	return x
 }
 
-func (prover *QRProver) GetProofData(challenge *big.Int) (*big.Int, error) {
+func (p *Prover) GetProofData(challenge *big.Int) (*big.Int, error) {
 	if challenge.Cmp(big.NewInt(0)) == 0 {
-		return prover.r, nil
+		return p.r, nil
 	} else if challenge.Cmp(big.NewInt(1)) == 0 {
-		z := new(big.Int).Mul(prover.r, prover.y1)
-		z.Mod(z, prover.Group.P)
+		z := new(big.Int).Mul(p.r, p.y1)
+		z.Mod(z, p.Group.P)
 		return z, nil
 	} else {
 		err := fmt.Errorf("challenge is not valid")
@@ -85,35 +85,35 @@ func (prover *QRProver) GetProofData(challenge *big.Int) (*big.Int, error) {
 	}
 }
 
-type QRVerifier struct {
-	Group     *groups.SchnorrGroup
+type Verifier struct {
+	Group     *schnorr.Group
 	x         *big.Int
 	y         *big.Int
 	challenge *big.Int
 }
 
-func NewQRVerifier(y *big.Int, group *groups.SchnorrGroup) *QRVerifier {
-	return &QRVerifier{
+func NewVerifier(y *big.Int, group *schnorr.Group) *Verifier {
+	return &Verifier{
 		Group: group,
 		y:     y,
 	}
 }
 
-func (verifier *QRVerifier) GetChallenge(x *big.Int) *big.Int {
-	verifier.x = x
+func (v *Verifier) GetChallenge(x *big.Int) *big.Int {
+	v.x = x
 	c := common.GetRandomInt(big.NewInt(2)) // 0 or 1
-	verifier.challenge = c
+	v.challenge = c
 	return c
 }
 
-func (verifier *QRVerifier) Verify(z *big.Int) bool {
+func (v *Verifier) Verify(z *big.Int) bool {
 	z2 := new(big.Int).Mul(z, z)
-	z2.Mod(z2, verifier.Group.P)
-	if verifier.challenge.Cmp(big.NewInt(0)) == 0 {
-		return z2.Cmp(verifier.x) == 0
+	z2.Mod(z2, v.Group.P)
+	if v.challenge.Cmp(big.NewInt(0)) == 0 {
+		return z2.Cmp(v.x) == 0
 	} else {
-		s := new(big.Int).Mul(verifier.x, verifier.y)
-		s.Mod(s, verifier.Group.P)
+		s := new(big.Int).Mul(v.x, v.y)
+		s.Mod(s, v.Group.P)
 		return z2.Cmp(s) == 0
 	}
 }

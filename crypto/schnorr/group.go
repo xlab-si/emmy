@@ -15,7 +15,7 @@
  *
  */
 
-package groups
+package schnorr
 
 import (
 	"crypto/dsa"
@@ -26,19 +26,19 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// SchnorrGroup is a cyclic group in modular arithmetic. It holds P = Q * R + 1 for some R.
+// Group is a cyclic group in modular arithmetic. It holds P = Q * R + 1 for some R.
 // The actual value R is never used (although a random element from this group could be computed
 // by a^R for some random a from Z_p* - this element would have order Q and would be thus from this group),
 // the important thing is that Q divides P-1.
-type SchnorrGroup struct {
+type Group struct {
 	P *big.Int // modulus of the group
 	G *big.Int // generator of subgroup
 	Q *big.Int // order of G
 }
 
-// NewSchnorrGroup generates random SchnorrGroup with generator G and
+// NewGroup generates random Group with generator G and
 // parameters P and Q where P = R * Q + 1 for some R. Order of G is Q.
-func NewSchnorrGroup(qBitLength int) (*SchnorrGroup, error) {
+func NewGroup(qBitLength int) (*Group, error) {
 	// Using DSA GenerateParameters:
 	sizes := dsa.L1024N160
 	if qBitLength == 160 {
@@ -58,7 +58,7 @@ func NewSchnorrGroup(qBitLength int) (*SchnorrGroup, error) {
 		return nil, err
 	}
 
-	return &SchnorrGroup{
+	return &Group{
 		P: params.P,
 		G: params.G,
 		Q: params.Q,
@@ -66,8 +66,8 @@ func NewSchnorrGroup(qBitLength int) (*SchnorrGroup, error) {
 
 }
 
-func NewSchnorrGroupFromParams(p, g, q *big.Int) *SchnorrGroup {
-	return &SchnorrGroup{
+func NewGroupFromParams(p, g, q *big.Int) *Group {
+	return &Group{
 		P: p,
 		G: g,
 		Q: q,
@@ -77,46 +77,46 @@ func NewSchnorrGroupFromParams(p, g, q *big.Int) *SchnorrGroup {
 // GetRandomElement returns a random element from this group. Note that elements from this group
 // are integers smaller than group.P, but not all - only Q of them. GetRandomElement returns
 // one (random) of these Q elements.
-func (group *SchnorrGroup) GetRandomElement() *big.Int {
-	r := common.GetRandomInt(group.Q)
-	el := group.Exp(group.G, r)
+func (g *Group) GetRandomElement() *big.Int {
+	r := common.GetRandomInt(g.Q)
+	el := g.Exp(g.G, r)
 	return el
 }
 
-// Add computes x + y in SchnorrGroup. This means x + y mod group.P.
-func (group *SchnorrGroup) Add(x, y *big.Int) *big.Int {
+// Add computes x + y in Group. This means x + y mod group.P.
+func (g *Group) Add(x, y *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Add(x, y)
-	r.Mod(r, group.P)
+	r.Mod(r, g.P)
 	return r
 }
 
-// Mul computes x * y in SchnorrGroup. This means x * y mod group.P.
-func (group *SchnorrGroup) Mul(x, y *big.Int) *big.Int {
+// Mul computes x * y in Group. This means x * y mod group.P.
+func (g *Group) Mul(x, y *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Mul(x, y)
-	return r.Mod(r, group.P)
+	return r.Mod(r, g.P)
 }
 
-// Exp computes base^exponent in SchnorrGroup. This means base^exponent mod group.P.
-func (group *SchnorrGroup) Exp(base, exponent *big.Int) *big.Int {
+// Exp computes base^exponent in Group. This means base^exponent mod group.P.
+func (g *Group) Exp(base, exponent *big.Int) *big.Int {
 	if exponent.Sign() == -1 { // exponent is negative
 		expAbs := new(big.Int).Abs(exponent)
-		t := new(big.Int).Exp(base, expAbs, group.P)
-		return group.Inv(t)
+		t := new(big.Int).Exp(base, expAbs, g.P)
+		return g.Inv(t)
 	}
 
-	return new(big.Int).Exp(base, exponent, group.P)
+	return new(big.Int).Exp(base, exponent, g.P)
 }
 
-// Inv computes inverse of x in SchnorrGroup. This means xInv such that x * xInv = 1 mod group.P.
-func (group *SchnorrGroup) Inv(x *big.Int) *big.Int {
-	return new(big.Int).ModInverse(x, group.P)
+// Inv computes inverse of x in Group. This means xInv such that x * xInv = 1 mod group.P.
+func (g *Group) Inv(x *big.Int) *big.Int {
+	return new(big.Int).ModInverse(x, g.P)
 }
 
 // IsElementInGroup returns true if x is in the group and false otherwise. Note that
 // an element x is in Schnorr group when x^group.Q = 1 mod group.P.
-func (group *SchnorrGroup) IsElementInGroup(x *big.Int) bool {
-	check := group.Exp(x, group.Q) // should be 1
+func (g *Group) IsElementInGroup(x *big.Int) bool {
+	check := g.Exp(x, g.Q) // should be 1
 	return check.Cmp(big.NewInt(1)) == 0
 }

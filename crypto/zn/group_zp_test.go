@@ -15,21 +15,29 @@
  *
  */
 
-package groups
+package zn
 
 import (
 	"math/big"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// Group interface is used to enable the usage of different groups in some schemes.
-// For example when we have a homomorphism f between two groups and
-// we are proving that we know an f-preimage of an element - meaning that for a given v we
-// know u such that f(u) = v.
-// Note that this is an interface for modular arithmetic groups. For elliptic curve
-// groups at the moment there is no need for an interface.
-type Group interface {
-	GetRandomElement() *big.Int
-	Mul(*big.Int, *big.Int) *big.Int
-	Exp(*big.Int, *big.Int) *big.Int
-	Inv(*big.Int) *big.Int
+func TestGetGeneratorOfZnSubgroup(t *testing.T) {
+	p, err := common.GetSafePrime(512)
+	if err != nil {
+		t.Errorf("Error in GetSafePrime: %v", err)
+	}
+
+	zp, _ := NewGroupZp(p)
+	p1 := new(big.Int).Div(zp.Order, big.NewInt(2))
+	g, err := zp.GetGeneratorOfSubgroup(p1)
+	if err != nil {
+		t.Errorf("Error in GetGeneratorOfSubgroup: %v", err)
+	}
+	g.Exp(g, big.NewInt(0).Sub(p1, big.NewInt(1)), p1) // g^(p1-1) % p1 should be 1
+
+	assert.Equal(t, g, big.NewInt(1), "not a generator")
 }

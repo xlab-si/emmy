@@ -18,23 +18,23 @@
 package dlogproofs
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
+	"github.com/xlab-si/emmy/crypto/zn"
 )
 
 func TestPartialDLogKnowledge(t *testing.T) {
-	group, _ := groups.NewSchnorrGroup(256)
+	group, _ := schnorr.NewGroup(256)
+	zp, _ := zn.NewGroupZp(group.P)
 
 	secret1 := common.GetRandomInt(group.Q)
 	x := common.GetRandomInt(group.Q)
 
-	groupOrder := new(big.Int).Sub(group.P, big.NewInt(1))
-	a1, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
-	a2, _ := common.GetGeneratorOfZnSubgroup(group.P, groupOrder, group.Q)
+	a1, _ := zp.GetGeneratorOfSubgroup(group.Q)
+	a2, _ := zp.GetGeneratorOfSubgroup(group.Q)
 
 	//b1, _ := dlog.Exponentiate(a1, secret1)
 	// we pretend that we don't know x:

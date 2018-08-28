@@ -15,27 +15,27 @@
  *
  */
 
-package dlogproofs
+package ecschnorr
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 // TestDLogKnowledgeEC demonstrates how prover can prove the knowledge of log_g1(t1) - that
 // means g1^secret = t1 in EC group.
 func TestDLogKnowledgeEC(t *testing.T) {
-	group := groups.NewECGroup(groups.P256)
+	group := ec.NewGroup(ec.P256)
 	exp1 := common.GetRandomInt(group.Q)
 	a1 := group.ExpBaseG(exp1)
 	secret := common.GetRandomInt(group.Q)
 	b1 := group.Exp(a1, secret)
 
-	prover := NewSchnorrECProver(groups.P256)
-	verifier := NewSchnorrECVerifier(groups.P256)
+	prover := NewProver(ec.P256)
+	verifier := NewVerifier(ec.P256)
 
 	x := prover.GetProofRandomData(secret, a1)
 	verifier.SetProofRandomData(x, a1, b1)
