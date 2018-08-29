@@ -20,14 +20,14 @@ package preimage
 import (
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 // ProvePartialPreimageKnowledge demonstrates how prover can prove that he knows f^(-1)(u1) and
 // the verifier does not know whether knowledge of f^(-1)(u1) or f^(-1)(u2) was proved.
 // Note that PartialDLogKnowledge is a special case of PartialPreimageKnowledge.
-func ProveHomomorphismPartialPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H groups.Group,
+func ProveHomomorphismPartialPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	v1, u1, u2 *big.Int, iterations int) bool {
 	prover := NewHomomorphismPartialPreimageProver(homomorphism, H, v1, u1, u2)
 	verifier := NewHomomorphismPartialPreimageVerifier(homomorphism, H)
@@ -53,7 +53,7 @@ func ProveHomomorphismPartialPreimageKnowledge(homomorphism func(*big.Int) *big.
 
 type HomomorphismPartialPreimageProver struct {
 	Homomorphism func(*big.Int) *big.Int
-	H            groups.Group
+	H            crypto.Group
 	v1           *big.Int
 	u1           *big.Int
 	u2           *big.Int
@@ -63,7 +63,7 @@ type HomomorphismPartialPreimageProver struct {
 	ord          int
 }
 
-func NewHomomorphismPartialPreimageProver(homomorphism func(*big.Int) *big.Int, H groups.Group,
+func NewHomomorphismPartialPreimageProver(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	v1, u1, u2 *big.Int) *HomomorphismPartialPreimageProver {
 	return &HomomorphismPartialPreimageProver{
 		Homomorphism: homomorphism,
@@ -119,14 +119,14 @@ func (prover *HomomorphismPartialPreimageProver) GetProofData(challenge *big.Int
 
 type HomomorphismPartialPreimageVerifier struct {
 	Homomorphism func(*big.Int) *big.Int
-	H            groups.Group
+	H            crypto.Group
 	pair1        *common.Pair
 	pair2        *common.Pair
 	challenge    *big.Int
 }
 
 func NewHomomorphismPartialPreimageVerifier(homomorphism func(*big.Int) *big.Int,
-	H groups.Group) *HomomorphismPartialPreimageVerifier {
+	H crypto.Group) *HomomorphismPartialPreimageVerifier {
 	return &HomomorphismPartialPreimageVerifier{
 		Homomorphism: homomorphism,
 		H:            H,

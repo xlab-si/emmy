@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2017 XLAB d.o.o.
  *
@@ -19,21 +18,20 @@
 package cl
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
-	"encoding/json"
 
 	"crypto/rand"
 	"encoding/gob"
 	"os"
 
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
-	"github.com/xlab-si/emmy/config"
 )
 
 type PubKey struct {
@@ -44,7 +42,7 @@ type PubKey struct {
 	RsCommitted    []*big.Int // issuer knows only commitments of these attributes
 	RsHidden       []*big.Int // only receiver knows these attributes
 	PedersenParams *commitments.PedersenParams
-				  // the fields below are for commitments of the (committed) attributes
+	// the fields below are for commitments of the (committed) attributes
 	N1 *big.Int
 	G  *big.Int
 	H  *big.Int
@@ -67,32 +65,32 @@ func (k *PubKey) GetContext() *big.Int {
 }
 
 type SecKey struct {
-	RsaPrimes                  *common.SpecialRSAPrimes
-	AttributesSpecialRSAPrimes *common.SpecialRSAPrimes
+	RsaPrimes                  *qr.RSASpecialPrimes
+	AttributesSpecialRSAPrimes *qr.RSASpecialPrimes
 }
 
 type Org struct {
-	Params           *Params
-	Group            *groups.QRSpecialRSA          // in this group attributes will be used as exponents (basis is PubKey.Rs...)
-	pedersenReceiver *commitments.PedersenReceiver // used for nyms (nym is Pedersen commitment)
-	nym              *big.Int
-	nymVerifier      *dlogproofs.SchnorrVerifier
-	U                *big.Int
-	UVerifier        *qrspecialrsaproofs.RepresentationVerifier
-	PubKey           *PubKey
-	SecKey           *SecKey
-	commitmentsOfAttrs []*big.Int
-	knownAttrs         []*big.Int
-	attrsVerifiers     []*commitmentzkp.DFCommitmentOpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
+	Params                  *Params
+	Group                   *qr.RSASpecial                // in this group attributes will be used as exponents (basis is PubKey.Rs...)
+	pedersenReceiver        *commitments.PedersenReceiver // used for nyms (nym is Pedersen commitment)
+	nym                     *big.Int
+	nymVerifier             *schnorr.Verifier
+	U                       *big.Int
+	UVerifier               *qr.RepresentationVerifier
+	PubKey                  *PubKey
+	SecKey                  *SecKey
+	commitmentsOfAttrs      []*big.Int
+	knownAttrs              []*big.Int
+	attrsVerifiers          []*commitmentzkp.DFCommitmentOpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
 	credentialIssueNonceOrg *big.Int
 	proveCredentialNonceOrg *big.Int
 	dbManager               *DBManager
 }
 
 func NewOrg(params *Params) (*Org, error) {
-	group, err := groups.NewQRSpecialRSA(params.NLength / 2)
+	group, err := qr.NewRSASpecial(params.NLength / 2)
 	if err != nil {
-		return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
+		return nil, fmt.Errorf("error when creating RSASpecial group: %s", err)
 	}
 
 	S, Z, RsKnown, RsCommitted, RsHidden, err := generateQuadraticResidues(group, params.KnownAttrsNum,
@@ -126,8 +124,8 @@ func NewOrg(params *Params) (*Org, error) {
 	}
 
 	secKey := &SecKey{
-		RsaPrimes:                  group.GetSpecialRSAPrimes(),
-		AttributesSpecialRSAPrimes: commitmentReceiver.QRSpecialRSA.GetSpecialRSAPrimes(),
+		RsaPrimes:                  group.GetPrimes(),
+		AttributesSpecialRSAPrimes: commitmentReceiver.QRSpecialRSA.GetPrimes(),
 	}
 
 	return NewOrgFromParams(params, pubKey, secKey)
@@ -135,17 +133,17 @@ func NewOrg(params *Params) (*Org, error) {
 
 // FIXME
 func NewOrgFromParams(params *Params, pubKey *PubKey, secKey *SecKey) (*Org, error) {
-	var group *groups.QRSpecialRSA
+	var group *qr.RSASpecial
 	var err error
 	if secKey != nil {
-		group, err = groups.NewQRSpecialRSAFromParams(secKey.RsaPrimes)
+		group, err = qr.NewRSASpecialFromParams(secKey.RsaPrimes)
 		if err != nil {
-			return nil, fmt.Errorf("error when creating QRSpecialRSA group: %s", err)
+			return nil, fmt.Errorf("error when creating RSASpecial group: %s", err)
 		}
 	} else {
 		// ProveCL requires only pub key which means some organization can check the validity of
 		// credential only using public key of the organization that issued a credential.
-		group = groups.NewQRSpecialRSAPublic(pubKey.N)
+		group = qr.NewRSApecialPublic(pubKey.N)
 	}
 
 	pedersenReceiver := commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams)
@@ -207,26 +205,26 @@ func (o *Org) genCredRandoms() (*big.Int, *big.Int) {
 	return e, v11
 }
 
-func (o *Org) genAProof(nonceUser, context, eInv, Q, A *big.Int) *qrspecialrsaproofs.RepresentationProof {
-	prover := qrspecialrsaproofs.NewRepresentationProver(o.Group, o.Params.SecParam,
+func (o *Org) genAProof(nonceUser, context, eInv, Q, A *big.Int) *qr.RepresentationProof {
+	prover := qr.NewRepresentationProver(o.Group, o.Params.SecParam,
 		[]*big.Int{eInv}, []*big.Int{Q}, A)
 	proofRandomData := prover.GetProofRandomData(true)
 	// challenge = hash(context||Q||A||AProofRandomData||nonceUser)
 	challenge := common.Hash(context, Q, A, proofRandomData, nonceUser)
 	proofData := prover.GetProofData(challenge)
 
-	return qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData)
+	return qr.NewRepresentationProof(proofRandomData, challenge, proofData)
 }
 
 type IssueCredResult struct {
 	cred   *Credential
-	proof  *qrspecialrsaproofs.RepresentationProof
+	proof  *qr.RepresentationProof
 	record *ReceiverRecord
 }
 
-func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qrspecialrsaproofs.RepresentationProof, error) {
-	o.nymVerifier = dlogproofs.NewSchnorrVerifier(o.pedersenReceiver.Params.Group)
-	o.UVerifier = qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qr.RepresentationProof, error) {
+	o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group)
+	o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 
 	o.nym = cr.Nym
 	o.knownAttrs = cr.KnownAttrs
@@ -283,7 +281,7 @@ func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qrspecialrsa
 }
 
 func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
-*qrspecialrsaproofs.RepresentationProof, error) {
+	*qr.RepresentationProof, error) {
 	rr, err := o.dbManager.GetReceiverRecord(nym)
 	if err != nil {
 		return nil, nil, err
@@ -292,8 +290,8 @@ func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int
 	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCredential
 		o.knownAttrs = newKnownAttrs
 		o.setUpAttrVerifiers(rr.CommitmentsOfAttrs)
-		o.nymVerifier = dlogproofs.NewSchnorrVerifier(o.pedersenReceiver.Params.Group) // pubKey.PedersenParams.Group
-		o.UVerifier = qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+		o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group) // pubKey.PedersenParams.Group
+		o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	}
 
 	e, v11 := o.genCredRandoms()
@@ -338,18 +336,18 @@ func (o *Org) GetProveCredentialNonce() *big.Int {
 // revealedCommitmentsOfAttrsIndices parameters. Parameters knownAttrs and commitmentsOfAttrs must contain only
 // known attributes and commitments of attributes (of attributes for which only commitment is known) which are
 // to be revealed to the organization.
-func (o *Org) ProveCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
-revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
-knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
-	ver := qrspecialrsaproofs.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+func (o *Org) ProveCredential(A *big.Int, proof *qr.RepresentationProof,
+	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
+	knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
+	ver := qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	bases := []*big.Int{}
 	for i := 0; i < len(o.PubKey.RsKnown); i++ {
-		if !common.Contains(revealedKnownAttrsIndices, i)  {
+		if !common.Contains(revealedKnownAttrsIndices, i) {
 			bases = append(bases, o.PubKey.RsKnown[i])
 		}
 	}
 	for i := 0; i < len(o.PubKey.RsCommitted); i++ {
-		if !common.Contains(revealedCommitmentsOfAttrsIndices, i)  {
+		if !common.Contains(revealedCommitmentsOfAttrsIndices, i) {
 			bases = append(bases, o.PubKey.RsCommitted[i])
 		}
 	}
@@ -401,12 +399,12 @@ func NewCredential(A, e, v11 *big.Int) *Credential {
 	}
 }
 
-func generateQuadraticResidues(group *groups.QRSpecialRSA, knownAttrsNum, committedAttrsNum,
-hiddenAttrsNum int) (*big.Int, *big.Int, []*big.Int,
-[]*big.Int, []*big.Int, error) {
+func generateQuadraticResidues(group *qr.RSASpecial, knownAttrsNum, committedAttrsNum,
+	hiddenAttrsNum int) (*big.Int, *big.Int, []*big.Int,
+	[]*big.Int, []*big.Int, error) {
 	S, err := group.GetRandomGenerator()
 	if err != nil {
-		return nil, nil, nil, nil, nil, fmt.Errorf("error when searching for QRSpecialRSA generator: %s", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("error when searching for RSASpecial generator: %s", err)
 	}
 	Z := group.Exp(S, common.GetRandomInt(group.Order))
 
@@ -443,7 +441,7 @@ func (o *Org) verifyCredentialRequest(cr *CredentialRequest) bool {
 		o.verifyUProofDataLengths(cr.UProof.ProofData)
 }
 
-func (o *Org) verifyNym(proof *dlogproofs.SchnorrProof) bool {
+func (o *Org) verifyNym(proof *schnorr.Proof) bool {
 	bases := []*big.Int{
 		o.pedersenReceiver.Params.Group.G,
 		o.pedersenReceiver.Params.H,
@@ -454,7 +452,7 @@ func (o *Org) verifyNym(proof *dlogproofs.SchnorrProof) bool {
 	return o.nymVerifier.Verify(proof.ProofData)
 }
 
-func (o *Org) verifyU(UProof *qrspecialrsaproofs.RepresentationProof) bool {
+func (o *Org) verifyU(UProof *qr.RepresentationProof) bool {
 	// bases are [R_1, ..., R_L, S]
 	bases := append(o.PubKey.RsHidden, o.PubKey.S)
 	o.UVerifier.SetProofRandomData(UProof.ProofRandomData, bases, o.U)

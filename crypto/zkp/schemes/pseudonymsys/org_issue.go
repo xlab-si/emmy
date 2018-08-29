@@ -22,7 +22,7 @@ import (
 
 	"fmt"
 
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
@@ -49,21 +49,21 @@ func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int,
 }
 
 type OrgCredentialIssuer struct {
-	Group  *groups.SchnorrGroup
+	Group  *schnorr.Group
 	secKey *SecKey
 
 	// the following fields are needed for issuing a credential
-	SchnorrVerifier *dlogproofs.SchnorrVerifier
+	SchnorrVerifier *schnorr.Verifier
 	EqualityProver1 *dlogproofs.DLogEqualityBTranscriptProver
 	EqualityProver2 *dlogproofs.DLogEqualityBTranscriptProver
 	a               *big.Int
 	b               *big.Int
 }
 
-func NewOrgCredentialIssuer(group *groups.SchnorrGroup, secKey *SecKey) *OrgCredentialIssuer {
+func NewOrgCredentialIssuer(group *schnorr.Group, secKey *SecKey) *OrgCredentialIssuer {
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
-	schnorrVerifier := dlogproofs.NewSchnorrVerifier(group)
+	schnorrVerifier := schnorr.NewVerifier(group)
 	equalityProver1 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
 	org := OrgCredentialIssuer{

@@ -20,7 +20,7 @@ package pseudonymsys
 import (
 	"math/big"
 
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
@@ -28,12 +28,12 @@ type OrgCredentialVerifierEC struct {
 	secKey *SecKey
 
 	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
-	a                *groups.ECGroupElement
-	b                *groups.ECGroupElement
-	curveType        groups.ECurve
+	a                *ec.GroupElement
+	b                *ec.GroupElement
+	curveType        ec.Curve
 }
 
-func NewOrgCredentialVerifierEC(secKey *SecKey, curveType groups.ECurve) *OrgCredentialVerifierEC {
+func NewOrgCredentialVerifierEC(secKey *SecKey, curveType ec.Curve) *OrgCredentialVerifierEC {
 	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
 	org := OrgCredentialVerifierEC{
 		secKey:           secKey,
@@ -45,7 +45,7 @@ func NewOrgCredentialVerifierEC(secKey *SecKey, curveType groups.ECurve) *OrgCre
 }
 
 func (org *OrgCredentialVerifierEC) GetAuthenticationChallenge(a, b, a1, b1,
-	x1, x2 *groups.ECGroupElement) *big.Int {
+	x1, x2 *ec.GroupElement) *big.Int {
 	// TODO: check if (a, b) is registered; if not, close the session
 
 	org.a = a
@@ -61,14 +61,14 @@ func (org *OrgCredentialVerifierEC) VerifyAuthentication(z *big.Int,
 		return false
 	}
 
-	g := groups.NewECGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
+	g := ec.NewGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
 		org.EqualityVerifier.Group.Curve.Params().Gy)
 
-	valid1 := dlogproofs.VerifyBlindedTranscriptEC(credential.T1, groups.P256, g, orgPubKeys.H2,
+	valid1 := dlogproofs.VerifyBlindedTranscriptEC(credential.T1, ec.P256, g, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
 
 	aAToGamma := org.EqualityVerifier.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
-	valid2 := dlogproofs.VerifyBlindedTranscriptEC(credential.T2, groups.P256, g, orgPubKeys.H1,
+	valid2 := dlogproofs.VerifyBlindedTranscriptEC(credential.T2, ec.P256, g, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
 	return valid1 && valid2

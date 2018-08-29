@@ -22,7 +22,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
@@ -32,11 +32,11 @@ import (
 type PseudonymsysClient struct {
 	genericClient
 	grpcClient pb.PseudonymSystemClient
-	group      *groups.SchnorrGroup
+	group      *schnorr.Group
 }
 
 func NewPseudonymsysClient(conn *grpc.ClientConn,
-	group *groups.SchnorrGroup) (*PseudonymsysClient, error) {
+	group *schnorr.Group) (*PseudonymsysClient, error) {
 	return &PseudonymsysClient{
 		group:         group,
 		genericClient: newGenericClient(),
@@ -140,7 +140,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver, err := dlogproofs.NewSchnorrProver(c.group, []*big.Int{userSecret}, []*big.Int{nym.A}, nym.B)
+	schnorrProver, err := schnorr.NewProver(c.group, []*big.Int{userSecret}, []*big.Int{nym.A}, nym.B)
 	if err != nil {
 		return nil, err
 	}

@@ -22,25 +22,24 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 type CredentialRequest struct {
 	Nym                      *big.Int
 	KnownAttrs               []*big.Int
 	CommitmentsOfAttrs       []*big.Int
-	NymProof                 *dlogproofs.SchnorrProof
+	NymProof                 *schnorr.Proof
 	U                        *big.Int
-	UProof                   *qrspecialrsaproofs.RepresentationProof
+	UProof                   *qr.RepresentationProof
 	CommitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof
 	Nonce                    *big.Int
 }
 
-func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nymProof *dlogproofs.SchnorrProof,
-	U *big.Int, UProof *qrspecialrsaproofs.RepresentationProof,
+func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nymProof *schnorr.Proof,
+	U *big.Int, UProof *qr.RepresentationProof,
 	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof, nonce *big.Int) *CredentialRequest {
 	return &CredentialRequest{
 		Nym:                nym,
@@ -61,7 +60,7 @@ func (m *CredentialManager) computeU() (*big.Int, *big.Int) {
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
 
-	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	group := qr.NewRSApecialPublic(m.PubKey.N)
 	U := group.Exp(m.PubKey.S, v1)
 
 	for i, attr := range m.hiddenAttrs {
@@ -72,7 +71,7 @@ func (m *CredentialManager) computeU() (*big.Int, *big.Int) {
 	return U, v1
 }
 
-func (m *CredentialManager) getNymProver() (*dlogproofs.SchnorrProver, error) {
+func (m *CredentialManager) getNymProver() (*schnorr.Prover, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{
 		m.PubKey.PedersenParams.Group.G,
@@ -82,7 +81,7 @@ func (m *CredentialManager) getNymProver() (*dlogproofs.SchnorrProver, error) {
 	val, r := committer.GetDecommitMsg() // val is actually master key
 	secrets := []*big.Int{val, r}
 
-	prover, err := dlogproofs.NewSchnorrProver(m.PubKey.PedersenParams.Group, secrets[:], bases[:],
+	prover, err := schnorr.NewProver(m.PubKey.PedersenParams.Group, secrets[:], bases[:],
 		committer.Commitment)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Schnorr prover: %s", err)
@@ -91,19 +90,19 @@ func (m *CredentialManager) getNymProver() (*dlogproofs.SchnorrProver, error) {
 	return prover, nil
 }
 
-func (m *CredentialManager) getUProver(U *big.Int) *qrspecialrsaproofs.RepresentationProver {
-	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+func (m *CredentialManager) getUProver(U *big.Int) *qr.RepresentationProver {
+	group := qr.NewRSApecialPublic(m.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
 	secrets := append(m.hiddenAttrs, m.V1)
 
 	// bases are [R_1, ..., R_L, S]
 	bases := append(m.PubKey.RsHidden, m.PubKey.S)
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, m.Params.SecParam,
+	prover := qr.NewRepresentationProver(group, m.Params.SecParam,
 		secrets[:], bases[:], U)
 	return prover
 }
 
-func (m *CredentialManager) getUProofRandomData(prover *qrspecialrsaproofs.RepresentationProver) (*big.Int, error) {
+func (m *CredentialManager) getUProofRandomData(prover *qr.RepresentationProver) (*big.Int, error) {
 	// boundary for m_tilde
 	b_m := m.Params.AttrBitLen + m.Params.SecParam + m.Params.HashBitLen + 1
 	// boundary for v1
@@ -132,8 +131,8 @@ func (m *CredentialManager) getCredReqChallenge(U, nym, nonceOrg *big.Int) *big.
 	return common.Hash(l...)
 }
 
-func (m *CredentialManager) getCredReqProvers(U *big.Int) (*dlogproofs.SchnorrProver,
-	*qrspecialrsaproofs.RepresentationProver, error) {
+func (m *CredentialManager) getCredReqProvers(U *big.Int) (*schnorr.Prover,
+	*qr.RepresentationProver, error) {
 	nymProver, err := m.getNymProver()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when obtaining nym proof random data: %v", err)

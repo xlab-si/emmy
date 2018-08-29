@@ -35,7 +35,7 @@ Emmy library is named after a German mathematician [Emmy Noether](https://en.wik
 
 The library supports building complex cryptographic schemes. To enable this various layers are needed:
 
- * mathematical groups in which the operations take place (see `crypto/groups`)
+ * mathematical groups in which the operations take place
  * utilities for generating safe primes, group generators, for decomposing integers into squares (`crypto/common`)
  * commitments (to commit to a chosen value while keeping it hidden to others, see `crypto/commitments`)
  * zero-knowledge proofs as building blocks for schemes (protocols which are used as subprotocols in schemes, see `crypto/zkp`)
@@ -43,22 +43,23 @@ The library supports building complex cryptographic schemes. To enable this vari
  
 ## Groups
 
-The following groups are offered:
+The following groups are offered in appropriate subpackages of `crypto` package:
 
- * &#8484;<sub>n</sub>* - group of all integers smaller than _n_ and coprime with _n_
- * Schnorr group - cyclic subgroup of &#8484;<sub>p</sub>; the order of Schnorr group is _q_ where _p = qr + 1_ for some _r_ (_p_, _q_ are primes); 
+ * &#8484;<sub>n</sub>* (`zn.Group`) - group of all integers smaller than _n_ and coprime with _n_. In the special 
+ case when _n_ is a prime, a specialized group `zn.GroupZp` may be used.
+ * Schnorr group (`schnorr.Group`) - cyclic subgroup of &#8484;<sub>p</sub>; the order of Schnorr group is _q_ where _p = qr + 1_ for some _r_ (_p_, _q_ are primes); 
  the order of Schnorr group is smaller than of &#8484;<sub>p</sub> which means faster computations
- * `RSA` - group of all integers smaller than _n_ and coprime with _n_, where _n_ is a product of two distinct large primes
- * `QRRSA` - group of quadratic residues modulo _n_ where _n_ is a product of two primes
- * `QRSpecialRSA` - group of quadratic residues modulo _n_ where _n_ is a product of two safe primes
- * `ECGroup` - wrapper around Go `elliptic.Curve`
+ * RSA group (`rsa.Group`) - group of all integers smaller than _n_ and coprime with _n_, where _n_ is a product of two distinct large primes
+ * QR RSA group (`qr.RSA`) - group of quadratic residues modulo _n_ where _n_ is a product of two primes
+ * QR special RSA group (`qr.RSASpecial`) - group of quadratic residues modulo _n_ where _n_ is a product of two safe primes
+ * Elliptic curve group (`ec.Group`) - wrapper around Go `elliptic.Curve`
  
 ## Commitments
 
 The following commitments are offered:
 
  * Pedersen - for commitments in Schnorr group (supported &#8484;<sub>p</sub> and EC groups) 
- * Damgard-Fujisaki [12] - for commitments in QRSpecialRSA group
+ * Damgard-Fujisaki [12] - for commitments in QR special RSA group
  * Q-One-Way based [9] (Damgard-Fujisaki should be used instead)
  
 ## Zero-knowledge proofs
@@ -69,8 +70,8 @@ dlog equality [7], dlog equality blinded transcript [4], partial dlog knowledge 
  * Damgard-Fujisaki proofs (`crypto/zkp/primitives/commitments`) [12] - for proving that you can open a commitment, 
  that two commitments hide the same value, that a commitment contains a multiplication of two committed values, 
  that the committed value is positive, that the committed value is a square, commitment range based on Lipmaa [11]
- * QRSpecialRSA representation proof (like Schnorr but in QRSpecialRSA group, see `crypto/primitives/qrspecialrsaproofs`)
- * Quadratic residuosity and nonresiduosity [6]
+ * QR special RSA representation proof (like Schnorr but in QR special RSA group, see `qr` package)
+ * Quadratic residuosity and nonresiduosity (packages `qr` and `qnr`) [6]
  * Camenisch-Shoup verifiable encryption [1]
  
 ## Communication

@@ -22,7 +22,8 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/ecschnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
@@ -32,10 +33,10 @@ import (
 type PseudonymsysClientEC struct {
 	genericClient
 	grpcClient pb.PseudonymSystemClient
-	curve      groups.ECurve
+	curve      ec.Curve
 }
 
-func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*PseudonymsysClientEC, error) {
+func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve ec.Curve) (*PseudonymsysClientEC, error) {
 	return &PseudonymsysClientEC{
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewPseudonymSystemClient(conn),
@@ -46,7 +47,7 @@ func NewPseudonymsysClientEC(conn *grpc.ClientConn, curve groups.ECurve) (*Pseud
 // GenerateMasterKey generates a master secret key to be used subsequently by all the
 // protocols in the scheme.
 func (c *PseudonymsysClientEC) GenerateMasterKey() *big.Int {
-	group := groups.NewECGroup(c.curve)
+	group := ec.NewGroup(c.curve)
 	return common.GetRandomInt(group.Q)
 }
 
@@ -69,7 +70,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	// Note that as there is very little logic needed (besides what is in DLog equality
 	// prover), everything is implemented here (no pseudoynymsys nym gen client).
 
-	masterNymA := groups.NewECGroupElement(prover.Group.Curve.Params().Gx,
+	masterNymA := ec.NewGroupElement(prover.Group.Curve.Params().Gx,
 		prover.Group.Curve.Params().Gy)
 	masterNymB := prover.Group.Exp(masterNymA, userSecret)
 
@@ -146,7 +147,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
-	schnorrProver := dlogproofs.NewSchnorrECProver(c.curve)
+	schnorrProver := ecschnorr.NewProver(c.curve)
 
 	x := schnorrProver.GetProofRandomData(userSecret, nym.A)
 
@@ -200,7 +201,7 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	equalityVerifier1 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 	equalityVerifier2 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
 
-	g := groups.NewECGroupElement(equalityVerifier1.Group.Curve.Params().Gx,
+	g := ec.NewGroupElement(equalityVerifier1.Group.Curve.Params().Gx,
 		equalityVerifier1.Group.Curve.Params().Gy)
 
 	challenge1 := equalityVerifier1.GetChallenge(g, nym.B, orgPubKeys.H2, A, x11, x12)
@@ -267,17 +268,17 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscriptEC{
-		A: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T1.Alpha_1,
+		A: pb.ToPbECGroupElement(ec.NewGroupElement(credential.T1.Alpha_1,
 			credential.T1.Alpha_2)),
-		B: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T1.Beta_1,
+		B: pb.ToPbECGroupElement(ec.NewGroupElement(credential.T1.Beta_1,
 			credential.T1.Beta_2)),
 		Hash:   credential.T1.Hash.Bytes(),
 		ZAlpha: credential.T1.ZAlpha.Bytes(),
 	}
 	transcript2 := &pb.PseudonymsysTranscriptEC{
-		A: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T2.Alpha_1,
+		A: pb.ToPbECGroupElement(ec.NewGroupElement(credential.T2.Alpha_1,
 			credential.T2.Alpha_2)),
-		B: pb.ToPbECGroupElement(groups.NewECGroupElement(credential.T2.Beta_1,
+		B: pb.ToPbECGroupElement(ec.NewGroupElement(credential.T2.Beta_1,
 			credential.T2.Beta_2)),
 		Hash:   credential.T2.Hash.Bytes(),
 		ZAlpha: credential.T2.ZAlpha.Bytes(),

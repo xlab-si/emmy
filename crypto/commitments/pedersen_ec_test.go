@@ -22,12 +22,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 // TestPedersenEC demonstrates how a value can be committed and later opened (decommitted) using Pedersen EC committer.
 func TestPedersenEC(t *testing.T) {
-	receiver := NewPedersenECReceiver(groups.P256)
+	receiver := NewPedersenECReceiver(ec.P256)
 	committer := NewPedersenECCommitter(receiver.Params)
 
 	a := common.GetRandomInt(committer.Params.Group.Q)

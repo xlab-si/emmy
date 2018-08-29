@@ -21,12 +21,12 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 // ProveDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and
 // that log_g1(t1) = log_g2(t2).
-func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, group *groups.SchnorrGroup) bool {
+func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, group *schnorr.Group) bool {
 	eProver := NewDLogEqualityProver(group)
 	eVerifier := NewDLogEqualityVerifier(group)
 
@@ -39,14 +39,14 @@ func ProveDLogEquality(secret, g1, g2, t1, t2 *big.Int, group *groups.SchnorrGro
 }
 
 type DLogEqualityProver struct {
-	Group  *groups.SchnorrGroup
+	Group  *schnorr.Group
 	r      *big.Int
 	secret *big.Int
 	g1     *big.Int
 	g2     *big.Int
 }
 
-func NewDLogEqualityProver(group *groups.SchnorrGroup) *DLogEqualityProver {
+func NewDLogEqualityProver(group *schnorr.Group) *DLogEqualityProver {
 	prover := DLogEqualityProver{
 		Group: group,
 	}
@@ -79,7 +79,7 @@ func (prover *DLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
 }
 
 type DLogEqualityVerifier struct {
-	Group     *groups.SchnorrGroup
+	Group     *schnorr.Group
 	challenge *big.Int
 	g1        *big.Int
 	g2        *big.Int
@@ -89,7 +89,7 @@ type DLogEqualityVerifier struct {
 	t2        *big.Int
 }
 
-func NewDLogEqualityVerifier(group *groups.SchnorrGroup) *DLogEqualityVerifier {
+func NewDLogEqualityVerifier(group *schnorr.Group) *DLogEqualityVerifier {
 	verifier := DLogEqualityVerifier{
 		Group: group,
 	}

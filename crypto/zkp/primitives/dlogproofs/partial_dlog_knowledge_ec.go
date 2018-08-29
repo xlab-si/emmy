@@ -21,24 +21,24 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 type ECTriple struct {
-	A *groups.ECGroupElement
-	B *groups.ECGroupElement
-	C *groups.ECGroupElement
+	A *ec.GroupElement
+	B *ec.GroupElement
+	C *ec.GroupElement
 }
 
-func NewECTriple(a, b, c *groups.ECGroupElement) *ECTriple {
+func NewECTriple(a, b, c *ec.GroupElement) *ECTriple {
 	triple := ECTriple{A: a, B: b, C: c}
 	return &triple
 }
 
 // ProvePartialECDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
 // the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
-func ProvePartialECDLogKnowledge(group *groups.ECGroup, secret1 *big.Int,
-	a1, a2, b2 *groups.ECGroupElement) bool {
+func ProvePartialECDLogKnowledge(group *ec.Group, secret1 *big.Int,
+	a1, a2, b2 *ec.GroupElement) bool {
 	prover := NewPartialECDLogProver(group)
 	verifier := NewPartialECDLogVerifier(group)
 
@@ -57,24 +57,24 @@ func ProvePartialECDLogKnowledge(group *groups.ECGroup, secret1 *big.Int,
 // Proving that it knows either secret1 such that a1^secret1 = b1 or
 //  secret2 such that a2^secret2 = b2.
 type PartialECDLogProver struct {
-	Group   *groups.ECGroup
+	Group   *ec.Group
 	secret1 *big.Int
-	a1      *groups.ECGroupElement
-	a2      *groups.ECGroupElement
+	a1      *ec.GroupElement
+	a2      *ec.GroupElement
 	r1      *big.Int
 	c2      *big.Int
 	z2      *big.Int
 	ord     int
 }
 
-func NewPartialECDLogProver(group *groups.ECGroup) *PartialECDLogProver {
+func NewPartialECDLogProver(group *ec.Group) *PartialECDLogProver {
 	return &PartialECDLogProver{
 		Group: group,
 	}
 }
 
 func (prover *PartialECDLogProver) GetProofRandomData(secret1 *big.Int, a1, b1, a2,
-	b2 *groups.ECGroupElement) (*ECTriple, *ECTriple) {
+	b2 *ec.GroupElement) (*ECTriple, *ECTriple) {
 	prover.a1 = a1
 	prover.a2 = a2
 	prover.secret1 = secret1
@@ -121,13 +121,13 @@ func (prover *PartialECDLogProver) GetProofData(challenge *big.Int) (*big.Int, *
 }
 
 type PartialECDLogVerifier struct {
-	Group     *groups.ECGroup
+	Group     *ec.Group
 	triple1   *ECTriple // contains x1, a1, b1
 	triple2   *ECTriple // contains x2, a2, b2
 	challenge *big.Int
 }
 
-func NewPartialECDLogVerifier(group *groups.ECGroup) *PartialECDLogVerifier {
+func NewPartialECDLogVerifier(group *ec.Group) *PartialECDLogVerifier {
 	return &PartialECDLogVerifier{
 		Group: group,
 	}

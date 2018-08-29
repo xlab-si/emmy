@@ -15,7 +15,7 @@
  *
  */
 
-package groups
+package zn
 
 import (
 	"math/big"
@@ -23,57 +23,58 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// Zn presents Z_n* - group of all integers smaller than n and coprime with n.
-// Note that this group is NOT cyclic (as opposed for example to Schnorr group).
-// It is cyclic when n is prime, but the problem with Z_p* is that the generator
-// is difficult to find (as opposed to Schnorr group and QRSpecialRSA).
-type Zn struct {
+// Group represents Z_n* - group of all integers smaller than n and coprime with n.
+// Note that this group is not cyclic in the general case (as opposed to, for
+// example, Schnorr group).
+//
+// When n is a prime, use a special case of this group, the GroupZp struct instead.
+type Group struct {
 	N *big.Int
 }
 
-func NewZn(n *big.Int) *Zn {
-	return &Zn{
+func NewGroup(n *big.Int) *Group {
+	return &Group{
 		N: n,
 	}
 }
 
 // GetRandomElement returns a random element from this group. Elements of this group
 // are integers that are coprime with N.
-func (group *Zn) GetRandomElement() *big.Int {
-	return common.GetRandomZnInvertibleElement(group.N)
+func (g *Group) GetRandomElement() *big.Int {
+	return common.GetRandomZnInvertibleElement(g.N)
 }
 
 // Add computes x + y mod group.N.
-func (group *Zn) Add(x, y *big.Int) *big.Int {
+func (g *Group) Add(x, y *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Add(x, y)
-	r.Mod(r, group.N)
+	r.Mod(r, g.N)
 	return r
 }
 
 // Mul computes x * y mod group.N.
-func (group *Zn) Mul(x, y *big.Int) *big.Int {
+func (g *Group) Mul(x, y *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Mul(x, y)
-	r.Mod(r, group.N)
+	r.Mod(r, g.N)
 	return r
 }
 
 // Exp computes x^exponent mod group.N.
-func (group *Zn) Exp(x, exponent *big.Int) *big.Int {
+func (g *Group) Exp(x, exponent *big.Int) *big.Int {
 	r := new(big.Int)
-	r.Exp(x, exponent, group.N)
+	r.Exp(x, exponent, g.N)
 	return r
 }
 
 // Inv computes inverse of x, that means xInv such that x * xInv = 1 mod group.N.
-func (group *Zn) Inv(x *big.Int) *big.Int {
-	return new(big.Int).ModInverse(x, group.N)
+func (g *Group) Inv(x *big.Int) *big.Int {
+	return new(big.Int).ModInverse(x, g.N)
 }
 
 // IsElementInGroup returns true if x is in the group and false otherwise. An element x is
-// in Zn when it is coprime with group.N, that means gcd(x, group.N) = 1.
-func (group *Zn) IsElementInGroup(x *big.Int) bool {
-	c := new(big.Int).GCD(nil, nil, x, group.N)
-	return x.Cmp(group.N) < 0 && c.Cmp(big.NewInt(1)) == 0
+// in Group when it is coprime with group.N, that means gcd(x, group.N) = 1.
+func (g *Group) IsElementInGroup(x *big.Int) bool {
+	c := new(big.Int).GCD(nil, nil, x, g.N)
+	return x.Cmp(g.N) < 0 && c.Cmp(big.NewInt(1)) == 0
 }

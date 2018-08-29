@@ -21,7 +21,8 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
 type SecKey struct {
@@ -41,16 +42,16 @@ func NewPubKey(h1, h2 *big.Int) *PubKey {
 }
 
 type PubKeyEC struct {
-	H1, H2 *groups.ECGroupElement
+	H1, H2 *ec.GroupElement
 }
 
-func NewPubKeyEC(h1, h2 *groups.ECGroupElement) *PubKeyEC {
+func NewPubKeyEC(h1, h2 *ec.GroupElement) *PubKeyEC {
 	return &PubKeyEC{h1, h2}
 }
 
 // GenerateKeyPair takes a schnorr group and constructs a pair of secret and public key for
 // pseudonym system scheme.
-func GenerateKeyPair(group *groups.SchnorrGroup) (*SecKey, *PubKey) {
+func GenerateKeyPair(group *schnorr.Group) (*SecKey, *PubKey) {
 	s1 := common.GetRandomInt(group.Q)
 	s2 := common.GetRandomInt(group.Q)
 	h1 := group.Exp(group.G, s1)
@@ -61,7 +62,7 @@ func GenerateKeyPair(group *groups.SchnorrGroup) (*SecKey, *PubKey) {
 
 // GenerateECKeyPair takes EC group and constructs a public key for pseudonym system scheme in EC
 // arithmetic.
-func GenerateECKeyPair(group *groups.ECGroup) (*SecKey, *PubKeyEC) {
+func GenerateECKeyPair(group *ec.Group) (*SecKey, *PubKeyEC) {
 	s1 := common.GetRandomInt(group.Q)
 	s2 := common.GetRandomInt(group.Q)
 	h1 := group.ExpBaseG(s1)

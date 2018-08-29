@@ -15,27 +15,27 @@
  *
  */
 
-package common
+package zn
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 func TestGetGeneratorOfZnSubgroup(t *testing.T) {
-	p, err := GetSafePrime(512)
+	p, err := common.GetSafePrime(512)
 	if err != nil {
 		t.Errorf("Error in GetSafePrime: %v", err)
 	}
-	pMin := new(big.Int)
-	pMin.Sub(p, big.NewInt(1))
-	p1 := new(big.Int).Div(pMin, big.NewInt(2))
 
-	g, err := GetGeneratorOfZnSubgroup(p, pMin, p1)
+	zp, _ := NewGroupZp(p)
+	p1 := new(big.Int).Div(zp.Order, big.NewInt(2))
+	g, err := zp.GetGeneratorOfSubgroup(p1)
 	if err != nil {
-		t.Errorf("Error in GetGeneratorOfZnSubgroup: %v", err)
+		t.Errorf("Error in GetGeneratorOfSubgroup: %v", err)
 	}
 	g.Exp(g, big.NewInt(0).Sub(p1, big.NewInt(1)), p1) // g^(p1-1) % p1 should be 1
 

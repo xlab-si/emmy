@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"github.com/xlab-si/emmy/client"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
@@ -160,7 +160,7 @@ type PseudonymsysClientEC struct {
 }
 
 func NewPseudonymsysClientEC(conn *Connection, curve int) (*PseudonymsysClientEC, error) {
-	c, err := client.NewPseudonymsysClientEC(conn.ClientConn, groups.ECurve(curve))
+	c, err := client.NewPseudonymsysClientEC(conn.ClientConn, ec.Curve(curve))
 	if err != nil {
 		return nil, err
 	}

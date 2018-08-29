@@ -15,26 +15,28 @@
  *
  */
 
-package groups
+package rsa
 
 import (
 	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/zn"
 )
 
-// RSA presents Z_n* - group of all integers smaller than n and coprime with n,
+// Group presents Z_n* - group of all integers smaller than n and coprime with n,
 // where n is a product of two distinct large primes. Note that this group
-// is NOT cyclic (as opposed for example to QRRSA which is a subgroup of RSA group).
-type RSA struct {
-	Zn          // make Zn a parent (RSA is a special case of Zn where n = P * Q)
-	N  *big.Int // N = P * Q
-	P  *big.Int
-	Q  *big.Int
-	E  *big.Int
+// is NOT cyclic (as opposed for example to RSASpecial which is a subgroup of Group group).
+type Group struct {
+	zn.Group          // Group group is a special case of Group where n = P * Q)
+	N        *big.Int // N = P * Q
+	P        *big.Int
+	Q        *big.Int
+	E        *big.Int
 }
 
-func NewRSA(nBitLength int) (*RSA, error) {
+func NewGroup(nBitLength int) (*Group, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, nBitLength)
 	if err != nil {
 		return nil, err
@@ -42,15 +44,16 @@ func NewRSA(nBitLength int) (*RSA, error) {
 	p := priv.Primes[0]
 	q := priv.Primes[1]
 	n := new(big.Int).Mul(p, q)
-	return &RSA{
-		P:  p,
-		Q:  q,
-		N:  n,
-		Zn: *NewZn(n),
+
+	return &Group{
+		P:     p,
+		Q:     q,
+		N:     n,
+		Group: *zn.NewGroup(n),
 	}, nil
 }
 
 // Homomorphism returns x^E mod N (it is not called Encrypt, because there is no padding).
-func (group *RSA) Homomorphism(x *big.Int) *big.Int {
+func (group *Group) Homomorphism(x *big.Int) *big.Int {
 	return new(big.Int).Exp(x, group.E, group.N)
 }

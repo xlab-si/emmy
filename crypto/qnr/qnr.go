@@ -15,7 +15,7 @@
  *
  */
 
-package qrproofs
+package qnr
 
 // Statistical zero-knowledge proof of quadratic non-residousity.
 
@@ -24,13 +24,13 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
 )
 
 // ProveQNR demonstrates how the prover can prove that y is not quadratic residue (there does
-// not exist element y1 such that y1^2 = y in group QRRSA.
-func ProveQNR(y *big.Int, qr *groups.QRRSA) (bool, error) {
-	prover := NewQNRProver(qr, y)
+// not exist element y1 such that y1^2 = y in group RSA.
+func ProveQNR(y *big.Int, qr *qr.RSA) (bool, error) {
+	prover := NewProver(qr, y)
 	verifier := NewQNRVerifier(qr, y)
 	m := qr.N.BitLen()
 
@@ -61,21 +61,21 @@ func ProveQNR(y *big.Int, qr *groups.QRRSA) (bool, error) {
 	return true, nil
 }
 
-type QNRProver struct {
-	QR *groups.QRRSA
+type Prover struct {
+	QR *qr.RSA
 	Y  *big.Int
 	w  *big.Int
 }
 
-func NewQNRProver(qr *groups.QRRSA, y *big.Int) *QNRProver {
-	return &QNRProver{
+func NewProver(qr *qr.RSA, y *big.Int) *Prover {
+	return &Prover{
 		QR: qr,
 		Y:  y,
 	}
 }
 
-func (prover *QNRProver) GetChallenge() []int {
-	m := prover.QR.N.BitLen()
+func (p *Prover) GetChallenge() []int {
+	m := p.QR.N.BitLen()
 	var randVector []int
 	for i := 0; i < m; i++ {
 		// todo: remove big.Int
@@ -91,12 +91,12 @@ func (prover *QNRProver) GetChallenge() []int {
 	return randVector
 }
 
-func (prover *QNRProver) SetProofRandomData(w *big.Int) {
-	prover.w = w
+func (p *Prover) SetProofRandomData(w *big.Int) {
+	p.w = w
 }
 
-func (prover *QNRProver) GetProofData(challenge *big.Int) (int, error) {
-	isQR, err := prover.QR.IsElementInGroup(challenge)
+func (p *Prover) GetProofData(challenge *big.Int) (int, error) {
+	isQR, err := p.QR.IsElementInGroup(challenge)
 	if err != nil {
 		return 0, err
 	}
@@ -109,20 +109,20 @@ func (prover *QNRProver) GetProofData(challenge *big.Int) (int, error) {
 	return typ, nil
 }
 
-func (prover *QNRProver) Verify(pairs, verProof []*common.Pair) bool {
+func (p *Prover) Verify(pairs, verProof []*common.Pair) bool {
 	for ind, proofPair := range verProof {
 		if proofPair.B.Cmp(big.NewInt(0)) == 0 {
-			t := prover.QR.Mul(proofPair.A, proofPair.A)
-			Aw := prover.QR.Mul(pairs[ind].A, prover.w)
-			Bw := prover.QR.Mul(pairs[ind].B, prover.w)
+			t := p.QR.Mul(proofPair.A, proofPair.A)
+			Aw := p.QR.Mul(pairs[ind].A, p.w)
+			Bw := p.QR.Mul(pairs[ind].B, p.w)
 
 			if (t.Cmp(Aw) != 0) && (t.Cmp(Bw) != 0) {
 				return false
 			}
 		} else {
-			r1Squared := prover.QR.Mul(proofPair.A, proofPair.A)
-			r2Squared := prover.QR.Mul(proofPair.B, proofPair.B)
-			r2Squaredy := prover.QR.Mul(r2Squared, prover.Y)
+			r1Squared := p.QR.Mul(proofPair.A, proofPair.A)
+			r2Squared := p.QR.Mul(proofPair.B, proofPair.B)
+			r2Squaredy := p.QR.Mul(r2Squared, p.Y)
 			pair := pairs[ind]
 
 			if !((r1Squared.Cmp(pair.A) == 0 && r2Squaredy.Cmp(pair.B) == 0) ||
@@ -134,8 +134,8 @@ func (prover *QNRProver) Verify(pairs, verProof []*common.Pair) bool {
 	return true
 }
 
-type QNRVerifier struct {
-	QR    *groups.QRRSA
+type Verifier struct {
+	QR    *qr.RSA
 	x     *big.Int
 	y     *big.Int
 	typ   int
@@ -143,43 +143,43 @@ type QNRVerifier struct {
 	pairs []*common.Pair
 }
 
-func NewQNRVerifier(qr *groups.QRRSA, y *big.Int) *QNRVerifier {
-	return &QNRVerifier{
+func NewQNRVerifier(qr *qr.RSA, y *big.Int) *Verifier {
+	return &Verifier{
 		QR: qr,
 		y:  y,
 	}
 }
 
-func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*common.Pair) {
-	r := common.GetRandomInt(verifier.QR.N)
+func (v *Verifier) GetChallenge() (*big.Int, []*common.Pair) {
+	r := common.GetRandomInt(v.QR.N)
 	// checking that gcd(r, N) = 1 is not needed as the probability is low
-	verifier.r = r
-	verifier.pairs = verifier.pairs[:0] // clear verifier.pairs
-	r2 := verifier.QR.Mul(r, r)
+	v.r = r
+	v.pairs = v.pairs[:0] // clear v.pairs
+	r2 := v.QR.Mul(r, r)
 
 	b := common.GetRandomInt(big.NewInt(2)) // 0 or 1
 	var w *big.Int
 
 	if b.Cmp(big.NewInt(0)) == 0 {
 		w = r2
-		verifier.typ = 1
+		v.typ = 1
 	} else {
-		w = verifier.QR.Mul(r2, verifier.y)
-		verifier.typ = 2
+		w = v.QR.Mul(r2, v.y)
+		v.typ = 2
 	}
 
-	m := verifier.QR.N.BitLen()
+	m := v.QR.N.BitLen()
 	var pairs []*common.Pair
 	for i := 0; i < m; i++ {
-		r1 := common.GetRandomInt(verifier.QR.N)
-		r2 := common.GetRandomInt(verifier.QR.N)
-		aj := verifier.QR.Mul(r1, r1) // r1^2
-		bj := verifier.QR.Mul(r2, r2)
-		bj = verifier.QR.Mul(bj, verifier.y) // r2^2 * y
+		r1 := common.GetRandomInt(v.QR.N)
+		r2 := common.GetRandomInt(v.QR.N)
+		aj := v.QR.Mul(r1, r1) // r1^2
+		bj := v.QR.Mul(r2, r2)
+		bj = v.QR.Mul(bj, v.y) // r2^2 * y
 
 		bitj := common.GetRandomInt(big.NewInt(2)) // 0 or 1
 
-		verifier.pairs = append(verifier.pairs, &common.Pair{A: r1, B: r2})
+		v.pairs = append(v.pairs, &common.Pair{A: r1, B: r2})
 
 		var pair *common.Pair
 		if bitj.Cmp(big.NewInt(1)) == 0 {
@@ -199,25 +199,25 @@ func (verifier *QNRVerifier) GetChallenge() (*big.Int, []*common.Pair) {
 	return w, pairs
 }
 
-func (verifier *QNRVerifier) GetProofData(randVector []int) []*common.Pair {
+func (v *Verifier) GetProofData(randVector []int) []*common.Pair {
 	var pairs []*common.Pair
 	for ind, i := range randVector {
 		if i == 0 {
 			pair := &common.Pair{
-				A: verifier.pairs[ind].A,
-				B: verifier.pairs[ind].B,
+				A: v.pairs[ind].A,
+				B: v.pairs[ind].B,
 			}
 			pairs = append(pairs, pair)
 		} else {
-			if verifier.typ == 1 { // w = r^2
-				r1 := verifier.pairs[ind].A
-				t := verifier.QR.Mul(verifier.r, r1)
+			if v.typ == 1 { // w = r^2
+				r1 := v.pairs[ind].A
+				t := v.QR.Mul(v.r, r1)
 				// t = r * r1
 				pairs = append(pairs, &common.Pair{A: t, B: big.NewInt(0)})
 			} else { // w = r^2 * y
-				r2 := verifier.pairs[ind].B
-				t := verifier.QR.Mul(verifier.r, r2)
-				t = verifier.QR.Mul(t, verifier.y)
+				r2 := v.pairs[ind].B
+				t := v.QR.Mul(v.r, r2)
+				t = v.QR.Mul(t, v.y)
 				// t = r * r2 * y
 				pairs = append(pairs, &common.Pair{A: t, B: big.NewInt(0)})
 			}
@@ -226,6 +226,6 @@ func (verifier *QNRVerifier) GetProofData(randVector []int) []*common.Pair {
 	return pairs
 }
 
-func (verifier *QNRVerifier) Verify(typ int) bool {
-	return verifier.typ == typ
+func (v *Verifier) Verify(typ int) bool {
+	return v.typ == typ
 }

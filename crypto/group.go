@@ -15,27 +15,21 @@
  *
  */
 
-package common
+package crypto
 
 import (
-	"fmt"
 	"math/big"
 )
 
-// GetGeneratorOfZnSubgroup returns a generator of a subgroup of a specified order in Z_n.
-// Parameter groupOrder is order of Z_n (if n is prime, order is n-1).
-func GetGeneratorOfZnSubgroup(n, groupOrder, subgroupOrder *big.Int) (*big.Int, error) {
-	if big.NewInt(0).Mod(groupOrder, subgroupOrder).Cmp(big.NewInt(0)) != 0 {
-		err := fmt.Errorf("subgroupOrder does not divide groupOrder")
-		return nil, err
-	}
-	r := new(big.Int).Div(groupOrder, subgroupOrder)
-	for {
-		h := GetRandomInt(n)
-		g := new(big.Int)
-		g.Exp(h, r, n)
-		if g.Cmp(big.NewInt(1)) != 0 {
-			return g, nil
-		}
-	}
+// Group interface is used to enable the usage of different groups in some schemes.
+// For example when we have a homomorphism f between two groups and
+// we are proving that we know an f-preimage of an element - meaning that for a given v we
+// know u such that f(u) = v.
+// Note that this is an interface for modular arithmetic groups. For elliptic curve
+// groups at the moment there is no need for an interface.
+type Group interface {
+	GetRandomElement() *big.Int
+	Mul(*big.Int, *big.Int) *big.Int
+	Exp(*big.Int, *big.Int) *big.Int
+	Inv(*big.Int) *big.Int
 }

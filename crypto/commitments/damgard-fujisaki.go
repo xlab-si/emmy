@@ -22,23 +22,23 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
 )
 
 // Based on:
 // I. Damgard and E. Fujisaki. An integer commitment scheme based on groups with hidden order. http://eprint.iacr.org/2001, 2001.
 //
 // Damgard-Fujisaki is statistically-hiding integer commitment scheme which works in groups
-// with hidden order, like QRSpecialRSA.
+// with hidden order, like RSASpecial.
 // This scheme can be used to commit to any integer (that is not generally true for commitment
 // schemes, usually there is some boundary), however a boundary (denoted by T) is needed
 // for the associated proofs.
 
 // DamgardFujisaki presents what is common in DamgardFujisakiCommitter and DamgardFujisakiReceiver.
 type damgardFujisaki struct {
-	QRSpecialRSA *groups.QRSpecialRSA
+	QRSpecialRSA *qr.RSASpecial
 	H            *big.Int
-	G            *big.Int // G = H^alpha % QRSpecialRSA.N, where alpha is chosen when Receiver is created (Committer does not know alpha)
+	G            *big.Int // G = H^alpha % RSASpecial.N, where alpha is chosen when Receiver is created (Committer does not know alpha)
 	K            int      // security parameter
 }
 
@@ -54,7 +54,7 @@ func (df *damgardFujisaki) ComputeCommit(a, r *big.Int) *big.Int {
 
 type DamgardFujisakiCommitter struct {
 	damgardFujisaki
-	B              int      // 2^B is upper bound estimation for group order, it can be len(QRSpecialRSA.N) - 2
+	B              int      // 2^B is upper bound estimation for group order, it can be len(RSASpecial.N) - 2
 	T              *big.Int // we can commit to values between -T and T
 	committedValue *big.Int
 	r              *big.Int
@@ -64,7 +64,7 @@ type DamgardFujisakiCommitter struct {
 func NewDamgardFujisakiCommitter(n, g, h, t *big.Int, k int) *DamgardFujisakiCommitter {
 	// n.BitLen() - 2 is used as B
 	return &DamgardFujisakiCommitter{damgardFujisaki: damgardFujisaki{
-		QRSpecialRSA: groups.NewQRSpecialRSAPublic(n),
+		QRSpecialRSA: qr.NewRSApecialPublic(n),
 		G:            g,
 		H:            h,
 		K:            k},
@@ -112,11 +112,11 @@ type DamgardFujisakiReceiver struct {
 }
 
 // NewDamgardFujisakiReceiver receives two parameters: safePrimeBitLength tells the length of the
-// primes in QRSpecialRSA group and should be at least 1024, k is security parameter on which it depends
+// primes in RSASpecial group and should be at least 1024, k is security parameter on which it depends
 // the hiding property (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
 // c is statistically close to uniform, 2^B is upper bound estimation for group order).
 func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiReceiver, error) {
-	qr, err := groups.NewQRSpecialRSA(safePrimeBitLength)
+	qr, err := qr.NewRSASpecial(safePrimeBitLength)
 	if err != nil {
 		return nil, err
 	}
@@ -143,10 +143,10 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 // NewDamgardFujisakiReceiverFromParams returns an instance of a receiver with the
 // parameters as given by input. Different instances are needed because
 // each sets its own Commitment value.
-func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *common.SpecialRSAPrimes, g, h *big.Int,
+func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *qr.RSASpecialPrimes, g, h *big.Int,
 	k int) (
 	*DamgardFujisakiReceiver, error) {
-	group, err := groups.NewQRSpecialRSAFromParams(specialRSAPrimes)
+	group, err := qr.NewRSASpecialFromParams(specialRSAPrimes)
 	if err != nil {
 		return nil, err
 	}

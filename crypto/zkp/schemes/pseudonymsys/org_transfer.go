@@ -20,12 +20,12 @@ package pseudonymsys
 import (
 	"math/big"
 
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type OrgCredentialVerifier struct {
-	Group  *groups.SchnorrGroup
+	Group  *schnorr.Group
 	secKey *SecKey
 
 	EqualityVerifier *dlogproofs.DLogEqualityVerifier
@@ -33,7 +33,7 @@ type OrgCredentialVerifier struct {
 	b                *big.Int
 }
 
-func NewOrgCredentialVerifier(group *groups.SchnorrGroup, secKey *SecKey) *OrgCredentialVerifier {
+func NewOrgCredentialVerifier(group *schnorr.Group, secKey *SecKey) *OrgCredentialVerifier {
 	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(group)
 	org := OrgCredentialVerifier{
 		Group:            group,

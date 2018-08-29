@@ -15,7 +15,7 @@
  *
  */
 
-package groups
+package qr
 
 import (
 	"math/big"
@@ -25,17 +25,17 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// QRRSA presents QR_N - group of quadratic residues modulo N where N is a product
+// RSA presents QR_N - group of quadratic residues modulo N where N is a product
 // of two primes. This group is in general NOT cyclic (it is only when (P-1)/2 and (Q-1)/2 are primes,
-// see QRSpecialRSA). The group QR_N is isomorphic to QR_P x QR_Q.
-type QRRSA struct {
+// see RSASpecial). The group QR_N is isomorphic to QR_P x QR_Q.
+type RSA struct {
 	N     *big.Int // N = P * Q
 	P     *big.Int
 	Q     *big.Int
 	Order *big.Int // Order = (P-1)/2 * (Q-1)/2
 }
 
-func NewQRRSA(P, Q *big.Int) (*QRRSA, error) {
+func NewRSA(P, Q *big.Int) (*RSA, error) {
 	if !P.ProbablyPrime(20) || !Q.ProbablyPrime(20) {
 		return nil, fmt.Errorf("P and Q must be primes")
 	}
@@ -44,7 +44,7 @@ func NewQRRSA(P, Q *big.Int) (*QRRSA, error) {
 	qMin := new(big.Int).Sub(Q, big.NewInt(1))
 	qMinHalf := new(big.Int).Div(qMin, big.NewInt(2))
 	order := new(big.Int).Mul(pMinHalf, qMinHalf)
-	return &QRRSA{
+	return &RSA{
 		N:     new(big.Int).Mul(P, Q),
 		P:     P,
 		Q:     Q,
@@ -52,50 +52,50 @@ func NewQRRSA(P, Q *big.Int) (*QRRSA, error) {
 	}, nil
 }
 
-func NewQRRSAPublic(N *big.Int) *QRRSA {
-	return &QRRSA{
+func NewRSAPublic(N *big.Int) *RSA {
+	return &RSA{
 		N: N,
 	}
 }
 
 // Add computes x + y (mod N)
-func (group *QRRSA) Add(x, y *big.Int) *big.Int {
+func (g *RSA) Add(x, y *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Add(x, y)
-	return r.Mod(r, group.N)
+	return r.Mod(r, g.N)
 }
 
 // Mul computes x * y in QR_N. This means x * y mod N.
-func (group *QRRSA) Mul(x, y *big.Int) *big.Int {
+func (g *RSA) Mul(x, y *big.Int) *big.Int {
 	r := new(big.Int)
 	r.Mul(x, y)
-	return r.Mod(r, group.N)
+	return r.Mod(r, g.N)
 }
 
 // Inv computes inverse of x in QR_N. This means xInv such that x * xInv = 1 mod N.
-func (group *QRRSA) Inv(x *big.Int) *big.Int {
-	return new(big.Int).ModInverse(x, group.N)
+func (g *RSA) Inv(x *big.Int) *big.Int {
+	return new(big.Int).ModInverse(x, g.N)
 }
 
 // Exp computes base^exponent in QR_N. This means base^exponent mod rsa.N.
-func (group *QRRSA) Exp(base, exponent *big.Int) *big.Int {
+func (g *RSA) Exp(base, exponent *big.Int) *big.Int {
 	expAbs := new(big.Int).Abs(exponent)
 	if expAbs.Cmp(exponent) == 0 {
-		return new(big.Int).Exp(base, exponent, group.N)
+		return new(big.Int).Exp(base, exponent, g.N)
 	} else {
-		t := new(big.Int).Exp(base, expAbs, group.N)
-		return group.Inv(t)
+		t := new(big.Int).Exp(base, expAbs, g.N)
+		return g.Inv(t)
 	}
 }
 
 // IsElementInGroup returns true if a is in QR_N and false otherwise.
-func (group *QRRSA) IsElementInGroup(a *big.Int) (bool, error) {
-	if group.P == nil {
+func (g *RSA) IsElementInGroup(a *big.Int) (bool, error) {
+	if g.P == nil {
 		return false,
-			fmt.Errorf("IsElementInGroup not available for QRRSA with only public parameters")
+			fmt.Errorf("IsElementInGroup not available for RSA with only public parameters")
 	}
 
-	factors := []*big.Int{group.P, group.Q}
+	factors := []*big.Int{g.P, g.Q}
 	for _, p := range factors {
 		isQR, err := common.IsQuadraticResidue(a, p)
 		if err != nil {

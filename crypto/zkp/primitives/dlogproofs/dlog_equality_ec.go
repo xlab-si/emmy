@@ -21,13 +21,13 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 // ProveECDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and
 // that log_g1(t1) = log_g2(t2) in EC group.
-func ProveECDLogEquality(secret *big.Int, g1, g2, t1, t2 *groups.ECGroupElement,
-	curve groups.ECurve) bool {
+func ProveECDLogEquality(secret *big.Int, g1, g2, t1, t2 *ec.GroupElement,
+	curve ec.Curve) bool {
 	eProver := NewECDLogEqualityProver(curve)
 	eVerifier := NewECDLogEqualityVerifier(curve)
 
@@ -40,15 +40,15 @@ func ProveECDLogEquality(secret *big.Int, g1, g2, t1, t2 *groups.ECGroupElement,
 }
 
 type ECDLogEqualityProver struct {
-	Group  *groups.ECGroup
+	Group  *ec.Group
 	r      *big.Int
 	secret *big.Int
-	g1     *groups.ECGroupElement
-	g2     *groups.ECGroupElement
+	g1     *ec.GroupElement
+	g2     *ec.GroupElement
 }
 
-func NewECDLogEqualityProver(curve groups.ECurve) *ECDLogEqualityProver {
-	group := groups.NewECGroup(curve)
+func NewECDLogEqualityProver(curve ec.Curve) *ECDLogEqualityProver {
+	group := ec.NewGroup(curve)
 	prover := ECDLogEqualityProver{
 		Group: group,
 	}
@@ -57,7 +57,7 @@ func NewECDLogEqualityProver(curve groups.ECurve) *ECDLogEqualityProver {
 }
 
 func (prover *ECDLogEqualityProver) GetProofRandomData(secret *big.Int,
-	g1, g2 *groups.ECGroupElement) (*groups.ECGroupElement, *groups.ECGroupElement) {
+	g1, g2 *ec.GroupElement) (*ec.GroupElement, *ec.GroupElement) {
 	// Sets the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
@@ -82,25 +82,25 @@ func (prover *ECDLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
 }
 
 type ECDLogEqualityVerifier struct {
-	Group     *groups.ECGroup
+	Group     *ec.Group
 	challenge *big.Int
-	g1        *groups.ECGroupElement
-	g2        *groups.ECGroupElement
-	x1        *groups.ECGroupElement
-	x2        *groups.ECGroupElement
-	t1        *groups.ECGroupElement
-	t2        *groups.ECGroupElement
+	g1        *ec.GroupElement
+	g2        *ec.GroupElement
+	x1        *ec.GroupElement
+	x2        *ec.GroupElement
+	t1        *ec.GroupElement
+	t2        *ec.GroupElement
 }
 
-func NewECDLogEqualityVerifier(curve groups.ECurve) *ECDLogEqualityVerifier {
-	group := groups.NewECGroup(curve)
+func NewECDLogEqualityVerifier(curve ec.Curve) *ECDLogEqualityVerifier {
+	group := ec.NewGroup(curve)
 	return &ECDLogEqualityVerifier{
 		Group: group,
 	}
 }
 
 func (verifier *ECDLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1,
-	x2 *groups.ECGroupElement) *big.Int {
+	x2 *ec.GroupElement) *big.Int {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).

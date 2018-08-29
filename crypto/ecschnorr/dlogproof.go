@@ -15,31 +15,31 @@
  *
  */
 
-package dlogproofs
+package ecschnorr
 
 import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
-type SchnorrECProver struct {
-	Group  *groups.ECGroup
-	a      *groups.ECGroupElement
+type Prover struct {
+	Group  *ec.Group
+	a      *ec.GroupElement
 	secret *big.Int
 	r      *big.Int // ProofRandomData
 }
 
-func NewSchnorrECProver(curveType groups.ECurve) *SchnorrECProver {
-	return &SchnorrECProver{
-		Group: groups.NewECGroup(curveType),
+func NewProver(curveType ec.Curve) *Prover {
+	return &Prover{
+		Group: ec.NewGroup(curveType),
 	}
 }
 
 // It contains also value b = a^secret.
-func (p *SchnorrECProver) GetProofRandomData(secret *big.Int,
-	a *groups.ECGroupElement) *groups.ECGroupElement {
+func (p *Prover) GetProofRandomData(secret *big.Int,
+	a *ec.GroupElement) *ec.GroupElement {
 	r := common.GetRandomInt(p.Group.Q)
 	p.r = r
 	p.a = a
@@ -49,7 +49,7 @@ func (p *SchnorrECProver) GetProofRandomData(secret *big.Int,
 }
 
 // It receives challenge defined by a verifier, and returns z = r + challenge * w.
-func (p *SchnorrECProver) GetProofData(challenge *big.Int) *big.Int {
+func (p *Prover) GetProofData(challenge *big.Int) *big.Int {
 	// z = r + challenge * secret
 	z := new(big.Int)
 	z.Mul(challenge, p.secret)
@@ -58,39 +58,39 @@ func (p *SchnorrECProver) GetProofData(challenge *big.Int) *big.Int {
 	return z
 }
 
-type SchnorrECVerifier struct {
-	Group     *groups.ECGroup
-	x         *groups.ECGroupElement
-	a         *groups.ECGroupElement
-	b         *groups.ECGroupElement
+type Verifier struct {
+	Group     *ec.Group
+	x         *ec.GroupElement
+	a         *ec.GroupElement
+	b         *ec.GroupElement
 	challenge *big.Int
 }
 
-func NewSchnorrECVerifier(curveType groups.ECurve) *SchnorrECVerifier {
-	return &SchnorrECVerifier{
-		Group: groups.NewECGroup(curveType),
+func NewVerifier(curveType ec.Curve) *Verifier {
+	return &Verifier{
+		Group: ec.NewGroup(curveType),
 	}
 }
 
 // TODO: t transferred at some other stage?
-func (v *SchnorrECVerifier) SetProofRandomData(x, a, b *groups.ECGroupElement) {
+func (v *Verifier) SetProofRandomData(x, a, b *ec.GroupElement) {
 	v.x = x
 	v.a = a
 	v.b = b
 }
 
-func (v *SchnorrECVerifier) GetChallenge() *big.Int {
+func (v *Verifier) GetChallenge() *big.Int {
 	challenge := common.GetRandomInt(v.Group.Q)
 	v.challenge = challenge
 	return challenge
 }
 
 // SetChallenge is used when Fiat-Shamir is used - when challenge is generated using hash by the prover.
-func (v *SchnorrECVerifier) SetChallenge(challenge *big.Int) {
+func (v *Verifier) SetChallenge(challenge *big.Int) {
 	v.challenge = challenge
 }
 
-func (v *SchnorrECVerifier) Verify(z *big.Int) bool {
+func (v *Verifier) Verify(z *big.Int) bool {
 	left := v.Group.Exp(v.a, z)
 	r := v.Group.Exp(v.b, v.challenge)
 	right := v.Group.Mul(r, v.x)

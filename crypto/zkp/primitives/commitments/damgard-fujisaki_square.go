@@ -81,14 +81,14 @@ type DFCommitmentSquareVerifier struct {
 func NewDFCommitmentSquareVerifier(receiver *commitments.DamgardFujisakiReceiver,
 	c1 *big.Int, challengeSpaceSize int) (*DFCommitmentSquareVerifier, error) {
 
-	receiver1, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetSpecialRSAPrimes(),
+	receiver1, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetPrimes(),
 		receiver.G, receiver.H, receiver.K)
 	if err != nil {
 		return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
 	}
 	receiver1.SetCommitment(c1)
 
-	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetSpecialRSAPrimes(),
+	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetPrimes(),
 		c1, receiver.H, receiver.K)
 	if err != nil {
 		return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")

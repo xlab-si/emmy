@@ -28,7 +28,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
@@ -37,7 +37,7 @@ import (
 
 const (
 	// Curve to be used in all schemes using elliptic curve arithmetic.
-	curve = groups.P256
+	curve = ec.P256
 )
 
 // EmmyServer is an interface composed of all the auto-generated server interfaces that

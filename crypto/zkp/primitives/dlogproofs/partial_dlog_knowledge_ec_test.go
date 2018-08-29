@@ -22,11 +22,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
 func TestPartialDLogKnowledgeEC(t *testing.T) {
-	group := groups.NewECGroup(groups.P256)
+	group := ec.NewGroup(ec.P256)
 
 	exp1 := common.GetRandomInt(group.Q)
 	exp2 := common.GetRandomInt(group.Q)

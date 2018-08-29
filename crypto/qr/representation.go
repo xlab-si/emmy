@@ -15,14 +15,13 @@
  *
  */
 
-package qrspecialrsaproofs
+package qr
 
 import (
 	"fmt"
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
 )
 
 // TODO: Protocol being proof of knowledge is shown by the existance of knowledge extractor. In Schnorr protocol
@@ -33,11 +32,11 @@ import (
 // It seems that idemix is solving this by taking random values (used in random proof data) also from negative values -
 // is this really needed?
 
-// RepresentationProver is like SchnorrProver but in a QRSpecialRSA group (note that here proof data is
+// RepresentationProver is like SchnorrProver but in a RSASpecial group (note that here proof data is
 // computed in Z, not modulo as in Schnorr). Also, RepresentationProver with only one base and one secret
 // is very similar to the DFCommitmentOpeningProver (RepresentationProver does not have a committer though).
 type RepresentationProver struct {
-	group      *groups.QRSpecialRSA
+	group      *RSASpecial
 	secParam   int // security parameter
 	secrets    []*big.Int
 	bases      []*big.Int
@@ -45,7 +44,7 @@ type RepresentationProver struct {
 	y          *big.Int
 }
 
-func NewRepresentationProver(qrSpecialRSA *groups.QRSpecialRSA,
+func NewRepresentationProver(qrSpecialRSA *RSASpecial,
 	secParam int, secrets, bases []*big.Int, y *big.Int) *RepresentationProver {
 	return &RepresentationProver{
 		group:    qrSpecialRSA,
@@ -134,7 +133,7 @@ func NewRepresentationProof(proofRandomData, challenge *big.Int,
 }
 
 type RepresentationVerifier struct {
-	group              *groups.QRSpecialRSA
+	group              *RSASpecial
 	challengeSpaceSize int
 	challenge          *big.Int
 	bases              []*big.Int
@@ -142,7 +141,7 @@ type RepresentationVerifier struct {
 	proofRandomData    *big.Int
 }
 
-func NewRepresentationVerifier(qrSpecialRSA *groups.QRSpecialRSA,
+func NewRepresentationVerifier(qrSpecialRSA *RSASpecial,
 	challengeSpaceSize int) *RepresentationVerifier {
 	return &RepresentationVerifier{
 		group:              qrSpecialRSA,

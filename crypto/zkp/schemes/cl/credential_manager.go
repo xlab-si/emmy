@@ -23,10 +23,9 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/qr"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 )
 
 // CredentialManager should be created by a user when a credential is to be issued, updated or proved.
@@ -160,15 +159,15 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 	}
 
 	return NewCredentialRequest(m.Nym, m.KnownAttrs, m.CommitmentsOfAttrs,
-		dlogproofs.NewSchnorrProof(nymProver.GetProofRandomData(), challenge,
+		schnorr.NewProof(nymProver.GetProofRandomData(), challenge,
 			nymProver.GetProofData(challenge)), U,
-		qrspecialrsaproofs.NewRepresentationProof(uProofRandomData, challenge,
+		qr.NewRepresentationProof(uProofRandomData, challenge,
 			uProver.GetProofData(challenge)),
 		commitmentsOfAttrsProofs, nonce), nil
 }
 
 func (m *CredentialManager) VerifyCredential(cred *Credential,
-	AProof *qrspecialrsaproofs.RepresentationProof) (bool, error) {
+	AProof *qr.RepresentationProof) (bool, error) {
 	// check bit length of e:
 	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.EBitLen-1)), nil)
 	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.E1BitLen-1)), nil)
@@ -183,7 +182,7 @@ func (m *CredentialManager) VerifyCredential(cred *Credential,
 	}
 
 	v := new(big.Int).Add(m.V1, cred.V11)
-	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	group := qr.NewRSApecialPublic(m.PubKey.N)
 	// denom = S^v * R_1^attr_1 * ... * R_j^attr_j
 	denom := group.Exp(m.PubKey.S, v) // s^v
 	for i := 0; i < len(m.KnownAttrs); i++ {
@@ -209,7 +208,7 @@ func (m *CredentialManager) VerifyCredential(cred *Credential,
 	}
 
 	// verify signature proof:
-	ver := qrspecialrsaproofs.NewRepresentationVerifier(group, m.Params.SecParam)
+	ver := qr.NewRepresentationVerifier(group, m.Params.SecParam)
 	ver.SetProofRandomData(AProof.ProofRandomData, []*big.Int{Q}, cred.A)
 	// check challenge
 	context := m.PubKey.GetContext()
@@ -230,7 +229,7 @@ func (m *CredentialManager) UpdateCredential(knownAttrs []*big.Int) {
 func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.NLength+m.Params.SecParam)), nil)
 	r := common.GetRandomInt(b)
-	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	group := qr.NewRSApecialPublic(m.PubKey.N)
 	t := group.Exp(m.PubKey.S, r)
 	A := group.Mul(cred.A, t) // cred.A * S^r
 	t = new(big.Int).Mul(cred.E, r)
@@ -250,27 +249,27 @@ func (m *CredentialManager) GetCredProofChallenge(credProofRandomData, nonceOrg 
 }
 
 func (m *CredentialManager) BuildCredentialProof(cred *Credential, revealedKnownAttrsIndices,
-revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
-	*qrspecialrsaproofs.RepresentationProof, error) {
+	revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
+	*qr.RepresentationProof, error) {
 	if m.V1 == nil {
 		return nil, nil, fmt.Errorf("v1 is not set (generated in GetCredentialRequest)")
 	}
 	rCred := m.randomizeCredential(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
-	group := groups.NewQRSpecialRSAPublic(m.PubKey.N)
+	group := qr.NewRSApecialPublic(m.PubKey.N)
 
 	bases := []*big.Int{}
 	unrevealedKnownAttrs := []*big.Int{}
 	unrevealedCommitmentsOfAttrs := []*big.Int{}
 	for i := 0; i < len(m.KnownAttrs); i++ {
-		if !common.Contains(revealedKnownAttrsIndices, i)  {
+		if !common.Contains(revealedKnownAttrsIndices, i) {
 			bases = append(bases, m.PubKey.RsKnown[i])
 			unrevealedKnownAttrs = append(unrevealedKnownAttrs, m.KnownAttrs[i])
 		}
 	}
 	for i := 0; i < len(m.CommitmentsOfAttrs); i++ {
-		if !common.Contains(revealedCommitmentsOfAttrsIndices, i)  {
+		if !common.Contains(revealedCommitmentsOfAttrsIndices, i) {
 			bases = append(bases, m.PubKey.RsCommitted[i])
 			unrevealedCommitmentsOfAttrs = append(unrevealedCommitmentsOfAttrs, m.CommitmentsOfAttrs[i])
 		}
@@ -302,7 +301,7 @@ revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
 	denomInv := group.Inv(denom)
 	y := group.Mul(m.PubKey.Z, denomInv)
 
-	prover := qrspecialrsaproofs.NewRepresentationProver(group, m.Params.SecParam,
+	prover := qr.NewRepresentationProver(group, m.Params.SecParam,
 		secrets, bases, y)
 
 	// boundary for m_tilde
@@ -333,5 +332,5 @@ revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
 	challenge := m.GetCredProofChallenge(proofRandomData, nonceOrg)
 	proofData := prover.GetProofData(challenge)
 
-	return rCred, qrspecialrsaproofs.NewRepresentationProof(proofRandomData, challenge, proofData), nil
+	return rCred, qr.NewRepresentationProof(proofRandomData, challenge, proofData), nil
 }

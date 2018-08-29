@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
-// SchnorrGroup represents an equivalent of groups.SchnorrGroup, but has string
+// SchnorrGroup represents an equivalent of schnorr.Group, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type SchnorrGroup struct {
 	P string
@@ -40,7 +40,7 @@ func NewSchnorrGroup(p, g, q string) *SchnorrGroup {
 	}
 }
 
-func (sg *SchnorrGroup) toNativeType() (*groups.SchnorrGroup, error) {
+func (sg *SchnorrGroup) toNativeType() (*schnorr.Group, error) {
 	p, pOk := new(big.Int).SetString(sg.P, 10)
 	g, gOk := new(big.Int).SetString(sg.G, 10)
 	q, qOk := new(big.Int).SetString(sg.Q, 10)
@@ -49,6 +49,6 @@ func (sg *SchnorrGroup) toNativeType() (*groups.SchnorrGroup, error) {
 		return nil, fmt.Errorf("groups's p, g or q: %s", ArgsConversionError)
 	}
 
-	group := groups.NewSchnorrGroupFromParams(p, g, q)
+	group := schnorr.NewGroupFromParams(p, g, q)
 	return group, nil
 }

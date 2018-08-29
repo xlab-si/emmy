@@ -23,19 +23,19 @@ import (
 	"fmt"
 
 	"github.com/xlab-si/emmy/client"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
 // Representations of specific elliptic curves to be used in elliptic cryptography based schemes.
 const (
-	P256 = int(groups.P256)
-	P224 = int(groups.P224)
-	P384 = int(groups.P384)
-	P521 = int(groups.P521)
+	P256 = int(ec.P256)
+	P224 = int(ec.P224)
+	P384 = int(ec.P384)
+	P521 = int(ec.P521)
 )
 
-// ECGroupElement represents an equivalent of groups.ECGroupElement, but has string
+// ECGroupElement represents an equivalent of ec.GroupElement, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type ECGroupElement struct {
 	X string
@@ -49,8 +49,8 @@ func NewECGroupElement(x, y string) *ECGroupElement {
 	}
 }
 
-// getNativeType translates compatibility ECGroupElement to emmy's native groups.ECGroupElement.
-func (e *ECGroupElement) getNativeType() (*groups.ECGroupElement, error) {
+// getNativeType translates compatibility ECGroupElement to emmy's native ec.GroupElement.
+func (e *ECGroupElement) getNativeType() (*ec.GroupElement, error) {
 	x, xOk := new(big.Int).SetString(e.X, 10)
 	y, yOk := new(big.Int).SetString(e.Y, 10)
 
@@ -58,7 +58,7 @@ func (e *ECGroupElement) getNativeType() (*groups.ECGroupElement, error) {
 		return nil, ArgsConversionError
 	}
 
-	ecGroupEl := groups.NewECGroupElement(x, y)
+	ecGroupEl := ec.NewGroupElement(x, y)
 	return ecGroupEl, nil
 }
 
@@ -138,7 +138,7 @@ type PseudonymsysCAClientEC struct {
 }
 
 func NewPseudonymsysCAClientEC(conn *Connection, curve int) (*PseudonymsysCAClientEC, error) {
-	c, err := client.NewPseudonymsysCAClientEC(conn.ClientConn, groups.ECurve(curve))
+	c, err := client.NewPseudonymsysCAClientEC(conn.ClientConn, ec.Curve(curve))
 	if err != nil {
 		return nil, err
 	}

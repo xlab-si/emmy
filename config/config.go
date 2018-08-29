@@ -25,7 +25,9 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/viper"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/qr"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
@@ -120,21 +122,21 @@ func LoadTestKeyDirFromConfig() string {
 	return key_path
 }
 
-func LoadSchnorrGroup() *groups.SchnorrGroup {
+func LoadSchnorrGroup() *schnorr.Group {
 	groupMap := viper.GetStringMapString("schnorr_group")
 	p, _ := new(big.Int).SetString(groupMap["p"], 10)
 	g, _ := new(big.Int).SetString(groupMap["g"], 10)
 	q, _ := new(big.Int).SetString(groupMap["q"], 10)
-	return groups.NewSchnorrGroupFromParams(p, g, q)
+	return schnorr.NewGroupFromParams(p, g, q)
 }
 
-func LoadQRRSA() *groups.QRRSA {
+func LoadQRRSA() *qr.RSA {
 	x := viper.GetStringMapString("qr")
 	p, _ := new(big.Int).SetString(x["p"], 10)
 	q, _ := new(big.Int).SetString(x["q"], 10)
-	qr, err := groups.NewQRRSA(p, q)
+	qr, err := qr.NewRSA(p, q)
 	if err != nil {
-		panic(fmt.Errorf("error when loading QRRSA RSA group: %s\n", err))
+		panic(fmt.Errorf("error when loading RSA group: %s\n", err))
 	}
 	return qr
 }
@@ -160,8 +162,8 @@ func LoadPseudonymsysOrgPubKeysEC(orgName string) *pseudonymsys.PubKeyEC {
 	h2X, _ := new(big.Int).SetString(org["h2x"].(string), 10)
 	h2Y, _ := new(big.Int).SetString(org["h2y"].(string), 10)
 	return pseudonymsys.NewPubKeyEC(
-		groups.NewECGroupElement(h1X, h1Y),
-		groups.NewECGroupElement(h2X, h2Y),
+		ec.NewGroupElement(h1X, h1Y),
+		ec.NewGroupElement(h2X, h2Y),
 	)
 }
 

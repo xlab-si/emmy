@@ -15,21 +15,30 @@
  *
  */
 
-package groups
+package ec
 
-import (
-	"math/big"
+import "crypto/elliptic"
+
+type Curve int
+
+const (
+	P224 Curve = 1 + iota
+	P256
+	P384
+	P521
 )
 
-// Group interface is used to enable the usage of different groups in some schemes.
-// For example when we have a homomorphism f between two groups and
-// we are proving that we know an f-preimage of an element - meaning that for a given v we
-// know u such that f(u) = v.
-// Note that this is an interface for modular arithmetic groups. For elliptic curve
-// groups at the moment there is no need for an interface.
-type Group interface {
-	GetRandomElement() *big.Int
-	Mul(*big.Int, *big.Int) *big.Int
-	Exp(*big.Int, *big.Int) *big.Int
-	Inv(*big.Int) *big.Int
+func GetCurve(c Curve) elliptic.Curve {
+	switch c {
+	case P224:
+		return elliptic.P224()
+	case P256:
+		return elliptic.P256()
+	case P384:
+		return elliptic.P384()
+	case P521:
+		return elliptic.P521()
+	}
+
+	return elliptic.P256()
 }

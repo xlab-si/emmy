@@ -22,10 +22,10 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/groups"
+	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/qr"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/qrspecialrsaproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
@@ -33,14 +33,14 @@ type PbConvertibleType interface {
 	GetNativeType() interface{}
 }
 
-func (el *ECGroupElement) GetNativeType() *groups.ECGroupElement {
-	return &groups.ECGroupElement{
+func (el *ECGroupElement) GetNativeType() *ec.GroupElement {
+	return &ec.GroupElement{
 		X: new(big.Int).SetBytes(el.X),
 		Y: new(big.Int).SetBytes(el.Y),
 	}
 }
 
-func ToPbECGroupElement(el *groups.ECGroupElement) *ECGroupElement {
+func ToPbECGroupElement(el *ec.GroupElement) *ECGroupElement {
 	x := ECGroupElement{X: el.X.Bytes(), Y: el.Y.Bytes()}
 	return &x
 }
@@ -129,7 +129,7 @@ func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
 	for i, p := range r.NymProof.ProofData {
 		pData[i] = new(big.Int).SetBytes(p)
 	}
-	nymProof := dlogproofs.NewSchnorrProof(new(big.Int).SetBytes(r.NymProof.ProofRandomData),
+	nymProof := schnorr.NewProof(new(big.Int).SetBytes(r.NymProof.ProofRandomData),
 		new(big.Int).SetBytes(r.NymProof.Challenge), pData)
 
 	U := new(big.Int).SetBytes(r.U)
@@ -142,7 +142,7 @@ func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
 		}
 		pData[i] = si
 	}
-	UProof := qrspecialrsaproofs.NewRepresentationProof(new(big.Int).SetBytes(r.UProof.ProofRandomData),
+	UProof := qr.NewRepresentationProof(new(big.Int).SetBytes(r.UProof.ProofRandomData),
 		new(big.Int).SetBytes(r.UProof.Challenge), pData)
 
 	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.CommitmentsOfAttrsProofs))
@@ -157,7 +157,7 @@ func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
 		commitmentsOfAttrsProofs, new(big.Int).SetBytes(r.Nonce)), nil
 }
 
-func ToPbCLCredential(c *cl.Credential, AProof *qrspecialrsaproofs.RepresentationProof) *CLCredential {
+func ToPbCLCredential(c *cl.Credential, AProof *qr.RepresentationProof) *CLCredential {
 	AProofFS := &FiatShamirAlsoNeg{
 		ProofRandomData: AProof.ProofRandomData.Bytes(),
 		Challenge:       AProof.Challenge.Bytes(),
@@ -172,13 +172,13 @@ func ToPbCLCredential(c *cl.Credential, AProof *qrspecialrsaproofs.Representatio
 	}
 }
 
-func (c *CLCredential) GetNativeType() (*cl.Credential, *qrspecialrsaproofs.RepresentationProof, error) {
+func (c *CLCredential) GetNativeType() (*cl.Credential, *qr.RepresentationProof, error) {
 	si, success := new(big.Int).SetString(c.AProof.ProofData[0], 10)
 	if !success {
 		return nil, nil, fmt.Errorf("error when initializing big.Int from string")
 	}
 
-	AProof := qrspecialrsaproofs.NewRepresentationProof(new(big.Int).SetBytes(c.AProof.ProofRandomData),
+	AProof := qr.NewRepresentationProof(new(big.Int).SetBytes(c.AProof.ProofRandomData),
 		new(big.Int).SetBytes(c.AProof.Challenge), []*big.Int{si})
 
 	return cl.NewCredential(new(big.Int).SetBytes(c.A), new(big.Int).SetBytes(c.E),
@@ -207,7 +207,7 @@ func (u *UpdateCLCredential) GetNativeType() (*big.Int, *big.Int, []*big.Int) {
 	return new(big.Int).SetBytes(u.Nym), new(big.Int).SetBytes(u.Nonce), attrs
 }
 
-func ToPbProveCLCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationProof,
+func ToPbProveCLCredential(A *big.Int, proof *qr.RepresentationProof,
 	knownAttrs, commitmentsOfAttrs []*big.Int,
 	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) *ProveCLCredential {
 
@@ -242,16 +242,16 @@ func ToPbProveCLCredential(A *big.Int, proof *qrspecialrsaproofs.RepresentationP
 	}
 
 	return &ProveCLCredential{
-		A:                  A.Bytes(),
-		Proof:              proofFS,
-		KnownAttrs:         kAttrs,
-		CommitmentsOfAttrs: cAttrs,
-		RevealedKnownAttrs: revealedKnownAttrs,
+		A:                          A.Bytes(),
+		Proof:                      proofFS,
+		KnownAttrs:                 kAttrs,
+		CommitmentsOfAttrs:         cAttrs,
+		RevealedKnownAttrs:         revealedKnownAttrs,
 		RevealedCommitmentsOfAttrs: revealedCommitmentsOfAttrs,
 	}
 }
 
-func (p *ProveCLCredential) GetNativeType() (*big.Int, *qrspecialrsaproofs.RepresentationProof, []*big.Int,
+func (p *ProveCLCredential) GetNativeType() (*big.Int, *qr.RepresentationProof, []*big.Int,
 	[]*big.Int, []int, []int, error) {
 	attrs := make([]*big.Int, len(p.KnownAttrs))
 	for i, a := range p.KnownAttrs {
@@ -271,7 +271,7 @@ func (p *ProveCLCredential) GetNativeType() (*big.Int, *qrspecialrsaproofs.Repre
 		}
 		pData[i] = si
 	}
-	proof := qrspecialrsaproofs.NewRepresentationProof(new(big.Int).SetBytes(p.Proof.ProofRandomData),
+	proof := qr.NewRepresentationProof(new(big.Int).SetBytes(p.Proof.ProofRandomData),
 		new(big.Int).SetBytes(p.Proof.Challenge), pData)
 
 	revealedKnownAttrsIndices := make([]int, len(p.RevealedKnownAttrs))
