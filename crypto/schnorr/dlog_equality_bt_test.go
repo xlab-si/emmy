@@ -48,5 +48,5 @@ func TestDLogEqualityBT(t *testing.T) {
 	_, transcript, G2, T2 := eVerifier.Verify(z)
 
 	valid := transcript.Verify(eProver.Group, g1, t1, G2, T2)
-	assert.Equal(t, valid, true, "dlof equality blinded transcript does not work")
+	assert.Equal(t, valid, true, "dlog equality blinded transcript proof does not work")
 }
