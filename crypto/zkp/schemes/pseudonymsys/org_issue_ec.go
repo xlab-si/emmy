@@ -24,7 +24,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/ecschnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type CredentialEC struct {
@@ -32,12 +31,12 @@ type CredentialEC struct {
 	SmallBToGamma *ec.GroupElement
 	AToGamma      *ec.GroupElement
 	BToGamma      *ec.GroupElement
-	T1            *dlogproofs.TranscriptEC
-	T2            *dlogproofs.TranscriptEC
+	T1            *ecschnorr.BlindedTrans
+	T2            *ecschnorr.BlindedTrans
 }
 
 func NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma *ec.GroupElement,
-	t1, t2 *dlogproofs.TranscriptEC) *CredentialEC {
+	t1, t2 *ecschnorr.BlindedTrans) *CredentialEC {
 	credential := &CredentialEC{
 		SmallAToGamma: aToGamma,
 		SmallBToGamma: bToGamma,
@@ -54,8 +53,8 @@ type OrgCredentialIssuerEC struct {
 
 	// the following fields are needed for issuing a credential
 	SchnorrVerifier *ecschnorr.Verifier
-	EqualityProver1 *dlogproofs.ECDLogEqualityBTranscriptProver
-	EqualityProver2 *dlogproofs.ECDLogEqualityBTranscriptProver
+	EqualityProver1 *ecschnorr.BTEqualityProver
+	EqualityProver2 *ecschnorr.BTEqualityProver
 	a               *ec.GroupElement
 	b               *ec.GroupElement
 }
@@ -64,8 +63,8 @@ func NewOrgCredentialIssuerEC(secKey *SecKey, curveType ec.Curve) *OrgCredential
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
 	schnorrVerifier := ecschnorr.NewVerifier(curveType)
-	equalityProver1 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
-	equalityProver2 := dlogproofs.NewECDLogEqualityBTranscriptProver(curveType)
+	equalityProver1 := ecschnorr.NewBTEqualityProver(curveType)
+	equalityProver2 := ecschnorr.NewBTEqualityProver(curveType)
 	org := OrgCredentialIssuerEC{
 		secKey:          secKey,
 		SchnorrVerifier: schnorrVerifier,

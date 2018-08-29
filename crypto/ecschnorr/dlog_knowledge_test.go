@@ -25,9 +25,9 @@ import (
 	"github.com/xlab-si/emmy/crypto/ec"
 )
 
-// TestDLogKnowledgeEC demonstrates how prover can prove the knowledge of log_g1(t1) - that
+// TestECDLogKnowledge demonstrates how prover can prove the knowledge of log_g1(t1) - that
 // means g1^secret = t1 in EC group.
-func TestDLogKnowledgeEC(t *testing.T) {
+func TestECDLogKnowledge(t *testing.T) {
 	group := ec.NewGroup(ec.P256)
 	exp1 := common.GetRandomInt(group.Q)
 	a1 := group.ExpBaseG(exp1)
@@ -44,5 +44,5 @@ func TestDLogKnowledgeEC(t *testing.T) {
 	z := prover.GetProofData(challenge)
 	verified := verifier.Verify(z)
 
-	assert.Equal(t, verified, true, "ECDLogEquality does not work correctly")
+	assert.Equal(t, verified, true, "dlog equality proof does not work")
 }

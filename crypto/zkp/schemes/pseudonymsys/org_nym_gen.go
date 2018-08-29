@@ -25,7 +25,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type Pseudonym struct {
@@ -41,12 +40,12 @@ func NewPseudonym(a, b *big.Int) *Pseudonym {
 }
 
 type OrgNymGen struct {
-	EqualityVerifier *dlogproofs.DLogEqualityVerifier
+	EqualityVerifier *schnorr.EqualityVerifier
 	caPubKey         *PubKey
 }
 
 func NewOrgNymGen(group *schnorr.Group, caPubKey *PubKey) *OrgNymGen {
-	verifier := dlogproofs.NewDLogEqualityVerifier(group)
+	verifier := schnorr.NewEqualityVerifier(group)
 	org := OrgNymGen{
 		EqualityVerifier: verifier,
 		caPubKey:         caPubKey,

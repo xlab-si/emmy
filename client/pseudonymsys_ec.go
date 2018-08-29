@@ -24,7 +24,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/ecschnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
@@ -61,7 +60,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 	}
 	defer c.closeStream()
 
-	prover := dlogproofs.NewECDLogEqualityProver(c.curve)
+	prover := ecschnorr.NewEqualityProver(c.curve)
 
 	// Differently as in Pseudonym Systems paper a user here generates a nym (if master
 	// key pair is (g, g^s), a generated nym is (g^gamma, g^(gamma * s)),
@@ -198,8 +197,8 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 	B := randomData.B.GetNativeType()
 
 	gamma := common.GetRandomInt(schnorrProver.Group.Q)
-	equalityVerifier1 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
-	equalityVerifier2 := dlogproofs.NewECDLogEqualityBTranscriptVerifier(c.curve, gamma)
+	equalityVerifier1 := ecschnorr.NewBTEqualityVerifier(c.curve, gamma)
+	equalityVerifier2 := ecschnorr.NewBTEqualityVerifier(c.curve, gamma)
 
 	g := ec.NewGroupElement(equalityVerifier1.Group.Curve.Params().Gx,
 		equalityVerifier1.Group.Curve.Params().Gy)
@@ -231,9 +230,9 @@ func (c *PseudonymsysClientEC) ObtainCredential(userSecret *big.Int,
 
 	aToGamma := equalityVerifier1.Group.Exp(nym.A, gamma)
 	if verified1 && verified2 {
-		valid1 := dlogproofs.VerifyBlindedTranscriptEC(transcript1, c.curve, g, orgPubKeys.H2,
+		valid1 := transcript1.Verify(c.curve, g, orgPubKeys.H2,
 			bToGamma, AToGamma)
-		valid2 := dlogproofs.VerifyBlindedTranscriptEC(transcript2, c.curve, g, orgPubKeys.H1,
+		valid2 := transcript2.Verify(c.curve, g, orgPubKeys.H1,
 			aAToGamma, BToGamma)
 		if valid1 && valid2 {
 			credential := pseudonymsys.NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma,
@@ -264,7 +263,7 @@ func (c *PseudonymsysClientEC) TransferCredential(orgName string, userSecret *bi
 	// with this organization. But we need also to prove that dlog_a(b) = dlog_a2(b2), where
 	// a2, b2 are a1, b1 exponentiated to gamma, and (a1, b1) is a nym for organization that
 	// issued a credential. So we can do both proofs at the same time using DLogEqualityProver.
-	equalityProver := dlogproofs.NewECDLogEqualityProver(c.curve)
+	equalityProver := ecschnorr.NewEqualityProver(c.curve)
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscriptEC{

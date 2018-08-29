@@ -15,40 +15,38 @@
  *
  */
 
-package dlogproofs
+package schnorr
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/ec"
+
+	"github.com/xlab-si/emmy/crypto/zn"
 )
 
-func TestDLogEqualityEC(t *testing.T) {
-	group := ec.NewGroup(ec.P256)
-	secret := common.GetRandomInt(group.Q)
+func TestDLogEqualityBT(t *testing.T) {
+	schnorrGroup, _ := NewGroup(256)
+	zp, _ := zn.NewGroupZp(schnorrGroup.P)
 
-	r1 := common.GetRandomInt(group.Q)
-	r2 := common.GetRandomInt(group.Q)
+	eProver := NewBTEqualityProver(schnorrGroup)
+	eVerifier := NewBTEqualityVerifier(schnorrGroup, nil)
 
-	g1 := group.ExpBaseG(r1)
-	g2 := group.ExpBaseG(r2)
+	secret := common.GetRandomInt(schnorrGroup.Q)
+	//groupOrder := new(big.Int).Sub(eProver.Group.P, big.NewInt(1))
+	g1, _ := zp.GetGeneratorOfSubgroup(eProver.Group.Q)
+	g2, _ := zp.GetGeneratorOfSubgroup(eProver.Group.Q)
 
-	t1 := group.Exp(g1, secret)
-	t2 := group.Exp(g2, secret)
+	t1 := eProver.Group.Exp(g1, secret)
+	t2 := eProver.Group.Exp(g2, secret)
 
-	proved := ProveECDLogEquality(secret, g1, g2, t1, t2, ec.P256)
-	assert.Equal(t, proved, true, "DLogEqualityEC does not work correctly")
-
-	eProver := NewECDLogEqualityBTranscriptProver(ec.P256)
-	eVerifier := NewECDLogEqualityBTranscriptVerifier(ec.P256, nil)
 	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
+
 	challenge := eVerifier.GetChallenge(g1, g2, t1, t2, x1, x2)
 	z := eProver.GetProofData(challenge)
 	_, transcript, G2, T2 := eVerifier.Verify(z)
-	valid := VerifyBlindedTranscriptEC(transcript, ec.P256, g1, t1, G2, T2)
 
-	assert.Equal(t, valid, true, "DLogEqualityECBTranscript does not work correctly")
-
+	valid := transcript.Verify(eProver.Group, g1, t1, G2, T2)
+	assert.Equal(t, valid, true, "dlof equality blinded transcript does not work")
 }

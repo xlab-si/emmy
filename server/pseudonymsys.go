@@ -21,7 +21,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc/codes"
@@ -197,14 +197,14 @@ func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredential
 	nymA := new(big.Int).SetBytes(data.NymA)
 	nymB := new(big.Int).SetBytes(data.NymB)
 
-	t1 := dlogproofs.NewTranscript(
+	t1 := schnorr.NewBlindedTrans(
 		new(big.Int).SetBytes(data.Credential.T1.A),
 		new(big.Int).SetBytes(data.Credential.T1.B),
 		new(big.Int).SetBytes(data.Credential.T1.Hash),
 		new(big.Int).SetBytes(data.Credential.T1.ZAlpha),
 	)
 
-	t2 := dlogproofs.NewTranscript(
+	t2 := schnorr.NewBlindedTrans(
 		new(big.Int).SetBytes(data.Credential.T2.A),
 		new(big.Int).SetBytes(data.Credential.T2.B),
 		new(big.Int).SetBytes(data.Credential.T2.Hash),

@@ -64,5 +64,5 @@ func TestDLogKnowledge(t *testing.T) {
 	proofData := prover.GetProofData(challenge)
 	verified := verifier.Verify(proofData)
 
-	assert.Equal(t, verified, true, "Schnorr proof does not work correctly")
+	assert.Equal(t, verified, true, "dlog knowledge proof does not work")
 }

@@ -22,7 +22,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/client"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
@@ -97,7 +97,7 @@ func (k *PubKey) getNativeType() (*pseudonymsys.PubKey, error) {
 	return pseudonymsys.NewPubKey(h1, h2), nil
 }
 
-// Transcript represents an equivalent of dlogproofs.Transcript, but has string
+// Transcript represents an equivalent of schnorr.BlindedTrans, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type Transcript struct {
 	A      string
@@ -115,8 +115,8 @@ func NewTranscript(a, b, hash, zAlpha string) *Transcript {
 	}
 }
 
-// getNativeType translates compatibility Transcript to emmy's native dlogproofs.Transcript.
-func (t *Transcript) getNativeType() (*dlogproofs.Transcript, error) {
+// getNativeType translates compatibility Transcript to emmy's native schnorr.BlindedTrans.
+func (t *Transcript) getNativeType() (*schnorr.BlindedTrans, error) {
 	a, aOk := new(big.Int).SetString(t.A, 10)
 	b, bOk := new(big.Int).SetString(t.B, 10)
 	hash, hashOk := new(big.Int).SetString(t.Hash, 10)
@@ -125,7 +125,7 @@ func (t *Transcript) getNativeType() (*dlogproofs.Transcript, error) {
 		return nil, fmt.Errorf("transcript's a, b, hash or zAlpha: %s", ArgsConversionError)
 	}
 
-	transcript := dlogproofs.NewTranscript(a, b, hash, zAlpha)
+	transcript := schnorr.NewBlindedTrans(a, b, hash, zAlpha)
 	return transcript, nil
 }
 

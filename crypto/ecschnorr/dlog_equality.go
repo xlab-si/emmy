@@ -15,7 +15,7 @@
  *
  */
 
-package dlogproofs
+package ecschnorr
 
 import (
 	"math/big"
@@ -24,12 +24,12 @@ import (
 	"github.com/xlab-si/emmy/crypto/ec"
 )
 
-// ProveECDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and
+// ProveDLogEquality demonstrates how prover can prove the knowledge of log_g1(t1), log_g2(t2) and
 // that log_g1(t1) = log_g2(t2) in EC group.
-func ProveECDLogEquality(secret *big.Int, g1, g2, t1, t2 *ec.GroupElement,
+func ProveDLogEquality(secret *big.Int, g1, g2, t1, t2 *ec.GroupElement,
 	curve ec.Curve) bool {
-	eProver := NewECDLogEqualityProver(curve)
-	eVerifier := NewECDLogEqualityVerifier(curve)
+	eProver := NewEqualityProver(curve)
+	eVerifier := NewEqualityVerifier(curve)
 
 	x1, x2 := eProver.GetProofRandomData(secret, g1, g2)
 
@@ -39,7 +39,7 @@ func ProveECDLogEquality(secret *big.Int, g1, g2, t1, t2 *ec.GroupElement,
 	return verified
 }
 
-type ECDLogEqualityProver struct {
+type EqualityProver struct {
 	Group  *ec.Group
 	r      *big.Int
 	secret *big.Int
@@ -47,41 +47,41 @@ type ECDLogEqualityProver struct {
 	g2     *ec.GroupElement
 }
 
-func NewECDLogEqualityProver(curve ec.Curve) *ECDLogEqualityProver {
+func NewEqualityProver(curve ec.Curve) *EqualityProver {
 	group := ec.NewGroup(curve)
-	prover := ECDLogEqualityProver{
+	prover := EqualityProver{
 		Group: group,
 	}
 
 	return &prover
 }
 
-func (prover *ECDLogEqualityProver) GetProofRandomData(secret *big.Int,
+func (p *EqualityProver) GetProofRandomData(secret *big.Int,
 	g1, g2 *ec.GroupElement) (*ec.GroupElement, *ec.GroupElement) {
 	// Sets the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
-	prover.secret = secret
-	prover.g1 = g1
-	prover.g2 = g2
+	p.secret = secret
+	p.g1 = g1
+	p.g2 = g2
 
-	r := common.GetRandomInt(prover.Group.Q)
-	prover.r = r
-	a := prover.Group.Exp(prover.g1, r)
-	b := prover.Group.Exp(prover.g2, r)
+	r := common.GetRandomInt(p.Group.Q)
+	p.r = r
+	a := p.Group.Exp(p.g1, r)
+	b := p.Group.Exp(p.g2, r)
 	return a, b
 }
 
-func (prover *ECDLogEqualityProver) GetProofData(challenge *big.Int) *big.Int {
+func (p *EqualityProver) GetProofData(challenge *big.Int) *big.Int {
 	// z = r + challenge * secret
 	z := new(big.Int)
-	z.Mul(challenge, prover.secret)
-	z.Add(z, prover.r)
-	z.Mod(z, prover.Group.Q)
+	z.Mul(challenge, p.secret)
+	z.Add(z, p.r)
+	z.Mod(z, p.Group.Q)
 	return z
 }
 
-type ECDLogEqualityVerifier struct {
+type EqualityVerifier struct {
 	Group     *ec.Group
 	challenge *big.Int
 	g1        *ec.GroupElement
@@ -92,42 +92,42 @@ type ECDLogEqualityVerifier struct {
 	t2        *ec.GroupElement
 }
 
-func NewECDLogEqualityVerifier(curve ec.Curve) *ECDLogEqualityVerifier {
+func NewEqualityVerifier(curve ec.Curve) *EqualityVerifier {
 	group := ec.NewGroup(curve)
-	return &ECDLogEqualityVerifier{
+	return &EqualityVerifier{
 		Group: group,
 	}
 }
 
-func (verifier *ECDLogEqualityVerifier) GetChallenge(g1, g2, t1, t2, x1,
+func (v *EqualityVerifier) GetChallenge(g1, g2, t1, t2, x1,
 	x2 *ec.GroupElement) *big.Int {
 	// Set the values that are needed before the protocol can be run.
 	// The protocol proves the knowledge of log_g1(t1), log_g2(t2) and
 	// that log_g1(t1) = log_g2(t2).
-	verifier.g1 = g1
-	verifier.g2 = g2
-	verifier.t1 = t1
-	verifier.t2 = t2
+	v.g1 = g1
+	v.g2 = g2
+	v.t1 = t1
+	v.t2 = t2
 
 	// Sets the values g1^r1 and g2^r2.
-	verifier.x1 = x1
-	verifier.x2 = x2
+	v.x1 = x1
+	v.x2 = x2
 
-	challenge := common.GetRandomInt(verifier.Group.Q)
-	verifier.challenge = challenge
+	challenge := common.GetRandomInt(v.Group.Q)
+	v.challenge = challenge
 	return challenge
 }
 
 // It receives z = r + secret * challenge.
 //It returns true if g1^z = g1^r * (g1^secret) ^ challenge and g2^z = g2^r * (g2^secret) ^ challenge.
-func (verifier *ECDLogEqualityVerifier) Verify(z *big.Int) bool {
-	left1 := verifier.Group.Exp(verifier.g1, z)
-	left2 := verifier.Group.Exp(verifier.g2, z)
+func (v *EqualityVerifier) Verify(z *big.Int) bool {
+	left1 := v.Group.Exp(v.g1, z)
+	left2 := v.Group.Exp(v.g2, z)
 
-	r1 := verifier.Group.Exp(verifier.t1, verifier.challenge)
-	r2 := verifier.Group.Exp(verifier.t2, verifier.challenge)
-	right1 := verifier.Group.Mul(r1, verifier.x1)
-	right2 := verifier.Group.Mul(r2, verifier.x2)
+	r1 := v.Group.Exp(v.t1, v.challenge)
+	r2 := v.Group.Exp(v.t2, v.challenge)
+	right1 := v.Group.Mul(r1, v.x1)
+	right2 := v.Group.Mul(r2, v.x2)
 
 	return left1.Equals(right1) && left2.Equals(right2)
 }

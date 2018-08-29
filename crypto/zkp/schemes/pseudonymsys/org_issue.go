@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type Credential struct {
@@ -31,12 +30,12 @@ type Credential struct {
 	SmallBToGamma *big.Int
 	AToGamma      *big.Int
 	BToGamma      *big.Int
-	T1            *dlogproofs.Transcript
-	T2            *dlogproofs.Transcript
+	T1            *schnorr.BlindedTrans
+	T2            *schnorr.BlindedTrans
 }
 
 func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma *big.Int,
-	t1, t2 *dlogproofs.Transcript) *Credential {
+	t1, t2 *schnorr.BlindedTrans) *Credential {
 	credential := &Credential{
 		SmallAToGamma: aToGamma,
 		SmallBToGamma: bToGamma,
@@ -54,8 +53,8 @@ type OrgCredentialIssuer struct {
 
 	// the following fields are needed for issuing a credential
 	SchnorrVerifier *schnorr.Verifier
-	EqualityProver1 *dlogproofs.DLogEqualityBTranscriptProver
-	EqualityProver2 *dlogproofs.DLogEqualityBTranscriptProver
+	EqualityProver1 *schnorr.BTEqualityProver
+	EqualityProver2 *schnorr.BTEqualityProver
 	a               *big.Int
 	b               *big.Int
 }
@@ -64,8 +63,8 @@ func NewOrgCredentialIssuer(group *schnorr.Group, secKey *SecKey) *OrgCredential
 	// g1 = a_tilde, t1 = b_tilde,
 	// g2 = a, t2 = b
 	schnorrVerifier := schnorr.NewVerifier(group)
-	equalityProver1 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
-	equalityProver2 := dlogproofs.NewDLogEqualityBTranscriptProver(group)
+	equalityProver1 := schnorr.NewBTEqualityProver(group)
+	equalityProver2 := schnorr.NewBTEqualityProver(group)
 	org := OrgCredentialIssuer{
 		Group:           group,
 		secKey:          secKey,

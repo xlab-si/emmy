@@ -24,7 +24,7 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/ec"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/ecschnorr"
 )
 
 type PseudonymEC struct {
@@ -40,13 +40,13 @@ func NewPseudonymEC(a, b *ec.GroupElement) *PseudonymEC {
 }
 
 type OrgNymGenEC struct {
-	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
+	EqualityVerifier *ecschnorr.EqualityVerifier
 	caPubKey         *PubKey
 	curveType        ec.Curve
 }
 
 func NewOrgNymGenEC(pubKey *PubKey, curveType ec.Curve) *OrgNymGenEC {
-	verifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
+	verifier := ecschnorr.NewEqualityVerifier(curveType)
 	org := OrgNymGenEC{
 		EqualityVerifier: verifier,
 		caPubKey:         pubKey,
