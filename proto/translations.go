@@ -22,10 +22,10 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/df"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
@@ -145,9 +145,9 @@ func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
 	UProof := qr.NewRepresentationProof(new(big.Int).SetBytes(r.UProof.ProofRandomData),
 		new(big.Int).SetBytes(r.UProof.Challenge), pData)
 
-	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(r.CommitmentsOfAttrsProofs))
+	commitmentsOfAttrsProofs := make([]*df.OpeningProof, len(r.CommitmentsOfAttrsProofs))
 	for i, proof := range r.CommitmentsOfAttrsProofs {
-		openingProof := commitmentzkp.NewDFOpeningProof(new(big.Int).SetBytes(proof.ProofRandomData),
+		openingProof := df.NewOpeningProof(new(big.Int).SetBytes(proof.ProofRandomData),
 			new(big.Int).SetBytes(proof.Challenge), new(big.Int).SetBytes(proof.ProofData[0]),
 			new(big.Int).SetBytes(proof.ProofData[1]))
 		commitmentsOfAttrsProofs[i] = openingProof

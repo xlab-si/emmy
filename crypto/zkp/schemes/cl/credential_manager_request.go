@@ -22,9 +22,9 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/df"
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 )
 
 type CredentialRequest struct {
@@ -34,13 +34,13 @@ type CredentialRequest struct {
 	NymProof                 *schnorr.Proof
 	U                        *big.Int
 	UProof                   *qr.RepresentationProof
-	CommitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof
+	CommitmentsOfAttrsProofs []*df.OpeningProof
 	Nonce                    *big.Int
 }
 
 func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nymProof *schnorr.Proof,
 	U *big.Int, UProof *qr.RepresentationProof,
-	commitmentsOfAttrsProofs []*commitmentzkp.DFOpeningProof, nonce *big.Int) *CredentialRequest {
+	commitmentsOfAttrsProofs []*df.OpeningProof, nonce *big.Int) *CredentialRequest {
 	return &CredentialRequest{
 		Nym:                nym,
 		KnownAttrs:         knownAttrs,
@@ -142,12 +142,12 @@ func (m *CredentialManager) getCredReqProvers(U *big.Int) (*schnorr.Prover,
 	return nymProver, uProver, nil
 }
 
-func (m *CredentialManager) getCommitmentsOfAttrsProof(challenge *big.Int) []*commitmentzkp.DFOpeningProof {
-	commitmentsOfAttrsProofs := make([]*commitmentzkp.DFOpeningProof, len(m.commitmentsOfAttrsProvers))
+func (m *CredentialManager) getCommitmentsOfAttrsProof(challenge *big.Int) []*df.OpeningProof {
+	commitmentsOfAttrsProofs := make([]*df.OpeningProof, len(m.commitmentsOfAttrsProvers))
 	for i, prover := range m.commitmentsOfAttrsProvers {
 		proofRandomData := prover.GetProofRandomData()
 		proofData1, proofData2 := prover.GetProofData(challenge)
-		commitmentsOfAttrsProofs[i] = commitmentzkp.NewDFOpeningProof(proofRandomData, challenge,
+		commitmentsOfAttrsProofs[i] = df.NewOpeningProof(proofRandomData, challenge,
 			proofData1, proofData2)
 	}
 

@@ -15,28 +15,27 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentSquare demonstrates how to prove that the commitment
+// TestDFCommitmentSquare demonstrates how to prove that the commitment
 // hides the square. Given c, prove that c = g^(x^2) * h^r (mod n).
-func TestProveDamgardFujisakiCommitmentSquare(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestDFCommitmentSquare(t *testing.T) {
+	receiver, err := NewReceiver(128, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
-	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
+	committer := NewCommitter(receiver.QRSpecialRSA.N,
 		receiver.G, receiver.H, T, receiver.K)
 
 	x := common.GetRandomInt(committer.QRSpecialRSA.N)
@@ -48,14 +47,14 @@ func TestProveDamgardFujisakiCommitmentSquare(t *testing.T) {
 	receiver.SetCommitment(c)
 
 	challengeSpaceSize := 80
-	prover, err := NewDFCommitmentSquareProver(committer, x, challengeSpaceSize)
+	prover, err := NewSquareProver(committer, x, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentSquareProver: %v", err)
+		t.Errorf("Error in instantiating SquareProver: %v", err)
 	}
 
-	verifier, err := NewDFCommitmentSquareVerifier(receiver, prover.SmallCommitment, challengeSpaceSize)
+	verifier, err := NewSquareVerifier(receiver, prover.SmallCommitment, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("Error in instantiating DFCommitmentSquareVerifier: %v", err)
+		t.Errorf("Error in instantiating SquareVerifier: %v", err)
 	}
 
 	proofRandomData1, proofRandomData2 := prover.GetProofRandomData()

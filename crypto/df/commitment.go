@@ -15,7 +15,7 @@
  *
  */
 
-package commitments
+package df
 
 import (
 	"fmt"
@@ -34,8 +34,8 @@ import (
 // schemes, usually there is some boundary), however a boundary (denoted by T) is needed
 // for the associated proofs.
 
-// DamgardFujisaki presents what is common in DamgardFujisakiCommitter and DamgardFujisakiReceiver.
-type damgardFujisaki struct {
+// df represents what is common in Committer and Receiver.
+type df struct {
 	QRSpecialRSA *qr.RSASpecial
 	H            *big.Int
 	G            *big.Int // G = H^alpha % RSASpecial.N, where alpha is chosen when Receiver is created (Committer does not know alpha)
@@ -45,15 +45,15 @@ type damgardFujisaki struct {
 // ComputeCommit returns G^a * H^r % group.N for a given a and r. Note that this is exactly
 // the commitment, but with a given a and r. It serves as a helper function for
 // associated proofs where g^x * h^y % group.N needs to be computed several times.
-func (df *damgardFujisaki) ComputeCommit(a, r *big.Int) *big.Int {
+func (df *df) ComputeCommit(a, r *big.Int) *big.Int {
 	tmp1 := df.QRSpecialRSA.Exp(df.G, a)
 	tmp2 := df.QRSpecialRSA.Exp(df.H, r)
 	c := df.QRSpecialRSA.Mul(tmp1, tmp2)
 	return c
 }
 
-type DamgardFujisakiCommitter struct {
-	damgardFujisaki
+type Committer struct {
+	df
 	B              int      // 2^B is upper bound estimation for group order, it can be len(RSASpecial.N) - 2
 	T              *big.Int // we can commit to values between -T and T
 	committedValue *big.Int
@@ -61,9 +61,9 @@ type DamgardFujisakiCommitter struct {
 }
 
 // TODO: switch h and g
-func NewDamgardFujisakiCommitter(n, g, h, t *big.Int, k int) *DamgardFujisakiCommitter {
+func NewCommitter(n, g, h, t *big.Int, k int) *Committer {
 	// n.BitLen() - 2 is used as B
-	return &DamgardFujisakiCommitter{damgardFujisaki: damgardFujisaki{
+	return &Committer{df: df{
 		QRSpecialRSA: qr.NewRSApecialPublic(n),
 		G:            g,
 		H:            h,
@@ -73,49 +73,49 @@ func NewDamgardFujisakiCommitter(n, g, h, t *big.Int, k int) *DamgardFujisakiCom
 }
 
 // TODO: the naming is not OK because it also sets committer.committedValue and committer.r
-func (committer *DamgardFujisakiCommitter) GetCommitMsg(a *big.Int) (*big.Int, error) {
+func (c *Committer) GetCommitMsg(a *big.Int) (*big.Int, error) {
 	abs := new(big.Int).Abs(a)
-	if abs.Cmp(committer.T) != -1 {
+	if abs.Cmp(c.T) != -1 {
 		return nil, fmt.Errorf("committed value needs to be in (-T, T)")
 	}
 	// c = G^a * H^r % group.N
 	// choose r from 2^(B + k)
-	exp := big.NewInt(int64(committer.B + committer.K))
+	exp := big.NewInt(int64(c.B + c.K))
 	boundary := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	r := common.GetRandomInt(boundary)
-	c := committer.ComputeCommit(a, r)
+	commitment := c.ComputeCommit(a, r)
 
-	committer.committedValue = a
-	committer.r = r
-	return c, nil
+	c.committedValue = a
+	c.r = r
+	return commitment, nil
 }
 
-func (committer *DamgardFujisakiCommitter) GetCommitMsgWithGivenR(a, r *big.Int) (*big.Int, error) {
+func (c *Committer) GetCommitMsgWithGivenR(a, r *big.Int) (*big.Int, error) {
 	abs := new(big.Int).Abs(a)
-	if abs.Cmp(committer.T) != -1 {
+	if abs.Cmp(c.T) != -1 {
 		return nil, fmt.Errorf("committed value needs to be in (-T, T)")
 	}
 	// c = G^a * H^r % group.N
-	c := committer.ComputeCommit(a, r)
-	committer.committedValue = a
-	committer.r = r
-	return c, nil
+	commitment := c.ComputeCommit(a, r)
+	c.committedValue = a
+	c.r = r
+	return commitment, nil
 }
 
-func (committer *DamgardFujisakiCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
-	return committer.committedValue, committer.r
+func (c *Committer) GetDecommitMsg() (*big.Int, *big.Int) {
+	return c.committedValue, c.r
 }
 
-type DamgardFujisakiReceiver struct {
-	damgardFujisaki
+type Receiver struct {
+	df
 	Commitment *big.Int
 }
 
-// NewDamgardFujisakiReceiver receives two parameters: safePrimeBitLength tells the length of the
+// NewReceiver receives two parameters: safePrimeBitLength tells the length of the
 // primes in RSASpecial group and should be at least 1024, k is security parameter on which it depends
 // the hiding property (commitment c = G^a * H^r where r is chosen randomly from (0, 2^(B+k)) - the distribution of
 // c is statistically close to uniform, 2^B is upper bound estimation for group order).
-func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiReceiver, error) {
+func NewReceiver(safePrimeBitLength, k int) (*Receiver, error) {
 	qr, err := qr.NewRSASpecial(safePrimeBitLength)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 		return nil, err
 	}
 
-	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
+	return &Receiver{df: df{
 			QRSpecialRSA: qr,
 			H:            h,
 			G:            g,
@@ -140,18 +140,18 @@ func NewDamgardFujisakiReceiver(safePrimeBitLength, k int) (*DamgardFujisakiRece
 		nil
 }
 
-// NewDamgardFujisakiReceiverFromParams returns an instance of a receiver with the
+// NewReceiverFromParams returns an instance of a receiver with the
 // parameters as given by input. Different instances are needed because
 // each sets its own Commitment value.
-func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *qr.RSASpecialPrimes, g, h *big.Int,
+func NewReceiverFromParams(specialRSAPrimes *qr.RSASpecialPrimes, g, h *big.Int,
 	k int) (
-	*DamgardFujisakiReceiver, error) {
+	*Receiver, error) {
 	group, err := qr.NewRSASpecialFromParams(specialRSAPrimes)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DamgardFujisakiReceiver{damgardFujisaki: damgardFujisaki{
+	return &Receiver{df: df{
 		QRSpecialRSA: group,
 		G:            g,
 		H:            h,
@@ -160,14 +160,14 @@ func NewDamgardFujisakiReceiverFromParams(specialRSAPrimes *qr.RSASpecialPrimes,
 }
 
 // When receiver receives a commitment, it stores the value using SetCommitment method.
-func (receiver *DamgardFujisakiReceiver) SetCommitment(c *big.Int) {
-	receiver.Commitment = c
+func (r *Receiver) SetCommitment(c *big.Int) {
+	r.Commitment = c
 }
 
-func (receiver *DamgardFujisakiReceiver) CheckDecommitment(r, a *big.Int) bool {
-	tmp1 := receiver.QRSpecialRSA.Exp(receiver.G, a)
-	tmp2 := receiver.QRSpecialRSA.Exp(receiver.H, r)
-	c := receiver.QRSpecialRSA.Mul(tmp1, tmp2)
+func (r *Receiver) CheckDecommitment(R, a *big.Int) bool {
+	tmp1 := r.QRSpecialRSA.Exp(r.G, a)
+	tmp2 := r.QRSpecialRSA.Exp(r.H, R)
+	c := r.QRSpecialRSA.Mul(tmp1, tmp2)
 
-	return c.Cmp(receiver.Commitment) == 0
+	return c.Cmp(r.Commitment) == 0
 }

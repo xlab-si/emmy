@@ -15,24 +15,23 @@
  *
  */
 
-package preimage
+package qoneway
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 )
 
 func TestHomomorphismPreimage(t *testing.T) {
-	homomorphism, _, H, _, err := commitments.GenerateRSABasedQOneWay(256)
+	qOneWay, err := NewRSABased(256)
 	if err != nil {
-		t.Errorf("Error when generating RSABasedQOneWay homomorphism")
+		t.Errorf("Error when generating RSABasedQOneWay Homomorphism")
 	}
-	v := H.GetRandomElement()
-	u := homomorphism(v)
+	v := qOneWay.Group.GetRandomElement()
+	u := qOneWay.Homomorphism(v)
 
-	proved := ProveHomomorphismPreimageKnowledge(homomorphism, H, u, v, 80)
+	proved := ProvePreimageKnowledge(qOneWay.Homomorphism, qOneWay.Group, u, v, 80)
 
 	assert.Equal(t, true, proved, "HomomorphismPreimage proof does not work correctly")
 }

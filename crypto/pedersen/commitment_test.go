@@ -15,7 +15,7 @@
  *
  */
 
-package commitments
+package pedersen
 
 import (
 	"testing"
@@ -24,24 +24,24 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-func TestRSABasedCommitment(t *testing.T) {
-	receiver, err := NewRSABasedCommitReceiver(1024)
+// TestPedersen demonstrates how a value can be committed and later opened (decommitted) using Pedersen committer.
+func TestPedersen(t *testing.T) {
+	receiver, err := NewReceiver(256)
 	if err != nil {
-		t.Errorf("Error when initializing RSABasedCommitReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
 
-	committer, err := NewRSABasedCommitter(receiver.Homomorphism, receiver.HomomorphismInv,
-		receiver.H, receiver.Q, receiver.Y)
-	if err != nil {
-		t.Errorf("Error when initializing RSABasedCommitter: %v", err)
-	}
+	committer := NewCommitter(receiver.Params)
 
-	a := common.GetRandomInt(committer.Q)
-	c, _ := committer.GetCommitMsg(a)
+	a := common.GetRandomInt(committer.Params.Group.Q)
+	c, err := committer.GetCommitMsg(a)
+	if err != nil {
+		t.Errorf("Error in GetCommitMsg: %v", err)
+	}
 
 	receiver.SetCommitment(c)
 	committedVal, r := committer.GetDecommitMsg()
 	success := receiver.CheckDecommitment(r, committedVal)
 
-	assert.Equal(t, true, success, "RSABasedCommitment does not work correctly")
+	assert.Equal(t, true, success, "Pedersen commitment failed.")
 }

@@ -15,7 +15,7 @@
  *
  */
 
-package preimage
+package qoneway
 
 import (
 	"math/big"
@@ -24,12 +24,12 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// ProvePreimageKnowledge demonstrates how given homomorphism f:H->G and element u from G
+// ProvePreimageKnowledge demonstrates how given Homomorphism f:H->G and element u from G
 // prover can prove the knowledge of v such that f(v) = u.
-func ProveHomomorphismPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H crypto.Group,
+func ProvePreimageKnowledge(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	u, v *big.Int, iterations int) bool {
-	prover := NewHomomorphismPreimageProver(homomorphism, H, v)
-	verifier := NewHomomorphismPreimageVerifier(homomorphism, H, u)
+	prover := NewPreimageProver(homomorphism, H, v)
+	verifier := NewPreimageVerifier(homomorphism, H, u)
 
 	// The proof needs to be repeated sequentially because one-bit challenges are used. Note
 	// that when one-bit challenges are used, the prover has in one iteration 50% chances
@@ -50,19 +50,19 @@ func ProveHomomorphismPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H 
 	return true
 }
 
-// Given a homomorphism f: H -> G and u from group G, we want to prove that
+// Given a Homomorphism f: H -> G and u from group G, we want to prove that
 // we know v such that f(v) = u. This is a generalized Schnorr prover, but one-bit
 // challenges need to be used to enable extractor (more to be added in docs).
-type HomomorphismPreimageProver struct {
+type PreimageProver struct {
 	Homomorphism func(*big.Int) *big.Int
 	H            crypto.Group
 	v            *big.Int
 	r            *big.Int
 }
 
-func NewHomomorphismPreimageProver(homomorphism func(*big.Int) *big.Int, H crypto.Group,
-	v *big.Int) *HomomorphismPreimageProver {
-	return &HomomorphismPreimageProver{
+func NewPreimageProver(homomorphism func(*big.Int) *big.Int, H crypto.Group,
+	v *big.Int) *PreimageProver {
+	return &PreimageProver{
 		Homomorphism: homomorphism,
 		H:            H,
 		v:            v,
@@ -70,26 +70,26 @@ func NewHomomorphismPreimageProver(homomorphism func(*big.Int) *big.Int, H crypt
 }
 
 // Chooses random r from H and returns QOneWayHomomorpism(r).
-func (prover *HomomorphismPreimageProver) GetProofRandomData() *big.Int {
+func (p *PreimageProver) GetProofRandomData() *big.Int {
 	// TODO: see SchnorrProver comment, note that here setting of the required parameters (v) is
 	// done in the constructor.
 
 	// x = Homomorphism(r), where r is random
-	r := prover.H.GetRandomElement()
-	prover.r = r
-	x := prover.Homomorphism(r)
+	r := p.H.GetRandomElement()
+	p.r = r
+	x := p.Homomorphism(r)
 	return x
 }
 
 // GetProofData receives challenge defined by a verifier, and returns z = r * v^challenge.
-func (prover *HomomorphismPreimageProver) GetProofData(challenge *big.Int) *big.Int {
+func (p *PreimageProver) GetProofData(challenge *big.Int) *big.Int {
 	// z = r * v^challenge
-	z := prover.H.Exp(prover.v, challenge)
-	z = prover.H.Mul(prover.r, z)
+	z := p.H.Exp(p.v, challenge)
+	z = p.H.Mul(p.r, z)
 	return z
 }
 
-type HomomorphismPreimageVerifier struct {
+type PreimageVerifier struct {
 	Homomorphism func(*big.Int) *big.Int
 	H            crypto.Group
 	challenge    *big.Int
@@ -97,29 +97,29 @@ type HomomorphismPreimageVerifier struct {
 	x            *big.Int
 }
 
-func NewHomomorphismPreimageVerifier(homomorphism func(*big.Int) *big.Int, H crypto.Group,
-	u *big.Int) *HomomorphismPreimageVerifier {
-	return &HomomorphismPreimageVerifier{
+func NewPreimageVerifier(homomorphism func(*big.Int) *big.Int, H crypto.Group,
+	u *big.Int) *PreimageVerifier {
+	return &PreimageVerifier{
 		Homomorphism: homomorphism,
 		H:            H,
 		u:            u,
 	}
 }
 
-func (verifier *HomomorphismPreimageVerifier) SetProofRandomData(x *big.Int) {
-	verifier.x = x
+func (v *PreimageVerifier) SetProofRandomData(x *big.Int) {
+	v.x = x
 }
 
-func (verifier *HomomorphismPreimageVerifier) GetChallenge() *big.Int {
+func (v *PreimageVerifier) GetChallenge() *big.Int {
 	challenge := common.GetRandomInt(big.NewInt(2)) // challenges need to be binary
-	verifier.challenge = challenge
+	v.challenge = challenge
 	return challenge
 }
 
 // It receives z = r * v^challenge. It returns true if Homomorphism(z) = x * u^challenge, otherwise false.
-func (verifier *HomomorphismPreimageVerifier) Verify(z *big.Int) bool {
-	left := verifier.Homomorphism(z)
-	right := verifier.H.Exp(verifier.u, verifier.challenge)
-	right = verifier.H.Mul(verifier.x, right)
+func (v *PreimageVerifier) Verify(z *big.Int) bool {
+	left := v.Homomorphism(z)
+	right := v.H.Exp(v.u, v.challenge)
+	right = v.H.Mul(v.x, right)
 	return left.Cmp(right) == 0
 }

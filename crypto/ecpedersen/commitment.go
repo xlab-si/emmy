@@ -15,7 +15,7 @@
  *
  */
 
-package commitments
+package ecpedersen
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/ec"
 )
 
-type PedersenECParams struct {
+type Params struct {
 	Group *ec.Group
 	H     *ec.GroupElement
 	a     *big.Int
@@ -33,38 +33,38 @@ type PedersenECParams struct {
 	// for example in one of techniques to turn sigma to ZKP
 }
 
-func NewPedersenECParams(group *ec.Group, H *ec.GroupElement, a *big.Int) *PedersenECParams {
-	return &PedersenECParams{
+func NewParams(group *ec.Group, H *ec.GroupElement, a *big.Int) *Params {
+	return &Params{
 		Group: group,
 		H:     H, // H = g^a
 		a:     a,
 	}
 }
 
-func GeneratePedersenECParams(curveType ec.Curve) *PedersenECParams {
+func GenerateParams(curveType ec.Curve) *Params {
 	group := ec.NewGroup(curveType)
 	a := common.GetRandomInt(group.Q)
-	return NewPedersenECParams(group, group.ExpBaseG(a), a)
+	return NewParams(group, group.ExpBaseG(a), a)
 }
 
 // Committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
-type PedersenECCommitter struct {
-	Params         *PedersenECParams
+type Committer struct {
+	Params         *Params
 	Commitment     *ec.GroupElement
 	committedValue *big.Int
 	r              *big.Int
 }
 
-func NewPedersenECCommitter(params *PedersenECParams) *PedersenECCommitter {
-	committer := PedersenECCommitter{
+func NewCommitter(params *Params) *Committer {
+	committer := Committer{
 		Params: params,
 	}
 	return &committer
 }
 
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
-func (c *PedersenECCommitter) GetCommitMsg(val *big.Int) (*ec.GroupElement, error) {
+func (c *Committer) GetCommitMsg(val *big.Int) (*ec.GroupElement, error) {
 	if val.Cmp(c.Params.Group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
 		err := fmt.Errorf("the committed value needs to be in Z_q (order of a base point)")
 		return nil, err
@@ -84,50 +84,50 @@ func (c *PedersenECCommitter) GetCommitMsg(val *big.Int) (*ec.GroupElement, erro
 }
 
 // It returns values x and r (commitment was c = g^x * g^r).
-func (c *PedersenECCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
+func (c *Committer) GetDecommitMsg() (*big.Int, *big.Int) {
 	val := c.committedValue
 	r := c.r
 
 	return val, r
 }
 
-func (c *PedersenECCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
+func (c *Committer) VerifyTrapdoor(trapdoor *big.Int) bool {
 	h := c.Params.Group.ExpBaseG(trapdoor)
 	return h.Equals(c.Params.H)
 }
 
-type PedersenECReceiver struct {
-	Params     *PedersenECParams
+type Receiver struct {
+	Params     *Params
 	commitment *ec.GroupElement
 }
 
-func NewPedersenECReceiver(curve ec.Curve) *PedersenECReceiver {
-	return &PedersenECReceiver{
-		Params: GeneratePedersenECParams(curve),
+func NewReceiver(curve ec.Curve) *Receiver {
+	return &Receiver{
+		Params: GenerateParams(curve),
 	}
 }
 
-func NewPedersenECReceiverFromParams(params *PedersenECParams) *PedersenECReceiver {
-	return &PedersenECReceiver{
+func NewReceiverFromParams(params *Params) *Receiver {
+	return &Receiver{
 		Params: params,
 	}
 }
 
-func (rcv *PedersenECReceiver) GetTrapdoor() *big.Int {
-	return rcv.Params.a
+func (r *Receiver) GetTrapdoor() *big.Int {
+	return r.Params.a
 }
 
 // When receiver receives a commitment, it stores the value using SetCommitment method.
-func (rcv *PedersenECReceiver) SetCommitment(el *ec.GroupElement) {
-	rcv.commitment = el
+func (r *Receiver) SetCommitment(el *ec.GroupElement) {
+	r.commitment = el
 }
 
 // When receiver receives a decommitment, CheckDecommitment verifies it against the stored value
 // (stored by SetCommitment).
-func (rcv *PedersenECReceiver) CheckDecommitment(r, val *big.Int) bool {
-	a := rcv.Params.Group.ExpBaseG(val)        // g^x
-	b := rcv.Params.Group.Exp(rcv.Params.H, r) // h^r
-	c := rcv.Params.Group.Mul(a, b)            // g^x * h^r
+func (r *Receiver) CheckDecommitment(R, val *big.Int) bool {
+	a := r.Params.Group.ExpBaseG(val)      // g^x
+	b := r.Params.Group.Exp(r.Params.H, R) // h^r
+	c := r.Params.Group.Mul(a, b)          // g^x * h^r
 
-	return c.Equals(rcv.commitment)
+	return c.Equals(r.commitment)
 }

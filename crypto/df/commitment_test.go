@@ -15,22 +15,27 @@
  *
  */
 
-package commitments
+package df
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/ec"
 )
 
-// TestPedersenEC demonstrates how a value can be committed and later opened (decommitted) using Pedersen EC committer.
-func TestPedersenEC(t *testing.T) {
-	receiver := NewPedersenECReceiver(ec.P256)
-	committer := NewPedersenECCommitter(receiver.Params)
+// TestDFCommitment demonstrates how a value can be committed and later opened (decommitted).
+func TestDFCommitment(t *testing.T) {
+	receiver, err := NewReceiver(128, 80)
+	if err != nil {
+		t.Errorf("Error in NewReceiver: %v", err)
+	}
 
-	a := common.GetRandomInt(committer.Params.Group.Q)
+	// n is used for T - but any other value can be used as well
+	committer := NewCommitter(receiver.QRSpecialRSA.N, receiver.G, receiver.H,
+		receiver.QRSpecialRSA.N, receiver.K)
+
+	a := common.GetRandomInt(receiver.QRSpecialRSA.N)
 	c, err := committer.GetCommitMsg(a)
 	if err != nil {
 		t.Errorf("Error in GetCommitMsg: %v", err)
@@ -40,5 +45,5 @@ func TestPedersenEC(t *testing.T) {
 	committedVal, r := committer.GetDecommitMsg()
 	success := receiver.CheckDecommitment(r, committedVal)
 
-	assert.Equal(t, true, success, "Pedersen EC commitment failed.")
+	assert.Equal(t, true, success, "DamgardFujisaki commitment failed.")
 }

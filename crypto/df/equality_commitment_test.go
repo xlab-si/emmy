@@ -15,34 +15,33 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentEquality demonstrates how to prove that the two commitments c1, c2
+// TestDFCommitmentEquality demonstrates how to prove that the two commitments c1, c2
 // hide the same number. Given c1, c2, prove that c1 = g1^x * h1^r1 (mod n1) and
 // c2 = g2^x * h2^r2 (mod n2) for some x, r1, r2 (note that both commitments hide x).
-func TestProveDamgardFujisakiCommitmentEquality(t *testing.T) {
-	receiver1, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestDFCommitmentEquality(t *testing.T) {
+	receiver1, err := NewReceiver(128, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver1.QRSpecialRSA.N, receiver1.QRSpecialRSA.N)
-	committer1 := commitments.NewDamgardFujisakiCommitter(receiver1.QRSpecialRSA.N,
+	committer1 := NewCommitter(receiver1.QRSpecialRSA.N,
 		receiver1.G, receiver1.H, T, receiver1.K)
 
-	receiver2, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+	receiver2, err := NewReceiver(128, 80)
 
-	committer2 := commitments.NewDamgardFujisakiCommitter(receiver2.QRSpecialRSA.N,
+	committer2 := NewCommitter(receiver2.QRSpecialRSA.N,
 		receiver2.G, receiver2.H, T, receiver2.K)
 
 	x := common.GetRandomInt(committer1.T)
@@ -59,8 +58,8 @@ func TestProveDamgardFujisakiCommitmentEquality(t *testing.T) {
 	receiver2.SetCommitment(c2)
 
 	challengeSpaceSize := 80
-	prover := NewDFCommitmentEqualityProver(committer1, committer2, challengeSpaceSize)
-	verifier := NewDFCommitmentEqualityVerifier(receiver1, receiver2, challengeSpaceSize)
+	prover := NewEqualityProver(committer1, committer2, challengeSpaceSize)
+	verifier := NewEqualityVerifier(receiver1, receiver2, challengeSpaceSize)
 
 	proofRandomData1, proofRandomData2 := prover.GetProofRandomData()
 	verifier.SetProofRandomData(proofRandomData1, proofRandomData2)

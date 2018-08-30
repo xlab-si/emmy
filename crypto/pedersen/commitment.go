@@ -15,7 +15,7 @@
  *
  */
 
-package commitments
+package pedersen
 
 import (
 	"math/big"
@@ -35,7 +35,7 @@ import (
 // Then committer can commit to some value x - it sends to receiver c = g^x * h^r.
 // When decommitting, committer sends to receiver r, x; receiver checks whether c = g^x * h^r.
 
-type PedersenParams struct {
+type Params struct {
 	Group *schnorr.Group
 	H     *big.Int
 	a     *big.Int
@@ -43,39 +43,39 @@ type PedersenParams struct {
 	// for example in one of techniques to turn sigma to ZKP
 }
 
-func NewPedersenParams(group *schnorr.Group, H, a *big.Int) *PedersenParams {
-	return &PedersenParams{
+func NewParams(group *schnorr.Group, H, a *big.Int) *Params {
+	return &Params{
 		Group: group,
 		H:     H, // H = group.G^a
 		a:     a,
 	}
 }
 
-func GeneratePedersenParams(bitLengthGroupOrder int) (*PedersenParams, error) {
+func GenerateParams(bitLengthGroupOrder int) (*Params, error) {
 	group, err := schnorr.NewGroup(bitLengthGroupOrder)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating SchnorrGroup: %s", err)
 	}
 	a := common.GetRandomInt(group.Q)
-	return NewPedersenParams(group, group.Exp(group.G, a), a), nil
+	return NewParams(group, group.Exp(group.G, a), a), nil
 }
 
-type PedersenCommitter struct {
-	Params         *PedersenParams
+type Committer struct {
+	Params         *Params
 	Commitment     *big.Int
 	committedValue *big.Int
 	r              *big.Int
 }
 
-func NewPedersenCommitter(pedersenParams *PedersenParams) *PedersenCommitter {
-	committer := PedersenCommitter{
+func NewCommitter(pedersenParams *Params) *Committer {
+	committer := Committer{
 		Params: pedersenParams,
 	}
 	return &committer
 }
 
 // It receives a value x (to this value a commitment is made), chooses a random x, outputs c = g^x * g^r.
-func (c *PedersenCommitter) GetCommitMsg(val *big.Int) (*big.Int, error) {
+func (c *Committer) GetCommitMsg(val *big.Int) (*big.Int, error) {
 	if val.Cmp(c.Params.Group.Q) == 1 || val.Cmp(big.NewInt(0)) == -1 {
 		err := fmt.Errorf("committed value needs to be in Z_q (order of a base point)")
 		return nil, err
@@ -95,50 +95,51 @@ func (c *PedersenCommitter) GetCommitMsg(val *big.Int) (*big.Int, error) {
 }
 
 // It returns values x and r (commitment was c = g^x * g^r).
-func (c *PedersenCommitter) GetDecommitMsg() (*big.Int, *big.Int) {
+func (c *Committer) GetDecommitMsg() (*big.Int, *big.Int) {
 	val := c.committedValue
 	r := c.r
 	return val, r
 }
 
-func (c *PedersenCommitter) VerifyTrapdoor(trapdoor *big.Int) bool {
+func (c *Committer) VerifyTrapdoor(trapdoor *big.Int) bool {
 	h := c.Params.Group.Exp(c.Params.Group.G, trapdoor)
 	return h.Cmp(c.Params.H) == 0
 }
 
-type PedersenReceiver struct {
-	Params     *PedersenParams
+type Receiver struct {
+	Params     *Params
 	commitment *big.Int
 }
 
-func NewPedersenReceiver(bitLengthGroupOrder int) (*PedersenReceiver, error) {
-	params, err := GeneratePedersenParams(bitLengthGroupOrder)
+func NewReceiver(bitLengthGroupOrder int) (*Receiver, error) {
+	params, err := GenerateParams(bitLengthGroupOrder)
 	if err != nil {
 		return nil, err
 	}
-	return NewPedersenReceiverFromParams(params), nil
+	return NewReceiverFromParams(params), nil
 }
 
-func NewPedersenReceiverFromParams(params *PedersenParams) *PedersenReceiver {
-	return &PedersenReceiver{
+func NewReceiverFromParams(params *Params) *Receiver {
+	return &Receiver{
 		Params: params,
 	}
 }
 
-func (rcv *PedersenReceiver) GetTrapdoor() *big.Int {
-	return rcv.Params.a
+func (r *Receiver) GetTrapdoor() *big.Int {
+	return r.Params.a
 }
 
 // When receiver receives a commitment, it stores the value using SetCommitment method.
-func (rcv *PedersenReceiver) SetCommitment(el *big.Int) {
-	rcv.commitment = el
+func (r *Receiver) SetCommitment(el *big.Int) {
+	r.commitment = el
 }
 
 // When receiver receives a decommitment, CheckDecommitment verifies it against the stored value
 // (stored by SetCommitment).
-func (rcv *PedersenReceiver) CheckDecommitment(r, val *big.Int) bool {
-	t1 := rcv.Params.Group.Exp(rcv.Params.Group.G, val) // g^x
-	t2 := rcv.Params.Group.Exp(rcv.Params.H, r)         // h^r
-	c := rcv.Params.Group.Mul(t1, t2)                   // g^x * h^r
-	return c.Cmp(rcv.commitment) == 0
+func (r *Receiver) CheckDecommitment(R, val *big.Int) bool {
+	t1 := r.Params.Group.Exp(r.Params.Group.G, val) // g^x
+	t2 := r.Params.Group.Exp(r.Params.H, R)         // h^r
+	c := r.Params.Group.Mul(t1, t2)                 // g^x * h^r
+
+	return c.Cmp(r.commitment) == 0
 }
