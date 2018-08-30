@@ -21,20 +21,19 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 )
 
 type OrgCredentialVerifier struct {
 	Group  *schnorr.Group
 	secKey *SecKey
 
-	EqualityVerifier *dlogproofs.DLogEqualityVerifier
+	EqualityVerifier *schnorr.EqualityVerifier
 	a                *big.Int
 	b                *big.Int
 }
 
 func NewOrgCredentialVerifier(group *schnorr.Group, secKey *SecKey) *OrgCredentialVerifier {
-	equalityVerifier := dlogproofs.NewDLogEqualityVerifier(group)
+	equalityVerifier := schnorr.NewEqualityVerifier(group)
 	org := OrgCredentialVerifier{
 		Group:            group,
 		secKey:           secKey,
@@ -60,11 +59,11 @@ func (org *OrgCredentialVerifier) VerifyAuthentication(z *big.Int,
 		return false
 	}
 
-	valid1 := dlogproofs.VerifyBlindedTranscript(credential.T1, org.Group, org.Group.G, orgPubKeys.H2,
+	valid1 := credential.T1.Verify(org.Group, org.Group.G, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
 
 	aAToGamma := org.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
-	valid2 := dlogproofs.VerifyBlindedTranscript(credential.T2, org.Group, org.Group.G, orgPubKeys.H1,
+	valid2 := credential.T2.Verify(org.Group, org.Group.G, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
 	if valid1 && valid2 {

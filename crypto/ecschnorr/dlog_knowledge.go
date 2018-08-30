@@ -24,6 +24,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/ec"
 )
 
+// Prover proves knowledge of a discrete logarithm.
 type Prover struct {
 	Group  *ec.Group
 	a      *ec.GroupElement

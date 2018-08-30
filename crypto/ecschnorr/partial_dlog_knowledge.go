@@ -15,7 +15,7 @@
  *
  */
 
-package dlogproofs
+package ecschnorr
 
 import (
 	"math/big"
@@ -35,12 +35,12 @@ func NewECTriple(a, b, c *ec.GroupElement) *ECTriple {
 	return &triple
 }
 
-// ProvePartialECDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
+// ProvePartialDLogKnowledge demonstrates how prover can prove that he knows dlog_a2(b2) and
 // the verifier does not know whether knowledge of dlog_a1(b1) or knowledge of dlog_a2(b2) was proved.
-func ProvePartialECDLogKnowledge(group *ec.Group, secret1 *big.Int,
+func ProvePartialDLogKnowledge(group *ec.Group, secret1 *big.Int,
 	a1, a2, b2 *ec.GroupElement) bool {
-	prover := NewPartialECDLogProver(group)
-	verifier := NewPartialECDLogVerifier(group)
+	prover := NewPartialProver(group)
+	verifier := NewPartialVerifier(group)
 
 	b1 := prover.Group.Exp(a1, secret1)
 	triple1, triple2 := prover.GetProofRandomData(secret1, a1, b1, a2, b2)
@@ -56,7 +56,7 @@ func ProvePartialECDLogKnowledge(group *ec.Group, secret1 *big.Int,
 
 // Proving that it knows either secret1 such that a1^secret1 = b1 or
 //  secret2 such that a2^secret2 = b2.
-type PartialECDLogProver struct {
+type PartialProver struct {
 	Group   *ec.Group
 	secret1 *big.Int
 	a1      *ec.GroupElement
@@ -67,28 +67,28 @@ type PartialECDLogProver struct {
 	ord     int
 }
 
-func NewPartialECDLogProver(group *ec.Group) *PartialECDLogProver {
-	return &PartialECDLogProver{
+func NewPartialProver(group *ec.Group) *PartialProver {
+	return &PartialProver{
 		Group: group,
 	}
 }
 
-func (prover *PartialECDLogProver) GetProofRandomData(secret1 *big.Int, a1, b1, a2,
+func (p *PartialProver) GetProofRandomData(secret1 *big.Int, a1, b1, a2,
 	b2 *ec.GroupElement) (*ECTriple, *ECTriple) {
-	prover.a1 = a1
-	prover.a2 = a2
-	prover.secret1 = secret1
-	r1 := common.GetRandomInt(prover.Group.Q)
-	c2 := common.GetRandomInt(prover.Group.Q)
-	z2 := common.GetRandomInt(prover.Group.Q)
-	prover.r1 = r1
-	prover.c2 = c2
-	prover.z2 = z2
-	x1 := prover.Group.Exp(a1, r1)
-	x2 := prover.Group.Exp(a2, z2)
-	b2ToC2 := prover.Group.Exp(b2, c2)
-	b2ToC2Inv := prover.Group.Inv(b2ToC2)
-	x2 = prover.Group.Mul(x2, b2ToC2Inv)
+	p.a1 = a1
+	p.a2 = a2
+	p.secret1 = secret1
+	r1 := common.GetRandomInt(p.Group.Q)
+	c2 := common.GetRandomInt(p.Group.Q)
+	z2 := common.GetRandomInt(p.Group.Q)
+	p.r1 = r1
+	p.c2 = c2
+	p.z2 = z2
+	x1 := p.Group.Exp(a1, r1)
+	x2 := p.Group.Exp(a2, z2)
+	b2ToC2 := p.Group.Exp(b2, c2)
+	b2ToC2Inv := p.Group.Inv(b2ToC2)
+	x2 = p.Group.Mul(x2, b2ToC2Inv)
 
 	// we need to make sure that the order does not reveal which secret we do know:
 	ord := common.GetRandomInt(big.NewInt(2))
@@ -96,70 +96,70 @@ func (prover *PartialECDLogProver) GetProofRandomData(secret1 *big.Int, a1, b1, 
 	triple2 := NewECTriple(x2, a2, b2)
 
 	if ord.Cmp(big.NewInt(0)) == 0 {
-		prover.ord = 0
+		p.ord = 0
 		return triple1, triple2
 	} else {
-		prover.ord = 1
+		p.ord = 1
 		return triple2, triple1
 	}
 }
 
-func (prover *PartialECDLogProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int,
+func (p *PartialProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int,
 	*big.Int, *big.Int) {
-	c1 := new(big.Int).Xor(prover.c2, challenge)
+	c1 := new(big.Int).Xor(p.c2, challenge)
 
 	z1 := new(big.Int)
-	z1.Mul(c1, prover.secret1)
-	z1.Add(z1, prover.r1)
-	z1.Mod(z1, prover.Group.Q)
+	z1.Mul(c1, p.secret1)
+	z1.Add(z1, p.r1)
+	z1.Mod(z1, p.Group.Q)
 
-	if prover.ord == 0 {
-		return c1, z1, prover.c2, prover.z2
+	if p.ord == 0 {
+		return c1, z1, p.c2, p.z2
 	} else {
-		return prover.c2, prover.z2, c1, z1
+		return p.c2, p.z2, c1, z1
 	}
 }
 
-type PartialECDLogVerifier struct {
+type PartialVerifier struct {
 	Group     *ec.Group
 	triple1   *ECTriple // contains x1, a1, b1
 	triple2   *ECTriple // contains x2, a2, b2
 	challenge *big.Int
 }
 
-func NewPartialECDLogVerifier(group *ec.Group) *PartialECDLogVerifier {
-	return &PartialECDLogVerifier{
+func NewPartialVerifier(group *ec.Group) *PartialVerifier {
+	return &PartialVerifier{
 		Group: group,
 	}
 }
 
-func (verifier *PartialECDLogVerifier) SetProofRandomData(triple1, triple2 *ECTriple) {
-	verifier.triple1 = triple1
-	verifier.triple2 = triple2
+func (v *PartialVerifier) SetProofRandomData(triple1, triple2 *ECTriple) {
+	v.triple1 = triple1
+	v.triple2 = triple2
 }
 
-func (verifier *PartialECDLogVerifier) GetChallenge() *big.Int {
-	challenge := common.GetRandomInt(verifier.Group.Q)
-	verifier.challenge = challenge
+func (v *PartialVerifier) GetChallenge() *big.Int {
+	challenge := common.GetRandomInt(v.Group.Q)
+	v.challenge = challenge
 	return challenge
 }
 
-func (verifier *PartialECDLogVerifier) verifyTriple(triple *ECTriple,
+func (v *PartialVerifier) verifyTriple(triple *ECTriple,
 	challenge, z *big.Int) bool {
-	left := verifier.Group.Exp(triple.B, z)      // a.X, a.Y, z
-	r := verifier.Group.Exp(triple.C, challenge) // b.X, b.Y, challenge
-	right := verifier.Group.Mul(r, triple.A)     // r1, r2, x.X, x.Y
+	left := v.Group.Exp(triple.B, z)      // a.X, a.Y, z
+	r := v.Group.Exp(triple.C, challenge) // b.X, b.Y, challenge
+	right := v.Group.Mul(r, triple.A)     // r1, r2, x.X, x.Y
 
 	return left.Equals(right)
 }
 
-func (verifier *PartialECDLogVerifier) Verify(c1, z1, c2, z2 *big.Int) bool {
+func (v *PartialVerifier) Verify(c1, z1, c2, z2 *big.Int) bool {
 	c := new(big.Int).Xor(c1, c2)
-	if c.Cmp(verifier.challenge) != 0 {
+	if c.Cmp(v.challenge) != 0 {
 		return false
 	}
 
-	verified1 := verifier.verifyTriple(verifier.triple1, c1, z1)
-	verified2 := verifier.verifyTriple(verifier.triple2, c2, z2)
+	verified1 := v.verifyTriple(v.triple1, c1, z1)
+	verified2 := v.verifyTriple(v.triple2, c2, z2)
 	return verified1 && verified2
 }

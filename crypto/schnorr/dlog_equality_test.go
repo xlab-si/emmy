@@ -15,19 +15,18 @@
  *
  */
 
-package dlogproofs
+package schnorr
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/schnorr"
 	"github.com/xlab-si/emmy/crypto/zn"
 )
 
 func TestDLogEquality(t *testing.T) {
-	group, _ := schnorr.NewGroup(256)
+	group, _ := NewGroup(256)
 	zp, _ := zn.NewGroupZp(group.P)
 
 	secret := common.GetRandomInt(group.Q)
@@ -36,7 +35,7 @@ func TestDLogEquality(t *testing.T) {
 
 	t1 := group.Exp(g1, secret)
 	t2 := group.Exp(g2, secret)
-	proved := ProveDLogEquality(secret, g1, g2, t1, t2, group)
+	proved := ProveEquality(secret, g1, g2, t1, t2, group)
 
-	assert.Equal(t, proved, true, "DLogEquality does not work correctly")
+	assert.Equal(t, proved, true, "dlog equality proof does not work")
 }

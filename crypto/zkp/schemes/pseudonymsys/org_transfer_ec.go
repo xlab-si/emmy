@@ -21,20 +21,20 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/ec"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/ecschnorr"
 )
 
 type OrgCredentialVerifierEC struct {
 	secKey *SecKey
 
-	EqualityVerifier *dlogproofs.ECDLogEqualityVerifier
+	EqualityVerifier *ecschnorr.EqualityVerifier
 	a                *ec.GroupElement
 	b                *ec.GroupElement
 	curveType        ec.Curve
 }
 
 func NewOrgCredentialVerifierEC(secKey *SecKey, curveType ec.Curve) *OrgCredentialVerifierEC {
-	equalityVerifier := dlogproofs.NewECDLogEqualityVerifier(curveType)
+	equalityVerifier := ecschnorr.NewEqualityVerifier(curveType)
 	org := OrgCredentialVerifierEC{
 		secKey:           secKey,
 		EqualityVerifier: equalityVerifier,
@@ -64,11 +64,11 @@ func (org *OrgCredentialVerifierEC) VerifyAuthentication(z *big.Int,
 	g := ec.NewGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
 		org.EqualityVerifier.Group.Curve.Params().Gy)
 
-	valid1 := dlogproofs.VerifyBlindedTranscriptEC(credential.T1, ec.P256, g, orgPubKeys.H2,
+	valid1 := credential.T1.Verify(ec.P256, g, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
 
 	aAToGamma := org.EqualityVerifier.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
-	valid2 := dlogproofs.VerifyBlindedTranscriptEC(credential.T2, ec.P256, g, orgPubKeys.H1,
+	valid2 := credential.T2.Verify(ec.P256, g, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
 	return valid1 && valid2

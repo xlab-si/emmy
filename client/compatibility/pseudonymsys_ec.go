@@ -24,7 +24,7 @@ import (
 
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/crypto/ec"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
+	"github.com/xlab-si/emmy/crypto/ecschnorr"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
@@ -56,7 +56,7 @@ func (k *PubKeyEC) getNativeType() (*pseudonymsys.PubKeyEC, error) {
 	return pseudonymsys.NewPubKeyEC(h1, h2), nil
 }
 
-// TranscriptEC represents an equivalent of dlogproofs.TranscriptEC, but has string
+// TranscriptEC represents an equivalent of ecschnorr.BlindedTrans, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type TranscriptEC struct {
 	Alpha_1 string
@@ -78,8 +78,8 @@ func NewTranscriptEC(alpha_1, alpha_2, beta_1, beta_2, hash, zAlpha string) *Tra
 	}
 }
 
-// getNativeType translates compatibility TranscriptEC to emmy's native dlogproofs.TranscriptEC.
-func (t *TranscriptEC) getNativeType() (*dlogproofs.TranscriptEC, error) {
+// getNativeType translates compatibility TranscriptEC to emmy's native ecschnorr.BlindedTrans.
+func (t *TranscriptEC) getNativeType() (*ecschnorr.BlindedTrans, error) {
 	alpha1, alpha1Ok := new(big.Int).SetString(t.Alpha_1, 10)
 	alpha2, alpha2Ok := new(big.Int).SetString(t.Alpha_2, 10)
 	beta1, beta1Ok := new(big.Int).SetString(t.Beta_1, 10)
@@ -91,7 +91,7 @@ func (t *TranscriptEC) getNativeType() (*dlogproofs.TranscriptEC, error) {
 		return nil, ArgsConversionError
 	}
 
-	transcript := dlogproofs.NewTranscriptEC(alpha1, alpha2, beta1, beta2, hash, zAlpha)
+	transcript := ecschnorr.NewBlindedTrans(alpha1, alpha2, beta1, beta2, hash, zAlpha)
 	return transcript, nil
 }
 

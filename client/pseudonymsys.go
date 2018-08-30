@@ -23,7 +23,6 @@ import (
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/dlogproofs"
 	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
@@ -60,7 +59,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	}
 	defer c.closeStream()
 
-	prover := dlogproofs.NewDLogEqualityProver(c.group)
+	prover := schnorr.NewEqualityProver(c.group)
 
 	// Differently as in Pseudonym Systems paper a user here generates a nym (if master
 	// key pair is (g, g^s), a generated nym is (g^gamma, g^(gamma * s)),
@@ -135,8 +134,8 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 	defer c.closeStream()
 
 	gamma := common.GetRandomInt(c.group.Q)
-	equalityVerifier1 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.group, gamma)
-	equalityVerifier2 := dlogproofs.NewDLogEqualityBTranscriptVerifier(c.group, gamma)
+	equalityVerifier1 := schnorr.NewBTEqualityVerifier(c.group, gamma)
+	equalityVerifier2 := schnorr.NewBTEqualityVerifier(c.group, gamma)
 
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. Authentication is done via Schnorr.
@@ -219,9 +218,9 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 
 	aToGamma := c.group.Exp(nym.A, gamma)
 	if verified1 && verified2 {
-		valid1 := dlogproofs.VerifyBlindedTranscript(transcript1, c.group, c.group.G, orgPubKeys.H2,
+		valid1 := transcript1.Verify(c.group, c.group.G, orgPubKeys.H2,
 			bToGamma, AToGamma)
-		valid2 := dlogproofs.VerifyBlindedTranscript(transcript2, c.group, c.group.G, orgPubKeys.H1,
+		valid2 := transcript2.Verify(c.group, c.group.G, orgPubKeys.H1,
 			aAToGamma, BToGamma)
 		if valid1 && valid2 {
 			credential := pseudonymsys.NewCredential(aToGamma, bToGamma, AToGamma, BToGamma,
@@ -247,8 +246,8 @@ func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.
 	// First we need to authenticate - prove that we know dlog_a(b) where (a, b) is a nym registered
 	// with this organization. But we need also to prove that dlog_a(b) = dlog_a2(b2), where
 	// a2, b2 are a1, b1 exponentiated to gamma, and (a1, b1) is a nym for organization that
-	// issued a credential. So we can do both proofs at the same time using DLogEqualityProver.
-	equalityProver := dlogproofs.NewDLogEqualityProver(c.group)
+	// issued a credential. So we can do both proofs at the same time using EqualityProver.
+	equalityProver := schnorr.NewEqualityProver(c.group)
 	x1, x2 := equalityProver.GetProofRandomData(userSecret, nym.A, credential.SmallAToGamma)
 
 	transcript1 := &pb.PseudonymsysTranscript{

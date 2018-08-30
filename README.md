@@ -64,8 +64,9 @@ The following commitments are offered:
  
 ## Zero-knowledge proofs
 
- * Schnorr proofs (`crypto/zkp/primitives/dlogproofs`) - for proving the knowledge of dlog [5],
-dlog equality [7], dlog equality blinded transcript [4], partial dlog knowledge [8] (for all proofs &#8484;<sub>p</sub> and EC groups are supported)
+ * Schnorr proofs for proving the knowledge of dlog [5],
+dlog equality [7], dlog equality blinded transcript [4], and partial dlog knowledge [8]. All of these proofs
+ work with both &#8484;<sub>p</sub> and EC groups (see packages `schnorr` and `ecschnorr`, respectively).
  * Proof of knowledge of representation (generalized Schnorr for multiple bases) [10]
  * Damgard-Fujisaki proofs (`crypto/zkp/primitives/commitments`) [12] - for proving that you can open a commitment, 
  that two commitments hide the same value, that a commitment contains a multiplication of two committed values, 

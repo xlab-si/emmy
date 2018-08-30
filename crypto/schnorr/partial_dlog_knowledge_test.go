@@ -15,32 +15,30 @@
  *
  */
 
-package dlogproofs
+package schnorr
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/zn"
 )
 
-func TestPartialDLogKnowledgeEC(t *testing.T) {
-	group := ec.NewGroup(ec.P256)
-
-	exp1 := common.GetRandomInt(group.Q)
-	exp2 := common.GetRandomInt(group.Q)
-	a1 := group.ExpBaseG(exp1)
-	a2 := group.ExpBaseG(exp2)
+func TestPartialDLogKnowledge(t *testing.T) {
+	group, _ := NewGroup(256)
+	zp, _ := zn.NewGroupZp(group.P)
 
 	secret1 := common.GetRandomInt(group.Q)
 	x := common.GetRandomInt(group.Q)
 
-	//b1X, b1Y := dlog.ExponentiateBaseG(secret1)
+	a1, _ := zp.GetGeneratorOfSubgroup(group.Q)
+	a2, _ := zp.GetGeneratorOfSubgroup(group.Q)
+
+	//b1, _ := dlog.Exponentiate(a1, secret1)
 	// we pretend that we don't know x:
-	b2 := group.ExpBaseG(x)
+	b2 := group.Exp(a2, x)
+	proved := ProvePartialDLogKnowledge(group, secret1, a1, a2, b2)
 
-	proved := ProvePartialECDLogKnowledge(group, secret1, a1, a2, b2)
-
-	assert.Equal(t, proved, true, "ProvePartialECDLogKnowledge does not work correctly")
+	assert.Equal(t, proved, true, "partial dlog knowledge proof does not work")
 }
