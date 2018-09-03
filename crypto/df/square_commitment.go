@@ -15,44 +15,42 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 
 	"fmt"
-
-	"github.com/xlab-si/emmy/crypto/commitments"
 )
 
-// DFCommitmentSquareProver proves that the commitment hides the square. Given c,
+// SquareProver proves that the commitment hides the square. Given c,
 // prove that c = g^(x^2) * h^r (mod n).
-type DFCommitmentSquareProver struct {
-	*DFCommitmentEqualityProver
+type SquareProver struct {
+	*EqualityProver
 	// We have two commitments with the same value: SmallCommitment = g^x * h^r1 and
 	// c = SmallCommitment^x * h^r2. Also c = g^(x^2) * h^r.
 	SmallCommitment *big.Int
 }
 
-func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter,
-	x *big.Int, challengeSpaceSize int) (*DFCommitmentSquareProver, error) {
+func NewSquareProver(committer *Committer,
+	x *big.Int, challengeSpaceSize int) (*SquareProver, error) {
 
 	// Input committer contains c = g^(x^2) * h^r (mod n).
 	// We now create two committers - committer1 will contain SmallCommitment = g^x * h^r1 (mod n),
 	// committer2 will contain the same c as committer, but using a different
 	// base c = SmallCommitment^x * h^r2.
 	// Note that c = SmallCommitment^x * h^r2 = g^(x^2) * h^(r1*x) * h^r2, so we choose r2 = r - r1*x.
-	// DFCommitmentSquareProver proves that committer1 and committer2 hide the same value (x) -
-	// using DFCommitmentEqualityProver.
+	// SquareProver proves that committer1 and committer2 hide the same value (x) -
+	// using EqualityProver.
 
-	committer1 := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
+	committer1 := NewCommitter(committer.QRSpecialRSA.N,
 		committer.G, committer.H, committer.T, committer.K)
 	smallCommitment, err := committer1.GetCommitMsg(x)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating commit msg")
 	}
 
-	committer2 := commitments.NewDamgardFujisakiCommitter(committer.QRSpecialRSA.N,
+	committer2 := NewCommitter(committer.QRSpecialRSA.N,
 		smallCommitment, committer.H, committer.T, committer.K)
 	_, r := committer.GetDecommitMsg()
 	_, r1 := committer1.GetDecommitMsg()
@@ -66,38 +64,38 @@ func NewDFCommitmentSquareProver(committer *commitments.DamgardFujisakiCommitter
 		return nil, fmt.Errorf("error when creating commit msg with given r")
 	}
 
-	prover := NewDFCommitmentEqualityProver(committer1, committer2, challengeSpaceSize)
+	prover := NewEqualityProver(committer1, committer2, challengeSpaceSize)
 
-	return &DFCommitmentSquareProver{
-		DFCommitmentEqualityProver: prover,
-		SmallCommitment:            smallCommitment,
+	return &SquareProver{
+		EqualityProver:  prover,
+		SmallCommitment: smallCommitment,
 	}, nil
 }
 
-type DFCommitmentSquareVerifier struct {
-	*DFCommitmentEqualityVerifier
+type SquareVerifier struct {
+	*EqualityVerifier
 }
 
-func NewDFCommitmentSquareVerifier(receiver *commitments.DamgardFujisakiReceiver,
-	c1 *big.Int, challengeSpaceSize int) (*DFCommitmentSquareVerifier, error) {
+func NewSquareVerifier(receiver *Receiver,
+	c1 *big.Int, challengeSpaceSize int) (*SquareVerifier, error) {
 
-	receiver1, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetPrimes(),
+	receiver1, err := NewReceiverFromParams(receiver.QRSpecialRSA.GetPrimes(),
 		receiver.G, receiver.H, receiver.K)
 	if err != nil {
-		return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
+		return nil, fmt.Errorf("error when calling NewReceiverFromParams")
 	}
 	receiver1.SetCommitment(c1)
 
-	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver.QRSpecialRSA.GetPrimes(),
+	receiver2, err := NewReceiverFromParams(receiver.QRSpecialRSA.GetPrimes(),
 		c1, receiver.H, receiver.K)
 	if err != nil {
-		return nil, fmt.Errorf("error when calling NewDamgardFujisakiReceiverFromParams")
+		return nil, fmt.Errorf("error when calling NewReceiverFromParams")
 	}
 	receiver2.SetCommitment(receiver.Commitment)
 
-	verifier := NewDFCommitmentEqualityVerifier(receiver1, receiver2, challengeSpaceSize)
+	verifier := NewEqualityVerifier(receiver1, receiver2, challengeSpaceSize)
 
-	return &DFCommitmentSquareVerifier{
+	return &SquareVerifier{
 		verifier,
 	}, nil
 }

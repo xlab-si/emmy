@@ -15,28 +15,27 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentRange demonstrates how to prove that the commitment
+// TestDFCommitmentRange demonstrates how to prove that the commitment
 // hides a number x such that a <= x <= b. Given c, prove that c = g^x * h^r (mod n) where a<= x <= b.
-func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestDFCommitmentRange(t *testing.T) {
+	receiver, err := NewReceiver(128, 80)
 	if err != nil {
-		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("error in NewReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
-	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
+	committer := NewCommitter(receiver.QRSpecialRSA.N,
 		receiver.G, receiver.H, T, receiver.K)
 
 	x := common.GetRandomInt(committer.QRSpecialRSA.N)
@@ -49,17 +48,17 @@ func TestProveDamgardFujisakiCommitmentRange(t *testing.T) {
 	receiver.SetCommitment(c)
 
 	challengeSpaceSize := 80
-	prover, err := NewDFCommitmentRangeProver(committer, x, a, b, challengeSpaceSize)
+	prover, err := NewRangeProver(committer, x, a, b, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("error in instantiating DFCommitmentRangeProver: %v", err)
+		t.Errorf("error in instantiating RangeProver: %v", err)
 	}
 
 	smallCommitments1, bigCommitments1, smallCommitments2, bigCommitments2 :=
 		prover.GetVerifierInitializationData()
-	verifier, err := NewDFCommitmentRangeVerifier(receiver, a, b, smallCommitments1,
+	verifier, err := NewRangeVerifier(receiver, a, b, smallCommitments1,
 		bigCommitments1, smallCommitments2, bigCommitments2, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("error in instantiating DFCommitmentRangeVerifier: %v", err)
+		t.Errorf("error in instantiating RangeVerifier: %v", err)
 	}
 
 	proofRandomData1, proofRandomData2 := prover.GetProofRandomData()

@@ -15,28 +15,30 @@
  *
  */
 
-package commitmentzkp
+package ecpedersen
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/ec"
 )
 
-func TestBitCommitmentProof(t *testing.T) {
-	verified, err := ProveBitCommitment()
+// TestPedersenEC demonstrates how a value can be committed and later opened (decommitted) using Pedersen EC committer.
+func TestPedersenEC(t *testing.T) {
+	receiver := NewReceiver(ec.P256)
+	committer := NewCommitter(receiver.Params)
+
+	a := common.GetRandomInt(committer.Params.Group.Q)
+	c, err := committer.GetCommitMsg(a)
 	if err != nil {
-		t.Errorf("Error in bit commitment proof: %v", err)
+		t.Errorf("Error in GetCommitMsg: %v", err)
 	}
 
-	assert.Equal(t, true, verified, "Bit commitment does not work correctly")
-}
+	receiver.SetCommitment(c)
+	committedVal, r := committer.GetDecommitMsg()
+	success := receiver.CheckDecommitment(r, committedVal)
 
-func TestCommitmentMultiplicationProof(t *testing.T) {
-	proved, err := ProveCommitmentMultiplication()
-	if err != nil {
-		t.Errorf("Error in multiplication proof: %v", err)
-	}
-
-	assert.Equal(t, true, proved, "Commitments multiplication proof failed.")
+	assert.Equal(t, true, success, "Pedersen EC commitment failed.")
 }

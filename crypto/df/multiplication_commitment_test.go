@@ -15,45 +15,44 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentMultiplication demonstrates how to prove that for given commitments
+// TestDFCommitmentMultiplication demonstrates how to prove that for given commitments
 // c1 = g^x1 * h^r1, c2 = g^x2 * h^r2, c3 = g^x3 * h^r3, it holds x3 = x1 * x2
-func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
-	receiver1, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestDFCommitmentMultiplication(t *testing.T) {
+	receiver1, err := NewReceiver(128, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver1.QRSpecialRSA.N, receiver1.QRSpecialRSA.N)
 
-	committer1 := commitments.NewDamgardFujisakiCommitter(receiver1.QRSpecialRSA.N,
+	committer1 := NewCommitter(receiver1.QRSpecialRSA.N,
 		receiver1.G, receiver1.H, T, receiver1.K)
 
-	receiver2, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver1.QRSpecialRSA.GetPrimes(),
+	receiver2, err := NewReceiverFromParams(receiver1.QRSpecialRSA.GetPrimes(),
 		receiver1.G, receiver1.H, receiver1.K)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
-	committer2 := commitments.NewDamgardFujisakiCommitter(receiver2.QRSpecialRSA.N,
+	committer2 := NewCommitter(receiver2.QRSpecialRSA.N,
 		receiver2.G, receiver2.H, T, receiver2.K)
 
-	receiver3, err := commitments.NewDamgardFujisakiReceiverFromParams(receiver1.QRSpecialRSA.GetPrimes(),
+	receiver3, err := NewReceiverFromParams(receiver1.QRSpecialRSA.GetPrimes(),
 		receiver1.G, receiver1.H, receiver1.K)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
-	committer3 := commitments.NewDamgardFujisakiCommitter(receiver3.QRSpecialRSA.N,
+	committer3 := NewCommitter(receiver3.QRSpecialRSA.N,
 		receiver3.G, receiver3.H, T, receiver3.K)
 
 	x1 := common.GetRandomInt(committer1.QRSpecialRSA.N)
@@ -80,8 +79,8 @@ func TestProveDamgardFujisakiCommitmentMultiplication(t *testing.T) {
 	receiver3.SetCommitment(c3)
 
 	challengeSpaceSize := 80
-	prover := NewDFCommitmentMultiplicationProver(committer1, committer2, committer3, challengeSpaceSize)
-	verifier := NewDFCommitmentMultiplicationVerifier(receiver1, receiver2, receiver3, challengeSpaceSize)
+	prover := NewMultiplicationProver(committer1, committer2, committer3, challengeSpaceSize)
+	verifier := NewMultiplicationVerifier(receiver1, receiver2, receiver3, challengeSpaceSize)
 
 	d1, d2, d3 := prover.GetProofRandomData()
 	verifier.SetProofRandomData(d1, d2, d3)

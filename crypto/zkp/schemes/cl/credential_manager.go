@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/df"
+	"github.com/xlab-si/emmy/crypto/pedersen"
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 )
 
 // CredentialManager should be created by a user when a credential is to be issued, updated or proved.
@@ -33,7 +33,7 @@ import (
 type CredentialManager struct {
 	Params             *Params
 	PubKey             *PubKey
-	nymCommitter       *commitments.PedersenCommitter // nym is actually a commitment to masterSecret
+	nymCommitter       *pedersen.Committer // nym is actually a commitment to masterSecret
 	Nym                *big.Int
 	masterSecret       *big.Int
 	KnownAttrs         []*big.Int // attributes that are known to the credential receiver and issuer
@@ -42,9 +42,9 @@ type CredentialManager struct {
 	hiddenAttrs        []*big.Int // attributes which are known only to the credential receiver
 	// V1 is a random element in credential - it is generated in GetCredentialRequest and needed when
 	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
-	V1                        *big.Int                                   // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
-	attrsCommitters           []*commitments.DamgardFujisakiCommitter    // committers for committedAttrs
-	commitmentsOfAttrsProvers []*commitmentzkp.DFCommitmentOpeningProver // for proving that you know how to open CommitmentsOfAttrs
+	V1                        *big.Int            // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
+	attrsCommitters           []*df.Committer     // committers for committedAttrs
+	commitmentsOfAttrsProvers []*df.OpeningProver // for proving that you know how to open CommitmentsOfAttrs
 	CredReqNonce              *big.Int
 }
 
@@ -65,10 +65,10 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 		return nil, fmt.Errorf("attributes length not ok")
 	}
 
-	attrsCommitters := make([]*commitments.DamgardFujisakiCommitter, len(committedAttrs))
+	attrsCommitters := make([]*df.Committer, len(committedAttrs))
 	commitmentsOfAttrs := make([]*big.Int, len(committedAttrs))
 	for i, attr := range committedAttrs {
-		committer := commitments.NewDamgardFujisakiCommitter(pubKey.N1, pubKey.G, pubKey.H,
+		committer := df.NewCommitter(pubKey.N1, pubKey.G, pubKey.H,
 			pubKey.N1, params.SecParam)
 		com, err := committer.GetCommitMsg(attr)
 		if err != nil {
@@ -77,9 +77,9 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 		commitmentsOfAttrs[i] = com
 		attrsCommitters[i] = committer
 	}
-	commitmentsOfAttrsProvers := make([]*commitmentzkp.DFCommitmentOpeningProver, len(commitmentsOfAttrs))
+	commitmentsOfAttrsProvers := make([]*df.OpeningProver, len(commitmentsOfAttrs))
 	for i, _ := range commitmentsOfAttrs {
-		prover := commitmentzkp.NewDFCommitmentOpeningProver(attrsCommitters[i], params.ChallengeSpace)
+		prover := df.NewOpeningProver(attrsCommitters[i], params.ChallengeSpace)
 		commitmentsOfAttrsProvers[i] = prover
 	}
 
@@ -122,7 +122,7 @@ func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Pa
 // generateNym creates a pseudonym to be used with a given organization. Authentication can be done
 // with respect to the pseudonym or not.
 func (m *CredentialManager) generateNym() error {
-	committer := commitments.NewPedersenCommitter(m.PubKey.PedersenParams)
+	committer := pedersen.NewCommitter(m.PubKey.PedersenParams)
 	nym, err := committer.GetCommitMsg(m.masterSecret)
 	if err != nil {
 		return fmt.Errorf("error when creating Pedersen commitment: %s", err)

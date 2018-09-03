@@ -27,11 +27,11 @@ import (
 	"os"
 
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/df"
+	"github.com/xlab-si/emmy/crypto/pedersen"
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/primitives/commitments"
 )
 
 type PubKey struct {
@@ -41,7 +41,7 @@ type PubKey struct {
 	RsKnown        []*big.Int // one R corresponds to one attribute - these attributes are known to both - receiver and issuer
 	RsCommitted    []*big.Int // issuer knows only commitments of these attributes
 	RsHidden       []*big.Int // only receiver knows these attributes
-	PedersenParams *commitments.PedersenParams
+	PedersenParams *pedersen.Params
 	// the fields below are for commitments of the (committed) attributes
 	N1 *big.Int
 	G  *big.Int
@@ -71,8 +71,8 @@ type SecKey struct {
 
 type Org struct {
 	Params                  *Params
-	Group                   *qr.RSASpecial                // in this group attributes will be used as exponents (basis is PubKey.Rs...)
-	pedersenReceiver        *commitments.PedersenReceiver // used for nyms (nym is Pedersen commitment)
+	Group                   *qr.RSASpecial     // in this group attributes will be used as exponents (basis is PubKey.Rs...)
+	pedersenReceiver        *pedersen.Receiver // used for nyms (nym is Pedersen commitment)
 	nym                     *big.Int
 	nymVerifier             *schnorr.Verifier
 	U                       *big.Int
@@ -81,7 +81,7 @@ type Org struct {
 	SecKey                  *SecKey
 	commitmentsOfAttrs      []*big.Int
 	knownAttrs              []*big.Int
-	attrsVerifiers          []*commitmentzkp.DFCommitmentOpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
+	attrsVerifiers          []*df.OpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
 	credentialIssueNonceOrg *big.Int
 	proveCredentialNonceOrg *big.Int
 	dbManager               *DBManager
@@ -100,12 +100,12 @@ func NewOrg(params *Params) (*Org, error) {
 	}
 
 	// for commitments of (committed) attributes:
-	commitmentReceiver, err := commitments.NewDamgardFujisakiReceiver(params.NLength/2, params.SecParam)
+	commitmentReceiver, err := df.NewReceiver(params.NLength/2, params.SecParam)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating DF commitment receiver: %s", err)
 	}
 
-	pedersenParams, err := commitments.GeneratePedersenParams(params.RhoBitLen)
+	pedersenParams, err := pedersen.GenerateParams(params.RhoBitLen)
 	if err != nil {
 		return nil, fmt.Errorf("error when creating Pedersen receiver: %s", err)
 	}
@@ -146,7 +146,7 @@ func NewOrgFromParams(params *Params, pubKey *PubKey, secKey *SecKey) (*Org, err
 		group = qr.NewRSApecialPublic(pubKey.N)
 	}
 
-	pedersenReceiver := commitments.NewPedersenReceiverFromParams(pubKey.PedersenParams)
+	pedersenReceiver := pedersen.NewReceiverFromParams(pubKey.PedersenParams)
 	dbManager, err := NewDBManager(config.LoadRegistrationDBAddress())
 	if err != nil {
 		return nil, err
@@ -290,7 +290,7 @@ func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int
 	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCredential
 		o.knownAttrs = newKnownAttrs
 		o.setUpAttrVerifiers(rr.CommitmentsOfAttrs)
-		o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group) // pubKey.PedersenParams.Group
+		o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group) // pubKey.Params.Group
 		o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	}
 
@@ -462,16 +462,16 @@ func (o *Org) verifyU(UProof *qr.RepresentationProof) bool {
 }
 
 func (o *Org) setUpAttrVerifiers(commitmentsOfAttrs []*big.Int) error {
-	attrsVerifiers := make([]*commitmentzkp.DFCommitmentOpeningVerifier, len(commitmentsOfAttrs))
+	attrsVerifiers := make([]*df.OpeningVerifier, len(commitmentsOfAttrs))
 	for i, attr := range commitmentsOfAttrs {
-		receiver, err := commitments.NewDamgardFujisakiReceiverFromParams(
+		receiver, err := df.NewReceiverFromParams(
 			o.SecKey.AttributesSpecialRSAPrimes, o.PubKey.G, o.PubKey.H, o.Params.SecParam)
 		if err != nil {
 			return err
 		}
 		receiver.SetCommitment(attr)
 
-		verifier := commitmentzkp.NewDFCommitmentOpeningVerifier(receiver, o.Params.ChallengeSpace)
+		verifier := df.NewOpeningVerifier(receiver, o.Params.ChallengeSpace)
 		attrsVerifiers[i] = verifier
 	}
 
@@ -483,7 +483,7 @@ func (o *Org) setUpAttrVerifiers(commitmentsOfAttrs []*big.Int) error {
 
 // commitments ... commitmentsOfAttrs
 // proofs ... commitmentsOfAttrsProofs
-func (o *Org) verifyCommitmentsOfAttrs(commitmentsOfAttrs []*big.Int, proofs []*commitmentzkp.DFOpeningProof) bool {
+func (o *Org) verifyCommitmentsOfAttrs(commitmentsOfAttrs []*big.Int, proofs []*df.OpeningProof) bool {
 	//o.setUpAttrVerifiers(commitmentsOfAttrs)
 	for i, v := range o.attrsVerifiers {
 		v.SetProofRandomData(proofs[i].ProofRandomData)

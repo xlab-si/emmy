@@ -37,7 +37,7 @@ The library supports building complex cryptographic schemes. To enable this vari
 
  * mathematical groups in which the operations take place
  * utilities for generating safe primes, group generators, for decomposing integers into squares (`crypto/common`)
- * commitments (to commit to a chosen value while keeping it hidden to others, see `crypto/commitments`)
+ * commitments (to commit to a chosen value while keeping it hidden to others)
  * zero-knowledge proofs as building blocks for schemes (protocols which are used as subprotocols in schemes, see `crypto/zkp`)
  * communication layer to enable client-server interaction (for messages exchanged in protocols)
  
@@ -56,19 +56,23 @@ The following groups are offered in appropriate subpackages of `crypto` package:
  
 ## Commitments
 
-The following commitments are offered:
+The following commitments are offered in appropriate subpackages of `crypto` package:
 
- * Pedersen - for commitments in Schnorr group (supported &#8484;<sub>p</sub> and EC groups) 
- * Damgard-Fujisaki [12] - for commitments in QR special RSA group
- * Q-One-Way based [9] (Damgard-Fujisaki should be used instead)
+ * Pedersen - for commitments in Schnorr group (supported &#8484;<sub>p</sub> and EC groups, see packages `pedersen`
+ and `ecpedersen`, respectively) 
+ * Damgard-Fujisaki [12] - for commitments in QR special RSA group (see package `df`)
+ * Q-One-Way based [9] (see package `qoneway`). Note that Damgard-Fujisaki commitments should be used instead.
  
 ## Zero-knowledge proofs
 
  * Schnorr proofs for proving the knowledge of dlog [5],
 dlog equality [7], dlog equality blinded transcript [4], and partial dlog knowledge [8]. All of these proofs
  work with both &#8484;<sub>p</sub> and EC groups (see packages `schnorr` and `ecschnorr`, respectively).
+ * Proofs of knowledge of homomorphism preimage and knowledge of partial homomorphism preimage
+  (see package `preimage`). These are generalizations of Schnorr proof to general
+   groups and one-way homomorphisms.
  * Proof of knowledge of representation (generalized Schnorr for multiple bases) [10]
- * Damgard-Fujisaki proofs (`crypto/zkp/primitives/commitments`) [12] - for proving that you can open a commitment, 
+ * Damgard-Fujisaki proofs (package `df`) [12] - for proving that you can open a commitment, 
  that two commitments hide the same value, that a commitment contains a multiplication of two committed values, 
  that the committed value is positive, that the committed value is a square, commitment range based on Lipmaa [11]
  * QR special RSA representation proof (like Schnorr but in QR special RSA group, see `qr` package)

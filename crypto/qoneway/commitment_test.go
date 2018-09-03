@@ -15,7 +15,7 @@
  *
  */
 
-package commitments
+package qoneway
 
 import (
 	"testing"
@@ -24,24 +24,23 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestPedersen demonstrates how a value can be committed and later opened (decommitted) using Pedersen committer.
-func TestPedersen(t *testing.T) {
-	receiver, err := NewPedersenReceiver(256)
+func TestRSABasedCommitment(t *testing.T) {
+	receiver, err := NewReceiver(1024)
 	if err != nil {
-		t.Errorf("Error in NewPedersenReceiver: %v", err)
+		t.Errorf("Error when initializing Receiver: %v", err)
 	}
 
-	committer := NewPedersenCommitter(receiver.Params)
-
-	a := common.GetRandomInt(committer.Params.Group.Q)
-	c, err := committer.GetCommitMsg(a)
+	committer, err := NewCommitter(receiver.RSABased, receiver.Y)
 	if err != nil {
-		t.Errorf("Error in GetCommitMsg: %v", err)
+		t.Errorf("Error when initializing Committer: %v", err)
 	}
+
+	a := common.GetRandomInt(committer.Q)
+	c, _ := committer.GetCommitMsg(a)
 
 	receiver.SetCommitment(c)
 	committedVal, r := committer.GetDecommitMsg()
 	success := receiver.CheckDecommitment(r, committedVal)
 
-	assert.Equal(t, true, success, "Pedersen commitment failed.")
+	assert.Equal(t, true, success, "RSABasedCommitment does not work correctly")
 }

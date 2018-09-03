@@ -15,28 +15,27 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentPositive demonstrates how to prove that the commitment
+// TestDFCommitmentPositive demonstrates how to prove that the commitment
 // hides a positive number. Given c, prove that c = g^x * h^r (mod n) where x >= 0.
-func TestProveDamgardFujisakiCommitmentPositive(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+func TestDFCommitmentPositive(t *testing.T) {
+	receiver, err := NewReceiver(128, 80)
 	if err != nil {
-		t.Errorf("error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("error in NewReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
-	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
+	committer := NewCommitter(receiver.QRSpecialRSA.N,
 		receiver.G, receiver.H, T, receiver.K)
 
 	x := common.GetRandomInt(committer.QRSpecialRSA.N)
@@ -48,17 +47,17 @@ func TestProveDamgardFujisakiCommitmentPositive(t *testing.T) {
 	_, r := committer.GetDecommitMsg()
 
 	challengeSpaceSize := 80
-	prover, err := NewDFCommitmentPositiveProver(committer, x, r,
+	prover, err := NewPositiveProver(committer, x, r,
 		challengeSpaceSize)
 	if err != nil {
-		t.Errorf("error in instantiating DFCommitmentPositiveProver: %v", err)
+		t.Errorf("error in instantiating PositiveProver: %v", err)
 	}
 
 	smallCommitments, bigCommitments := prover.GetVerifierInitializationData()
-	verifier, err := NewDFCommitmentPositiveVerifier(receiver, receiver.Commitment,
+	verifier, err := NewPositiveVerifier(receiver, receiver.Commitment,
 		smallCommitments, bigCommitments, challengeSpaceSize)
 	if err != nil {
-		t.Errorf("error in instantiating DFCommitmentPositiveVerifier: %v", err)
+		t.Errorf("error in instantiating PositiveVerifier: %v", err)
 	}
 
 	proofRandomData := prover.GetProofRandomData()

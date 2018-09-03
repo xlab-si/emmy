@@ -15,27 +15,26 @@
  *
  */
 
-package commitmentzkp
+package df
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/commitments"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
-// TestProveDamgardFujisakiCommitmentOpening demonstrates how to prove that you can open DamgardFujisaki commitment.
-func TestProveDamgardFujisakiCommitmentOpening(t *testing.T) {
-	receiver, err := commitments.NewDamgardFujisakiReceiver(128, 80)
+// TestDFCommitmentOpening demonstrates how to prove that you can open DamgardFujisaki commitment.
+func TestDFCommitmentOpening(t *testing.T) {
+	receiver, err := NewReceiver(128, 80)
 	if err != nil {
-		t.Errorf("Error in NewDamgardFujisakiReceiver: %v", err)
+		t.Errorf("Error in NewReceiver: %v", err)
 	}
 
 	// n^2 is used for T - but any other value can be used as well
 	T := new(big.Int).Mul(receiver.QRSpecialRSA.N, receiver.QRSpecialRSA.N)
-	committer := commitments.NewDamgardFujisakiCommitter(receiver.QRSpecialRSA.N,
+	committer := NewCommitter(receiver.QRSpecialRSA.N,
 		receiver.G, receiver.H, T, receiver.K)
 
 	x := common.GetRandomInt(committer.T)
@@ -46,8 +45,8 @@ func TestProveDamgardFujisakiCommitmentOpening(t *testing.T) {
 	receiver.SetCommitment(c)
 
 	challengeSpaceSize := 80
-	prover := NewDFCommitmentOpeningProver(committer, challengeSpaceSize)
-	verifier := NewDFCommitmentOpeningVerifier(receiver, challengeSpaceSize)
+	prover := NewOpeningProver(committer, challengeSpaceSize)
+	verifier := NewOpeningVerifier(receiver, challengeSpaceSize)
 
 	proofRandomData := prover.GetProofRandomData()
 	verifier.SetProofRandomData(proofRandomData)

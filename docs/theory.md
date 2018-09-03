@@ -29,12 +29,12 @@ We can turn sigma protocols like Schnorr protocol into **zero-knowledge proofs (
 to enforce the verifier to behave honestly. This can be achieved by using **commitment scheme** [2]
 or by using one-bit challenges. Both techniques will be described below. 
 
-How can a Schnorr protocol be executed in emmy (given g, t, p how to prove the knowledge of s 
+How can a Schnorr protocol can be executed in emmy (given g, t, p how to prove the knowledge of s 
 where t = g<sup>s</sup> (mod p)):
 
 ```
-prover := NewSchnorrProver(group, types.Sigma)
-verifier := NewSchnorrVerifier(group, types.Sigma)
+prover := schnorr.NewProver(group, types.Sigma)
+verifier := schnorr.NewVerifier(group, types.Sigma)
 
 x := prover.GetProofRandomData(s, g)
 verifier.SetProofRandomData(x, g, t)
@@ -141,14 +141,14 @@ The protocol goes:
  * V chooses random c and sends it to P.
  * P sends z = r * v<sup>c</sup> to V, who checks that f(z) = m * u<sup>e</sup>.
  
-Note that this might be group with hidden order (like RSA, see crypto/groups package), so one-bit
+Note that this might be group with hidden order (like RSA, see `crypto/rsa` package), so one-bit
 challenges need to be used (making the protocol also ZKP).
 
-In emmy this protocol is available in crypto/zkp/preimage package and can be executed as:
+In emmy this protocol is available in `crypto/preimage` package and can be executed as:
 
 ```
-prover := NewHomomorphismPreimageProver(homomorphism, H, v)
-verifier := NewHomomorphismPreimageVerifier(homomorphism, H, u)
+prover := preimage.NewProver(homomorphism, H, v)
+verifier := preimage.NewVerifier(homomorphism, H, u)
 	
 for j := 0; j < iterations; j++ {
 	proofRandomData := prover.GetProofRandomData()
@@ -163,8 +163,8 @@ for j := 0; j < iterations; j++ {
 return true
 ```
 
-This protocol is for example used by q-one-way based commitment scheme [4] which is available in
-crypto/commitments package (rsa_based.go) and uses group with hidden order. However, commitment 
+This protocol is for example used by q-one-way commitment scheme [4] which uses the RSA group
+with hidden order, available in the same package (see `qoneway.Committer` and `qoneway.Receiver`). However, commitment 
 schemes in groups with hidden order with more efficient proofs have been developed which do not require 
 one-bit challenges, for example Damgard-Fujisaki [3].
 
