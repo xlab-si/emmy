@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
+	"github.com/xlab-si/emmy/crypto/cl"
 )
 
 // TestCL requires a running server.
@@ -38,7 +38,7 @@ func TestCL(t *testing.T) {
 	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
 	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
 	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := cl.NewCredentialManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
+	credManager, err := cl.NewCredManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
 		hiddenAttrs)
 
 	if err != nil {
@@ -52,19 +52,19 @@ func TestCL(t *testing.T) {
 
 	cred, err := client.IssueCredential(credManager)
 	if err != nil {
-		t.Errorf("error when calling IssueCredential: %v", err)
+		t.Errorf("error when calling IssueCred: %v", err)
 	}
 
-	// create new CredentialManager (updating or proving usually does not happen at the same time
+	// create new CredManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = cl.NewCredentialManagerFromExisting(credManager.Nym, credManager.V1,
+	credManager, err = cl.NewCredManagerFromExisting(credManager.Nym, credManager.V1,
 		credManager.CredReqNonce, params, pubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
 		credManager.CommitmentsOfAttrs)
 	if err != nil {
-		t.Errorf("error when calling NewCredentialManagerFromExisting: %v", err)
+		t.Errorf("error when calling NewCredManagerFromExisting: %v", err)
 	}
 
-	revealedKnownAttrsIndices := []int{1, 2} // reveal only the second and third known attribute
+	revealedKnownAttrsIndices := []int{1, 2}      // reveal only the second and third known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
 
 	proved, err := client.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,

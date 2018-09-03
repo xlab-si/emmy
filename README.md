@@ -90,7 +90,7 @@ gRPC and native emmy messages are in `proto/translations.go`.
 Currently two anonymous credentials schemes are offered:
  
  * Pseudonym system [4] (see `crypto/zkp/schemes/pseudonymsys`) (offered in &#8484;<sub>p</sub> and EC groups)
- * Camenisch-Lysyanskaya anonymous credentials [2][15] (see `crypto/zkp/schemes/cl`) - work in progress
+ * Camenisch-Lysyanskaya anonymous credentials [2][15] (see `crypto/cl`) - work in progress
  
 Pseudonym system [4] was the first anonymous credential scheme and was superseded by Camenisch-Lysyanskaya scheme [2].
 
@@ -114,7 +114,7 @@ While anonymity is obviously a MUST in e-voting, it might gradually become more 
  
 Let's say University issues to each student a credential where the following attributes are written: name, gender, age,
 student status (undergraduate/graduate). University has its own public and secret key and plays the role of organization
-(when a student connects to the University, a new `Org` from `crypto/zkp/schemes/cl/org.go` is instantiated and 
+(when a student connects to the University, a new `Org` from `crypto/cl/org.go` is instantiated and 
 responsible for issuing a credential).
 
 First, a student needs to create a master secret key:
