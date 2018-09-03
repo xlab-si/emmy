@@ -132,7 +132,7 @@ in `client/cl_test.go`):
 knownAttrs := []*big.Int{name, gender, age, studentStatus}
 committedAttrs := []*big.Int{}
 hiddenAttrs := []*big.Int{}
-credManager, err := cl.NewCredentialManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
+credManager, err := cl.NewCredManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
     hiddenAttrs)
 ```
 

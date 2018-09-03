@@ -62,7 +62,7 @@ func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error
 	}
 
 	credReqMsg := &pb.Message{
-		Content: &pb.Message_CLCredReq{pb.ToPbCredentialRequest(credReq)},
+		Content: &pb.Message_CLCredReq{pb.ToPbCredRequest(credReq)},
 	}
 	resp, err = c.getResponseTo(credReqMsg)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error
 		return nil, err
 	}
 
-	userVerified, err := credManager.VerifyCred(credential, AProof)
+	userVerified, err := credManager.Verify(credential, AProof)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error
 
 func (c *CLClient) UpdateCredential(credManager *cl.CredManager, newKnownAttrs []*big.Int) (*cl.Cred,
 	error) {
-	credManager.UpdateCred(newKnownAttrs)
+	credManager.Update(newKnownAttrs)
 
 	if err := c.openStream(c.grpcClient, "UpdateCredential"); err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, newKnownAttrs [
 		return nil, err
 	}
 
-	userVerified, err := credManager.VerifyCred(credential, AProof)
+	userVerified, err := credManager.Verify(credential, AProof)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 
 	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
 
-	randCred, proof, err := credManager.BuildCredProof(cred, revealedKnownAttrsIndices,
+	randCred, proof, err := credManager.BuildProof(cred, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		return false, fmt.Errorf("error when building credential proof: %v", err)

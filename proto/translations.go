@@ -59,7 +59,7 @@ func ToPbPair(el *common.Pair) *Pair {
 	}
 }
 
-func ToPbCredentialRequest(r *cl.CredRequest) *CLCredReq {
+func ToPbCredRequest(r *cl.CredRequest) *CLCredReq {
 	knownAttrs := make([][]byte, len(r.KnownAttrs))
 	for i, a := range r.KnownAttrs {
 		knownAttrs[i] = a.Bytes()

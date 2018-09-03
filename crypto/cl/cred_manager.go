@@ -28,8 +28,14 @@ import (
 	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
-// CredManager should be created by a user when a credential is to be issued, updated or proved.
-// If a new credential under a new nym is needed, new CredManager instance is needed.
+// CredManager manages a single instance of anonymous credential.
+//
+// An instance of this struct should be created by a user before
+// she wants a new credential to be issued, or an existing one to
+// be updated or proved.
+//
+// When a user needs a new credential under a new nym, she also needs
+// a new instance of CredManager.
 type CredManager struct {
 	Params             *Params
 	PubKey             *PubKey
@@ -156,8 +162,10 @@ func (m *CredManager) GetCredRequest(nonceOrg *big.Int) (*CredRequest, error) {
 		commitmentsOfAttrsProofs, nonce), nil
 }
 
-func (m *CredManager) VerifyCred(cred *Cred,
-	AProof *qr.RepresentationProof) (bool, error) {
+// Verify verifies anonymous credential cred, returning a boolean indicating
+// success or failure of credential verification.
+// When verification process fails due to misconfiguration, error is returned.
+func (m *CredManager) Verify(cred *Cred, AProof *qr.RepresentationProof) (bool, error) {
 	// check bit length of e:
 	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.EBitLen-1)), nil)
 	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.E1BitLen-1)), nil)
@@ -212,11 +220,14 @@ func (m *CredManager) VerifyCred(cred *Cred,
 	return ver.Verify(AProof.ProofData), nil
 }
 
-func (m *CredManager) UpdateCred(knownAttrs []*big.Int) {
+// Update updates credential.
+func (m *CredManager) Update(knownAttrs []*big.Int) {
 	m.KnownAttrs = knownAttrs
 }
 
-func (m *CredManager) randomizeCred(cred *Cred) *Cred {
+// randomize randomizes credential cred, and returns the
+// randomized credential as a new credential.
+func (m *CredManager) randomize(cred *Cred) *Cred {
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.NLength+m.Params.SecParam)), nil)
 	r := common.GetRandomInt(b)
 	group := qr.NewRSApecialPublic(m.PubKey.N)
@@ -230,7 +241,7 @@ func (m *CredManager) randomizeCred(cred *Cred) *Cred {
 	return NewCred(A, cred.E, v11)
 }
 
-func (m *CredManager) GetCredProofChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
+func (m *CredManager) GetProofChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
 	context := m.PubKey.GetContext()
 	l := []*big.Int{context, credProofRandomData, nonceOrg}
 	//l = append(l, ...) // TODO: add other values
@@ -238,13 +249,14 @@ func (m *CredManager) GetCredProofChallenge(credProofRandomData, nonceOrg *big.I
 	return common.Hash(l...)
 }
 
-func (m *CredManager) BuildCredProof(cred *Cred, revealedKnownAttrsIndices,
+// BuildProof builds a proof of knowledge for the given credential.
+func (m *CredManager) BuildProof(cred *Cred, revealedKnownAttrsIndices,
 	revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Cred,
 	*qr.RepresentationProof, error) {
 	if m.V1 == nil {
 		return nil, nil, fmt.Errorf("v1 is not set (generated in GetCredRequest)")
 	}
-	rCred := m.randomizeCred(cred)
+	rCred := m.randomize(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
 	group := qr.NewRSApecialPublic(m.PubKey.N)
@@ -319,7 +331,7 @@ func (m *CredManager) BuildCredProof(cred *Cred, revealedKnownAttrsIndices,
 		return nil, nil, fmt.Errorf("error when generating representation proof random data: %s", err)
 	}
 
-	challenge := m.GetCredProofChallenge(proofRandomData, nonceOrg)
+	challenge := m.GetProofChallenge(proofRandomData, nonceOrg)
 	proofData := prover.GetProofData(challenge)
 
 	return rCred, qr.NewRepresentationProof(proofRandomData, challenge, proofData), nil

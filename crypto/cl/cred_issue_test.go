@@ -56,7 +56,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when issuing credential: %v", err)
 	}
 
-	userVerified, err := credManager.VerifyCred(credential, AProof)
+	userVerified, err := credManager.Verify(credential, AProof)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
@@ -79,14 +79,14 @@ func TestCL(t *testing.T) {
 	}
 
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-	credManager.UpdateCred(newKnownAttrs)
+	credManager.Update(newKnownAttrs)
 
 	credential1, AProof1, err := org.UpdateCred(credManager.Nym, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
 
-	userVerified, err = credManager.VerifyCred(credential1, AProof1)
+	userVerified, err = credManager.Verify(credential1, AProof1)
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestCL(t *testing.T) {
 	}
 
 	nonce := org.GetProveCredNonce()
-	randCred, proof, err := credManager.BuildCredProof(credential1, revealedKnownAttrsIndices,
+	randCred, proof, err := credManager.BuildProof(credential1, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)
