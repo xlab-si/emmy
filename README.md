@@ -68,6 +68,9 @@ The following commitments are offered in appropriate subpackages of `crypto` pac
  * Schnorr proofs for proving the knowledge of dlog [5],
 dlog equality [7], dlog equality blinded transcript [4], and partial dlog knowledge [8]. All of these proofs
  work with both &#8484;<sub>p</sub> and EC groups (see packages `schnorr` and `ecschnorr`, respectively).
+ * Proofs of knowledge of homomorphism preimage and knowledge of partial homomorphism preimage
+  (see package `preimage`). These are generalizations of Schnorr proof to general
+   groups and one-way homomorphisms.
  * Proof of knowledge of representation (generalized Schnorr for multiple bases) [10]
  * Damgard-Fujisaki proofs (package `df`) [12] - for proving that you can open a commitment, 
  that two commitments hide the same value, that a commitment contains a multiplication of two committed values, 

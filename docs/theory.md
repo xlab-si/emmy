@@ -144,11 +144,11 @@ The protocol goes:
 Note that this might be group with hidden order (like RSA, see `crypto/rsa` package), so one-bit
 challenges need to be used (making the protocol also ZKP).
 
-In emmy this protocol is available in `crypto/qoneway` package and can be executed as:
+In emmy this protocol is available in `crypto/preimage` package and can be executed as:
 
 ```
-prover := qoneway.NewPreimageProver(homomorphism, H, v)
-verifier := qoneway.NewPreimageVerifier(homomorphism, H, u)
+prover := preimage.NewProver(homomorphism, H, v)
+verifier := preimage.NewVerifier(homomorphism, H, u)
 	
 for j := 0; j < iterations; j++ {
 	proofRandomData := prover.GetProofRandomData()
