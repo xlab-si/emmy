@@ -15,7 +15,7 @@
  *
  */
 
-package qoneway
+package preimage
 
 import (
 	"math/big"
@@ -29,8 +29,8 @@ import (
 // Note that PartialDLogKnowledge is a special case of PartialPreimageKnowledge.
 func ProvePartialPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H crypto.Group,
 	v1, u1, u2 *big.Int, iterations int) bool {
-	prover := NewPartialPreimageProver(homomorphism, H, v1, u1, u2)
-	verifier := NewPartialPreimageVerifier(homomorphism, H)
+	prover := NewPartialProver(homomorphism, H, v1, u1, u2)
+	verifier := NewPartialVerifier(homomorphism, H)
 
 	// The proof needs to be repeated sequentially because one-bit challenges are used. Note
 	// that when one-bit challenges are used, the prover has in one iteration 50% chances
@@ -51,7 +51,7 @@ func ProvePartialPreimageKnowledge(homomorphism func(*big.Int) *big.Int, H crypt
 	return true
 }
 
-type PartialPreimageProver struct {
+type PartialProver struct {
 	Homomorphism func(*big.Int) *big.Int
 	H            crypto.Group
 	v1           *big.Int
@@ -63,9 +63,9 @@ type PartialPreimageProver struct {
 	ord          int
 }
 
-func NewPartialPreimageProver(homomorphism func(*big.Int) *big.Int, H crypto.Group,
-	v1, u1, u2 *big.Int) *PartialPreimageProver {
-	return &PartialPreimageProver{
+func NewPartialProver(homomorphism func(*big.Int) *big.Int, H crypto.Group,
+	v1, u1, u2 *big.Int) *PartialProver {
+	return &PartialProver{
 		Homomorphism: homomorphism,
 		H:            H,
 		v1:           v1,
@@ -76,7 +76,7 @@ func NewPartialPreimageProver(homomorphism func(*big.Int) *big.Int, H crypto.Gro
 
 // GetProofRandomData returns Homomorphism(r1) and Homomorphism(z2)/(u2^c2)
 // in random order and where r1, z2, c2 are random from H.
-func (p *PartialPreimageProver) GetProofRandomData() (*common.Pair, *common.Pair) {
+func (p *PartialProver) GetProofRandomData() (*common.Pair, *common.Pair) {
 	r1 := p.H.GetRandomElement()
 	c2 := common.GetRandomInt(big.NewInt(2)) // challenges need to be binary
 	z2 := p.H.GetRandomElement()
@@ -103,7 +103,7 @@ func (p *PartialPreimageProver) GetProofRandomData() (*common.Pair, *common.Pair
 	}
 }
 
-func (p *PartialPreimageProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int,
+func (p *PartialProver) GetProofData(challenge *big.Int) (*big.Int, *big.Int,
 	*big.Int, *big.Int) {
 	c1 := new(big.Int).Xor(p.c2, challenge)
 	// z1 = r*v^e
@@ -117,7 +117,7 @@ func (p *PartialPreimageProver) GetProofData(challenge *big.Int) (*big.Int, *big
 	}
 }
 
-type PartialPreimageVerifier struct {
+type PartialVerifier struct {
 	Homomorphism func(*big.Int) *big.Int
 	H            crypto.Group
 	pair1        *common.Pair
@@ -125,26 +125,26 @@ type PartialPreimageVerifier struct {
 	challenge    *big.Int
 }
 
-func NewPartialPreimageVerifier(homomorphism func(*big.Int) *big.Int,
-	H crypto.Group) *PartialPreimageVerifier {
-	return &PartialPreimageVerifier{
+func NewPartialVerifier(homomorphism func(*big.Int) *big.Int,
+	H crypto.Group) *PartialVerifier {
+	return &PartialVerifier{
 		Homomorphism: homomorphism,
 		H:            H,
 	}
 }
 
-func (v *PartialPreimageVerifier) SetProofRandomData(pair1, pair2 *common.Pair) {
+func (v *PartialVerifier) SetProofRandomData(pair1, pair2 *common.Pair) {
 	v.pair1 = pair1
 	v.pair2 = pair2
 }
 
-func (v *PartialPreimageVerifier) GetChallenge() *big.Int {
+func (v *PartialVerifier) GetChallenge() *big.Int {
 	challenge := common.GetRandomInt(big.NewInt(2)) // challenges need to be binary
 	v.challenge = challenge
 	return challenge
 }
 
-func (v *PartialPreimageVerifier) verifyPair(pair *common.Pair,
+func (v *PartialVerifier) verifyPair(pair *common.Pair,
 	challenge, z *big.Int) bool {
 	left := v.Homomorphism(z)
 	r1 := v.H.Exp(pair.B, challenge)
@@ -152,7 +152,7 @@ func (v *PartialPreimageVerifier) verifyPair(pair *common.Pair,
 	return left.Cmp(right) == 0
 }
 
-func (v *PartialPreimageVerifier) Verify(c1, z1, c2, z2 *big.Int) bool {
+func (v *PartialVerifier) Verify(c1, z1, c2, z2 *big.Int) bool {
 	c := new(big.Int).Xor(c1, c2)
 	if c.Cmp(v.challenge) != 0 {
 		return false

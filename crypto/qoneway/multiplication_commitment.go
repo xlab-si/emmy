@@ -22,6 +22,7 @@ import (
 
 	"github.com/xlab-si/emmy/crypto"
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/preimage"
 )
 
 // ProveBitCommitment demonstrates how committer can prove that a commitment contains
@@ -46,9 +47,9 @@ func ProveBitCommitment() (bool, error) {
 	// receiver.RSA.E is Q
 	u2 := committer.Group.GetRandomElement()
 
-	prover := NewPartialPreimageProver(committer.Homomorphism, committer.Group,
+	prover := preimage.NewPartialProver(committer.Homomorphism, committer.Group,
 		v1, u1, u2)
-	verifier := NewPartialPreimageVerifier(receiver.Homomorphism, receiver.Group)
+	verifier := preimage.NewPartialVerifier(receiver.Homomorphism, receiver.Group)
 
 	pair1, pair2 := prover.GetProofRandomData()
 
