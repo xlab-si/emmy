@@ -15,11 +15,13 @@
  *
  */
 
-package common
+package df
 
 import (
 	"fmt"
 	"math/big"
+
+	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // Common values used for comparisons and big integer arithmetic, defined here for convenience.
@@ -51,9 +53,9 @@ func (l *lagrange) Set(w0, w1, w2, w3 *big.Int) {
 	l[3].Set(w3)
 }
 
-// LipmaaDecomposition calls lipmaaDecompose and converts its result from a
+// lipmaaDecomposition calls lipmaaDecompose and converts its result from a
 // fixed-size 4-element array to a slice containing only non-zero roots.
-func LipmaaDecomposition(n *big.Int) ([]*big.Int, error) {
+func lipmaaDecomposition(n *big.Int) ([]*big.Int, error) {
 	roots, err := lipmaaDecompose(n)
 	if err != nil {
 		return nil, err
@@ -218,11 +220,11 @@ func findPrimeAndTwoRoots(n *big.Int) (*big.Int, *big.Int, *big.Int) {
 	// repeat the procedure until we're fairly confident that p really is a prime
 	for !p.ProbablyPrime(20) {
 		// choose random w1 <= sqrt(n)
-		w1 = GetRandomInt(w1Upper)
+		w1 = common.GetRandomInt(w1Upper)
 
 		// choose random w2 <= sqrt(n - w1²)
 		w2Upper.Sqrt(new(big.Int).Sub(n, new(big.Int).Mul(w1, w1)))
-		w2 = GetRandomInt(w2Upper)
+		w2 = common.GetRandomInt(w2Upper)
 
 		// we need to ensure that exactly one of w1, w2 is even
 		if w1.Bit(0) == w2.Bit(0) {

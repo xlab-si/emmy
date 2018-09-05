@@ -41,7 +41,7 @@ func NewPositiveProver(committer *Committer,
 	// c2 = g^(x2^2) * h^r2, c3 = g^(x3^2) * h^r3 and where r = r0 + r1 + r2 + r3.
 	// We then prove that c0, c1, c2, c3 contains squares and verifier checks that c = c0*c1*c2*c3.
 
-	roots, err := common.LipmaaDecomposition(x)
+	roots, err := lipmaaDecomposition(x)
 	if err != nil {
 		return nil, fmt.Errorf("error when doing Lipmaa decomposition")
 	}
