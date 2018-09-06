@@ -19,7 +19,8 @@ package server
 
 import (
 	"fmt"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
+
+	"github.com/xlab-si/emmy/crypto/cl"
 	pb "github.com/xlab-si/emmy/proto"
 )
 
@@ -34,7 +35,7 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
-	nonce := org.GetCredentialIssueNonce()
+	nonce := org.GetCredIssueNonce()
 	resp := &pb.Message{
 		Content: &pb.Message_Bigint{
 			&pb.BigInt{
@@ -58,7 +59,7 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
-	cred, AProof, err := org.IssueCredential(credReq)
+	cred, AProof, err := org.IssueCred(credReq)
 	if err != nil {
 		return fmt.Errorf("error when issuing credential: %v", err)
 	}
@@ -89,7 +90,7 @@ func (s *Server) UpdateCredential(stream pb.CL_UpdateCredentialServer) error {
 	u := req.GetUpdateClCredential()
 	nym, nonce, newKnownAttrs := u.GetNativeType()
 
-	cred, AProof, err := org.UpdateCredential(nym, nonce, newKnownAttrs)
+	cred, AProof, err := org.UpdateCred(nym, nonce, newKnownAttrs)
 	if err != nil {
 		return fmt.Errorf("error when updating credential: %v", err)
 	}
@@ -117,7 +118,7 @@ func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
 		return err
 	}
 
-	nonce := org.GetProveCredentialNonce()
+	nonce := org.GetProveCredNonce()
 	resp := &pb.Message{
 		Content: &pb.Message_Bigint{
 			&pb.BigInt{
@@ -142,7 +143,7 @@ func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
 		return err
 	}
 
-	verified, err := org.ProveCredential(A, proof, revealedKnownAttrsIndices,
+	verified, err := org.ProveCred(A, proof, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, knownAttrs, commitmentsOfAttrs)
 
 	resp = &pb.Message{

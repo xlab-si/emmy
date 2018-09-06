@@ -28,9 +28,15 @@ import (
 	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
-// CredentialManager should be created by a user when a credential is to be issued, updated or proved.
-// If a new credential under a new nym is needed, new CredentialManager instance is needed.
-type CredentialManager struct {
+// CredManager manages a single instance of anonymous credential.
+//
+// An instance of this struct should be created by a user before
+// she wants a new credential to be issued, or an existing one to
+// be updated or proved.
+//
+// When a user needs a new credential under a new nym, she also needs
+// a new instance of CredManager.
+type CredManager struct {
 	Params             *Params
 	PubKey             *PubKey
 	nymCommitter       *pedersen.Committer // nym is actually a commitment to masterSecret
@@ -40,7 +46,7 @@ type CredentialManager struct {
 	committedAttrs     []*big.Int // attributes for which the issuer knows only commitment
 	CommitmentsOfAttrs []*big.Int // commitments of committedAttrs
 	hiddenAttrs        []*big.Int // attributes which are known only to the credential receiver
-	// V1 is a random element in credential - it is generated in GetCredentialRequest and needed when
+	// V1 is a random element in credential - it is generated in GetCredRequest and needed when
 	// proving the possesion of a credential - this is why it is stored in User and not in UserCredentialReceiver
 	V1                        *big.Int            // v1 is random element in U; U = S^v1 * R_i^m_i where m_i are hidden attributes
 	attrsCommitters           []*df.Committer     // committers for committedAttrs
@@ -48,20 +54,10 @@ type CredentialManager struct {
 	CredReqNonce              *big.Int
 }
 
-func checkAttributesLength(attributes []*big.Int, params *Params) bool {
-	for _, attr := range attributes {
-		if attr.BitLen() > params.AttrBitLen {
-			return false
-		}
-	}
-
-	return true
-}
-
-func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int, knownAttrs, committedAttrs,
-	hiddenAttrs []*big.Int) (*CredentialManager, error) {
-	if !checkAttributesLength(knownAttrs, params) || !checkAttributesLength(committedAttrs, params) ||
-		!checkAttributesLength(hiddenAttrs, params) {
+func NewCredManager(params *Params, pubKey *PubKey, masterSecret *big.Int, knownAttrs, committedAttrs,
+	hiddenAttrs []*big.Int) (*CredManager, error) {
+	if !checkAttrsLen(knownAttrs, params) || !checkAttrsLen(committedAttrs, params) ||
+		!checkAttrsLen(hiddenAttrs, params) {
 		return nil, fmt.Errorf("attributes length not ok")
 	}
 
@@ -83,7 +79,7 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 		commitmentsOfAttrsProvers[i] = prover
 	}
 
-	credManager := CredentialManager{
+	credManager := CredManager{
 		Params:                    params,
 		PubKey:                    pubKey,
 		KnownAttrs:                knownAttrs,
@@ -99,13 +95,13 @@ func NewCredentialManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 	return &credManager, nil
 }
 
-func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Params, pubKey *PubKey, masterSecret *big.Int,
-	knownAttrs, committedAttrs, hiddenAttrs, commitmentsOfAttrs []*big.Int) (*CredentialManager, error) {
+func NewCredManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Params, pubKey *PubKey, masterSecret *big.Int,
+	knownAttrs, committedAttrs, hiddenAttrs, commitmentsOfAttrs []*big.Int) (*CredManager, error) {
 
-	// nymCommitter is needed only for IssueCredential (when proving that nym can be opened), so we do not need it here
+	// nymCommitter is needed only for IssueCred (when proving that nym can be opened), so we do not need it here
 	// the same for attrsCommitters
 
-	return &CredentialManager{
+	return &CredManager{
 		Params:             params,
 		PubKey:             pubKey,
 		KnownAttrs:         knownAttrs,
@@ -121,7 +117,7 @@ func NewCredentialManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Pa
 
 // generateNym creates a pseudonym to be used with a given organization. Authentication can be done
 // with respect to the pseudonym or not.
-func (m *CredentialManager) generateNym() error {
+func (m *CredManager) generateNym() error {
 	committer := pedersen.NewCommitter(m.PubKey.PedersenParams)
 	nym, err := committer.GetCommitMsg(m.masterSecret)
 	if err != nil {
@@ -133,12 +129,12 @@ func (m *CredentialManager) generateNym() error {
 	return nil
 }
 
-// GetCredentialRequest computes U and returns CredentialRequest which contains:
+// GetCredRequest computes U and returns CredRequest which contains:
 // - proof data for proving that nym was properly generated,
 // - U and proof data that U was properly generated,
 // - proof data for proving the knowledge of opening for commitments of attributes (for those attributes
 // for which the committed value is known).
-func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*CredentialRequest, error) {
+func (m *CredManager) GetCredRequest(nonceOrg *big.Int) (*CredRequest, error) {
 	U, v1 := m.computeU()
 	m.V1 = v1
 	nymProver, uProver, err := m.getCredReqProvers(U)
@@ -158,7 +154,7 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 		return nil, err
 	}
 
-	return NewCredentialRequest(m.Nym, m.KnownAttrs, m.CommitmentsOfAttrs,
+	return NewCredRequest(m.Nym, m.KnownAttrs, m.CommitmentsOfAttrs,
 		schnorr.NewProof(nymProver.GetProofRandomData(), challenge,
 			nymProver.GetProofData(challenge)), U,
 		qr.NewRepresentationProof(uProofRandomData, challenge,
@@ -166,8 +162,10 @@ func (m *CredentialManager) GetCredentialRequest(nonceOrg *big.Int) (*Credential
 		commitmentsOfAttrsProofs, nonce), nil
 }
 
-func (m *CredentialManager) VerifyCredential(cred *Credential,
-	AProof *qr.RepresentationProof) (bool, error) {
+// Verify verifies anonymous credential cred, returning a boolean indicating
+// success or failure of credential verification.
+// When verification process fails due to misconfiguration, error is returned.
+func (m *CredManager) Verify(cred *Cred, AProof *qr.RepresentationProof) (bool, error) {
 	// check bit length of e:
 	b1 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.EBitLen-1)), nil)
 	b22 := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.E1BitLen-1)), nil)
@@ -222,11 +220,14 @@ func (m *CredentialManager) VerifyCredential(cred *Credential,
 	return ver.Verify(AProof.ProofData), nil
 }
 
-func (m *CredentialManager) UpdateCredential(knownAttrs []*big.Int) {
+// Update updates credential.
+func (m *CredManager) Update(knownAttrs []*big.Int) {
 	m.KnownAttrs = knownAttrs
 }
 
-func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
+// randomize randomizes credential cred, and returns the
+// randomized credential as a new credential.
+func (m *CredManager) randomize(cred *Cred) *Cred {
 	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.NLength+m.Params.SecParam)), nil)
 	r := common.GetRandomInt(b)
 	group := qr.NewRSApecialPublic(m.PubKey.N)
@@ -237,10 +238,10 @@ func (m *CredentialManager) randomizeCredential(cred *Credential) *Credential {
 
 	t = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(m.Params.EBitLen-1)), nil)
 
-	return NewCredential(A, cred.E, v11)
+	return NewCred(A, cred.E, v11)
 }
 
-func (m *CredentialManager) GetCredProofChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
+func (m *CredManager) GetProofChallenge(credProofRandomData, nonceOrg *big.Int) *big.Int {
 	context := m.PubKey.GetContext()
 	l := []*big.Int{context, credProofRandomData, nonceOrg}
 	//l = append(l, ...) // TODO: add other values
@@ -248,13 +249,14 @@ func (m *CredentialManager) GetCredProofChallenge(credProofRandomData, nonceOrg 
 	return common.Hash(l...)
 }
 
-func (m *CredentialManager) BuildCredentialProof(cred *Credential, revealedKnownAttrsIndices,
-	revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Credential,
+// BuildProof builds a proof of knowledge for the given credential.
+func (m *CredManager) BuildProof(cred *Cred, revealedKnownAttrsIndices,
+	revealedCommitmentsOfAttrsIndices []int, nonceOrg *big.Int) (*Cred,
 	*qr.RepresentationProof, error) {
 	if m.V1 == nil {
-		return nil, nil, fmt.Errorf("v1 is not set (generated in GetCredentialRequest)")
+		return nil, nil, fmt.Errorf("v1 is not set (generated in GetCredRequest)")
 	}
-	rCred := m.randomizeCredential(cred)
+	rCred := m.randomize(cred)
 	// Z = cred.A^cred.e * S^cred.v11 * R_1^m_1 * ... * R_l^m_l
 	// Z = rCred.A^rCred.e * S^rCred.v11 * R_1^m_1 * ... * R_l^m_l
 	group := qr.NewRSApecialPublic(m.PubKey.N)
@@ -329,8 +331,18 @@ func (m *CredentialManager) BuildCredentialProof(cred *Credential, revealedKnown
 		return nil, nil, fmt.Errorf("error when generating representation proof random data: %s", err)
 	}
 
-	challenge := m.GetCredProofChallenge(proofRandomData, nonceOrg)
+	challenge := m.GetProofChallenge(proofRandomData, nonceOrg)
 	proofData := prover.GetProofData(challenge)
 
 	return rCred, qr.NewRepresentationProof(proofRandomData, challenge, proofData), nil
+}
+
+func checkAttrsLen(attributes []*big.Int, params *Params) bool {
+	for _, attr := range attributes {
+		if attr.BitLen() > params.AttrBitLen {
+			return false
+		}
+	}
+
+	return true
 }

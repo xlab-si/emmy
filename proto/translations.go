@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/df"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 )
 
 type PbConvertibleType interface {
@@ -59,7 +59,7 @@ func ToPbPair(el *common.Pair) *Pair {
 	}
 }
 
-func ToPbCredentialRequest(r *cl.CredentialRequest) *CLCredReq {
+func ToPbCredRequest(r *cl.CredRequest) *CLCredReq {
 	knownAttrs := make([][]byte, len(r.KnownAttrs))
 	for i, a := range r.KnownAttrs {
 		knownAttrs[i] = a.Bytes()
@@ -114,7 +114,7 @@ func ToPbCredentialRequest(r *cl.CredentialRequest) *CLCredReq {
 	}
 }
 
-func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
+func (r *CLCredReq) GetNativeType() (*cl.CredRequest, error) {
 	nym := new(big.Int).SetBytes(r.Nym)
 	knownAttrs := make([]*big.Int, len(r.KnownAttrs))
 	for i, a := range r.KnownAttrs {
@@ -153,11 +153,11 @@ func (r *CLCredReq) GetNativeType() (*cl.CredentialRequest, error) {
 		commitmentsOfAttrsProofs[i] = openingProof
 	}
 
-	return cl.NewCredentialRequest(nym, knownAttrs, commitmentsOfAttrs, nymProof, U, UProof,
+	return cl.NewCredRequest(nym, knownAttrs, commitmentsOfAttrs, nymProof, U, UProof,
 		commitmentsOfAttrsProofs, new(big.Int).SetBytes(r.Nonce)), nil
 }
 
-func ToPbCLCredential(c *cl.Credential, AProof *qr.RepresentationProof) *CLCredential {
+func ToPbCLCredential(c *cl.Cred, AProof *qr.RepresentationProof) *CLCredential {
 	AProofFS := &FiatShamirAlsoNeg{
 		ProofRandomData: AProof.ProofRandomData.Bytes(),
 		Challenge:       AProof.Challenge.Bytes(),
@@ -172,7 +172,7 @@ func ToPbCLCredential(c *cl.Credential, AProof *qr.RepresentationProof) *CLCrede
 	}
 }
 
-func (c *CLCredential) GetNativeType() (*cl.Credential, *qr.RepresentationProof, error) {
+func (c *CLCredential) GetNativeType() (*cl.Cred, *qr.RepresentationProof, error) {
 	si, success := new(big.Int).SetString(c.AProof.ProofData[0], 10)
 	if !success {
 		return nil, nil, fmt.Errorf("error when initializing big.Int from string")
@@ -181,7 +181,7 @@ func (c *CLCredential) GetNativeType() (*cl.Credential, *qr.RepresentationProof,
 	AProof := qr.NewRepresentationProof(new(big.Int).SetBytes(c.AProof.ProofRandomData),
 		new(big.Int).SetBytes(c.AProof.Challenge), []*big.Int{si})
 
-	return cl.NewCredential(new(big.Int).SetBytes(c.A), new(big.Int).SetBytes(c.E),
+	return cl.NewCred(new(big.Int).SetBytes(c.A), new(big.Int).SetBytes(c.E),
 		new(big.Int).SetBytes(c.V11)), AProof, nil
 }
 

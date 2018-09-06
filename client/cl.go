@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/crypto/common"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/cl"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -39,7 +39,7 @@ func NewCLClient(conn *grpc.ClientConn) (*CLClient, error) {
 	}, nil
 }
 
-func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Credential, error) {
+func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error) {
 	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
 		return nil, err
 	}
@@ -56,13 +56,13 @@ func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Crede
 
 	credIssueNonceOrg := new(big.Int).SetBytes(resp.GetBigint().X1)
 
-	credReq, err := credManager.GetCredentialRequest(credIssueNonceOrg)
+	credReq, err := credManager.GetCredRequest(credIssueNonceOrg)
 	if err != nil {
 		return nil, err
 	}
 
 	credReqMsg := &pb.Message{
-		Content:  &pb.Message_CLCredReq{pb.ToPbCredentialRequest(credReq)},
+		Content: &pb.Message_CLCredReq{pb.ToPbCredRequest(credReq)},
 	}
 	resp, err = c.getResponseTo(credReqMsg)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Crede
 		return nil, err
 	}
 
-	userVerified, err := credManager.VerifyCredential(credential, AProof)
+	userVerified, err := credManager.Verify(credential, AProof)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +87,9 @@ func (c *CLClient) IssueCredential(credManager *cl.CredentialManager) (*cl.Crede
 	return nil, fmt.Errorf("credential not valid")
 }
 
-func (c *CLClient) UpdateCredential(credManager *cl.CredentialManager, newKnownAttrs []*big.Int) (*cl.Credential,
+func (c *CLClient) UpdateCredential(credManager *cl.CredManager, newKnownAttrs []*big.Int) (*cl.Cred,
 	error) {
-	credManager.UpdateCredential(newKnownAttrs)
+	credManager.Update(newKnownAttrs)
 
 	if err := c.openStream(c.grpcClient, "UpdateCredential"); err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredentialManager, newKnownA
 		return nil, err
 	}
 
-	userVerified, err := credManager.VerifyCredential(credential, AProof)
+	userVerified, err := credManager.Verify(credential, AProof)
 	if err != nil {
 		return nil, err
 	}
@@ -126,11 +126,11 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredentialManager, newKnownA
 	return nil, fmt.Errorf("credential not valid")
 }
 
-// ProveCredential proves the possession of a valid credential and reveals only the attributes the user desires
+// ProveCred proves the possession of a valid credential and reveals only the attributes the user desires
 // to reveal. Which knownAttrs and commitmentsOfAttrs are to be revealed are given by revealedKnownAttrsIndices and
 // revealedCommitmentsOfAttrsIndices parameters. All knownAttrs and commitmentsOfAttrs should be passed into
-// ProveCredential - only those which are revealed are then passed to the server.
-func (c *CLClient) ProveCredential(credManager *cl.CredentialManager, cred *cl.Credential,
+// ProveCred - only those which are revealed are then passed to the server.
+func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 	knownAttrs []*big.Int, revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) (bool, error) {
 	if err := c.openStream(c.grpcClient, "ProveCredential"); err != nil {
 		return false, err
@@ -148,7 +148,7 @@ func (c *CLClient) ProveCredential(credManager *cl.CredentialManager, cred *cl.C
 
 	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
 
-	randCred, proof, err := credManager.BuildCredentialProof(cred, revealedKnownAttrsIndices,
+	randCred, proof, err := credManager.BuildProof(cred, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		return false, fmt.Errorf("error when building credential proof: %v", err)
@@ -156,13 +156,13 @@ func (c *CLClient) ProveCredential(credManager *cl.CredentialManager, cred *cl.C
 
 	filteredKnownAttrs := []*big.Int{}
 	for i := 0; i < len(knownAttrs); i++ {
-		if common.Contains(revealedKnownAttrsIndices, i)  {
+		if common.Contains(revealedKnownAttrsIndices, i) {
 			filteredKnownAttrs = append(filteredKnownAttrs, knownAttrs[i])
 		}
 	}
 	filteredCommitmentsOfAttrs := []*big.Int{}
 	for i := 0; i < len(credManager.CommitmentsOfAttrs); i++ {
-		if common.Contains(revealedCommitmentsOfAttrsIndices, i)  {
+		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
 			filteredCommitmentsOfAttrs = append(filteredCommitmentsOfAttrs, credManager.CommitmentsOfAttrs[i])
 		}
 	}

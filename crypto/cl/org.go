@@ -70,21 +70,21 @@ type SecKey struct {
 }
 
 type Org struct {
-	Params                  *Params
-	Group                   *qr.RSASpecial     // in this group attributes will be used as exponents (basis is PubKey.Rs...)
-	pedersenReceiver        *pedersen.Receiver // used for nyms (nym is Pedersen commitment)
-	nym                     *big.Int
-	nymVerifier             *schnorr.Verifier
-	U                       *big.Int
-	UVerifier               *qr.RepresentationVerifier
-	PubKey                  *PubKey
-	SecKey                  *SecKey
-	commitmentsOfAttrs      []*big.Int
-	knownAttrs              []*big.Int
-	attrsVerifiers          []*df.OpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
-	credentialIssueNonceOrg *big.Int
-	proveCredentialNonceOrg *big.Int
-	dbManager               *DBManager
+	Params             *Params
+	Group              *qr.RSASpecial     // in this group attributes will be used as exponents (basis is PubKey.Rs...)
+	pedersenReceiver   *pedersen.Receiver // used for nyms (nym is Pedersen commitment)
+	nym                *big.Int
+	nymVerifier        *schnorr.Verifier
+	U                  *big.Int
+	UVerifier          *qr.RepresentationVerifier
+	PubKey             *PubKey
+	SecKey             *SecKey
+	commitmentsOfAttrs []*big.Int
+	knownAttrs         []*big.Int
+	attrsVerifiers     []*df.OpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
+	credIssueNonceOrg  *big.Int
+	proveCredNonceOrg  *big.Int
+	dbManager          *DBManager
 }
 
 func NewOrg(params *Params) (*Org, error) {
@@ -217,12 +217,12 @@ func (o *Org) genAProof(nonceUser, context, eInv, Q, A *big.Int) *qr.Representat
 }
 
 type IssueCredResult struct {
-	cred   *Credential
+	cred   *Cred
 	proof  *qr.RepresentationProof
 	record *ReceiverRecord
 }
 
-func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qr.RepresentationProof, error) {
+func (o *Org) IssueCred(cr *CredRequest) (*Cred, *qr.RepresentationProof, error) {
 	o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group)
 	o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 
@@ -234,7 +234,7 @@ func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qr.Represent
 	}
 	o.U = cr.U
 
-	if verified := o.verifyCredentialRequest(cr); !verified {
+	if verified := o.verifyCredRequest(cr); !verified {
 		return nil, nil, fmt.Errorf("credential request not valid")
 	}
 
@@ -267,7 +267,7 @@ func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qr.Represent
 
 	// TODO
 	res := &IssueCredResult{
-		cred:   NewCredential(A, e, v11),
+		cred:   NewCred(A, e, v11),
 		proof:  AProof,
 		record: NewReceiverRecord(o.knownAttrs, o.commitmentsOfAttrs, Q, v11, context),
 	}
@@ -280,14 +280,14 @@ func (o *Org) IssueCredential(cr *CredentialRequest) (*Credential, *qr.Represent
 	return res.cred, res.proof, nil
 }
 
-func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Credential,
+func (o *Org) UpdateCred(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Cred,
 	*qr.RepresentationProof, error) {
 	rr, err := o.dbManager.GetReceiverRecord(nym)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCredential
+	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCred
 		o.knownAttrs = newKnownAttrs
 		o.setUpAttrVerifiers(rr.CommitmentsOfAttrs)
 		o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group) // pubKey.Params.Group
@@ -321,22 +321,22 @@ func (o *Org) UpdateCredential(nym, nonceUser *big.Int, newKnownAttrs []*big.Int
 		return nil, nil, err
 	}
 
-	return NewCredential(newA, e, v11), AProof, nil
+	return NewCred(newA, e, v11), AProof, nil
 }
 
-func (o *Org) GetProveCredentialNonce() *big.Int {
+func (o *Org) GetProveCredNonce() *big.Int {
 	nonce := o.GenNonce()
-	o.proveCredentialNonceOrg = nonce
+	o.proveCredNonceOrg = nonce
 
 	return nonce
 }
 
-// ProveCredential proves the possession of a valid credential and reveals only the attributes the user desires
+// ProveCred proves the possession of a valid credential and reveals only the attributes the user desires
 // to reveal. Which knownAttrs and commitmentsOfAttrs are to be revealed are given by revealedKnownAttrsIndices and
 // revealedCommitmentsOfAttrsIndices parameters. Parameters knownAttrs and commitmentsOfAttrs must contain only
 // known attributes and commitments of attributes (of attributes for which only commitment is known) which are
 // to be revealed to the organization.
-func (o *Org) ProveCredential(A *big.Int, proof *qr.RepresentationProof,
+func (o *Org) ProveCred(A *big.Int, proof *qr.RepresentationProof,
 	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
 	knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
 	ver := qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
@@ -372,7 +372,7 @@ func (o *Org) ProveCredential(A *big.Int, proof *qr.RepresentationProof,
 	ver.SetProofRandomData(proof.ProofRandomData, bases, y)
 
 	context := o.PubKey.GetContext()
-	l := []*big.Int{context, proof.ProofRandomData, o.proveCredentialNonceOrg}
+	l := []*big.Int{context, proof.ProofRandomData, o.proveCredNonceOrg}
 	//l = append(l, ...) // TODO: add other values
 
 	c := common.Hash(l...) // TODO: function for GetChallenge
@@ -385,14 +385,15 @@ func (o *Org) ProveCredential(A *big.Int, proof *qr.RepresentationProof,
 	return ver.Verify(proof.ProofData), nil
 }
 
-type Credential struct {
+// Cred represents anonymous credentials.
+type Cred struct {
 	A   *big.Int
 	E   *big.Int
 	V11 *big.Int
 }
 
-func NewCredential(A, e, v11 *big.Int) *Credential {
-	return &Credential{
+func NewCred(A, e, v11 *big.Int) *Cred {
+	return &Cred{
 		A:   A,
 		E:   e,
 		V11: v11,
@@ -426,14 +427,14 @@ func generateQuadraticResidues(group *qr.RSASpecial, knownAttrsNum, committedAtt
 	return S, Z, RsKnown, RsCommitted, RsHidden, nil
 }
 
-func (o *Org) GetCredentialIssueNonce() *big.Int {
+func (o *Org) GetCredIssueNonce() *big.Int {
 	nonce := o.GenNonce()
-	o.credentialIssueNonceOrg = nonce
+	o.credIssueNonceOrg = nonce
 
 	return nonce
 }
 
-func (o *Org) verifyCredentialRequest(cr *CredentialRequest) bool {
+func (o *Org) verifyCredRequest(cr *CredRequest) bool {
 	return o.verifyNym(cr.NymProof) &&
 		o.verifyU(cr.UProof) &&
 		o.verifyCommitmentsOfAttrs(cr.CommitmentsOfAttrs, cr.CommitmentsOfAttrsProofs) &&
@@ -498,7 +499,7 @@ func (o *Org) verifyCommitmentsOfAttrs(commitmentsOfAttrs []*big.Int, proofs []*
 
 func (o *Org) verifyChallenge(challenge *big.Int) bool {
 	context := o.PubKey.GetContext()
-	l := []*big.Int{context, o.U, o.nym, o.credentialIssueNonceOrg}
+	l := []*big.Int{context, o.U, o.nym, o.credIssueNonceOrg}
 	l = append(l, o.commitmentsOfAttrs...)
 	c := common.Hash(l...)
 	return c.Cmp(challenge) == 0

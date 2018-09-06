@@ -27,7 +27,7 @@ import (
 	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
-type CredentialRequest struct {
+type CredRequest struct {
 	Nym                      *big.Int
 	KnownAttrs               []*big.Int
 	CommitmentsOfAttrs       []*big.Int
@@ -38,10 +38,10 @@ type CredentialRequest struct {
 	Nonce                    *big.Int
 }
 
-func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nymProof *schnorr.Proof,
+func NewCredRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nymProof *schnorr.Proof,
 	U *big.Int, UProof *qr.RepresentationProof,
-	commitmentsOfAttrsProofs []*df.OpeningProof, nonce *big.Int) *CredentialRequest {
-	return &CredentialRequest{
+	commitmentsOfAttrsProofs []*df.OpeningProof, nonce *big.Int) *CredRequest {
+	return &CredRequest{
 		Nym:                nym,
 		KnownAttrs:         knownAttrs,
 		CommitmentsOfAttrs: commitmentsOfAttrs,
@@ -55,7 +55,7 @@ func NewCredentialRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.In
 
 // computeU computes U = S^v1 * R_1^m_1 * ... * R_NumAttrs^m_NumAttrs (mod n) where only hiddenAttrs are used and
 // where v1 is random from +-{0,1}^(NLength + SecParam)
-func (m *CredentialManager) computeU() (*big.Int, *big.Int) {
+func (m *CredManager) computeU() (*big.Int, *big.Int) {
 	exp := big.NewInt(int64(m.Params.NLength + m.Params.SecParam))
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v1 := common.GetRandomIntAlsoNeg(b)
@@ -71,7 +71,7 @@ func (m *CredentialManager) computeU() (*big.Int, *big.Int) {
 	return U, v1
 }
 
-func (m *CredentialManager) getNymProver() (*schnorr.Prover, error) {
+func (m *CredManager) getNymProver() (*schnorr.Prover, error) {
 	// use Schnorr with two bases for proving that you know nym opening:
 	bases := []*big.Int{
 		m.PubKey.PedersenParams.Group.G,
@@ -90,7 +90,7 @@ func (m *CredentialManager) getNymProver() (*schnorr.Prover, error) {
 	return prover, nil
 }
 
-func (m *CredentialManager) getUProver(U *big.Int) *qr.RepresentationProver {
+func (m *CredManager) getUProver(U *big.Int) *qr.RepresentationProver {
 	group := qr.NewRSApecialPublic(m.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
 	secrets := append(m.hiddenAttrs, m.V1)
@@ -102,7 +102,7 @@ func (m *CredentialManager) getUProver(U *big.Int) *qr.RepresentationProver {
 	return prover
 }
 
-func (m *CredentialManager) getUProofRandomData(prover *qr.RepresentationProver) (*big.Int, error) {
+func (m *CredManager) getUProofRandomData(prover *qr.RepresentationProver) (*big.Int, error) {
 	// boundary for m_tilde
 	b_m := m.Params.AttrBitLen + m.Params.SecParam + m.Params.HashBitLen + 1
 	// boundary for v1
@@ -123,7 +123,7 @@ func (m *CredentialManager) getUProofRandomData(prover *qr.RepresentationProver)
 }
 
 // Fiat-Shamir is used to generate a challenge, instead of asking verifier to generate it.
-func (m *CredentialManager) getCredReqChallenge(U, nym, nonceOrg *big.Int) *big.Int {
+func (m *CredManager) getCredReqChallenge(U, nym, nonceOrg *big.Int) *big.Int {
 	context := m.PubKey.GetContext()
 	l := []*big.Int{context, U, nym, nonceOrg}
 	l = append(l, m.CommitmentsOfAttrs...) // TODO: add other values
@@ -131,7 +131,7 @@ func (m *CredentialManager) getCredReqChallenge(U, nym, nonceOrg *big.Int) *big.
 	return common.Hash(l...)
 }
 
-func (m *CredentialManager) getCredReqProvers(U *big.Int) (*schnorr.Prover,
+func (m *CredManager) getCredReqProvers(U *big.Int) (*schnorr.Prover,
 	*qr.RepresentationProver, error) {
 	nymProver, err := m.getNymProver()
 	if err != nil {
@@ -142,7 +142,7 @@ func (m *CredentialManager) getCredReqProvers(U *big.Int) (*schnorr.Prover,
 	return nymProver, uProver, nil
 }
 
-func (m *CredentialManager) getCommitmentsOfAttrsProof(challenge *big.Int) []*df.OpeningProof {
+func (m *CredManager) getCommitmentsOfAttrsProof(challenge *big.Int) []*df.OpeningProof {
 	commitmentsOfAttrsProofs := make([]*df.OpeningProof, len(m.commitmentsOfAttrsProvers))
 	for i, prover := range m.commitmentsOfAttrsProvers {
 		proofRandomData := prover.GetProofRandomData()
