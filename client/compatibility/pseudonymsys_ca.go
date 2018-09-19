@@ -23,10 +23,10 @@ import (
 	"fmt"
 
 	"github.com/xlab-si/emmy/client"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 )
 
-// Pseudonym represents an equivalent of pseudonymsys.Pseudonym, but has string
+// Pseudonym represents an equivalent of pseudsys.Nym, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type Pseudonym struct {
 	A string
@@ -40,19 +40,19 @@ func NewPseudonym(a, b string) *Pseudonym {
 	}
 }
 
-// getNativeType translates compatibility Pseudonym to emmy's native pseudonymsys.Pseudonym.
-func (p *Pseudonym) getNativeType() (*pseudonymsys.Pseudonym, error) {
+// getNativeType translates compatibility Nym to emmy's native pseudsys.Nym.
+func (p *Pseudonym) getNativeType() (*pseudsys.Nym, error) {
 	a, aOk := new(big.Int).SetString(p.A, 10)
 	b, bOk := new(big.Int).SetString(p.B, 10)
 	if !aOk || !bOk {
 		return nil, fmt.Errorf("nym.A or nym.B: %s", ArgsConversionError)
 	}
 
-	pseudonym := pseudonymsys.NewPseudonym(a, b)
+	pseudonym := pseudsys.NewNym(a, b)
 	return pseudonym, nil
 }
 
-// CACertificate represents an equivalent of pseudonymsys.CACertificate, but has string
+// CACertificate represents an equivalent of pseudsys.CACert, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type CACertificate struct {
 	BlindedA string
@@ -70,7 +70,7 @@ func NewCACertificate(blindedA, blindedB, r, s string) *CACertificate {
 	}
 }
 
-func (c *CACertificate) toNativeType() (*pseudonymsys.CACertificate, error) {
+func (c *CACertificate) toNativeType() (*pseudsys.CACert, error) {
 	blindedA, blindedAOk := new(big.Int).SetString(c.BlindedA, 10)
 	blindedB, blindedBOk := new(big.Int).SetString(c.BlindedB, 10)
 	r, rOk := new(big.Int).SetString(c.R, 10)
@@ -80,7 +80,7 @@ func (c *CACertificate) toNativeType() (*pseudonymsys.CACertificate, error) {
 			ArgsConversionError)
 	}
 
-	certificate := pseudonymsys.NewCACertificate(blindedA, blindedB, r, s)
+	certificate := pseudsys.NewCACert(blindedA, blindedB, r, s)
 	return certificate, nil
 }
 

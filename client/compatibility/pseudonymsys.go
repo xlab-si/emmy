@@ -22,11 +22,11 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/client"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
-// Credential represents an equivalent of pseudonymsys.Credential,
+// Credential represents an equivalent of pseudsys.Cred,
 // but has field types compatible with Go language binding tools.
 type Credential struct {
 	SmallAToGamma string
@@ -50,8 +50,8 @@ func NewCredential(aToGamma, bToGamma, AToGamma, BToGamma string,
 	return credential
 }
 
-// getNativeType translates compatibility Credential to emmy's native pseudonymsys.Credential.
-func (c *Credential) getNativeType() (*pseudonymsys.Credential, error) {
+// getNativeType translates compatibility Credential to emmy's native pseudsys.Cred.
+func (c *Credential) getNativeType() (*pseudsys.Cred, error) {
 	atG, atGOk := new(big.Int).SetString(c.SmallAToGamma, 10)
 	btG, btGOk := new(big.Int).SetString(c.SmallBToGamma, 10)
 	AtG, AtGOk := new(big.Int).SetString(c.AToGamma, 10)
@@ -68,11 +68,11 @@ func (c *Credential) getNativeType() (*pseudonymsys.Credential, error) {
 		return nil, fmt.Errorf("credential.T2: %s", err)
 	}
 
-	cred := pseudonymsys.NewCredential(atG, btG, AtG, BtG, t1, t2)
+	cred := pseudsys.NewCred(atG, btG, AtG, BtG, t1, t2)
 	return cred, nil
 }
 
-// PubKey represents an equivalent of pseudonymsys.PubKey, but has string
+// PubKey represents an equivalent of pseudsys.PubKey, but has string
 // field types to overcome type restrictions of Go language binding tools.
 type PubKey struct {
 	H1 string
@@ -86,15 +86,15 @@ func NewPubKey(h1, h2 string) *PubKey {
 	}
 }
 
-// getNativeType translates compatibility PubKey to emmy's native pseudonymsys.PubKey.
-func (k *PubKey) getNativeType() (*pseudonymsys.PubKey, error) {
+// getNativeType translates compatibility PubKey to emmy's native pseudsys.PubKey.
+func (k *PubKey) getNativeType() (*pseudsys.PubKey, error) {
 	h1, h1Ok := new(big.Int).SetString(k.H1, 10)
 	h2, h2Ok := new(big.Int).SetString(k.H2, 10)
 	if !h1Ok || !h2Ok {
 		return nil, fmt.Errorf("pubKey.h1 or pubKey.h2: %s", ArgsConversionError)
 	}
 
-	return pseudonymsys.NewPubKey(h1, h2), nil
+	return pseudsys.NewPubKey(h1, h2), nil
 }
 
 // Transcript represents an equivalent of schnorr.BlindedTrans, but has string

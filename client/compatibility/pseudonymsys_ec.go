@@ -24,11 +24,11 @@ import (
 
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/ecpseudsys"
 	"github.com/xlab-si/emmy/crypto/ecschnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
-// PubKeyEC represents an equivalent of pseudonymsys.PubKeyEC,
+// PubKeyEC represents an equivalent of ecpseudsys.PubKeyEC,
 // but has field types compatible with Go language binding tools.
 type PubKeyEC struct {
 	H1 *ECGroupElement
@@ -42,8 +42,8 @@ func NewPubKeyEC(h1, h2 *ECGroupElement) *PubKeyEC {
 	}
 }
 
-// getNativeType translates compatibility PubKeyEC to emmy's native pseudonymsys.PubKeyEC.
-func (k *PubKeyEC) getNativeType() (*pseudonymsys.PubKeyEC, error) {
+// getNativeType translates compatibility PubKeyEC to emmy's native ecpseudsys.PubKeyEC.
+func (k *PubKeyEC) getNativeType() (*ecpseudsys.PubKey, error) {
 	h1, err := k.H1.getNativeType()
 	if err != nil {
 		return nil, fmt.Errorf("pubKey.H1: %s", err)
@@ -53,7 +53,7 @@ func (k *PubKeyEC) getNativeType() (*pseudonymsys.PubKeyEC, error) {
 		return nil, fmt.Errorf("pubKey.H2: %s", err)
 	}
 
-	return pseudonymsys.NewPubKeyEC(h1, h2), nil
+	return ecpseudsys.NewPubKey(h1, h2), nil
 }
 
 // TranscriptEC represents an equivalent of ecschnorr.BlindedTrans, but has string
@@ -95,7 +95,7 @@ func (t *TranscriptEC) getNativeType() (*ecschnorr.BlindedTrans, error) {
 	return transcript, nil
 }
 
-// CredentialEC represents an equivalent of pseudonymsys.CredentialEC,
+// CredentialEC represents an equivalent of ecpseudsys.Cred,
 // but has field types compatible with Go language binding tools.
 type CredentialEC struct {
 	SmallAToGamma *ECGroupElement
@@ -118,8 +118,8 @@ func NewCredentialEC(aToGamma, bToGamma, AToGamma, BToGamma *ECGroupElement,
 	}
 }
 
-// getNativeType translates compatibility CredentialEC to emmy's native pseudonymsys.CredentialEC.
-func (c *CredentialEC) getNativeType() (*pseudonymsys.CredentialEC, error) {
+// getNativeType translates compatibility CredentialEC to emmy's native ecpseudsys.Cred.
+func (c *CredentialEC) getNativeType() (*ecpseudsys.Cred, error) {
 	aTg, err := c.SmallAToGamma.getNativeType()
 	if err != nil {
 		return nil, fmt.Errorf("credential.SmallAToGamma: %s", err)
@@ -148,7 +148,7 @@ func (c *CredentialEC) getNativeType() (*pseudonymsys.CredentialEC, error) {
 	if err != nil {
 		return nil, fmt.Errorf("credential.T2: %s", err)
 	}
-	cred := pseudonymsys.NewCredentialEC(aTg, bTg, ATg, BTg, t1, t2)
+	cred := ecpseudsys.NewCred(aTg, bTg, ATg, BTg, t1, t2)
 	return cred, nil
 }
 

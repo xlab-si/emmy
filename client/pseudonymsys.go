@@ -22,8 +22,8 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/common"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -50,10 +50,10 @@ func (c *PseudonymsysClient) GenerateMasterKey() *big.Int {
 }
 
 // GenerateNym generates a nym and registers it to the organization. Do not use
-// the same CACertificate for different organizations - use it only once!
+// the same CACert for different organizations - use it only once!
 func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
-	caCertificate *pseudonymsys.CACertificate, regKey string) (
-	*pseudonymsys.Pseudonym, error) {
+	caCertificate *pseudsys.CACert, regKey string) (
+	*pseudsys.Nym, error) {
 	if err := c.openStream(c.grpcClient, "GenerateNym"); err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 	verified := resp.GetStatus().Success
 	if verified {
 		// todo: store in some DB: (orgName, nymA, nymB)
-		return pseudonymsys.NewPseudonym(nymA, nymB), nil
+		return pseudsys.NewNym(nymA, nymB), nil
 	} else {
 		err := fmt.Errorf("proof for nym registration failed")
 		return nil, err
@@ -126,8 +126,8 @@ func (c *PseudonymsysClient) GenerateNym(userSecret *big.Int,
 
 // ObtainCredential returns anonymous credential.
 func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
-	nym *pseudonymsys.Pseudonym, orgPubKeys *pseudonymsys.PubKey) (
-	*pseudonymsys.Credential, error) {
+	nym *pseudsys.Nym, orgPubKeys *pseudsys.PubKey) (
+	*pseudsys.Cred, error) {
 	if err := c.openStream(c.grpcClient, "ObtainCredential"); err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 		valid2 := transcript2.Verify(c.group, c.group.G, orgPubKeys.H1,
 			aAToGamma, BToGamma)
 		if valid1 && valid2 {
-			credential := pseudonymsys.NewCredential(aToGamma, bToGamma, AToGamma, BToGamma,
+			credential := pseudsys.NewCred(aToGamma, bToGamma, AToGamma, BToGamma,
 				transcript1, transcript2)
 			return credential, nil
 		}
@@ -237,7 +237,7 @@ func (c *PseudonymsysClient) ObtainCredential(userSecret *big.Int,
 // authentication should happen (the organization takes credential issued by
 // another organization).
 func (c *PseudonymsysClient) TransferCredential(orgName string, userSecret *big.Int,
-	nym *pseudonymsys.Pseudonym, credential *pseudonymsys.Credential) (*pb.SessionKey, error) {
+	nym *pseudsys.Nym, credential *pseudsys.Cred) (*pb.SessionKey, error) {
 	if err := c.openStream(c.grpcClient, "TransferCredential"); err != nil {
 		return nil, err
 	}

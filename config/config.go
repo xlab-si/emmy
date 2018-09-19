@@ -26,9 +26,10 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/xlab-si/emmy/crypto/ec"
+	"github.com/xlab-si/emmy/crypto/ecpseudsys"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 )
 
 // init loads the default config file
@@ -141,27 +142,27 @@ func LoadQRRSA() *qr.RSA {
 	return qr
 }
 
-func LoadPseudonymsysOrgSecrets(orgName, dlogType string) *pseudonymsys.SecKey {
+func LoadPseudonymsysOrgSecrets(orgName, dlogType string) *pseudsys.SecKey {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, dlogType))
 	s1, _ := new(big.Int).SetString(org["s1"].(string), 10)
 	s2, _ := new(big.Int).SetString(org["s2"].(string), 10)
-	return pseudonymsys.NewSecKey(s1, s2)
+	return pseudsys.NewSecKey(s1, s2)
 }
 
-func LoadPseudonymsysOrgPubKeys(orgName string) *pseudonymsys.PubKey {
+func LoadPseudonymsysOrgPubKeys(orgName string) *pseudsys.PubKey {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, "dlog"))
 	h1, _ := new(big.Int).SetString(org["h1"].(string), 10)
 	h2, _ := new(big.Int).SetString(org["h2"].(string), 10)
-	return pseudonymsys.NewPubKey(h1, h2)
+	return pseudsys.NewPubKey(h1, h2)
 }
 
-func LoadPseudonymsysOrgPubKeysEC(orgName string) *pseudonymsys.PubKeyEC {
+func LoadPseudonymsysOrgPubKeysEC(orgName string) *ecpseudsys.PubKey {
 	org := viper.GetStringMap(fmt.Sprintf("pseudonymsys.%s.%s", orgName, "ecdlog"))
 	h1X, _ := new(big.Int).SetString(org["h1x"].(string), 10)
 	h1Y, _ := new(big.Int).SetString(org["h1y"].(string), 10)
 	h2X, _ := new(big.Int).SetString(org["h2x"].(string), 10)
 	h2Y, _ := new(big.Int).SetString(org["h2y"].(string), 10)
-	return pseudonymsys.NewPubKeyEC(
+	return ecpseudsys.NewPubKey(
 		ec.NewGroupElement(h1X, h1Y),
 		ec.NewGroupElement(h2X, h2Y),
 	)
@@ -173,11 +174,11 @@ func LoadPseudonymsysCASecret() *big.Int {
 	return s
 }
 
-func LoadPseudonymsysCAPubKey() *pseudonymsys.PubKey {
+func LoadPseudonymsysCAPubKey() *pseudsys.PubKey {
 	ca := viper.GetStringMap("pseudonymsys.ca")
 	x, _ := new(big.Int).SetString(ca["x"].(string), 10)
 	y, _ := new(big.Int).SetString(ca["y1"].(string), 10)
-	return pseudonymsys.NewPubKey(x, y)
+	return pseudsys.NewPubKey(x, y)
 }
 
 func LoadServiceInfo() (string, string, string) {

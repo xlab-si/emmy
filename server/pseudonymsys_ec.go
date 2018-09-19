@@ -21,8 +21,8 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/ecpseudsys"
 	"github.com/xlab-si/emmy/crypto/ecschnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,7 +35,7 @@ func (s *Server) GenerateNym_EC(stream pb.PseudonymSystem_GenerateNym_ECServer) 
 	}
 
 	caPubKey := config.LoadPseudonymsysCAPubKey()
-	org := pseudonymsys.NewOrgNymGenEC(caPubKey, curve)
+	org := ecpseudsys.NewNymGenerator(caPubKey, curve)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomDataEc()
 	x1 := proofRandData.X1.GetNativeType()
@@ -106,8 +106,8 @@ func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_
 	b := proofRandData.B.GetNativeType()
 
 	secKey := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialIssuerEC(secKey, curve)
-	challenge := org.GetAuthenticationChallenge(a, b, x)
+	org := ecpseudsys.NewCredIssuer(secKey, curve)
+	challenge := org.GetChallenge(a, b, x)
 
 	resp := &pb.Message{
 		Content: &pb.Message_Bigint{
@@ -129,7 +129,7 @@ func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_
 	proofData := req.GetBigint()
 	z := new(big.Int).SetBytes(proofData.X1)
 
-	x11, x12, x21, x22, A, B, err := org.VerifyAuthentication(z)
+	x11, x12, x21, x22, A, B, err := org.Verify(z)
 
 	if err != nil {
 		s.Logger.Debug(err)
@@ -161,7 +161,7 @@ func (s *Server) ObtainCredential_EC(stream pb.PseudonymSystem_ObtainCredential_
 	challenge1 := new(big.Int).SetBytes(challenges.X1)
 	challenge2 := new(big.Int).SetBytes(challenges.X2)
 
-	z1, z2 := org.GetEqualityProofData(challenge1, challenge2)
+	z1, z2 := org.GetProofData(challenge1, challenge2)
 	resp = &pb.Message{
 		Content: &pb.Message_DoubleBigint{
 			&pb.DoubleBigInt{
@@ -185,7 +185,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 	}
 
 	secKey := config.LoadPseudonymsysOrgSecrets("org1", "ecdlog")
-	org := pseudonymsys.NewOrgCredentialVerifierEC(secKey, curve)
+	org := ecpseudsys.NewCredVerifier(secKey, curve)
 
 	data := req.GetPseudonymsysTransferCredentialDataEc()
 	orgName := data.OrgName
@@ -210,7 +210,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 		new(big.Int).SetBytes(data.Credential.T2.Hash),
 		new(big.Int).SetBytes(data.Credential.T2.ZAlpha))
 
-	credential := pseudonymsys.NewCredentialEC(
+	credential := ecpseudsys.NewCred(
 		data.Credential.SmallAToGamma.GetNativeType(),
 		data.Credential.SmallBToGamma.GetNativeType(),
 		data.Credential.AToGamma.GetNativeType(),
@@ -218,7 +218,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 		t1, t2,
 	)
 
-	challenge := org.GetAuthenticationChallenge(nymA, nymB,
+	challenge := org.GetChallenge(nymA, nymB,
 		credential.SmallAToGamma, credential.SmallBToGamma, x1, x2)
 
 	resp := &pb.Message{
@@ -244,7 +244,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 	proofData := req.GetBigint()
 	z := new(big.Int).SetBytes(proofData.X1)
 
-	if verified := org.VerifyAuthentication(z, credential, orgPubKeys); !verified {
+	if verified := org.Verify(z, credential, orgPubKeys); !verified {
 		s.Logger.Debug("User authentication failed")
 		return status.Error(codes.Unauthenticated, "user authentication failed")
 	}

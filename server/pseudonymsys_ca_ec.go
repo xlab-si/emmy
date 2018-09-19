@@ -21,7 +21,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/ecpseudsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,7 +35,7 @@ func (s *Server) GenerateCertificate_EC(stream pb.PseudonymSystemCA_GenerateCert
 
 	d := config.LoadPseudonymsysCASecret()
 	pubKey := config.LoadPseudonymsysCAPubKey()
-	ca := pseudonymsys.NewCAEC(d, pubKey, curve)
+	ca := ecpseudsys.NewCA(d, pubKey, curve)
 
 	sProofRandData := req.GetSchnorrEcProofRandomData()
 	x := sProofRandData.X.GetNativeType()

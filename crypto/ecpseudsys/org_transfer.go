@@ -15,59 +15,58 @@
  *
  */
 
-package pseudonymsys
+package ecpseudsys
 
 import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/ecschnorr"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 )
 
-type OrgCredentialVerifierEC struct {
-	secKey *SecKey
+type CredVerifier struct {
+	secKey *pseudsys.SecKey
 
-	EqualityVerifier *ecschnorr.EqualityVerifier
-	a                *ec.GroupElement
-	b                *ec.GroupElement
-	curveType        ec.Curve
+	verifier *ecschnorr.EqualityVerifier
+	a        *ec.GroupElement
+	b        *ec.GroupElement
+	curve    ec.Curve
 }
 
-func NewOrgCredentialVerifierEC(secKey *SecKey, curveType ec.Curve) *OrgCredentialVerifierEC {
-	equalityVerifier := ecschnorr.NewEqualityVerifier(curveType)
-	org := OrgCredentialVerifierEC{
-		secKey:           secKey,
-		EqualityVerifier: equalityVerifier,
-		curveType:        curveType,
+func NewCredVerifier(secKey *pseudsys.SecKey, c ec.Curve) *CredVerifier {
+	return &CredVerifier{
+		secKey:   secKey,
+		verifier: ecschnorr.NewEqualityVerifier(c),
+		curve:    c,
 	}
-
-	return &org
 }
 
-func (org *OrgCredentialVerifierEC) GetAuthenticationChallenge(a, b, a1, b1,
+// TODO GetChallenge?
+func (v *CredVerifier) GetChallenge(a, b, a1, b1,
 	x1, x2 *ec.GroupElement) *big.Int {
 	// TODO: check if (a, b) is registered; if not, close the session
 
-	org.a = a
-	org.b = b
-	challenge := org.EqualityVerifier.GetChallenge(a, a1, b, b1, x1, x2)
-	return challenge
+	v.a = a
+	v.b = b
+
+	return v.verifier.GetChallenge(a, a1, b, b1, x1, x2)
 }
 
-func (org *OrgCredentialVerifierEC) VerifyAuthentication(z *big.Int,
-	credential *CredentialEC, orgPubKeys *PubKeyEC) bool {
-	verified := org.EqualityVerifier.Verify(z)
+func (v *CredVerifier) Verify(z *big.Int,
+	credential *Cred, orgPubKeys *PubKey) bool {
+	verified := v.verifier.Verify(z)
 	if !verified {
 		return false
 	}
 
-	g := ec.NewGroupElement(org.EqualityVerifier.Group.Curve.Params().Gx,
-		org.EqualityVerifier.Group.Curve.Params().Gy)
+	g := ec.NewGroupElement(v.verifier.Group.Curve.Params().Gx,
+		v.verifier.Group.Curve.Params().Gy)
 
 	valid1 := credential.T1.Verify(ec.P256, g, orgPubKeys.H2,
 		credential.SmallBToGamma, credential.AToGamma)
 
-	aAToGamma := org.EqualityVerifier.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
+	aAToGamma := v.verifier.Group.Mul(credential.SmallAToGamma, credential.AToGamma)
 	valid2 := credential.T2.Verify(ec.P256, g, orgPubKeys.H1,
 		aAToGamma, credential.BToGamma)
 
