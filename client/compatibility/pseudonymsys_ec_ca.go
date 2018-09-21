@@ -24,7 +24,7 @@ import (
 
 	"github.com/xlab-si/emmy/client"
 	"github.com/xlab-si/emmy/crypto/ec"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
+	"github.com/xlab-si/emmy/crypto/ecpseudsys"
 )
 
 // Representations of specific elliptic curves to be used in elliptic cryptography based schemes.
@@ -77,7 +77,7 @@ func NewPseudonymEC(a, b *ECGroupElement) *PseudonymEC {
 }
 
 // getNativeType translates compatibility PseudonymEC to emmy's native pseudonymsys.PseudonymEC.
-func (p *PseudonymEC) getNativeType() (*pseudonymsys.PseudonymEC, error) {
+func (p *PseudonymEC) getNativeType() (*ecpseudsys.Nym, error) {
 	a, err := p.A.getNativeType()
 	if err != nil {
 		return nil, fmt.Errorf("nym.A: %s", ArgsConversionError)
@@ -86,7 +86,7 @@ func (p *PseudonymEC) getNativeType() (*pseudonymsys.PseudonymEC, error) {
 	if err != nil {
 		return nil, fmt.Errorf("nym.B: %s", ArgsConversionError)
 	}
-	pseudonym := pseudonymsys.NewPseudonymEC(a, b)
+	pseudonym := ecpseudsys.NewNym(a, b)
 	return pseudonym, nil
 }
 
@@ -109,7 +109,7 @@ func NewCACertificateEC(bA, bB *ECGroupElement, r, s string) *CACertificateEC {
 }
 
 // getNativeType translates compatibility CACertificateEC to emmy's native pseudonymsys.CACertificateEC.
-func (c *CACertificateEC) getNativeType() (*pseudonymsys.CACertificateEC, error) {
+func (c *CACertificateEC) getNativeType() (*ecpseudsys.CACert, error) {
 	blindedA, err := c.BlindedA.getNativeType()
 	if err != nil {
 		return nil, fmt.Errorf("cert.BlindedA: %s", ArgsConversionError)
@@ -126,7 +126,7 @@ func (c *CACertificateEC) getNativeType() (*pseudonymsys.CACertificateEC, error)
 	if !sOk {
 		return nil, fmt.Errorf("cert.S (%s): %s", c.S, ArgsConversionError)
 	}
-	certificate := pseudonymsys.NewCACertificateEC(blindedA, blindedB, r, s)
+	certificate := ecpseudsys.NewCACert(blindedA, blindedB, r, s)
 	return certificate, nil
 }
 

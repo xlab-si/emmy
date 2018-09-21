@@ -21,8 +21,8 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,7 +36,7 @@ func (s *Server) GenerateNym(stream pb.PseudonymSystem_GenerateNymServer) error 
 
 	group := config.LoadSchnorrGroup()
 	caPubKey := config.LoadPseudonymsysCAPubKey()
-	org := pseudonymsys.NewOrgNymGen(group, caPubKey)
+	org := pseudsys.NewNymGenerator(group, caPubKey)
 
 	proofRandData := req.GetPseudonymsysNymGenProofRandomData()
 	x1 := new(big.Int).SetBytes(proofRandData.X1)
@@ -104,13 +104,13 @@ func (s *Server) ObtainCredential(stream pb.PseudonymSystem_ObtainCredentialServ
 
 	group := config.LoadSchnorrGroup()
 	secKey := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
-	org := pseudonymsys.NewOrgCredentialIssuer(group, secKey)
+	org := pseudsys.NewCredIssuer(group, secKey)
 
 	sProofRandData := req.GetSchnorrProofRandomData()
 	x := new(big.Int).SetBytes(sProofRandData.X)
 	a := new(big.Int).SetBytes(sProofRandData.A)
 	b := new(big.Int).SetBytes(sProofRandData.B)
-	challenge := org.GetAuthenticationChallenge(a, b, x)
+	challenge := org.GetChallenge(a, b, x)
 
 	resp := &pb.Message{
 		Content: &pb.Message_Bigint{
@@ -132,7 +132,7 @@ func (s *Server) ObtainCredential(stream pb.PseudonymSystem_ObtainCredentialServ
 	proofData := req.GetBigint()
 	z := new(big.Int).SetBytes(proofData.X1)
 
-	x11, x12, x21, x22, A, B, err := org.VerifyAuthentication(z)
+	x11, x12, x21, x22, A, B, err := org.Verify(z)
 	if err != nil {
 		s.Logger.Debug(err)
 		return status.Error(codes.Internal, err.Error())
@@ -163,7 +163,7 @@ func (s *Server) ObtainCredential(stream pb.PseudonymSystem_ObtainCredentialServ
 	challenge1 := new(big.Int).SetBytes(challenges.X1)
 	challenge2 := new(big.Int).SetBytes(challenges.X2)
 
-	z1, z2 := org.GetEqualityProofData(challenge1, challenge2)
+	z1, z2 := org.GetProofData(challenge1, challenge2)
 	resp = &pb.Message{
 		Content: &pb.Message_DoubleBigint{
 			&pb.DoubleBigInt{
@@ -188,7 +188,7 @@ func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredential
 
 	group := config.LoadSchnorrGroup()
 	secKey := config.LoadPseudonymsysOrgSecrets("org1", "dlog")
-	org := pseudonymsys.NewOrgCredentialVerifier(group, secKey)
+	org := pseudsys.NewCredVerifier(group, secKey)
 
 	data := req.GetPseudonymsysTransferCredentialData()
 	orgName := data.OrgName
@@ -211,7 +211,7 @@ func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredential
 		new(big.Int).SetBytes(data.Credential.T2.ZAlpha),
 	)
 
-	credential := pseudonymsys.NewCredential(
+	credential := pseudsys.NewCred(
 		new(big.Int).SetBytes(data.Credential.SmallAToGamma),
 		new(big.Int).SetBytes(data.Credential.SmallBToGamma),
 		new(big.Int).SetBytes(data.Credential.AToGamma),
@@ -219,7 +219,7 @@ func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredential
 		t1, t2,
 	)
 
-	challenge := org.GetAuthenticationChallenge(nymA, nymB,
+	challenge := org.GetChallenge(nymA, nymB,
 		credential.SmallAToGamma, credential.SmallBToGamma, x1, x2)
 
 	resp := &pb.Message{
@@ -245,7 +245,7 @@ func (s *Server) TransferCredential(stream pb.PseudonymSystem_TransferCredential
 	proofData := req.GetBigint()
 	z := new(big.Int).SetBytes(proofData.X1)
 
-	if verified := org.VerifyAuthentication(z, credential, orgPubKeys); !verified {
+	if verified := org.Verify(z, credential, orgPubKeys); !verified {
 		s.Logger.Debug("User authentication failed")
 		return status.Error(codes.Unauthenticated, "user authentication failed")
 	}

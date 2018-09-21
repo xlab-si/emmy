@@ -15,7 +15,7 @@
  *
  */
 
-package pseudonymsys
+package pseudsys
 
 import (
 	"crypto/ecdsa"
@@ -27,51 +27,47 @@ import (
 	"github.com/xlab-si/emmy/crypto/schnorr"
 )
 
-type Pseudonym struct {
+// Nym represents a pseudonym in the pseudonym system scheme.
+type Nym struct {
 	A *big.Int
 	B *big.Int
 }
 
-func NewPseudonym(a, b *big.Int) *Pseudonym {
-	return &Pseudonym{
+func NewNym(a, b *big.Int) *Nym {
+	return &Nym{
 		A: a,
 		B: b,
 	}
 }
 
-type OrgNymGen struct {
-	EqualityVerifier *schnorr.EqualityVerifier
-	caPubKey         *PubKey
+type NymGenerator struct {
+	verifier *schnorr.EqualityVerifier
+	caPubKey *PubKey
 }
 
-func NewOrgNymGen(group *schnorr.Group, caPubKey *PubKey) *OrgNymGen {
-	verifier := schnorr.NewEqualityVerifier(group)
-	org := OrgNymGen{
-		EqualityVerifier: verifier,
-		caPubKey:         caPubKey,
+func NewNymGenerator(group *schnorr.Group, caPubKey *PubKey) *NymGenerator {
+	return &NymGenerator{
+		verifier: schnorr.NewEqualityVerifier(group),
+		caPubKey: caPubKey,
 	}
-	return &org
 }
 
-func (org *OrgNymGen) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
+func (g *NymGenerator) GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2,
 	r, s *big.Int) (*big.Int, error) {
 	c := ec.GetCurve(ec.P256)
-	pubKey := ecdsa.PublicKey{Curve: c, X: org.caPubKey.H1, Y: org.caPubKey.H2}
+	pubKey := ecdsa.PublicKey{Curve: c, X: g.caPubKey.H1, Y: g.caPubKey.H2}
 
 	hashed := common.HashIntoBytes(blindedA, blindedB)
 	verified := ecdsa.Verify(&pubKey, hashed, r, s)
-	if verified {
-		challenge := org.EqualityVerifier.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2)
-		return challenge, nil
-	} else {
+	if !verified {
 		return nil, fmt.Errorf("signature is not valid")
 	}
+
+	challenge := g.verifier.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2)
+	return challenge, nil
 }
 
-func (org *OrgNymGen) Verify(z *big.Int) bool {
-	verified := org.EqualityVerifier.Verify(z)
-	if verified {
-		// TODO: store (a, b) into a database
-	}
-	return verified
+// TODO: store (a, b) into a database if verified
+func (g *NymGenerator) Verify(z *big.Int) bool {
+	return g.verifier.Verify(z)
 }

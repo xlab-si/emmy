@@ -15,7 +15,7 @@
  *
  */
 
-package pseudonymsys
+package ecpseudsys
 
 import (
 	"crypto/ecdsa"
@@ -25,55 +25,52 @@ import (
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/ecschnorr"
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 )
 
-type PseudonymEC struct {
+// Nym represents a pseudonym in the pseudonym system scheme.
+type Nym struct {
 	A *ec.GroupElement
 	B *ec.GroupElement
 }
 
-func NewPseudonymEC(a, b *ec.GroupElement) *PseudonymEC {
-	return &PseudonymEC{
+func NewNym(a, b *ec.GroupElement) *Nym {
+	return &Nym{
 		A: a,
 		B: b,
 	}
 }
 
-type OrgNymGenEC struct {
-	EqualityVerifier *ecschnorr.EqualityVerifier
-	caPubKey         *PubKey
-	curveType        ec.Curve
+type NymGenerator struct {
+	verifier  *ecschnorr.EqualityVerifier
+	caPubKey  *pseudsys.PubKey
+	curveType ec.Curve
 }
 
-func NewOrgNymGenEC(pubKey *PubKey, curveType ec.Curve) *OrgNymGenEC {
-	verifier := ecschnorr.NewEqualityVerifier(curveType)
-	org := OrgNymGenEC{
-		EqualityVerifier: verifier,
-		caPubKey:         pubKey,
-		curveType:        curveType,
+func NewNymGenerator(pubKey *pseudsys.PubKey, c ec.Curve) *NymGenerator {
+	return &NymGenerator{
+		verifier:  ecschnorr.NewEqualityVerifier(c),
+		caPubKey:  pubKey,
+		curveType: c,
 	}
-	return &org
 }
 
-func (org *OrgNymGenEC) GetChallenge(nymA, blindedA, nymB, blindedB,
+func (g *NymGenerator) GetChallenge(nymA, blindedA, nymB, blindedB,
 	x1, x2 *ec.GroupElement, r, s *big.Int) (*big.Int, error) {
-	c := ec.GetCurve(org.curveType)
-	pubKey := ecdsa.PublicKey{Curve: c, X: org.caPubKey.H1, Y: org.caPubKey.H2}
+	c := ec.GetCurve(g.curveType)
+	pubKey := ecdsa.PublicKey{Curve: c, X: g.caPubKey.H1, Y: g.caPubKey.H2}
 
 	hashed := common.HashIntoBytes(blindedA.X, blindedA.Y, blindedB.X, blindedB.Y)
-	verified := ecdsa.Verify(&pubKey, hashed, r, s)
-	if verified {
-		challenge := org.EqualityVerifier.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2)
-		return challenge, nil
-	} else {
+
+	if verified := ecdsa.Verify(&pubKey, hashed, r, s); !verified {
 		return nil, fmt.Errorf("signature is not valid")
 	}
+
+	challenge := g.verifier.GetChallenge(nymA, blindedA, nymB, blindedB, x1, x2)
+	return challenge, nil
 }
 
-func (org *OrgNymGenEC) Verify(z *big.Int) bool {
-	verified := org.EqualityVerifier.Verify(z)
-	if verified {
-		// TODO: store (a, b) into a database
-	}
-	return verified
+// TODO: store (a, b) into a database if verified
+func (g *NymGenerator) Verify(z *big.Int) bool {
+	return g.verifier.Verify(z)
 }

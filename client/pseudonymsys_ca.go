@@ -20,8 +20,8 @@ package client
 import (
 	"math/big"
 
+	"github.com/xlab-si/emmy/crypto/pseudsys"
 	"github.com/xlab-si/emmy/crypto/schnorr"
-	"github.com/xlab-si/emmy/crypto/zkp/schemes/pseudonymsys"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -43,16 +43,16 @@ func NewPseudonymsysCAClient(conn *grpc.ClientConn,
 }
 
 // GenerateMasterNym generates a master pseudonym to be used with GenerateCertificate.
-func (c *PseudonymsysCAClient) GenerateMasterNym(secret *big.Int) *pseudonymsys.Pseudonym {
+func (c *PseudonymsysCAClient) GenerateMasterNym(secret *big.Int) *pseudsys.Nym {
 	p := c.group.Exp(c.group.G, secret)
-	return pseudonymsys.NewPseudonym(c.group.G, p)
+	return pseudsys.NewNym(c.group.G, p)
 }
 
 // GenerateCertificate provides a certificate from trusted CA to the user. Note that CA
 // needs to know the user. The certificate is then used for registering pseudonym (nym).
 // The certificate contains blinded user's master key pair and a signature of it.
-func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pseudonymsys.Pseudonym) (
-	*pseudonymsys.CACertificate, error) {
+func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pseudsys.Nym) (
+	*pseudsys.CACert, error) {
 
 	if err := c.openStream(c.grpcClient, "GenerateCertificate"); err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (c *PseudonymsysCAClient) GenerateCertificate(userSecret *big.Int, nym *pse
 		return nil, err
 	}
 	cert := resp.GetPseudonymsysCaCertificate()
-	certificate := pseudonymsys.NewCACertificate(
+	certificate := pseudsys.NewCACert(
 		new(big.Int).SetBytes(cert.BlindedA), new(big.Int).SetBytes(cert.BlindedB),
 		new(big.Int).SetBytes(cert.R), new(big.Int).SetBytes(cert.S))
 
