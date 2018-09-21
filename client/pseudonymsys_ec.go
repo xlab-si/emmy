@@ -62,7 +62,7 @@ func (c *PseudonymsysClientEC) GenerateNym(userSecret *big.Int,
 
 	prover := ecschnorr.NewEqualityProver(c.curve)
 
-	// Differently as in Nym Systems paper a user here generates a nym (if master
+	// Differently as in Pseudonym Systems paper a user here generates a nym (if master
 	// key pair is (g, g^s), a generated nym is (g^gamma, g^(gamma * s)),
 	// however a user needs to prove that log_nymA(nymB) = log_blindedA(blindedB).
 
