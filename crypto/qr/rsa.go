@@ -21,8 +21,6 @@ import (
 	"math/big"
 
 	"fmt"
-
-	"github.com/xlab-si/emmy/crypto/common"
 )
 
 // RSA presents QR_N - group of quadratic residues modulo N where N is a product
@@ -97,11 +95,11 @@ func (g *RSA) IsElementInGroup(a *big.Int) (bool, error) {
 
 	factors := []*big.Int{g.P, g.Q}
 	for _, p := range factors {
-		isQR, err := common.IsQuadraticResidue(a, p)
+		factorIsQR, err := isQR(a, p)
 		if err != nil {
 			return false, err
 		}
-		if !isQR {
+		if !factorIsQR {
 			return false, nil
 		}
 	}

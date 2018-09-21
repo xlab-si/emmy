@@ -19,7 +19,6 @@ package common
 
 import (
 	"crypto/sha512"
-	"fmt"
 	"math/big"
 )
 
@@ -69,29 +68,6 @@ func LCM(x, y *big.Int) *big.Int {
 	t := new(big.Int)
 	t.Div(n, d)
 	return t
-}
-
-// IsQuadraticResidue returns true if a is quadratic residue in Z_p and false otherwise.
-// It works only when p is prime.
-func IsQuadraticResidue(a *big.Int, p *big.Int) (bool, error) {
-	if !p.ProbablyPrime(20) {
-		err := fmt.Errorf("p is not a prime")
-		return false, err
-	}
-
-	// check whether a^((p-1)/2) is 1 or -1 (Euler's criterion)
-	p1 := new(big.Int).Sub(p, big.NewInt(1))
-	p1 = new(big.Int).Div(p1, big.NewInt(2))
-	cr := new(big.Int).Exp(a, p1, p)
-
-	if cr.Cmp(big.NewInt(1)) == 0 {
-		return true, nil
-	} else if cr.Cmp(new(big.Int).Sub(p, big.NewInt(1))) == 0 {
-		return false, nil
-	} else {
-		err := fmt.Errorf("it seems that p is not a prime")
-		return false, err
-	}
 }
 
 // Contains returns true if array contains a given element, otherwise false.

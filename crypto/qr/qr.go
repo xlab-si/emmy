@@ -117,3 +117,21 @@ func (v *Verifier) Verify(z *big.Int) bool {
 		return z2.Cmp(s) == 0
 	}
 }
+
+// isQR accepts integer a and prime p, and returns true if
+// a is quadratic residue in Z_p group, false otherwise.
+// If p is not a prime, error is returned.
+func isQR(a *big.Int, p *big.Int) (bool, error) {
+	if !p.ProbablyPrime(20) {
+		return false, fmt.Errorf("p is not a prime")
+	}
+
+	one := big.NewInt(1)
+
+	// check whether a^((p-1)/2) is 1 or -1 (Euler's criterion)
+	pMin1 := new(big.Int).Sub(p, one)
+	exp := new(big.Int).Div(pMin1, big.NewInt(2)) // exponent
+	cr := new(big.Int).Exp(a, exp, p)
+
+	return cr.Cmp(one) == 0, nil
+}
