@@ -19,38 +19,29 @@ package encryption
 
 import (
 	"math/big"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 )
 
 func TestCSPaillier(t *testing.T) {
-	secParams := CSPaillierSecParams{
-		L:        512,
-		RoLength: 160,
-		K:        158,
-		K1:       158,
-	}
+	csp := NewCSPaillier(
+		&CSPaillierSecParams{
+			L:        512,
+			RoLength: 160,
+			K:        158,
+			K1:       158,
+		})
 
-	dir := config.LoadTestdataDir()
-	secKeyPath := filepath.Join(dir, "cspaillierseckey.txt")
-	pubKeyPath := filepath.Join(dir, "cspaillierpubkey.txt")
-
-	cspaillier := NewCSPaillier(&secParams)
-	cspaillier.StoreSecKey(secKeyPath)
-	cspaillier.StorePubKey(pubKeyPath)
-
-	cspaillierPub, _ := NewCSPaillierFromPubKeyFile(pubKeyPath)
+	cspSec, _ := NewCSPaillierFromSecKey(csp.SecKey)
+	cspPub := NewCSPaillierFromPubKey(csp.PubKey)
 
 	m := common.GetRandomInt(big.NewInt(8685849))
 	label := common.GetRandomInt(big.NewInt(340002223232))
-	u, e, v, _ := cspaillierPub.Encrypt(m, label)
 
-	cspaillierSec, _ := NewCSPaillierFromSecKey(secKeyPath)
-	p, _ := cspaillierSec.Decrypt(u, e, v, label)
+	u, e, v, _ := cspPub.Encrypt(m, label)
+	p, _ := cspSec.Decrypt(u, e, v, label)
 
 	assert.Equal(t, m, p, "Camenisch-Shoup modified Paillier encryption/decryption does not work correctly")
 }
