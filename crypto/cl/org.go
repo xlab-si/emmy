@@ -26,7 +26,6 @@ import (
 	"encoding/gob"
 	"os"
 
-	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/df"
 	"github.com/xlab-si/emmy/crypto/pedersen"
@@ -84,7 +83,6 @@ type Org struct {
 	attrsVerifiers     []*df.OpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
 	credIssueNonceOrg  *big.Int
 	proveCredNonceOrg  *big.Int
-	dbManager          *DBManager
 }
 
 func NewOrg(params *Params) (*Org, error) {
@@ -147,10 +145,6 @@ func NewOrgFromParams(params *Params, pubKey *PubKey, secKey *SecKey) (*Org, err
 	}
 
 	pedersenReceiver := pedersen.NewReceiverFromParams(pubKey.PedersenParams)
-	dbManager, err := NewDBManager(config.LoadRegistrationDBAddress())
-	if err != nil {
-		return nil, err
-	}
 
 	return &Org{
 		Params:           params,
@@ -158,7 +152,6 @@ func NewOrgFromParams(params *Params, pubKey *PubKey, secKey *SecKey) (*Org, err
 		SecKey:           secKey,
 		Group:            group,
 		pedersenReceiver: pedersenReceiver,
-		dbManager:        dbManager,
 	}, nil
 }
 
@@ -216,13 +209,13 @@ func (o *Org) genAProof(nonceUser, context, eInv, Q, A *big.Int) *qr.Representat
 	return qr.NewRepresentationProof(proofRandomData, challenge, proofData)
 }
 
-type IssueCredResult struct {
-	cred   *Cred
-	proof  *qr.RepresentationProof
-	record *ReceiverRecord
+type CredResult struct {
+	Cred   *Cred
+	AProof *qr.RepresentationProof
+	Record *ReceiverRecord
 }
 
-func (o *Org) IssueCred(cr *CredRequest) (*Cred, *qr.RepresentationProof, error) {
+func (o *Org) IssueCred(cr *CredRequest) (*CredResult, error) {
 	o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group)
 	o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 
@@ -230,12 +223,12 @@ func (o *Org) IssueCred(cr *CredRequest) (*Cred, *qr.RepresentationProof, error)
 	o.knownAttrs = cr.KnownAttrs
 	err := o.setUpAttrVerifiers(cr.CommitmentsOfAttrs)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	o.U = cr.U
 
 	if verified := o.verifyCredRequest(cr); !verified {
-		return nil, nil, fmt.Errorf("credential request not valid")
+		return nil, fmt.Errorf("credential request not valid")
 	}
 
 	e, v11 := o.genCredRandoms()
@@ -265,48 +258,36 @@ func (o *Org) IssueCred(cr *CredRequest) (*Cred, *qr.RepresentationProof, error)
 	context := o.PubKey.GetContext()
 	AProof := o.genAProof(cr.Nonce, context, eInv, Q, A) // nonceUser!
 
-	// TODO
-	res := &IssueCredResult{
-		cred:   NewCred(A, e, v11),
-		proof:  AProof,
-		record: NewReceiverRecord(o.knownAttrs, o.commitmentsOfAttrs, Q, v11, context),
+	res := &CredResult{
+		Cred:   NewCred(A, e, v11),
+		AProof: AProof,
+		Record: NewReceiverRecord(o.knownAttrs, o.commitmentsOfAttrs, Q, v11, context),
 	}
 
-	err = o.dbManager.SetReceiverRecord(o.nym, res.record)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return res.cred, res.proof, nil
+	return res, nil
 }
 
-func (o *Org) UpdateCred(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Cred,
-	*qr.RepresentationProof, error) {
-	rr, err := o.dbManager.GetReceiverRecord(nym)
-	if err != nil {
-		return nil, nil, err
-	}
-
+func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int, newKnownAttrs []*big.Int) (*CredResult, error) {
 	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCred
 		o.knownAttrs = newKnownAttrs
-		o.setUpAttrVerifiers(rr.CommitmentsOfAttrs)
+		o.setUpAttrVerifiers(rec.CommitmentsOfAttrs)
 		o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group) // pubKey.Params.Group
 		o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	}
 
 	e, v11 := o.genCredRandoms()
-	v11Diff := new(big.Int).Sub(v11, rr.V11)
+	v11Diff := new(big.Int).Sub(v11, rec.V11)
 
 	acc := big.NewInt(1)
 	for ind := 0; ind < len(o.knownAttrs); ind++ {
 		t1 := o.Group.Exp(o.PubKey.RsKnown[ind],
-			new(big.Int).Sub(newKnownAttrs[ind], rr.KnownAttrs[ind]))
+			new(big.Int).Sub(newKnownAttrs[ind], rec.KnownAttrs[ind]))
 		acc = o.Group.Mul(acc, t1)
 	}
 	t := o.Group.Exp(o.PubKey.S, v11Diff)
 	denom := o.Group.Mul(acc, t)
 	denomInv := o.Group.Inv(denom)
-	newQ := o.Group.Mul(rr.Q, denomInv)
+	newQ := o.Group.Mul(rec.Q, denomInv)
 
 	phiN := new(big.Int).Mul(o.Group.P1, o.Group.Q1)
 	eInv := new(big.Int).ModInverse(e, phiN)
@@ -315,13 +296,14 @@ func (o *Org) UpdateCred(nym, nonceUser *big.Int, newKnownAttrs []*big.Int) (*Cr
 	context := o.PubKey.GetContext()
 	AProof := o.genAProof(nonceUser, context, eInv, newQ, newA)
 	// currently commitmentsOfAttrs cannot be updated
-	rrec := NewReceiverRecord(newKnownAttrs, rr.CommitmentsOfAttrs, newQ, v11, context)
-	err = o.dbManager.SetReceiverRecord(o.nym, rrec)
-	if err != nil {
-		return nil, nil, err
+
+	res := &CredResult{
+		Cred:   NewCred(newA, e, v11),
+		AProof: AProof,
+		Record: NewReceiverRecord(newKnownAttrs, rec.CommitmentsOfAttrs, newQ, v11, context),
 	}
 
-	return NewCred(newA, e, v11), AProof, nil
+	return res, nil
 }
 
 func (o *Org) GetProveCredNonce() *big.Int {

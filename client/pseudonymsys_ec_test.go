@@ -43,22 +43,17 @@ func TestPseudonymsysEC(t *testing.T) {
 		t.Errorf("Error when registering with CA: %s", err.Error())
 	}
 
-	err = insertTestRegistrationKeys()
-	if err != nil {
-		t.Errorf("Error getting registration key: %s", err.Error())
-	}
-
 	//nym generation should fail with invalid registration key
 	_, err = c1.GenerateNym(userSecret, caCertificate, "029uywfh9udni")
 	assert.NotNil(t, err, "Should produce an error")
 
-	nym1, err := c1.GenerateNym(userSecret, caCertificate, "testRegKey1")
+	nym1, err := c1.GenerateNym(userSecret, caCertificate, "testRegKey3")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	//nym generation should fail the second time with the same registration key
-	_, err = c1.GenerateNym(userSecret, caCertificate, "testRegKey1")
+	_, err = c1.GenerateNym(userSecret, caCertificate, "testRegKey3")
 	assert.NotNil(t, err, "Should produce an error")
 
 	orgName := "org1"
@@ -80,7 +75,7 @@ func TestPseudonymsysEC(t *testing.T) {
 	// using transferCredential to authenticate with the same organization and not
 	// transferring credentials to another organization
 	c2, _ := NewPseudonymsysClientEC(testGrpcClientConn, curveType)
-	nym2, err := c2.GenerateNym(userSecret, caCertificate1, "testRegKey2")
+	nym2, err := c2.GenerateNym(userSecret, caCertificate1, "testRegKey4")
 	if err != nil {
 		t.Errorf(err.Error())
 	}

@@ -51,12 +51,18 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating credential request: %v", err)
 	}
 
-	credential, AProof, err := org.IssueCred(credReq)
+	res, err := org.IssueCred(credReq)
 	if err != nil {
 		t.Errorf("error when issuing credential: %v", err)
 	}
 
-	userVerified, err := credManager.Verify(credential, AProof)
+	// Store record to db
+	mockDb := NewMockRecordManager()
+	if err := mockDb.Store(credReq.Nym, res.Record); err != nil {
+		t.Errorf("error saving record to db: %v", err)
+	}
+
+	userVerified, err := credManager.Verify(res.Cred, res.AProof)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
@@ -81,12 +87,19 @@ func TestCL(t *testing.T) {
 	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
 	credManager.Update(newKnownAttrs)
 
-	credential1, AProof1, err := org.UpdateCred(credManager.Nym, credReq.Nonce, newKnownAttrs)
+	rec, err := mockDb.Load(credManager.Nym)
+	if err != nil {
+		t.Errorf("error saving record to db: %v", err)
+	}
+	res1, err := org.UpdateCred(credManager.Nym, rec, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
+	if err := mockDb.Store(credManager.Nym, res1.Record); err != nil {
+		t.Errorf("error saving record to db: %v", err)
+	}
 
-	userVerified, err = credManager.Verify(credential1, AProof1)
+	userVerified, err = credManager.Verify(res1.Cred, res1.AProof)
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
@@ -116,7 +129,7 @@ func TestCL(t *testing.T) {
 	}
 
 	nonce := org.GetProveCredNonce()
-	randCred, proof, err := credManager.BuildProof(credential1, revealedKnownAttrsIndices,
+	randCred, proof, err := credManager.BuildProof(res1.Cred, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)

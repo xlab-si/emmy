@@ -28,6 +28,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/log"
 	pb "github.com/xlab-si/emmy/proto"
@@ -55,14 +56,16 @@ type Server struct {
 	GrpcServer *grpc.Server
 	Logger     log.Logger
 	*SessionManager
-	*RegistrationManager
+	RegistrationManager
+	clRecordManager cl.ReceiverRecordManager
 }
 
 // NewServer initializes an instance of the Server struct and returns a pointer.
 // It performs some default configuration (tracing of gRPC communication and interceptors)
 // and registers RPC server handlers with gRPC server. It requires TLS cert and keyfile
 // in order to establish a secure channel with clients.
-func NewServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server, error) {
+func NewServer(certFile, keyFile string, regMgr RegistrationManager,
+	recMgr cl.ReceiverRecordManager, logger log.Logger) (*Server, error) {
 	logger.Info("Instantiating new server")
 
 	// Obtain TLS credentials
@@ -78,12 +81,6 @@ func NewServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server,
 		logger.Warning(err)
 	}
 
-	registrationManager, err := NewRegistrationManager(dbAddress)
-	if err != nil {
-		logger.Critical(err)
-		return nil, err
-	}
-
 	// Allow as much concurrent streams as possible and register a gRPC stream interceptor
 	// for logging and monitoring purposes.
 	server := &Server{
@@ -94,7 +91,8 @@ func NewServer(certFile, keyFile, dbAddress string, logger log.Logger) (*Server,
 		),
 		Logger:              logger,
 		SessionManager:      sessionManager,
-		RegistrationManager: registrationManager,
+		RegistrationManager: regMgr,
+		clRecordManager:     recMgr,
 	}
 
 	// Disable tracing by default, as is used for debugging purposes.

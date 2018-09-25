@@ -18,32 +18,46 @@
 package cl
 
 import (
-	"fmt"
 	"math/big"
+
+	"fmt"
 
 	"github.com/go-redis/redis"
 )
 
-type DBManager struct {
+// ReceiverRecordManager manages receiver records
+// tied to particular nyms.
+type ReceiverRecordManager interface {
+	// Store stores the nym and the corresponding ReceiverRecord,
+	// returning error in case the data was not successfully stored.
+	Store(*big.Int, *ReceiverRecord) error
+
+	// Load loads the ReceiverRecord associated with the given
+	// nym, returning an error in case no record was found, or
+	// in case of error in the interaction with the
+	// storage backend.
+	Load(*big.Int) (*ReceiverRecord, error)
+}
+
+// RedisClient wraps a redis client in order to interact with the
+// redis database for management of receiver records.
+type RedisClient struct {
 	*redis.Client
 }
 
-func NewDBManager(address string) (*DBManager, error) {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: address,
-	})
-	err := redisClient.Ping().Err()
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to redis database (%s)", err)
+// NewRedisClient accepts an instance of redis.Client and returns
+// an instance of RedisClient.
+func NewRedisClient(c *redis.Client) *RedisClient {
+	return &RedisClient{
+		Client: c,
 	}
-	return &DBManager{redisClient}, nil
 }
 
-func (m *DBManager) SetReceiverRecord(nym *big.Int, r *ReceiverRecord) error {
+func (m *RedisClient) Store(nym *big.Int, r *ReceiverRecord) error {
 	return m.Set(nym.String(), r, 0).Err()
 }
 
-func (m *DBManager) GetReceiverRecord(nym *big.Int) (*ReceiverRecord, error) {
+func (m *RedisClient) Load(nym *big.Int) (*ReceiverRecord, error) {
 	r, err := m.Get(nym.String()).Result()
 	if err != nil {
 		return nil, err
@@ -52,4 +66,32 @@ func (m *DBManager) GetReceiverRecord(nym *big.Int) (*ReceiverRecord, error) {
 	rec.UnmarshalBinary([]byte(r))
 
 	return &rec, nil
+}
+
+// MockRecordManager is a mock implementation of the ReceiverRecordManager
+// interface. It stores key-value pairs of nyms and corresponding
+// receiver records in a map.
+type MockRecordManager struct {
+	data map[string]ReceiverRecord
+}
+
+// NewMockRecordManager initializes the map that will hold the data.
+func NewMockRecordManager() *MockRecordManager {
+	return &MockRecordManager{
+		data: make(map[string]ReceiverRecord),
+	}
+}
+
+func (rm *MockRecordManager) Load(nym *big.Int) (*ReceiverRecord, error) {
+	r, present := rm.data[nym.String()]
+	if !present {
+		return nil, fmt.Errorf("record does not exist")
+	}
+
+	return &r, nil
+}
+
+func (rm *MockRecordManager) Store(nym *big.Int, r *ReceiverRecord) error {
+	rm.data[nym.String()] = *r
+	return nil
 }
