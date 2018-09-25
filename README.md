@@ -208,7 +208,6 @@ $ go get github.com/xlab-si/emmy
 ```
 
 This should give you the `emmy` executable in your `$GOBIN`.
-To successfully run unit tests, a [redis](https://redis.io/) instance is required to listen on the address given in [defaults.yml](config/defaults.yml), with the default value of *localhost:6379*.
 You can run the unit tests to see if everything is working properly with:
 
 ```

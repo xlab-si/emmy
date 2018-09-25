@@ -17,7 +17,10 @@ they can aid the development.
 * `make` or `make install` will compile all the packages and produce `emmy` binary with `server` 
 and 
 `client` CLI commands.
-* `make test` will compile and run tests for all the packages and report test coverage.
+* `make test` will compile and run unit & interation tests for all the packages and report test coverage. Note that
+mock implementations will be used where storage backend is needed.
+* `make test-integration` will compile and run integration tests for the `client` package against a real redis
+ instance (expected to be up and running on _localhost:6379_), and report test coverage.
 * `make fmt` will list the files whose formating does not conform to that of *goimports*, and fix 
 their formatting. See [Source code formatting](#source-code-formatting).
 * `make deps` will use `dep` to fetch all dependencies and place them in the `vendor` directory. See 

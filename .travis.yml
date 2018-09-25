@@ -18,6 +18,7 @@ install:
 
 script:
   - make test
+  - make test-integration
 
 after_script:
   - docker stop emmy-redis
