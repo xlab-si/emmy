@@ -59,12 +59,17 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
-	cred, AProof, err := org.IssueCred(credReq)
+	// Issue the credential
+	res, err := org.IssueCred(credReq)
 	if err != nil {
 		return fmt.Errorf("error when issuing credential: %v", err)
 	}
+	// Store the newly obtained receiver record to the database
+	if err = s.clRecordManager.Store(credReq.Nym, res.Record); err != nil {
+		return err
+	}
 
-	pbCred := pb.ToPbCLCredential(cred, AProof)
+	pbCred := pb.ToPbCLCredential(res.Cred, res.AProof)
 	resp = &pb.Message{
 		Content: &pb.Message_CLCredential{pbCred},
 	}
@@ -90,12 +95,22 @@ func (s *Server) UpdateCredential(stream pb.CL_UpdateCredentialServer) error {
 	u := req.GetUpdateClCredential()
 	nym, nonce, newKnownAttrs := u.GetNativeType()
 
-	cred, AProof, err := org.UpdateCred(nym, nonce, newKnownAttrs)
+	// Retrieve the receiver record from the database
+	rec, err := s.clRecordManager.Load(nym)
+	if err != nil {
+		return err
+	}
+	// Do credential update
+	res, err := org.UpdateCred(nym, rec, nonce, newKnownAttrs)
 	if err != nil {
 		return fmt.Errorf("error when updating credential: %v", err)
 	}
+	// Store the updated receiver record to the database
+	if err = s.clRecordManager.Store(nym, res.Record); err != nil {
+		return err
+	}
 
-	pbCred := pb.ToPbCLCredential(cred, AProof)
+	pbCred := pb.ToPbCLCredential(res.Cred, res.AProof)
 	resp := &pb.Message{
 		Content: &pb.Message_CLCredential{pbCred},
 	}

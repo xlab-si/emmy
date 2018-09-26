@@ -18,31 +18,33 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/go-redis/redis"
 )
 
-type RegistrationManager struct {
+// RegistrationManager checks for the presence of a registration key,
+// removing it in case it exists.
+// The bolean return argument indicates success (registration key
+// present and subsequently deleted) or failure (absence of registration
+// key).
+type RegistrationManager interface {
+	CheckRegistrationKey(string) (bool, error)
+}
+
+type RedisClient struct {
 	*redis.Client
 }
 
-func NewRegistrationManager(address string) (*RegistrationManager, error) {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: address,
-	})
-	err := redisClient.Ping().Err()
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to redis database (%s)", err)
+func NewRedisClient(c *redis.Client) *RedisClient {
+	return &RedisClient{
+		Client: c,
 	}
-	return &RegistrationManager{redisClient}, nil
 }
 
 // CheckRegistrationKey checks whether provided key is present in registration database and deletes it,
 // preventing another registration with the same key.
 // Returns true if key was present (registration allowed), false otherwise.
-func (rm *RegistrationManager) CheckRegistrationKey(key string) (bool, error) {
-	resp := rm.Del(key)
+func (c *RedisClient) CheckRegistrationKey(key string) (bool, error) {
+	resp := c.Del(key)
 
 	err := resp.Err()
 

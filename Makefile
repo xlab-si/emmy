@@ -42,6 +42,10 @@ release:
 test:
 	go test -v -cover $(ALL)
 
+# Run integration tests with a real redis db instance
+test-integration:
+	go test -v -cover ./client -db
+
 # Lists and formats all go source files with goimports
 fmt:
 	# List of files with different formatting than goimports'

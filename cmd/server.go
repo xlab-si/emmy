@@ -20,8 +20,12 @@ package cmd
 import (
 	"path/filepath"
 
+	"fmt"
+
+	"github.com/go-redis/redis"
 	"github.com/urfave/cli"
 	"github.com/xlab-si/emmy/config"
+	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/log"
 	"github.com/xlab-si/emmy/server"
 )
@@ -103,7 +107,22 @@ func startEmmyServer(port int, certPath, keyPath, dbAddress, logFilePath, logLev
 		return err
 	}
 
-	srv, err := server.NewServer(certPath, keyPath, dbAddress, logger)
+	c := redis.NewClient(&redis.Options{
+		Addr: dbAddress,
+	})
+	err = c.Ping().Err()
+	if err != nil {
+		return fmt.Errorf("unable to connect to redis database (%s)", err)
+	}
+
+	registrationManager := server.NewRedisClient(c)
+	if err != nil {
+		return err
+	}
+
+	recordManager := cl.NewRedisClient(c)
+
+	srv, err := server.NewServer(certPath, keyPath, registrationManager, recordManager, logger)
 	if err != nil {
 		return err
 	}

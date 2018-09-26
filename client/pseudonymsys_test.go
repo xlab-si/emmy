@@ -20,11 +20,9 @@ package client
 import (
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xlab-si/emmy/config"
-	"github.com/xlab-si/emmy/server"
 )
 
 // TestPseudonymsys requires a running server (it is started in communication_test.go).
@@ -44,11 +42,6 @@ func TestPseudonymsys(t *testing.T) {
 	caCertificate, err := caClient.GenerateCertificate(userSecret, masterNym)
 	if err != nil {
 		t.Errorf("Error when registering with CA")
-	}
-
-	err = insertTestRegistrationKeys()
-	if err != nil {
-		t.Errorf("Error getting registration key: %s", err.Error())
 	}
 
 	//nym generation should fail with invalid registration key
@@ -98,22 +91,4 @@ func TestPseudonymsys(t *testing.T) {
 	sessionKey2, err := c2.TransferCredential(orgName, wrongUserSecret, nym2, credential)
 	assert.Nil(t, sessionKey2, "Authentication should fail, and session key should be nil")
 	assert.NotNil(t, err, "Should produce an error")
-}
-
-func insertTestRegistrationKeys() error {
-	registrationManager, err := server.NewRegistrationManager(config.LoadRegistrationDBAddress())
-	if err != nil {
-		return err
-	}
-
-	testRegKeys := [...]string{"testRegKey1", "testRegKey2"}
-	for _, regKey := range testRegKeys {
-		err = registrationManager.Set(regKey, regKey, time.Minute).Err()
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
