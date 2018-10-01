@@ -126,7 +126,7 @@ func (s *Server) Start(port int) error {
 	go http.ListenAndServe(":8881", nil)
 
 	// From here on, gRPC server will accept connections
-	s.Logger.Noticef("Emmy server listening for connections on port %d", port)
+	s.Logger.Noticef("emmy server listening for connections on port %d", port)
 	s.GrpcServer.Serve(listener)
 	return nil
 }

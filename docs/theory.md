@@ -1,4 +1,4 @@
-# A quick review of the theory behind Emmy
+# A quick review of the theory behind emmy
 
 ## What is a zero-knowlede proof (ZKP)?
 A zero-knowledge proof is protocol by which one party (prover) proves to another party (verifier) that 

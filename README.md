@@ -1,32 +1,32 @@
 # emmy - Library for zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
-Emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
+emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
 Zero-knowledge proofs are **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on 
 the role of the client, and the verifier takes on the role of the server) where the client proves a knowledge
 of a secret without actually revealing the secret.
   
-Emmy also implements a communication layer supporting the execution of these protocols. 
+emmy also implements a communication layer supporting the execution of these protocols. 
 Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). 
-Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. Currently, the communication 
+emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. Currently, the communication 
 is implemented for the two anonymous credential schemes (see [Currently offered cryptographic schemes](#currently-offered-cryptograhpic-schemes)).
 
-In addition, Emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
+In addition, emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
 package providing client wrappers and types that can be used for generating language bindings for 
 Android or iOS mobile platforms. 
 
 To get some more information about the theory behind zero knowledge proofs or developing 
-various parts of Emmy library, please refer to additional documentation in the *docs* folder.
+various parts of emmy library, please refer to additional documentation in the *docs* folder.
 
 #### What does emmy stand for?
-Emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
+emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
 
 <!-- toc -->
 - [Currently offered cryptographic primitives](#currently-offered-cryptographic-primitives)
 - [Currently offered cryptographic schemes](#currently-offered-cryptograhpic-schemes)
 - [Installation](#installation)
-- [Emmy CLI tool](#using-the-emmy-cli-tool)
-  * [Emmy server](#emmy-server)
-  * [Emmy clients](#emmy-clients)
+- [emmy CLI tool](#using-the-emmy-cli-tool)
+  * [emmy server](#emmy-server)
+  * [emmy clients](#emmy-clients)
   * [TLS support](#tls-support)
 - [Further documentation](#documentation)
 <!-- tocstop -->
@@ -198,7 +198,7 @@ If only a subset of attributes are revealed, zero-knowledge proof is applied - o
 a subset of attributes is known, thus the user needs to prove the knowledge of attributes such that the equation holds.
 
 # Warning
-_All components of Emmy cryptography library are a work in progress. At this point, the library can be used to build proof of concept implementations for research purposes and **should never be used in production**. Project's code organization and library APIs are **not stable** - they are expected to undergo major changes, and may be changed at any point._
+_All components of emmy cryptography library are a work in progress. At this point, the library can be used to build proof of concept implementations for research purposes and **should never be used in production**. Project's code organization and library APIs are **not stable** - they are expected to undergo major changes, and may be changed at any point._
  
 # Installation
 To install emmy, run 
@@ -218,18 +218,18 @@ $ go test ./...
 
 Below we provide some isntructions for using the `emmy` CLI tool. You can type `emmy` in the terminal to get a list of available commands and subcommands, and to get additional help.
 
-Emmy CLI offers two commands:
+emmy CLI offers two commands:
 * `emmy server` (with a `start` subcommand, e.g. `emmy server start`) and
 * `emmy client` (with subcommand `info`).
-> **Note:** Emmy client command is currently going through a major revision. Running clients for
+> **Note:** emmy client command is currently going through a major revision. Running clients for
     demo interactive protocols (_pedersen_, _pedersen_ec_, _schnorr_, _schnorr_ec_ _cspaillier_) is
      no longer supported. Instead, clients for running protocols comprising anonymous 
      authentication schemes will be added soon.
 
 
-## Emmy server
+## emmy server
 
-Emmy server waits for requests from clients (provers) and starts verifying them. Note that Emmy server connects to a redis database in order to verify the registration keys, provided in the nym generation process. Redis is expected to run at localhost:6379 (or as defined in [defaults.yml](config/defaults.yml)).
+emmy server waits for requests from clients (provers) and starts verifying them. Note that emmy server connects to a redis database in order to verify the registration keys, provided in the nym generation process. Redis is expected to run at localhost:6379 (or as defined in [defaults.yml](config/defaults.yml)).
 
 ```bash
 $ emmy server              # prints available subcommands
@@ -245,7 +245,7 @@ $ emmy server start        # starts emmy server with default settings
 Alternatively, you can control emmy server's behavior with the following options (specified as command line flags):
 1. **Port**: flag *--port* (shorthand *-p*), defaults to 7007.
 
-    Emmy server will listen for client connections on this port. Example: 
+    emmy server will listen for client connections on this port. Example: 
     ```bash
     $ emmy server start --port 2323   # starts emmy server that listens on port 2323
     $ emmy server start -p 2323       # equivalently
@@ -263,7 +263,7 @@ Alternatively, you can control emmy server's behavior with the following options
     $ emmy server start --loglevel debug --logfile ~/emmy-server.log
     ```
 
-4. **Certificate and private key**: flags *--cert* and *--key*, whose value is a path to a valid certificate and private key in PEM format. These will be used to secure communication channel with clients. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
+4. **Certificate and private key**: flags *--cert* and *--key*, whose value is a path to a valid certificate and private key in PEM format. These will be used to secure communication channel with clients. Please refer to [explanation of TLS support in emmy](#tls-support) for explanation.
 
 5. **Address of the redis database**: flag *--db* of the form *redisHost:redisPort*, which points
  to a running instance of redis database that holds [registration keys](#registration-keys). 
@@ -276,7 +276,7 @@ Starting the server should produce an output similar to the one below:
 (2) [server][Mon 25.Sep 2017,14:11:041] NewProtocolServer ▶ INFO  Successfully read certificate [test/testdata/server.pem] and key [test/testdata/server.key]
 (3) [server][Mon 25.Sep 2017,14:11:041] NewProtocolServer ▶ NOTI  gRPC Services registered
 (4) [server][Mon 25.Sep 2017,14:11:041] EnableTracing ▶ NOTI  Enabled gRPC tracing
-(5) [server][Mon 25.Sep 2017,14:11:041] Start ▶ NOTI  Emmy server listening for connections on port 7007
+(5) [server][Mon 25.Sep 2017,14:11:041] Start ▶ NOTI  emmy server listening for connections on port 7007
 ```
 
 Line 1 indicates that the emmy server is being instantiated. Line 2 informs us about the server's certificate and private key paths to be used for secure communication with clients. Line 3 indicates that gRPC service for execution of crypto protocols is ready, and Line 4 tells us that gRPC tracing (used to oversee RPC calls) has been enabled. Finaly, line 5 indicates that emmy server is ready to serve clients.
@@ -287,10 +287,10 @@ You can stop emmy server by hitting `Ctrl+C` in the same terminal window.
 
 #### Registration keys
 
-Emmy server verifies registration keys provided by clients when initiating the nym generation procedure. A separate server is expected to provide registration keys to clients via another channel (e.g. QR codes on physical person identification) and save the generated keys to a registration database, read by the Emmy server.
+emmy server verifies registration keys provided by clients when initiating the nym generation procedure. A separate server is expected to provide registration keys to clients via another channel (e.g. QR codes on physical person identification) and save the generated keys to a registration database, read by the emmy server.
 
 
-## Emmy clients (DEPRECATED)
+## emmy clients (DEPRECATED)
 
 Running a client requires an instance of emmy server. First, spin up emmy server according to instructions in the previous section. You can then start one or more emmy clients in another terminal. 
 
@@ -306,7 +306,7 @@ where *commonClientFlags* control the following aspects:
 2. **Whether to run clients concurrently or not**: flag *--concurrent*. Include this flag if you want to run the specified number of clients consurrently. The absence of this flag means that clients will be run sequentially.
 3. **Logging level**: flag *--loglevel* (shorthand *-l*), which must be one of `debug|info|notice|error|critical`. Defaults to `ìnfo`.
 4. **URI of the emmy server**: flag *--server*, defaults to *localhost:7007*.
-5. **CA certificate**: flag *--cacert*, points to a path to a certificate of the CA that issued emmy server's certificate, in PEM format. This will be used to secure communication channel with the server. Please refer to [explanation of TLS support in Emmy](#tls-support) for explanation.
+5. **CA certificate**: flag *--cacert*, points to a path to a certificate of the CA that issued emmy server's certificate, in PEM format. This will be used to secure communication channel with the server. Please refer to [explanation of TLS support in emmy](#tls-support) for explanation.
 6. **Server name override**: flag *--servername*. This will instruct clients to check server 
 certificate's common name (CN) against the value of the provided flag, instead of server's 
 hostname. Allows certificate validation to pass even when server's hostname does not 
@@ -334,7 +334,7 @@ $ emmy client pedersen --help
 
 and you will se additional flags that you can provide as input to bootstrap appropriate protocol. Usually, you can provide some sort of a secret value via the flag *--secret*, and the protocol variant to execute via the flag *--variant* (shorthand *-v*), denoting whether to execute sigma protocol, zero-knowledge proof or zero-knowledge proof of knowledge (`sigma|zkp|zkpok`, defaults to `sigma`).
 
-Below we give some examples that run Emmy client in order to demonstrate Schnorr protocol:
+Below we give some examples that run emmy client in order to demonstrate Schnorr protocol:
 ```
 $ emmy client schnorr #Runs sigma protocol with the default values
 $ emmy client --loglevel debug schnorr 
@@ -364,7 +364,7 @@ $ emmy client --server localhost:7007 pedersen
 (10) ***Time: 0.003153414 seconds***
 ```
 
-Lines 1-2 tell us about the procedure of initializing, and eventually, establishing a connection to Emmy server at the given URI. Line 3 comes from the Emmy CLI, and notifies us that the protocol client is about to start. Lines 4-9 indicate the communication taking place between the client and the server (e.g. here they are executing the chosen crypto protocol). The last line reports the total time required to execute the protocol - if we run several clients (either sequentially or concurrently), it prints the total time required for all the clients to finish.
+Lines 1-2 tell us about the procedure of initializing, and eventually, establishing a connection to emmy server at the given URI. Line 3 comes from the emmy CLI, and notifies us that the protocol client is about to start. Lines 4-9 indicate the communication taking place between the client and the server (e.g. here they are executing the chosen crypto protocol). The last line reports the total time required to execute the protocol - if we run several clients (either sequentially or concurrently), it prints the total time required for all the clients to finish.
 
 ## TLS support
 Communication channel between emmy clients and emmy server is secure, as it enforces the usage of TLS. TLS is used to encrypt communication and to ensure emmy server's authenticity.
@@ -414,8 +414,8 @@ certificate store location beforehand.
   ```
 
 # Documentation
-* [A short overview of the theory Emmy is based on](./docs/theory.md) 
-* [Developing Emmy (draft)](./docs/develop.md) 
+* [A short overview of the theory emmy is based on](./docs/theory.md) 
+* [Developing emmy (draft)](./docs/develop.md) 
 
 # Roadmap
 

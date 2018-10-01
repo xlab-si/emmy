@@ -1,4 +1,4 @@
-# Emmy - development
+# emmy - development
 
 To speed up frequent development tasks and preparation of development environment, this 
 repository comes with a *Makefile* and a *docker-compose.yml* file. You can use
@@ -37,7 +37,7 @@ from proto definitions in the protobuf package. See [Updating protocol buffers](
 (currently these include emmy server and redis database instance). To have more control over what
  services are started and how, you should consider running `docker-compose` and `docker` commands
   directly - without `make`. For more details please see [Using 
- dockerized Emmy server and redis for development](#using-dockerized-emmy-server-and-redis-for-development).
+ dockerized emmy server and redis for development](#using-dockerized-emmy-server-and-redis-for-development).
 
 ## Source code formatting
 All contributions to *emmy* library should conform to source formatting enforced by [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
@@ -49,7 +49,7 @@ Please install *goimports* and configure your source code editor to automaticall
  formatting of all go source files in the repository.  
 
 ## Dependency management
-Emmy uses [dep](https://github.com/golang/dep) for dependency management. All direct dependencies 
+emmy uses [dep](https://github.com/golang/dep) for dependency management. All direct dependencies 
 and their versions are specified in `Gopkg.toml`. At the moment, minor range locking is used (i.e. 
 we only allow semantic version patches. A quick read of `dep`'s [documentation](https://golang.github.io/dep/docs/daily-dep.html) 
 is recommended to become familiar with the tool. 
@@ -62,7 +62,7 @@ direct dependencies are strictly version-locked (some of them have yet to create
 necessary features that are already implemented in the master branch).
 
 ## Updating protocol buffers
-Emmy uses protocol buffers for communication. Definitions of services, RPCs and payloads can be 
+emmy uses protocol buffers for communication. Definitions of services, RPCs and payloads can be 
 found in **.proto* files of the `protobuf` package. We need these definitions and [protoc 
 compiler](https://developers
 .google.com/protocol-buffers/docs/downloads) in order to obtain appropriate go source files 
@@ -77,7 +77,7 @@ $ protoc -I proto/ proto/messages.proto proto/services.proto --go_out=plugins=gr
 ```
 Alternatively, you can run `make proto` to re-generate the same files.
 
-# Using dockerized Emmy server and redis for development
+# Using dockerized emmy server and redis for development
 For testing and ease of development this repository comes with a *Dockerfile* that you can use to 
 spin up an instance of emmy server. 
 
@@ -116,7 +116,7 @@ This will use the existing image of the emmy server to start the container, if o
 Otherwise the image will not be rebuilt.
 
 # Mobile clients
-Emmy comes with a compatibility layer that allows us to re-use some of the library's 
+emmy comes with a compatibility layer that allows us to re-use some of the library's 
 functionality on mobile clients. Currently, we support running **pseudonym system (both modular and
  EC arithmetic variants)** on mobile devices. In order for emmy to run on mobile clients, we're 
  using Go's standard [gomobile](https://golang.org/wiki/Mobile) tool for generation of language 

@@ -12,7 +12,7 @@ const (
 
 	// Convenient to use with server loggers, where we need more fine-grained info and readable
 	// output (includes color information, useful for console output)
-	// [server][Mon 25.Sep 2017,14:11:041] Start ▶ NOTI  Emmy server listening for connections on port 7007
+	// [server][Mon 25.Sep 2017,14:11:041] Start ▶ NOTI  emmy server listening for connections on port 7007
 	FORMAT_LONG = `%{color}[%{module}][%{time:Mon _2.Jan 2006,15:04:005}] %{shortfunc} ▶ %{level} %{color:reset} %{message}`
 
 	// Same as FORMAT_LONG but without the color information (for files)
