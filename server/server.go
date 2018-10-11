@@ -55,7 +55,7 @@ var _ EmmyServer = (*Server)(nil)
 type Server struct {
 	GrpcServer *grpc.Server
 	Logger     log.Logger
-	*SessionManager
+	SessionManager
 	RegistrationManager
 	clRecordManager cl.ReceiverRecordManager
 }
@@ -76,7 +76,7 @@ func NewServer(certFile, keyFile string, regMgr RegistrationManager,
 
 	logger.Infof("Successfully read certificate [%s] and key [%s]", certFile, keyFile)
 
-	sessionManager, err := newSessionManager(config.LoadSessionKeyMinByteLen())
+	sessionManager, err := NewRandSessionKeyGen(config.LoadSessionKeyMinByteLen())
 	if err != nil {
 		logger.Warning(err)
 	}
