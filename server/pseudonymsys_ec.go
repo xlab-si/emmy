@@ -249,7 +249,7 @@ func (s *Server) TransferCredential_EC(stream pb.PseudonymSystem_TransferCredent
 		return status.Error(codes.Unauthenticated, "user authentication failed")
 	}
 
-	sessionKey, err := s.generateSessionKey()
+	sessionKey, err := s.GenerateSessionKey()
 	if err != nil {
 		s.Logger.Debug(err)
 		return status.Error(codes.Internal, "failed to obtain session key")
