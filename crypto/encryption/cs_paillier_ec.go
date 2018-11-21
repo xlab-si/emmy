@@ -308,7 +308,7 @@ func (csp *CSPaillierEC) generateKey() {
 	// however as above we assume the same (the paper says it can be the same).
 
 	primes := qr.NewRSASpecialPrimes(p, q, p1, q1)
-	verifiableEncGroup, err := NewVerifiableEncGroup(primes)
+	verifiableEncGroup, err := NewVerifiableEncGroupEC(primes)
 	if err != nil {
 		log.Fatal(err)
 	}
