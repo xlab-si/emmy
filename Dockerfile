@@ -17,7 +17,7 @@
 FROM golang:latest
 
 LABEL maintainer="XLAB d.o.o" \
-      description="This image starts the core Emmy server"
+      description="This image starts the core emmy server"
 
 # Create appropriate directory structure
 RUN mkdir -p $GOPATH/src/github.com/xlab-si/emmy

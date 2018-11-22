@@ -1,4 +1,4 @@
-# Emmy - development
+# emmy - development
 
 To speed up frequent development tasks and preparation of development environment, this 
 repository comes with a *Makefile* and a *docker-compose.yml* file. You can use
@@ -37,7 +37,7 @@ from proto definitions in the protobuf package. See [Updating protocol buffers](
 (currently these include emmy server and redis database instance). To have more control over what
  services are started and how, you should consider running `docker-compose` and `docker` commands
   directly - without `make`. For more details please see [Using 
- dockerized Emmy server and redis for development](#using-dockerized-emmy-server-and-redis-for-development).
+ dockerized emmy server and redis for development](#using-dockerized-emmy-server-and-redis-for-development).
 
 ## Source code formatting
 All contributions to *emmy* library should conform to source formatting enforced by [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports).
@@ -77,7 +77,7 @@ $ protoc -I proto/ proto/messages.proto proto/services.proto --go_out=plugins=gr
 ```
 Alternatively, you can run `make proto` to re-generate the same files.
 
-# Using dockerized Emmy server and redis for development
+# Using dockerized emmy server and redis for development
 For testing and ease of development this repository comes with a *Dockerfile* that you can use to 
 spin up an instance of emmy server. 
 
