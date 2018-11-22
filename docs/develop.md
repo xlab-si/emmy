@@ -49,7 +49,7 @@ Please install *goimports* and configure your source code editor to automaticall
  formatting of all go source files in the repository.  
 
 ## Dependency management
-emmy uses [dep](https://github.com/golang/dep) for dependency management. All direct dependencies 
+Emmy uses [dep](https://github.com/golang/dep) for dependency management. All direct dependencies 
 and their versions are specified in `Gopkg.toml`. At the moment, minor range locking is used (i.e. 
 we only allow semantic version patches. A quick read of `dep`'s [documentation](https://golang.github.io/dep/docs/daily-dep.html) 
 is recommended to become familiar with the tool. 
@@ -62,7 +62,7 @@ direct dependencies are strictly version-locked (some of them have yet to create
 necessary features that are already implemented in the master branch).
 
 ## Updating protocol buffers
-emmy uses protocol buffers for communication. Definitions of services, RPCs and payloads can be 
+Emmy uses protocol buffers for communication. Definitions of services, RPCs and payloads can be 
 found in **.proto* files of the `protobuf` package. We need these definitions and [protoc 
 compiler](https://developers
 .google.com/protocol-buffers/docs/downloads) in order to obtain appropriate go source files 
@@ -116,7 +116,7 @@ This will use the existing image of the emmy server to start the container, if o
 Otherwise the image will not be rebuilt.
 
 # Mobile clients
-emmy comes with a compatibility layer that allows us to re-use some of the library's 
+Emmy comes with a compatibility layer that allows us to re-use some of the library's 
 functionality on mobile clients. Currently, we support running **pseudonym system (both modular and
  EC arithmetic variants)** on mobile devices. In order for emmy to run on mobile clients, we're 
  using Go's standard [gomobile](https://golang.org/wiki/Mobile) tool for generation of language 

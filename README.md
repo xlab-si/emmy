@@ -1,13 +1,13 @@
 # emmy - Library for zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
 
-emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
+Emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
 Zero-knowledge proofs are **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on 
 the role of the client, and the verifier takes on the role of the server) where the client proves a knowledge
 of a secret without actually revealing the secret.
   
-emmy also implements a communication layer supporting the execution of these protocols. 
+Emmy also implements a communication layer supporting the execution of these protocols. 
 Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). 
-emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. Currently, the communication 
+Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. Currently, the communication 
 is implemented for the two anonymous credential schemes (see [Currently offered cryptographic schemes](#currently-offered-cryptograhpic-schemes)).
 
 In addition, emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
@@ -18,7 +18,7 @@ To get some more information about the theory behind zero knowledge proofs or de
 various parts of emmy library, please refer to additional documentation in the *docs* folder.
 
 #### What does emmy stand for?
-emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
+Emmy library is named after a German mathematician [Emmy Noether](https://en.wikipedia.org/wiki/Emmy_Noether), recognised as one of the most important 20th century mathematicians. Emmy Noether's groundbreaking work in the field of abstract algebra earned her a nickname *the mother of modern algebra*. We named our library after her, since modern cryptography generally relies heavily on abstract algebraic structures and concepts.
 
 <!-- toc -->
 - [Currently offered cryptographic primitives](#currently-offered-cryptographic-primitives)
@@ -218,7 +218,7 @@ $ go test ./...
 
 Below we provide some isntructions for using the `emmy` CLI tool. You can type `emmy` in the terminal to get a list of available commands and subcommands, and to get additional help.
 
-emmy CLI offers two commands:
+Emmy CLI offers two commands:
 * `emmy server` (with a `start` subcommand, e.g. `emmy server start`) and
 * `emmy client` (with subcommand `info`).
 > **Note:** emmy client command is currently going through a major revision. Running clients for
@@ -229,7 +229,7 @@ emmy CLI offers two commands:
 
 ## emmy server
 
-emmy server waits for requests from clients (provers) and starts verifying them. Note that emmy server connects to a redis database in order to verify the registration keys, provided in the nym generation process. Redis is expected to run at localhost:6379 (or as defined in [defaults.yml](config/defaults.yml)).
+Emmy server waits for requests from clients (provers) and starts verifying them. Note that emmy server connects to a redis database in order to verify the registration keys, provided in the nym generation process. Redis is expected to run at localhost:6379 (or as defined in [defaults.yml](config/defaults.yml)).
 
 ```bash
 $ emmy server              # prints available subcommands
@@ -245,7 +245,7 @@ $ emmy server start        # starts emmy server with default settings
 Alternatively, you can control emmy server's behavior with the following options (specified as command line flags):
 1. **Port**: flag *--port* (shorthand *-p*), defaults to 7007.
 
-    emmy server will listen for client connections on this port. Example: 
+    Emmy server will listen for client connections on this port. Example: 
     ```bash
     $ emmy server start --port 2323   # starts emmy server that listens on port 2323
     $ emmy server start -p 2323       # equivalently
@@ -287,7 +287,7 @@ You can stop emmy server by hitting `Ctrl+C` in the same terminal window.
 
 #### Registration keys
 
-emmy server verifies registration keys provided by clients when initiating the nym generation procedure. A separate server is expected to provide registration keys to clients via another channel (e.g. QR codes on physical person identification) and save the generated keys to a registration database, read by the emmy server.
+Emmy server verifies registration keys provided by clients when initiating the nym generation procedure. A separate server is expected to provide registration keys to clients via another channel (e.g. QR codes on physical person identification) and save the generated keys to a registration database, read by the emmy server.
 
 
 ## emmy clients (DEPRECATED)
