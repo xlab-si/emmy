@@ -462,7 +462,7 @@ func (csp *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 	twoRTilde := new(big.Int).Mul(rTilde, big.NewInt(2))
 
 	t1 := common.Exponentiate(csp.verifierEncData.U, twoC, n2)
-	t2 := common.Exponentiate(csp.SecKey.G, twoRTilde, n2)
+	t2 := common.Exponentiate(csp.PubKey.G, twoRTilde, n2)
 	t := new(big.Int).Mul(t1, t2)
 	t.Mod(t, n2)
 	if csp.verifierRandomData.U1.Cmp(t) != 0 {
@@ -472,7 +472,7 @@ func (csp *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 
 	// check if e1 = e^(2*c) * y1^(2*rTilde) * h^(2*mTilde)
 	t1 = common.Exponentiate(csp.verifierEncData.E, twoC, n2)
-	y1 := common.Exponentiate(csp.SecKey.G, csp.SecKey.X1, n2)
+	y1 := new(big.Int).Mod(csp.PubKey.Y1, n2)
 	t2 = common.Exponentiate(y1, twoRTilde, n2)
 	h := new(big.Int).Add(csp.PubKey.N, big.NewInt(1)) // 1 + n
 	t3 := common.Exponentiate(h, new(big.Int).Mul(big.NewInt(2), mTilde), n2)
@@ -488,9 +488,9 @@ func (csp *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 	t1 = common.Exponentiate(csp.verifierEncData.V, twoC, n2)
 	hashNum := common.Hash(csp.verifierEncData.U, csp.verifierEncData.E,
 		csp.verifierEncData.Label)
-	y3 := common.Exponentiate(csp.SecKey.G, csp.SecKey.X3, n2)
+	y3 := new(big.Int).Mod(csp.PubKey.Y3, n2)
 	t21 := new(big.Int).Exp(y3, hashNum, n2)
-	y2 := common.Exponentiate(csp.SecKey.G, csp.SecKey.X2, n2)
+	y2 := new(big.Int).Mod(csp.PubKey.Y2, n2)
 	t21.Mul(y2, t21)
 	t2 = common.Exponentiate(t21, twoRTilde, n2)
 	t.Mul(t1, t2)
@@ -502,10 +502,10 @@ func (csp *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 
 	// check if delta1 = delta^c * Gamma.G^mTilde
 	t1.Exp(csp.verifierEncData.Delta, csp.verifierRandomData.C,
-		csp.SecKey.Gamma.P)
-	t2 = common.Exponentiate(csp.SecKey.Gamma.G, mTilde, csp.SecKey.Gamma.P)
+		csp.PubKey.Gamma.P)
+	t2 = common.Exponentiate(csp.PubKey.Gamma.G, mTilde, csp.PubKey.Gamma.P)
 	t.Mul(t1, t2)
-	t.Mod(t, csp.SecKey.Gamma.P)
+	t.Mod(t, csp.PubKey.Gamma.P)
 	if csp.verifierRandomData.Delta1.Cmp(t) != 0 {
 		log.Println("NOT OK 4")
 		return false
@@ -513,13 +513,13 @@ func (csp *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 
 	// check if l1 = l^c * g1^mTilde * h1^sTilde
 	t1.Exp(csp.verifierRandomData.L, csp.verifierRandomData.C, n2)
-	t2 = common.Exponentiate(csp.SecKey.VerifiableEncGroupG1,
-		mTilde, csp.SecKey.VerifiableEncGroupN)
-	t3 = common.Exponentiate(csp.SecKey.VerifiableEncGroupH1,
-		sTilde, csp.SecKey.VerifiableEncGroupN)
+	t2 = common.Exponentiate(csp.PubKey.VerifiableEncGroupG1,
+		mTilde, csp.PubKey.VerifiableEncGroupN)
+	t3 = common.Exponentiate(csp.PubKey.VerifiableEncGroupH1,
+		sTilde, csp.PubKey.VerifiableEncGroupN)
 	t.Mul(t1, t2)
 	t.Mul(t, t3)
-	t.Mod(t, csp.SecKey.VerifiableEncGroupN)
+	t.Mod(t, csp.PubKey.VerifiableEncGroupN)
 	if csp.verifierRandomData.L1.Cmp(t) != 0 {
 		log.Println("NOT OK 5")
 		return false
@@ -536,7 +536,7 @@ func (csp *CSPaillier) Verify(rTilde, sTilde, mTilde *big.Int) bool {
 }
 
 func (csp *CSPaillier) GetChallenge() *big.Int {
-	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(csp.SecKey.K)), nil)
+	b := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(csp.PubKey.K)), nil)
 	c := common.GetRandomInt(b)
 	return c
 }

@@ -42,6 +42,19 @@ func TestCSPaillier(t *testing.T) {
 
 	u, e, v, _ := cspPub.Encrypt(m, label)
 	p, _ := cspSec.Decrypt(u, e, v, label)
-
 	assert.Equal(t, m, p, "Camenisch-Shoup modified Paillier encryption/decryption does not work correctly")
+
+	l, delta := cspPub.GetOpeningMsg(p)
+	u1, e1, v1, delta1, l1, _ := cspPub.GetProofRandomData(u, e, label)
+
+	cspVer := NewCSPaillierFromPubKey(csp.PubKey)
+
+	cspVer.SetVerifierEncData(u, e, v, delta, label, l)
+	challenge := cspVer.GetChallenge()
+	cspVer.SetProofRandomData(u1, e1, v1, delta1, l1, challenge)
+
+	rTilde, sTilde, mTilde := cspPub.GetProofData(challenge)
+
+	assert.True(t, cspVer.Verify(rTilde, sTilde, mTilde), "Camenisch-Shoup modified Paillier verifiable encryption proof does not work correctly")
+	assert.True(t, new(big.Int).Abs(v).Cmp(v) == 0, "Camenisch-Shoup modified Paillier verifiable encryption proof does not work correctly")
 }
