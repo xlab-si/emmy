@@ -17,8 +17,7 @@
 
 package cl
 
-import ()
-
+// Params presents parameters that organization (which is issuing credentials) needs to set.
 type Params struct {
 	// There are only a few possibilities for RhoBitLen. 256 implies that the modulus
 	// bit length is 2048
@@ -41,9 +40,9 @@ func GetDefaultParamSizes() *Params {
 	return &Params{
 		RhoBitLen:         256,
 		NLength:           256, // should be at least 2048 when not testing
-		KnownAttrsNum:     4,
-		CommittedAttrsNum: 2,
-		HiddenAttrsNum:    3,
+		KnownAttrsNum:     2,
+		CommittedAttrsNum: 1,
+		HiddenAttrsNum:    0,
 		AttrBitLen:        256,
 		HashBitLen:        512,
 		SecParam:          80,

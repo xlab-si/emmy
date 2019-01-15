@@ -39,6 +39,7 @@ import (
 type CredManager struct {
 	Params             *Params
 	PubKey             *PubKey
+	rawCredential      *RawCredential
 	nymCommitter       *pedersen.Committer // nym is actually a commitment to masterSecret
 	Nym                *big.Int
 	masterSecret       *big.Int
@@ -54,8 +55,12 @@ type CredManager struct {
 	CredReqNonce              *big.Int
 }
 
-func NewCredManager(params *Params, pubKey *PubKey, masterSecret *big.Int, knownAttrs, committedAttrs,
-	hiddenAttrs []*big.Int) (*CredManager, error) {
+func NewCredManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
+	rawCred *RawCredential) (*CredManager, error) {
+	knownAttrs := rawCred.GetKnownValues()
+	committedAttrs := rawCred.GetCommittedValues()
+	hiddenAttrs := []*big.Int{} // currently not used in RawCredential
+
 	if !checkAttrsLen(knownAttrs, params) || !checkAttrsLen(committedAttrs, params) ||
 		!checkAttrsLen(hiddenAttrs, params) {
 		return nil, fmt.Errorf("attributes length not ok")
@@ -82,6 +87,7 @@ func NewCredManager(params *Params, pubKey *PubKey, masterSecret *big.Int, known
 	credManager := CredManager{
 		Params:                    params,
 		PubKey:                    pubKey,
+		rawCredential:             rawCred,
 		KnownAttrs:                knownAttrs,
 		committedAttrs:            committedAttrs,
 		hiddenAttrs:               hiddenAttrs,
@@ -220,8 +226,10 @@ func (m *CredManager) Verify(cred *Cred, AProof *qr.RepresentationProof) (bool, 
 	return ver.Verify(AProof.ProofData), nil
 }
 
-// Update updates credential.
-func (m *CredManager) Update(knownAttrs []*big.Int) {
+// RefreshRawCredential updates raw credential with new attribute values. Only for known attributes!
+func (m *CredManager) RefreshRawCredential(rawCredential *RawCredential) {
+	m.rawCredential = rawCredential
+	knownAttrs := m.rawCredential.GetKnownValues()
 	m.KnownAttrs = knownAttrs
 }
 

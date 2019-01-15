@@ -23,8 +23,6 @@ import (
 	"math/big"
 
 	"crypto/rand"
-	"encoding/gob"
-	"os"
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/df"
@@ -267,7 +265,9 @@ func (o *Org) IssueCred(cr *CredRequest) (*CredResult, error) {
 	return res, nil
 }
 
-func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int, newKnownAttrs []*big.Int) (*CredResult, error) {
+func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int,
+	rawCredential *RawCredential) (*CredResult, error) {
+	newKnownAttrs := rawCredential.GetKnownValues()
 	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCred
 		o.knownAttrs = newKnownAttrs
 		o.setUpAttrVerifiers(rec.CommitmentsOfAttrs)
@@ -315,12 +315,24 @@ func (o *Org) GetProveCredNonce() *big.Int {
 
 // ProveCred proves the possession of a valid credential and reveals only the attributes the user desires
 // to reveal. Which knownAttrs and commitmentsOfAttrs are to be revealed are given by revealedKnownAttrsIndices and
-// revealedCommitmentsOfAttrsIndices parameters. Parameters knownAttrs and commitmentsOfAttrs must contain only
-// known attributes and commitments of attributes (of attributes for which only commitment is known) which are
-// to be revealed to the organization.
+// revealedCommitmentsOfAttrsIndices parameters.
 func (o *Org) ProveCred(A *big.Int, proof *qr.RepresentationProof,
 	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
-	knownAttrs, commitmentsOfAttrs []*big.Int) (bool, error) {
+	rawCred *RawCredential, commitmentsOfAttrs []*big.Int) (bool, error) {
+	revealedKnownAttrs := []*big.Int{}
+	revealedCommitmentsOfAttrs := []*big.Int{}
+	knownAttrs := rawCred.GetKnownValues()
+	for i := 0; i < len(knownAttrs); i++ {
+		if common.Contains(revealedKnownAttrsIndices, i) {
+			revealedKnownAttrs = append(revealedKnownAttrs, knownAttrs[i])
+		}
+	}
+	for i := 0; i < len(commitmentsOfAttrs); i++ {
+		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
+			revealedCommitmentsOfAttrs = append(revealedCommitmentsOfAttrs, commitmentsOfAttrs[i])
+		}
+	}
+
 	ver := qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
 	bases := []*big.Int{}
 	for i := 0; i < len(o.PubKey.RsKnown); i++ {
@@ -338,15 +350,15 @@ func (o *Org) ProveCred(A *big.Int, proof *qr.RepresentationProof,
 	bases = append(bases, o.PubKey.S)
 
 	denom := big.NewInt(1)
-	for i := 0; i < len(knownAttrs); i++ {
+	for i := 0; i < len(revealedKnownAttrs); i++ {
 		rInd := revealedKnownAttrsIndices[i]
-		t1 := o.Group.Exp(o.PubKey.RsKnown[rInd], knownAttrs[i])
+		t1 := o.Group.Exp(o.PubKey.RsKnown[rInd], revealedKnownAttrs[i])
 		denom = o.Group.Mul(denom, t1)
 	}
 
-	for i := 0; i < len(commitmentsOfAttrs); i++ {
+	for i := 0; i < len(revealedCommitmentsOfAttrs); i++ {
 		rInd := revealedCommitmentsOfAttrsIndices[i]
-		t1 := o.Group.Exp(o.PubKey.RsCommitted[rInd], commitmentsOfAttrs[i])
+		t1 := o.Group.Exp(o.PubKey.RsCommitted[rInd], revealedCommitmentsOfAttrs[i])
 		denom = o.Group.Mul(denom, t1)
 	}
 	denomInv := o.Group.Inv(denom)
@@ -540,27 +552,4 @@ func (r *ReceiverRecord) UnmarshalBinary(data []byte) error {
 	}
 
 	return nil
-}
-
-// TODO: where should we put WriteGob and ReadGob?
-func WriteGob(filePath string, object interface{}) error {
-	file, err := os.Create(filePath)
-	if err == nil {
-		encoder := gob.NewEncoder(file)
-		encoder.Encode(object)
-	}
-	file.Close()
-
-	return err
-}
-
-func ReadGob(filePath string, object interface{}) error {
-	file, err := os.Open(filePath)
-	if err == nil {
-		decoder := gob.NewDecoder(file)
-		err = decoder.Decode(object)
-	}
-	file.Close()
-
-	return err
 }

@@ -18,11 +18,9 @@
 package cl
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/common"
 )
 
 func TestCL(t *testing.T) {
@@ -35,14 +33,23 @@ func TestCL(t *testing.T) {
 
 	masterSecret := org.PubKey.GenerateUserMasterSecret()
 
-	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
-	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
-	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := NewCredManager(params, org.PubKey, masterSecret, knownAttrs, committedAttrs,
-		hiddenAttrs)
+	attr1 := NewAttribute("Name", "string", true, nil)
+	attr2 := NewAttribute("Gender", "string", true, nil)
+	attr3 := NewAttribute("Age", "int", false, nil)
+	rawCred := NewRawCredential([]Attribute{*attr1, *attr2, *attr3})
+	attrValues := []string{"Jack", "M", "122"}
+	err = rawCred.SetAttributeValues(attrValues)
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	credManager, err := NewCredManager(params, org.PubKey, masterSecret, rawCred)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
+
+	credManagerPath := "../client/testdata/credManager.gob"
+	WriteGob(credManagerPath, credManager)
 
 	credIssueNonceOrg := org.GetCredIssueNonce()
 
@@ -77,21 +84,20 @@ func TestCL(t *testing.T) {
 
 	// create new CredManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = NewCredManagerFromExisting(credManager.Nym, credManager.V1, credManager.CredReqNonce,
-		params, org.PubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
-		credManager.CommitmentsOfAttrs)
-	if err != nil {
-		t.Errorf("error when calling NewCredManagerFromExisting: %v", err)
-	}
+	ReadGob(credManagerPath, credManager)
 
-	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-	credManager.Update(newKnownAttrs)
+	// Modify raw credential and get updated credential from an organization
+
+	attrValues = []string{"John", "M", "122"}
+	rawCred.SetAttributeValues(attrValues)
+	// refresh credManager with new credential values, works only for known attributes
+	credManager.RefreshRawCredential(rawCred)
 
 	rec, err := mockDb.Load(credManager.Nym)
 	if err != nil {
 		t.Errorf("error saving record to db: %v", err)
 	}
-	res1, err := org.UpdateCred(credManager.Nym, rec, credReq.Nonce, newKnownAttrs)
+	res1, err := org.UpdateCred(credManager.Nym, rec, credReq.Nonce, rawCred)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
@@ -112,21 +118,8 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	revealedKnownAttrsIndices := []int{1, 2}      // reveal only the second and third known attribute
+	revealedKnownAttrsIndices := []int{1}         // reveal only the second known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
-
-	revealedKnownAttrs := []*big.Int{}
-	revealedCommitmentsOfAttrs := []*big.Int{}
-	for i := 0; i < len(knownAttrs); i++ {
-		if common.Contains(revealedKnownAttrsIndices, i) {
-			revealedKnownAttrs = append(revealedKnownAttrs, newKnownAttrs[i])
-		}
-	}
-	for i := 0; i < len(credManager.CommitmentsOfAttrs); i++ {
-		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
-			revealedCommitmentsOfAttrs = append(revealedCommitmentsOfAttrs, credManager.CommitmentsOfAttrs[i])
-		}
-	}
 
 	nonce := org.GetProveCredNonce()
 	randCred, proof, err := credManager.BuildProof(res1.Cred, revealedKnownAttrsIndices,
@@ -136,7 +129,7 @@ func TestCL(t *testing.T) {
 	}
 
 	cVerified, err := org.ProveCred(randCred.A, proof, revealedKnownAttrsIndices,
-		revealedCommitmentsOfAttrsIndices, revealedKnownAttrs, revealedCommitmentsOfAttrs)
+		revealedCommitmentsOfAttrsIndices, rawCred, credManager.CommitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
