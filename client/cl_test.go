@@ -18,7 +18,6 @@
 package client
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,15 +34,23 @@ func TestCL(t *testing.T) {
 
 	masterSecret := pubKey.GenerateUserMasterSecret()
 
-	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
-	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
-	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := cl.NewCredManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
-		hiddenAttrs)
-
+	attr1 := cl.NewAttribute("Name", "string", true, nil)
+	attr2 := cl.NewAttribute("Gender", "string", true, nil)
+	attr3 := cl.NewAttribute("Age", "int", false, nil)
+	rawCred := cl.NewRawCredential([]cl.Attribute{*attr1, *attr2, *attr3})
+	attrValues := []string{"Jack", "M", "122"}
+	err := rawCred.SetAttributeValues(attrValues)
 	if err != nil {
-		t.Errorf("error when creating a user: %v", err)
+		t.Errorf("error when setting attribute values: %v", err)
 	}
+
+	credManager, err := cl.NewCredManager(params, pubKey, masterSecret, rawCred)
+	if err != nil {
+		t.Errorf("error when creating a credential manager: %v", err)
+	}
+
+	credManagerPath := "../client/testdata/credManager.gob"
+	cl.WriteGob(credManagerPath, credManager)
 
 	client, err := NewCLClient(testGrpcClientConn)
 	if err != nil {
@@ -57,30 +64,27 @@ func TestCL(t *testing.T) {
 
 	// create new CredManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = cl.NewCredManagerFromExisting(credManager.Nym, credManager.V1,
-		credManager.CredReqNonce, params, pubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
-		credManager.CommitmentsOfAttrs)
-	if err != nil {
-		t.Errorf("error when calling NewCredManagerFromExisting: %v", err)
-	}
+	cl.ReadGob(credManagerPath, credManager)
 
-	revealedKnownAttrsIndices := []int{1, 2}      // reveal only the second and third known attribute
+	revealedKnownAttrsIndices := []int{1}         // reveal only the second known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
 
-	proved, err := client.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,
+	proved, err := client.ProveCredential(credManager, cred, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices)
 	if err != nil {
 		t.Errorf("error when proving possession of a credential: %v", err)
 	}
 	assert.True(t, proved, "possesion of a credential proof failed")
 
-	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-	cred1, err := client.UpdateCredential(credManager, newKnownAttrs)
+	attrValues = []string{"John", "M", "122"}
+	rawCred.SetAttributeValues(attrValues)
+
+	cred1, err := client.UpdateCredential(credManager, rawCred)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
 
-	proved1, err := client.ProveCredential(credManager, cred1, newKnownAttrs, revealedKnownAttrsIndices,
+	proved1, err := client.ProveCredential(credManager, cred1, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices)
 	if err != nil {
 		t.Errorf("error when proving possession of an updated credential: %v", err)

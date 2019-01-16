@@ -22,7 +22,6 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/cl"
-	"github.com/xlab-si/emmy/crypto/common"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -87,9 +86,11 @@ func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error
 	return nil, fmt.Errorf("credential not valid")
 }
 
-func (c *CLClient) UpdateCredential(credManager *cl.CredManager, newKnownAttrs []*big.Int) (*cl.Cred,
+func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.RawCredential) (*cl.Cred,
 	error) {
-	credManager.Update(newKnownAttrs)
+	// refresh credManager with new credential values, works only for known attributes
+	credManager.RefreshRawCredential(rawCred)
+	newKnownAttrs := rawCred.GetKnownValues()
 
 	if err := c.openStream(c.grpcClient, "UpdateCredential"); err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, newKnownAttrs [
 // revealedCommitmentsOfAttrsIndices parameters. All knownAttrs and commitmentsOfAttrs should be passed into
 // ProveCred - only those which are revealed are then passed to the server.
 func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
-	knownAttrs []*big.Int, revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) (bool, error) {
+	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) (bool, error) {
 	if err := c.openStream(c.grpcClient, "ProveCredential"); err != nil {
 		return false, err
 	}
@@ -154,18 +155,8 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 		return false, fmt.Errorf("error when building credential proof: %v", err)
 	}
 
-	filteredKnownAttrs := []*big.Int{}
-	for i := 0; i < len(knownAttrs); i++ {
-		if common.Contains(revealedKnownAttrsIndices, i) {
-			filteredKnownAttrs = append(filteredKnownAttrs, knownAttrs[i])
-		}
-	}
-	filteredCommitmentsOfAttrs := []*big.Int{}
-	for i := 0; i < len(credManager.CommitmentsOfAttrs); i++ {
-		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
-			filteredCommitmentsOfAttrs = append(filteredCommitmentsOfAttrs, credManager.CommitmentsOfAttrs[i])
-		}
-	}
+	filteredKnownAttrs, filteredCommitmentsOfAttrs := credManager.FilterAttributes(revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices)
 
 	proveMsg := &pb.Message{
 		Content: &pb.Message_ProveClCredential{pb.ToPbProveCLCredential(randCred.A, proof, filteredKnownAttrs,

@@ -31,6 +31,13 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
+	// Storing organization keys is not neccessary (if some existing are already there),
+	// but in case that for example number of attributes (see params.go) is changed for org,
+	// keys need to be updated (persistent keys are not needed for this test, but they are
+	// needed for CL test that includes gRPC communication, see client folder)
+	WriteGob("../../client/testdata/clPubKey.gob", org.PubKey)
+	WriteGob("../../client/testdata/clSecKey.gob", org.SecKey)
+
 	masterSecret := org.PubKey.GenerateUserMasterSecret()
 
 	attr1 := NewAttribute("Name", "string", true, nil)
@@ -97,7 +104,9 @@ func TestCL(t *testing.T) {
 	if err != nil {
 		t.Errorf("error saving record to db: %v", err)
 	}
-	res1, err := org.UpdateCred(credManager.Nym, rec, credReq.Nonce, rawCred)
+
+	newKnownAttrs := rawCred.GetKnownValues()
+	res1, err := org.UpdateCred(credManager.Nym, rec, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
@@ -128,8 +137,10 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when building credential proof: %v", err)
 	}
 
+	revealedKnownAttrs, revealedCommitmentsOfAttrs := credManager.FilterAttributes(revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices)
 	cVerified, err := org.ProveCred(randCred.A, proof, revealedKnownAttrsIndices,
-		revealedCommitmentsOfAttrsIndices, rawCred, credManager.CommitmentsOfAttrs)
+		revealedCommitmentsOfAttrsIndices, revealedKnownAttrs, revealedCommitmentsOfAttrs)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}

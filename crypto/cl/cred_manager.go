@@ -101,26 +101,6 @@ func NewCredManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 	return &credManager, nil
 }
 
-func NewCredManagerFromExisting(nym, v1, credReqNonce *big.Int, params *Params, pubKey *PubKey, masterSecret *big.Int,
-	knownAttrs, committedAttrs, hiddenAttrs, commitmentsOfAttrs []*big.Int) (*CredManager, error) {
-
-	// nymCommitter is needed only for IssueCred (when proving that nym can be opened), so we do not need it here
-	// the same for attrsCommitters
-
-	return &CredManager{
-		Params:             params,
-		PubKey:             pubKey,
-		KnownAttrs:         knownAttrs,
-		committedAttrs:     committedAttrs,
-		hiddenAttrs:        hiddenAttrs,
-		CommitmentsOfAttrs: commitmentsOfAttrs,
-		masterSecret:       masterSecret,
-		Nym:                nym,
-		V1:                 v1,
-		CredReqNonce:       credReqNonce,
-	}, nil
-}
-
 // generateNym creates a pseudonym to be used with a given organization. Authentication can be done
 // with respect to the pseudonym or not.
 func (m *CredManager) generateNym() error {
@@ -231,6 +211,25 @@ func (m *CredManager) RefreshRawCredential(rawCredential *RawCredential) {
 	m.rawCredential = rawCredential
 	knownAttrs := m.rawCredential.GetKnownValues()
 	m.KnownAttrs = knownAttrs
+}
+
+// FilterAttributes returns only attributes to be revealed to the verifier.
+func (m *CredManager) FilterAttributes(revealedKnownAttrsIndices,
+	revealedCommitmentsOfAttrsIndices []int) ([]*big.Int, []*big.Int) {
+	revealedKnownAttrs := []*big.Int{}
+	revealedCommitmentsOfAttrs := []*big.Int{}
+	for i := 0; i < len(m.KnownAttrs); i++ {
+		if common.Contains(revealedKnownAttrsIndices, i) {
+			revealedKnownAttrs = append(revealedKnownAttrs, m.KnownAttrs[i])
+		}
+	}
+	for i := 0; i < len(m.CommitmentsOfAttrs); i++ {
+		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
+			revealedCommitmentsOfAttrs = append(revealedCommitmentsOfAttrs, m.CommitmentsOfAttrs[i])
+		}
+	}
+
+	return revealedKnownAttrs, revealedCommitmentsOfAttrs
 }
 
 // randomize randomizes credential cred, and returns the
