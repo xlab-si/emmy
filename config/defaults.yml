@@ -52,6 +52,10 @@ service_info:
   provider: "Government"
   description: "This service verifies your right to vote and allows you to vote electronically with cryptographically assured anonymity"
 
+# the number of attributes must correspond to the CL params (see KnownAttrsNum, 
+# CommittedAttrsNum, HiddenAttrsNum)
+attributes: {0: "Name, string, true", 1: "Gender, string, true", 2: "Age, int, false"}
+
 session_key_bytelen: 32
 
 registration_db_address: "localhost:6379"

@@ -56,6 +56,17 @@ message ServiceInfo {
 	string provider = 3;
 }
 
+message Attribute {
+	int32 index = 1;
+	string name = 2;
+	string type = 3;
+	bool known = 4;
+}
+
+message CredentialStructure {
+	repeated Attribute attributes = 1;
+}
+
 message Status {
 	bool Success = 1;
 }

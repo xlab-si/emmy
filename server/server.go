@@ -153,6 +153,7 @@ func (s *Server) registerServices() {
 	pb.RegisterPseudonymSystemServer(s.GrpcServer, s)
 	pb.RegisterPseudonymSystemCAServer(s.GrpcServer, s)
 	pb.RegisterCLServer(s.GrpcServer, s)
+	pb.RegisterCLCredentialInfoServer(s.GrpcServer, s)
 
 	s.Logger.Notice("Registered gRPC Services")
 }

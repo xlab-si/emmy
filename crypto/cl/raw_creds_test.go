@@ -24,13 +24,13 @@ import (
 )
 
 func TestRawCreds(t *testing.T) {
-	attr1 := NewAttribute("Name", "string", true, nil)
-	attr2 := NewAttribute("Gender", "string", true, nil)
-	attr3 := NewAttribute("Age", "int", true, nil)
+	attr1 := NewAttribute(0, "Name", "string", true, nil)
+	attr2 := NewAttribute(1, "Gender", "string", true, nil)
+	attr3 := NewAttribute(2, "Age", "int", true, nil)
 	rc := NewRawCredential([]Attribute{*attr1, *attr2, *attr3})
 	// all values need to be passed to SetAttributeValues as strings,
 	// attrs of Type int are then set to have Value of *big.Int
-	attrValues := []string{"John", "M", "122"}
+	attrValues := map[int]string{0: "John", 1: "M", 2: "122"}
 	err := rc.SetAttributeValues(attrValues)
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)

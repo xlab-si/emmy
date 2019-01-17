@@ -34,12 +34,13 @@ func TestCL(t *testing.T) {
 
 	masterSecret := pubKey.GenerateUserMasterSecret()
 
-	attr1 := cl.NewAttribute("Name", "string", true, nil)
-	attr2 := cl.NewAttribute("Gender", "string", true, nil)
-	attr3 := cl.NewAttribute("Age", "int", false, nil)
-	rawCred := cl.NewRawCredential([]cl.Attribute{*attr1, *attr2, *attr3})
-	attrValues := []string{"Jack", "M", "122"}
-	err := rawCred.SetAttributeValues(attrValues)
+	rawCred, err := GetCredentialStructure(testGrpcClientConn)
+	if err != nil {
+		t.Errorf("error when retrieving credential structure: %v", err)
+	}
+	// fill credential with values:
+	attrValues := map[int]string{0: "Jack", 1: "M", 2: "122"}
+	err = rawCred.SetAttributeValues(attrValues)
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
@@ -76,7 +77,7 @@ func TestCL(t *testing.T) {
 	}
 	assert.True(t, proved, "possesion of a credential proof failed")
 
-	attrValues = []string{"John", "M", "122"}
+	attrValues = map[int]string{0: "John", 1: "M", 2: "122"}
 	rawCred.SetAttributeValues(attrValues)
 
 	cred1, err := client.UpdateCredential(credManager, rawCred)
