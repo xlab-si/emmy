@@ -38,6 +38,7 @@ service PseudonymSystem {
 
 service CLCredentialInfo {
 	rpc GetCredentialStructure(google.protobuf.Empty) returns (CredentialStructure) {}
+	rpc GetAcceptableCredentials(google.protobuf.Empty) returns (AcceptableCredentials) {}
 }
 
 service CL {

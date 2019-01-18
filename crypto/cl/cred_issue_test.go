@@ -42,9 +42,10 @@ func TestCL(t *testing.T) {
 
 	attr1 := NewAttribute(0, "Name", "string", true, nil)
 	attr2 := NewAttribute(1, "Gender", "string", true, nil)
-	attr3 := NewAttribute(2, "Age", "int", false, nil)
-	rawCred := NewRawCredential([]Attribute{*attr1, *attr2, *attr3})
-	attrValues := map[int]string{0: "Jack", 1: "M", 2: "122"}
+	attr3 := NewAttribute(2, "Graduated", "string", true, nil)
+	attr4 := NewAttribute(3, "Age", "int", false, nil)
+	rawCred := NewRawCredential([]Attribute{*attr1, *attr2, *attr3, *attr4})
+	attrValues := map[int]string{0: "Jack", 1: "M", 2: "true", 3: "122"}
 	err = rawCred.SetAttributeValues(attrValues)
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
@@ -95,7 +96,7 @@ func TestCL(t *testing.T) {
 
 	// Modify raw credential and get updated credential from an organization
 
-	attrValues = map[int]string{0: "John", 1: "M", 2: "122"}
+	attrValues = map[int]string{0: "John", 1: "M", 2: "true", 3: "122"}
 	rawCred.SetAttributeValues(attrValues)
 	// refresh credManager with new credential values, works only for known attributes
 	credManager.RefreshRawCredential(rawCred)

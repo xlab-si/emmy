@@ -22,6 +22,7 @@ import (
 	"math/big"
 
 	"github.com/xlab-si/emmy/crypto/cl"
+	"github.com/xlab-si/emmy/crypto/common"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -132,7 +133,26 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.Raw
 // revealedCommitmentsOfAttrsIndices parameters. All knownAttrs and commitmentsOfAttrs should be passed into
 // ProveCred - only those which are revealed are then passed to the server.
 func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
-	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int) (bool, error) {
+	revealedAttrIndices []int) (bool, error) {
+	var revealedKnownAttrsIndices []int
+	var revealedCommitmentsOfAttrsIndices []int
+	knownCount := 0
+	commCount := 0
+	for _, attr := range credManager.RawCredential.Attributes {
+		if common.Contains(revealedAttrIndices, attr.Index) {
+			if attr.Known {
+				revealedKnownAttrsIndices = append(revealedKnownAttrsIndices, knownCount)
+			} else {
+				revealedCommitmentsOfAttrsIndices = append(revealedCommitmentsOfAttrsIndices, commCount)
+			}
+		}
+		if attr.Known {
+			knownCount++
+		} else {
+			commCount++
+		}
+	}
+
 	if err := c.openStream(c.grpcClient, "ProveCredential"); err != nil {
 		return false, err
 	}

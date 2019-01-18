@@ -31,6 +31,96 @@ Emmy library is named after a German mathematician [Emmy Noether](https://en.wik
 - [Further documentation](#documentation)
 <!-- tocstop -->
 
+# emmy - anonymous credentials showcase
+ 
+Let's say you would like to travel to some country which requires proof of vaccination for certain diseases.
+You go to the clinic named South Loop Clinic, you get vaccinated and receive a proof that you are vaccinated. In fact, South Loop Clinic issues an anonymous credential which contains a proof that you have been vaccinated for certain diseases.
+
+The credential would contain something like:
+
+```
+Name: Andrew
+Surname: McCain
+Age: 45
+Gender: M
+DiseaseName: true
+```
+
+Note that the credential does not contain attributes as plaintext - the credential is received from the
+issuer by a zero-knowledge proof. When credential needs to be shown, another zero-knowledge proof
+is executed. These protocols are unlinkable - issuer and verifier cannot determine
+whether it is going on about the same credential (unless you reveal all attributes and some of these 
+attributes contain unique identifier).
+
+Let's assume there is a smart phone app which offers a UI to the emmy protocols. 
+
+To obtain a credential, user first need to create a master secret key. An app runs:
+
+```
+masterSecret := pubKey.GenerateUserMasterSecret()
+```
+
+Here, pubKey is the public key of a clinic (clinic instantiates an `Org` from `crypto/cl/org.go` and
+uses it for issuing a credential).
+
+The communication between user and clinic can go for example over NFC - between user's phone and 
+some clinic terminal.
+
+User obtains a credential structure from a clinic (see `client/cl_test.go`):
+
+```
+rawCred, err := GetCredentialStructure(testGrpcClientConn)
+```
+
+Credential structure for `Org` is defined in `config/defaults.yml`.
+User then fills the credential using an app and starts a protocol to obtain a credential:
+
+```
+attrValues := map[int]string{0: "John", 1: "McCain", 2: "45", 3: "M", 4: "Yellow fever"}
+err = rawCred.SetAttributeValues(attrValues)
+if err != nil {
+    t.Errorf("error when setting attribute values: %v", err)
+}
+
+credManager, err := cl.NewCredManager(params, pubKey, masterSecret, rawCred)
+if err != nil {
+    t.Errorf("error when creating a credential manager: %v", err)
+}
+
+client, err := NewCLClient(testGrpcClientConn)
+if err != nil {
+    t.Errorf("Error when initializing NewCLClient")
+}
+
+cred, err := client.IssueCredential(credManager)
+```
+
+The clinic verifies the validity of attributes (TODO: describe verification) and issues a credential.
+User now possesses a credential on his phone.
+
+When user arrives to a foreign country and a proof of vaccination is needed, he opens an app 
+which runs:
+
+```
+acceptableCreds, err := GetAcceptableCredentials(testGrpcClientConn)
+if err != nil {
+    t.Errorf("error when retrieving acceptable credentials: %v", err)
+}
+revealedAttrIndices := acceptableCreds["South Loop Clinic"]
+
+proved, err := client.ProveCredential(credManager, cred, revealedAttrIndices)
+if err != nil {
+    t.Errorf("error when proving possession of a credential: %v", err)
+}
+```
+
+An app contacted a verifier (another emmy `Org`) and obtained acceptable credentials.
+South Loop Clinic is among the organizations whose credentials are accepted by verifier.
+Acceptable credentials information contain also a list which attributes need to be revealed. An app
+shows the list to a user and user confirms the disclosure - in this case only DiseaseName attribute
+needs to be revealed. Verifier learns nothing about the user except that he was vaccinated for a 
+certain disease.
+
 # Currently offered cryptographic primitives
 
 The library supports building complex cryptographic schemes. To enable this various layers are needed:
@@ -110,60 +200,6 @@ While anonymity is obviously a MUST in e-voting, it might gradually become more 
  * wearable healthcare (for example sending diabetes data to a research team)
  * vehicle communications - cars sending out data about traffic
  
-### Example - using CL scheme
- 
-Let's say University issues to each student a credential where the following attributes are written: name, gender, age,
-student status (undergraduate/graduate). University has its own public and secret key and plays the role of organization
-(when a student connects to the University, a new `Org` from `crypto/cl/org.go` is instantiated and 
-responsible for issuing a credential).
-
-First, a student needs to create a master secret key:
-
-```
-masterSecret := pubKey.GenerateUserMasterSecret() // pubKey is University public key
-```
-
-Now let's say variables `name`, `gender`, `age`, `studentStatus` contain big integer (`*big.Int`) representations for name, gender,
-age, studentStatus (different types of attributes will be supported in the future - string, date, enum). 
-A student now creates `CredentialManager` which will interact with `Org` to obtain a credential (see test code 
-in `client/cl_test.go`):
-
-```
-knownAttrs := []*big.Int{name, gender, age, studentStatus}
-committedAttrs := []*big.Int{}
-hiddenAttrs := []*big.Int{}
-credManager, err := cl.NewCredManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
-    hiddenAttrs)
-```
-
-Note that `committedAttrs` and `hiddentAttrs` are empty - these are needed for attributes for which the organization
-should know only commitments or nothing at all.
-
-Now a student instantiates a communication client:
-
-```
-client, err := NewCLClient(testGrpcClientConn)
-```
-
-Student now asks for credential:
-
-```
-cred, err := client.IssueCredential(credManager)
-```
-
-Now a student has a credential which can be used to connect to other organizations or to prove them some claims. For 
-example there might be a shop which has a special discount for graduate students. The shop should run its own emmy
-server and act as organization which accepts University credentials. A student can reveal only the student status and 
-nothing else when buying in this shop. After `client` (connection to the shop server) and `credManager` are created:
-
-```
-revealedKnownAttrsIndices := []int{3} // reveal only the fourth attribute (student status)
-revealedCommitmentsOfAttrsIndices := []int{}
-
-proved, err := client.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,
-    revealedCommitmentsOfAttrsIndices)
-```
-
 ### CL scheme - brief overview how it works
 
 There are public parameters _Z_, _S_, _R1_, ... , _Rl_.

@@ -211,6 +211,26 @@ func LoadCredentialStructure() ([]cl.Attribute, error) {
 	return attrs, nil
 }
 
+func LoadAcceptableCredentials() (map[string][]int32, error) {
+	m := viper.GetStringMapString("acceptable_credentials")
+	accCreds := make(map[string][]int32)
+	for k, v := range m {
+		vs := strings.Split(v, ",")
+		var indices []int32
+		for _, i := range vs {
+			it := strings.Trim(i, " ")
+			iit, err := strconv.Atoi(it)
+			if err != nil {
+				return nil, err
+			}
+			indices = append(indices, int32(iit))
+		}
+		accCreds[k] = indices
+	}
+
+	return accCreds, nil
+}
+
 func LoadSessionKeyMinByteLen() int {
 	return viper.GetInt("session_key_bytelen")
 }

@@ -39,7 +39,7 @@ import (
 type CredManager struct {
 	Params             *Params
 	PubKey             *PubKey
-	rawCredential      *RawCredential
+	RawCredential      *RawCredential
 	nymCommitter       *pedersen.Committer // nym is actually a commitment to masterSecret
 	Nym                *big.Int
 	masterSecret       *big.Int
@@ -87,7 +87,7 @@ func NewCredManager(params *Params, pubKey *PubKey, masterSecret *big.Int,
 	credManager := CredManager{
 		Params:                    params,
 		PubKey:                    pubKey,
-		rawCredential:             rawCred,
+		RawCredential:             rawCred,
 		KnownAttrs:                knownAttrs,
 		committedAttrs:            committedAttrs,
 		hiddenAttrs:               hiddenAttrs,
@@ -208,8 +208,8 @@ func (m *CredManager) Verify(cred *Cred, AProof *qr.RepresentationProof) (bool, 
 
 // RefreshRawCredential updates raw credential with new attribute values. Only for known attributes!
 func (m *CredManager) RefreshRawCredential(rawCredential *RawCredential) {
-	m.rawCredential = rawCredential
-	knownAttrs := m.rawCredential.GetKnownValues()
+	m.RawCredential = rawCredential
+	knownAttrs := m.RawCredential.GetKnownValues()
 	m.KnownAttrs = knownAttrs
 }
 

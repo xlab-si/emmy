@@ -54,7 +54,11 @@ service_info:
 
 # the number of attributes must correspond to the CL params (see KnownAttrsNum, 
 # CommittedAttrsNum, HiddenAttrsNum)
-attributes: {0: "Name, string, true", 1: "Gender, string, true", 2: "Age, int, false"}
+attributes: {0: "Name, string, true", 1: "Gender, string, true", 2: "Graduated, string, true", 
+3: "Age, int, false"}
+
+# credentials from which organizations are accepted and which attributes need to be revealed
+acceptable_credentials: {"Org1": "0,3", "Org2": "1"}
 
 session_key_bytelen: 32
 

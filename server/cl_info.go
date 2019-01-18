@@ -47,3 +47,24 @@ func (s *Server) GetCredentialStructure(ctx context.Context, _ *empty.Empty) (*p
 
 	return cred, nil
 }
+
+func (s *Server) GetAcceptableCredentials(ctx context.Context, _ *empty.Empty) (*pb.AcceptableCredentials, error) {
+	s.Logger.Info("Client requested acceptable credentials information")
+	accCreds, err := config.LoadAcceptableCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	var credentials []*pb.AcceptableCred
+	for name, indices := range accCreds {
+		cred := &pb.AcceptableCred{
+			OrgName:       name,
+			RevealedAttrs: indices,
+		}
+		credentials = append(credentials, cred)
+	}
+
+	return &pb.AcceptableCredentials{
+		Credentials: credentials,
+	}, nil
+}

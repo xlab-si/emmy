@@ -39,7 +39,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when retrieving credential structure: %v", err)
 	}
 	// fill credential with values:
-	attrValues := map[int]string{0: "Jack", 1: "M", 2: "122"}
+	attrValues := map[int]string{0: "Jack", 1: "M", 2: "true", 3: "122"}
 	err = rawCred.SetAttributeValues(attrValues)
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
@@ -67,17 +67,19 @@ func TestCL(t *testing.T) {
 	// as issuing)
 	cl.ReadGob(credManagerPath, credManager)
 
-	revealedKnownAttrsIndices := []int{1}         // reveal only the second known attribute
-	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
+	acceptableCreds, err := GetAcceptableCredentials(testGrpcClientConn)
+	if err != nil {
+		t.Errorf("error when retrieving acceptable credentials: %v", err)
+	}
+	revealedAttrIndices := acceptableCreds["org1"]
 
-	proved, err := client.ProveCredential(credManager, cred, revealedKnownAttrsIndices,
-		revealedCommitmentsOfAttrsIndices)
+	proved, err := client.ProveCredential(credManager, cred, revealedAttrIndices)
 	if err != nil {
 		t.Errorf("error when proving possession of a credential: %v", err)
 	}
 	assert.True(t, proved, "possesion of a credential proof failed")
 
-	attrValues = map[int]string{0: "John", 1: "M", 2: "122"}
+	attrValues = map[int]string{0: "John", 1: "M", 2: "true", 3: "122"}
 	rawCred.SetAttributeValues(attrValues)
 
 	cred1, err := client.UpdateCredential(credManager, rawCred)
@@ -85,8 +87,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when updating credential: %v", err)
 	}
 
-	proved1, err := client.ProveCredential(credManager, cred1, revealedKnownAttrsIndices,
-		revealedCommitmentsOfAttrsIndices)
+	proved1, err := client.ProveCredential(credManager, cred1, revealedAttrIndices)
 	if err != nil {
 		t.Errorf("error when proving possession of an updated credential: %v", err)
 	}

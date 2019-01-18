@@ -45,3 +45,22 @@ func GetCredentialStructure(conn *grpc.ClientConn) (*cl.RawCredential, error) {
 
 	return rawCred, nil
 }
+
+func GetAcceptableCredentials(conn *grpc.ClientConn) (map[string][]int, error) {
+	client := pb.NewCLCredentialInfoClient(conn)
+
+	creds, err := client.GetAcceptableCredentials(context.Background(), &empty.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve acceptable credentials info: %v", err)
+	}
+
+	accCreds := make(map[string][]int)
+	for _, cred := range creds.Credentials {
+		var indices []int
+		for attr := range cred.GetRevealedAttrs() {
+			indices = append(indices, int(attr))
+		}
+		accCreds[cred.GetOrgName()] = indices
+	}
+	return accCreds, nil
+}

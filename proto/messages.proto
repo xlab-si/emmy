@@ -56,6 +56,15 @@ message ServiceInfo {
 	string provider = 3;
 }
 
+message AcceptableCred {
+	string orgName = 1;
+	repeated int32 revealedAttrs = 2;
+}
+
+message AcceptableCredentials {
+	repeated AcceptableCred credentials = 1;
+}
+
 message Attribute {
 	int32 index = 1;
 	string name = 2;
