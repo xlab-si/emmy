@@ -138,7 +138,8 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 	var revealedCommitmentsOfAttrsIndices []int
 	knownCount := 0
 	commCount := 0
-	for _, attr := range credManager.RawCredential.Attributes {
+	for i := 0; i < len(credManager.RawCredential.Attributes); i++ { // not using range to force attributes appear in proper order
+		attr := credManager.RawCredential.Attributes[i]
 		if common.Contains(revealedAttrIndices, attr.Index) {
 			if attr.Known {
 				revealedKnownAttrsIndices = append(revealedKnownAttrsIndices, knownCount)

@@ -128,7 +128,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	revealedKnownAttrsIndices := []int{1}         // reveal only the second known attribute
+	revealedKnownAttrsIndices := []int{0}         // reveal only the second known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
 
 	nonce := org.GetProveCredNonce()

@@ -101,7 +101,8 @@ func (c *RawCredential) GetAttributeValues() map[int]string {
 // The returned elements are ordered by attribute's index.
 func (c *RawCredential) GetKnownValues() []*big.Int {
 	var values []*big.Int
-	for _, attr := range c.Attributes {
+	for i := 0; i < len(c.Attributes); i++ { // avoid range to have attributes in proper order
+		attr := c.Attributes[i]
 		if attr.Known {
 			values = append(values, attr.Value)
 		}
@@ -114,7 +115,8 @@ func (c *RawCredential) GetKnownValues() []*big.Int {
 // The returned elements are ordered by attribute's index.
 func (c *RawCredential) GetCommittedValues() []*big.Int {
 	var values []*big.Int
-	for _, attr := range c.Attributes {
+	for i := 0; i < len(c.Attributes); i++ { // avoid range to have attributes in proper order
+		attr := c.Attributes[i]
 		if !attr.Known {
 			values = append(values, attr.Value)
 		}

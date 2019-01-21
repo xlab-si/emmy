@@ -38,6 +38,7 @@ func TestCL(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when retrieving credential structure: %v", err)
 	}
+
 	// fill credential with values:
 	attrValues := map[int]string{0: "Jack", 1: "M", 2: "true", 3: "122"}
 	err = rawCred.SetAttributeValues(attrValues)

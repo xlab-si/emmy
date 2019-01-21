@@ -57,7 +57,7 @@ func GetAcceptableCredentials(conn *grpc.ClientConn) (map[string][]int, error) {
 	accCreds := make(map[string][]int)
 	for _, cred := range creds.Credentials {
 		var indices []int
-		for attr := range cred.GetRevealedAttrs() {
+		for _, attr := range cred.GetRevealedAttrs() {
 			indices = append(indices, int(attr))
 		}
 		accCreds[cred.GetOrgName()] = indices
