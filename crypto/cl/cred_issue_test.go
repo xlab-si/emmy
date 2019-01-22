@@ -31,12 +31,9 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	// Storing organization keys is not neccessary (if some existing are already there),
-	// but in case that for example number of attributes (see params.go) is changed for org,
-	// keys need to be updated (persistent keys are not needed for this test, but they are
-	// needed for CL test that includes gRPC communication, see client folder)
-	WriteGob("../../client/testdata/clPubKey.gob", org.PubKey)
-	WriteGob("../../client/testdata/clSecKey.gob", org.SecKey)
+	// If params.go changes (for example number of attributes), testing keys need to be updated:
+	// WriteGob("../../client/testdata/clPubKey.gob", org.PubKey)
+	// WriteGob("../../client/testdata/clSecKey.gob", org.SecKey)
 
 	masterSecret := org.PubKey.GenerateUserMasterSecret()
 
@@ -128,7 +125,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	revealedKnownAttrsIndices := []int{0}         // reveal only the second known attribute
+	revealedKnownAttrsIndices := []int{0}         // reveal only the first known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
 
 	nonce := org.GetProveCredNonce()
