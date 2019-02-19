@@ -36,12 +36,12 @@ func GetCredentialStructure(conn *grpc.ClientConn) (*cl.RawCredential, error) {
 	}
 
 	attributes := cred.GetAttributes()
-	attrs := make([]cl.Attribute, len(attributes))
-	for i, a := range attributes {
-		attr := cl.NewAttribute(int(a.GetIndex()), a.GetName(), a.GetType(), a.GetKnown(), nil)
-		attrs[i] = *attr
+	rawCred := cl.NewRawCredential()
+	for _, a := range attributes {
+		// attributes need to be properly indexed to enable preparation of lists of
+		// their values which are sent to the verifier (and need to be ordered by index)
+		rawCred.InsertAttribute(int(a.GetIndex()), a.GetName(), a.GetType(), a.GetKnown())
 	}
-	rawCred := cl.NewRawCredential(attrs)
 
 	return rawCred, nil
 }

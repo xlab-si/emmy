@@ -31,7 +31,7 @@ type Attribute struct {
 	Name  string
 	Type  string // currently only "string" and "int" types are supported
 	Known bool
-	Value *big.Int // this value is set by SetAttributeValues and is used internally in CL scheme
+	Value *big.Int // this value is set by SetAttributeValue and is used internally in CL scheme
 }
 
 func NewAttribute(index int, name, attrType string, known bool, value *big.Int) *Attribute {
@@ -47,50 +47,62 @@ func NewAttribute(index int, name, attrType string, known bool, value *big.Int) 
 // RawCredential presents credential as to be used by application that executes CL scheme to prove possesion
 // of an anonymous credential.
 type RawCredential struct {
-	Attributes map[int]Attribute
+	attributes      map[int]*Attribute
+	attrNameToIndex map[string]int
 }
 
-func NewRawCredential(attrs []Attribute) *RawCredential {
-	attributes := make(map[int]Attribute)
-	for _, a := range attrs {
-		attributes[a.Index] = a
-	}
+func NewRawCredential() *RawCredential {
 	return &RawCredential{
-		Attributes: attributes,
+		attributes:      make(map[int]*Attribute),
+		attrNameToIndex: make(map[string]int),
 	}
 }
 
-// SetAttributeValues converts and set the attribute values to *big.Ints which are then used internally
+func (c *RawCredential) InsertAttribute(index int, name, attrType string, known bool) {
+	c.attrNameToIndex[name] = index
+	c.attributes[index] = NewAttribute(index, name, attrType, known, nil)
+}
+
+func (c *RawCredential) AddAttribute(name, attrType string, known bool, value string) error {
+	index := len(c.attributes)
+	c.attrNameToIndex[name] = index
+	c.attributes[index] = NewAttribute(index, name, attrType, known, nil)
+	return c.SetAttributeValue(name, value)
+}
+
+// SetAttributeValue converts and set the attribute value to *big.Int which is then used internally
 // by CL scheme.
-func (c *RawCredential) SetAttributeValues(attrValues map[int]string) error {
-	for i := 0; i < len(c.Attributes); i++ {
-		attr := c.Attributes[i]
-		if attr.Type == "string" {
-			attr.Value = new(big.Int).SetBytes([]byte(attrValues[i]))
-		} else if attr.Type == "int" {
-			v, success := new(big.Int).SetString(attrValues[i], 10)
-			if !success {
-				return fmt.Errorf("cannot convert attribute to *big.Int: %s", attrValues[i])
-			}
-			attr.Value = v
-		} else {
-			return fmt.Errorf("attribute type is not supported: %s", attr.Type)
+func (c *RawCredential) SetAttributeValue(name string, value string) error {
+	index := c.attrNameToIndex[name]
+	attr := c.attributes[index]
+	if attr.Type == "string" {
+		attr.Value = new(big.Int).SetBytes([]byte(value))
+	} else if attr.Type == "int" {
+		v, success := new(big.Int).SetString(value, 10)
+		if !success {
+			return fmt.Errorf("cannot convert attribute to *big.Int: %s", value)
 		}
-		c.Attributes[i] = attr
+		attr.Value = v
+	} else {
+		return fmt.Errorf("attribute type is not supported: %s", attr.Type)
 	}
 
 	return nil
+}
+
+func (c *RawCredential) GetAttributes() map[int]*Attribute {
+	return c.attributes
 }
 
 // GetAttributeValues converts attribute values from *big.Ints (used by CL scheme) to the initial form,
 // as they are used in the application that runs CL scheme.
 func (c *RawCredential) GetAttributeValues() map[int]string {
 	attrValues := make(map[int]string)
-	for i, attr := range c.Attributes {
+	for i, attr := range c.attributes {
 		if attr.Type == "string" {
-			attrValues[i] = string(c.Attributes[i].Value.Bytes())
+			attrValues[i] = string(c.attributes[i].Value.Bytes())
 		} else if attr.Type == "int" {
-			attrValues[i] = c.Attributes[i].Value.String()
+			attrValues[i] = c.attributes[i].Value.String()
 		}
 	}
 
@@ -101,8 +113,8 @@ func (c *RawCredential) GetAttributeValues() map[int]string {
 // The returned elements are ordered by attribute's index.
 func (c *RawCredential) GetKnownValues() []*big.Int {
 	var values []*big.Int
-	for i := 0; i < len(c.Attributes); i++ { // avoid range to have attributes in proper order
-		attr := c.Attributes[i]
+	for i := 0; i < len(c.attributes); i++ { // avoid range to have attributes in proper order
+		attr := c.attributes[i]
 		if attr.Known {
 			values = append(values, attr.Value)
 		}
@@ -115,8 +127,8 @@ func (c *RawCredential) GetKnownValues() []*big.Int {
 // The returned elements are ordered by attribute's index.
 func (c *RawCredential) GetCommittedValues() []*big.Int {
 	var values []*big.Int
-	for i := 0; i < len(c.Attributes); i++ { // avoid range to have attributes in proper order
-		attr := c.Attributes[i]
+	for i := 0; i < len(c.attributes); i++ { // avoid range to have attributes in proper order
+		attr := c.attributes[i]
 		if !attr.Known {
 			values = append(values, attr.Value)
 		}

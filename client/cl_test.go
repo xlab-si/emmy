@@ -40,8 +40,22 @@ func TestCL(t *testing.T) {
 	}
 
 	// fill credential with values:
-	attrValues := map[int]string{0: "Jack", 1: "M", 2: "true", 3: "122"}
-	err = rawCred.SetAttributeValues(attrValues)
+	err = rawCred.SetAttributeValue("Name", "Jack")
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Gender", "M")
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Graduated", "true")
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Age", "122")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
@@ -80,8 +94,25 @@ func TestCL(t *testing.T) {
 	}
 	assert.True(t, proved, "possesion of a credential proof failed")
 
-	attrValues = map[int]string{0: "John", 1: "M", 2: "true", 3: "122"}
-	rawCred.SetAttributeValues(attrValues)
+	err = rawCred.SetAttributeValue("Name", "John")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Gender", "M")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Graduated", "true")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Age", "122")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
 
 	cred1, err := client.UpdateCredential(credManager, rawCred)
 	if err != nil {

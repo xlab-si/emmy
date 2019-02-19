@@ -43,7 +43,7 @@ Name: Andrew
 Surname: McCain
 Age: 45
 Gender: M
-DiseaseName: true
+Vaccinated for yellow fever: true
 ```
 
 Note that the credential does not contain attributes as plaintext - the credential is received from the
@@ -76,11 +76,11 @@ Credential structure for `Org` is defined in `config/defaults.yml`.
 User then fills the credential using an app and starts a protocol to obtain a credential:
 
 ```
-attrValues := map[int]string{0: "John", 1: "McCain", 2: "45", 3: "M", 4: "Yellow fever"}
-err = rawCred.SetAttributeValues(attrValues)
-if err != nil {
-    t.Errorf("error when setting attribute values: %v", err)
-}
+rawCred.SetAttributeValue("Name", "Andrew")
+rawCred.SetAttributeValue("Surname", "McCain")
+rawCred.SetAttributeValue("Age", "M")
+rawCred.SetAttributeValue("Gender", "45")
+rawCred.SetAttributeValue("Yellow fever, "true")
 
 credManager, err := cl.NewCredManager(params, pubKey, masterSecret, rawCred)
 if err != nil {

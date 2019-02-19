@@ -37,13 +37,23 @@ func TestCL(t *testing.T) {
 
 	masterSecret := org.PubKey.GenerateUserMasterSecret()
 
-	attr1 := NewAttribute(0, "Name", "string", true, nil)
-	attr2 := NewAttribute(1, "Gender", "string", true, nil)
-	attr3 := NewAttribute(2, "Graduated", "string", true, nil)
-	attr4 := NewAttribute(3, "Age", "int", false, nil)
-	rawCred := NewRawCredential([]Attribute{*attr1, *attr2, *attr3, *attr4})
-	attrValues := map[int]string{0: "Jack", 1: "M", 2: "true", 3: "122"}
-	err = rawCred.SetAttributeValues(attrValues)
+	rawCred := NewRawCredential()
+	err = rawCred.AddAttribute("Name", "string", true, "Jack")
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	err = rawCred.AddAttribute("Gender", "string", true, "M")
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	err = rawCred.AddAttribute("Graduated", "string", true, "true")
+	if err != nil {
+		t.Errorf("error when setting attribute values: %v", err)
+	}
+
+	err = rawCred.AddAttribute("Age", "int", false, "122")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
@@ -93,8 +103,26 @@ func TestCL(t *testing.T) {
 
 	// Modify raw credential and get updated credential from an organization
 
-	attrValues = map[int]string{0: "John", 1: "M", 2: "true", 3: "122"}
-	rawCred.SetAttributeValues(attrValues)
+	err = rawCred.SetAttributeValue("Name", "John")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Gender", "M")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Graduated", "true")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
+	err = rawCred.SetAttributeValue("Age", "122")
+	if err != nil {
+		t.Errorf("error when setting attribute value: %v", err)
+	}
+
 	// refresh credManager with new credential values, works only for known attributes
 	credManager.RefreshRawCredential(rawCred)
 
