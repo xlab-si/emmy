@@ -76,11 +76,12 @@ Credential structure for `Org` is defined in `config/defaults.yml`.
 User then fills the credential using an app and starts a protocol to obtain a credential:
 
 ```
-rawCred.SetAttributeValue("Name", "Andrew")
-rawCred.SetAttributeValue("Surname", "McCain")
-rawCred.SetAttributeValue("Age", "M")
-rawCred.SetAttributeValue("Gender", "45")
-rawCred.SetAttributeValue("Yellow fever, "true")
+attrs := rawCred.GetAttributes()
+attrs[0].SetValue("Andrew") // name
+attrs[1].SetValue("McCain") // surname
+attrs[2].SetValue("45") // age
+attrs[3].SetValue("M") // gender
+attrs[4].SetValue("true") // vaccinated for yellow fever
 
 credManager, err := cl.NewCredManager(params, pubKey, masterSecret, rawCred)
 if err != nil {

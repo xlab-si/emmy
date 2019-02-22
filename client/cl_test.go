@@ -34,28 +34,35 @@ func TestCL(t *testing.T) {
 
 	masterSecret := pubKey.GenerateUserMasterSecret()
 
-	rawCred, err := GetCredentialStructure(testGrpcClientConn)
+	client, err := NewCLClient(testGrpcClientConn)
+	if err != nil {
+		t.Errorf("Error when initializing NewCLClient")
+	}
+
+	rawCred, err := client.GetCredentialStructure()
 	if err != nil {
 		t.Errorf("error when retrieving credential structure: %v", err)
 	}
 
+	attrs := rawCred.GetAttributes()
+
 	// fill credential with values:
-	err = rawCred.SetAttributeValue("Name", "Jack")
+	err = attrs[0].SetValue("Jack") // name
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rawCred.SetAttributeValue("Gender", "M")
+	err = attrs[1].SetValue("M") // gender
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rawCred.SetAttributeValue("Graduated", "true")
+	err = attrs[2].SetValue("true") // graduated
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rawCred.SetAttributeValue("Age", "122")
+	err = attrs[3].SetValue("122") // age
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
@@ -68,11 +75,6 @@ func TestCL(t *testing.T) {
 	credManagerPath := "../client/testdata/credManager.gob"
 	cl.WriteGob(credManagerPath, credManager)
 
-	client, err := NewCLClient(testGrpcClientConn)
-	if err != nil {
-		t.Errorf("Error when initializing NewCLClient")
-	}
-
 	cred, err := client.IssueCredential(credManager)
 	if err != nil {
 		t.Errorf("error when calling IssueCred: %v", err)
@@ -82,7 +84,7 @@ func TestCL(t *testing.T) {
 	// as issuing)
 	cl.ReadGob(credManagerPath, credManager)
 
-	acceptableCreds, err := GetAcceptableCredentials(testGrpcClientConn)
+	acceptableCreds, err := client.GetAcceptableCredentials()
 	if err != nil {
 		t.Errorf("error when retrieving acceptable credentials: %v", err)
 	}
@@ -94,22 +96,8 @@ func TestCL(t *testing.T) {
 	}
 	assert.True(t, proved, "possesion of a credential proof failed")
 
-	err = rawCred.SetAttributeValue("Name", "John")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
-
-	err = rawCred.SetAttributeValue("Gender", "M")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
-
-	err = rawCred.SetAttributeValue("Graduated", "true")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
-
-	err = rawCred.SetAttributeValue("Age", "122")
+	// modify some attributes and get updated credential
+	err = attrs[0].SetValue("John")
 	if err != nil {
 		t.Errorf("error when setting attribute value: %v", err)
 	}

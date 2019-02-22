@@ -18,11 +18,58 @@
 package server
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/cl"
 	pb "github.com/xlab-si/emmy/proto"
 )
+
+func (s *Server) GetCredentialStructure(ctx context.Context, _ *empty.Empty) (*pb.CredentialStructure, error) {
+	s.Logger.Info("Client requested credential structure information")
+	attrs, err := config.LoadCredentialStructure()
+	if err != nil {
+		return nil, err
+	}
+
+	attributes := make([]*pb.Attribute, len(attrs))
+	for i, a := range attrs {
+		attributes[i] = &pb.Attribute{
+			Index: int32(a.Index),
+			Name:  a.Name,
+			Type:  a.Type,
+			Known: a.Known,
+		}
+	}
+	cred := &pb.CredentialStructure{
+		Attributes: attributes,
+	}
+
+	return cred, nil
+}
+
+func (s *Server) GetAcceptableCredentials(ctx context.Context, _ *empty.Empty) (*pb.AcceptableCreds, error) {
+	s.Logger.Info("Client requested acceptable credentials information")
+	accCreds, err := config.LoadAcceptableCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	var credentials []*pb.AcceptableCred
+	for name, indices := range accCreds {
+		cred := &pb.AcceptableCred{
+			OrgName:       name,
+			RevealedAttrs: indices,
+		}
+		credentials = append(credentials, cred)
+	}
+
+	return &pb.AcceptableCreds{
+		Creds: credentials,
+	}, nil
+}
 
 func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 	req, err := s.receive(stream)

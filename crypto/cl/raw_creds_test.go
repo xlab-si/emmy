@@ -25,17 +25,17 @@ import (
 
 func TestRawCreds(t *testing.T) {
 	rc := NewRawCredential()
-	err := rc.AddAttribute("Name", "string", true, "John")
+	_, err := rc.AddStringAttribute("Name", "John")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rc.AddAttribute("Gender", "string", true, "M")
+	_, err = rc.AddStringAttribute("Gender", "M")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rc.AddAttribute("Age", "int", true, "122")
+	_, err = rc.AddIntAttribute("Age", "122")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}

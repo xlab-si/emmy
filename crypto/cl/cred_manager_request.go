@@ -42,14 +42,14 @@ func NewCredRequest(nym *big.Int, knownAttrs, commitmentsOfAttrs []*big.Int, nym
 	U *big.Int, UProof *qr.RepresentationProof,
 	commitmentsOfAttrsProofs []*df.OpeningProof, nonce *big.Int) *CredRequest {
 	return &CredRequest{
-		Nym:                nym,
-		KnownAttrs:         knownAttrs,
-		CommitmentsOfAttrs: commitmentsOfAttrs,
-		NymProof:           nymProof,
-		U:                  U,
-		UProof:             UProof,
+		Nym:                      nym,
+		KnownAttrs:               knownAttrs,
+		CommitmentsOfAttrs:       commitmentsOfAttrs,
+		NymProof:                 nymProof,
+		U:                        U,
+		UProof:                   UProof,
 		CommitmentsOfAttrsProofs: commitmentsOfAttrsProofs,
-		Nonce: nonce,
+		Nonce:                    nonce,
 	}
 }
 

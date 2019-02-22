@@ -61,8 +61,8 @@ message AcceptableCred {
 	repeated int32 revealedAttrs = 2;
 }
 
-message AcceptableCredentials {
-	repeated AcceptableCred credentials = 1;
+message AcceptableCreds {
+	repeated AcceptableCred creds = 1;
 }
 
 message Attribute {

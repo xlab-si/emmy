@@ -18,9 +18,11 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/crypto/common"
 	pb "github.com/xlab-si/emmy/proto"
@@ -37,6 +39,40 @@ func NewCLClient(conn *grpc.ClientConn) (*CLClient, error) {
 		genericClient: newGenericClient(),
 		grpcClient:    pb.NewCLClient(conn),
 	}, nil
+}
+
+func (c *CLClient) GetCredentialStructure() (*cl.RawCredential, error) {
+	cred, err := c.grpcClient.GetCredentialStructure(context.Background(), &empty.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve credential structure info: %v", err)
+	}
+
+	attributes := cred.GetAttributes()
+	rawCred := cl.NewRawCredential()
+	for _, a := range attributes {
+		// attributes need to be properly indexed to enable preparation of lists of
+		// their values which are sent to the verifier (and need to be ordered by index)
+		rawCred.InsertAttribute(int(a.GetIndex()), a.GetName(), a.GetType(), a.GetKnown())
+	}
+
+	return rawCred, nil
+}
+
+func (c *CLClient) GetAcceptableCredentials() (map[string][]int, error) {
+	creds, err := c.grpcClient.GetAcceptableCredentials(context.Background(), &empty.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve acceptable credentials info: %v", err)
+	}
+
+	accCreds := make(map[string][]int)
+	for _, cred := range creds.Creds {
+		var indices []int
+		for _, attr := range cred.GetRevealedAttrs() {
+			indices = append(indices, int(attr))
+		}
+		accCreds[cred.GetOrgName()] = indices
+	}
+	return accCreds, nil
 }
 
 func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error) {

@@ -38,25 +38,26 @@ func TestCL(t *testing.T) {
 	masterSecret := org.PubKey.GenerateUserMasterSecret()
 
 	rawCred := NewRawCredential()
-	err = rawCred.AddAttribute("Name", "string", true, "Jack")
+	attr1, err := rawCred.AddStringAttribute("Name", "Jack")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rawCred.AddAttribute("Gender", "string", true, "M")
+	_, err = rawCred.AddStringAttribute("Gender", "M")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rawCred.AddAttribute("Graduated", "string", true, "true")
+	_, err = rawCred.AddStringAttribute("Graduated", "true")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
 
-	err = rawCred.AddAttribute("Age", "int", false, "122")
+	attr, err := rawCred.AddIntAttribute("Age", "122")
 	if err != nil {
 		t.Errorf("error when setting attribute values: %v", err)
 	}
+	attr.Hide()
 
 	credManager, err := NewCredManager(params, org.PubKey, masterSecret, rawCred)
 	if err != nil {
@@ -101,24 +102,8 @@ func TestCL(t *testing.T) {
 	// as issuing)
 	ReadGob(credManagerPath, credManager)
 
-	// Modify raw credential and get updated credential from an organization
-
-	err = rawCred.SetAttributeValue("Name", "John")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
-
-	err = rawCred.SetAttributeValue("Gender", "M")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
-
-	err = rawCred.SetAttributeValue("Graduated", "true")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
-
-	err = rawCred.SetAttributeValue("Age", "122")
+	// Modify some attributes and get updated credential from an organization
+	err = attr1.SetValue("John")
 	if err != nil {
 		t.Errorf("error when setting attribute value: %v", err)
 	}
