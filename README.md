@@ -1,4 +1,4 @@
-# emmy - Library for zero-knowledge proofs [![Build Status](https://travis-ci.org/xlab-si/emmy.svg?branch=master)](https://travis-ci.org/xlab-si/emmy)
+# emmy - Library for zero-knowledge proofs [![Build Status](https://circleci.com/gh/xlab-si/emmy.svg?style=svg)](https://circleci.com/gh/xlab-si/emmy)
 
 Emmy is a library for building protocols/applications based on zero-knowledge proofs, for example anonymous credentials.
 Zero-knowledge proofs are **client-server protocols** (in crypto terms also *prover-verifier*, where the prover takes on 
