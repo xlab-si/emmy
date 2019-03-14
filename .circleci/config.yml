@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.12
+      - image: redis
+
+    working_directory: /go/src/github.com/xlab-si/emmy
+
+    steps:
+      - checkout
+
+      - run:
+          name: Install dep & testing library
+          command: make setup_dep setup_test
+
+      - run:
+          name: Install emmy
+          command: go get -u -t ./...
+
+      - run:
+          name: Install all dependencies with dep
+          command: dep ensure
+
+      - run:
+          name: Run unit tests
+          command: make test
+
+      - run:
+          name: Run integration tests
+          command: make test-integration
+
