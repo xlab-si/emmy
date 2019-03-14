@@ -58,7 +58,7 @@ message ServiceInfo {
 
 message AcceptableCred {
 	string orgName = 1;
-	repeated int32 revealedAttrs = 2;
+	repeated string revealedAttrs = 2;
 }
 
 message AcceptableCreds {
@@ -68,12 +68,29 @@ message AcceptableCreds {
 message Attribute {
 	int32 index = 1;
 	string name = 2;
-	string type = 3;
 	bool known = 4;
 }
 
-message CredentialStructure {
-	repeated Attribute attributes = 1;
+message IntAttribute {
+	Attribute attr = 1;
+}
+
+message StringAttribute {
+	Attribute attr = 2;
+}
+
+message CredAttribute {
+	oneof type {
+		StringAttribute stringAttr = 1;
+		IntAttribute intAttr = 2;
+	}
+}
+
+message CredStructure {
+	int32 nKnown = 1;
+	int32 nCommitted = 2;
+	int32 nHidden = 3;
+	repeated CredAttribute attributes = 4;
 }
 
 message Status {

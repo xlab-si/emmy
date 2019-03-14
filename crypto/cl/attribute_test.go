@@ -18,29 +18,15 @@
 package cl
 
 import (
-	"encoding/gob"
-	"os"
+	"math/big"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// TODO: where should we put WriteGob and ReadGob?
-func WriteGob1(filePath string, object interface{}) error {
-	file, err := os.Create(filePath)
-	if err == nil {
-		encoder := gob.NewEncoder(file)
-		encoder.Encode(object)
-	}
-	file.Close()
-
-	return err
-}
-
-func ReadGob1(filePath string, object interface{}) error {
-	file, err := os.Open(filePath)
-	if err == nil {
-		decoder := gob.NewDecoder(file)
-		err = decoder.Decode(object)
-	}
-	file.Close()
-
-	return err
+func TestNewIntAttribute(t *testing.T) {
+	a, err := NewInt64Attr("a", 100, true)
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(100).Cmp(a.InternalValue()), 0)
+	assert.True(t, a.IsKnown())
 }

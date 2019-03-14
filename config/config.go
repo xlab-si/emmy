@@ -20,14 +20,12 @@ package config
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/viper"
-	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/crypto/ec"
 	"github.com/xlab-si/emmy/crypto/ecpseudsys"
 	"github.com/xlab-si/emmy/crypto/pseudsys"
@@ -191,41 +189,50 @@ func LoadServiceInfo() (string, string, string) {
 	return serviceName, serviceProvider, serviceDescription
 }
 
-func LoadCredentialStructure() ([]cl.Attribute, error) {
-	m := viper.GetStringMapString("attributes")
-	var attrs []cl.Attribute
-	for k, v := range m {
-		vs := strings.Split(v, ",")
-		known := true
-		if strings.Trim(vs[2], " ") == "false" {
-			known = false
-		}
-		ks, err := strconv.Atoi(k)
-		if err != nil {
-			return nil, err
-		}
-		attr := cl.NewAttribute(ks, strings.Trim(vs[0], " "), strings.Trim(vs[1], " "), known, nil)
-		attrs = append(attrs, *attr)
+func LoadCredentialStructure() (map[string]interface{}, error) {
+	//m := viper.GetStringMapString("attributes")
+
+	attrs := map[string]interface{}{
+		"name":      map[string]interface{}{"type": "string"},
+		"gender":    map[string]interface{}{"type": "string"},
+		"graduated": map[string]interface{}{"type": "string"},
+		"age": map[string]interface{}{
+			"type":  "int64",
+			"known": "false",
+		},
 	}
+
+	/*
+		var attrs []cl.Attribute
+		for k, v := range m {
+			vs := strings.Split(v, ",")
+			known := true
+			if strings.Trim(vs[2], " ") == "false" {
+				known = false
+			}
+			ks, err := strconv.Atoi(k)
+			if err != nil {
+				return nil, err
+			}
+			attr := cl.NewAttribute(ks, strings.Trim(vs[0], " "), strings.Trim(vs[1], " "), known, nil)
+			attrs = append(attrs, *attr)
+		}
+	*/
 
 	return attrs, nil
 }
 
-func LoadAcceptableCredentials() (map[string][]int32, error) {
+func LoadAcceptableCredentials() (map[string][]string, error) {
 	m := viper.GetStringMapString("acceptable_credentials")
-	accCreds := make(map[string][]int32)
+	accCreds := make(map[string][]string)
 	for k, v := range m {
 		vs := strings.Split(v, ",")
-		var indices []int32
+		var attrs []string
 		for _, i := range vs {
 			it := strings.Trim(i, " ")
-			iit, err := strconv.Atoi(it)
-			if err != nil {
-				return nil, err
-			}
-			indices = append(indices, int32(iit))
+			attrs = append(attrs, it)
 		}
-		accCreds[k] = indices
+		accCreds[k] = attrs
 	}
 
 	return accCreds, nil

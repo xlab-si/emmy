@@ -20,11 +20,9 @@ package client
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/xlab-si/emmy/crypto/cl"
-	"github.com/xlab-si/emmy/crypto/common"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
 )
@@ -41,40 +39,71 @@ func NewCLClient(conn *grpc.ClientConn) (*CLClient, error) {
 	}, nil
 }
 
-func (c *CLClient) GetCredentialStructure() (*cl.RawCredential, error) {
+func (c *CLClient) GetCredentialStructure() (*cl.RawCred, error) {
 	cred, err := c.grpcClient.GetCredentialStructure(context.Background(), &empty.Empty{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve credential structure info: %v", err)
 	}
 
-	attributes := cred.GetAttributes()
-	rawCred := cl.NewRawCredential()
-	for _, a := range attributes {
-		// attributes need to be properly indexed to enable preparation of lists of
-		// their values which are sent to the verifier (and need to be ordered by index)
-		rawCred.InsertAttribute(int(a.GetIndex()), a.GetName(), a.GetType(), a.GetKnown())
+	/*
+		attributes := cred.GetAttributes()
+		rawCred := cl.NewRawCred()
+		for _, a := range attributes {
+			// attributes need to be properly indexed to enable preparation of lists of
+			// their values which are sent to the verifier (and need to be ordered by index)
+			rawCred.InsertAttribute(int(a.GetIndex()), a.GetName(), a.GetType(), a.GetKnown())
+		}
+
+		return rawCred, nil
+	*/
+	count := cl.NewAttrCount(
+		int(cred.NKnown),
+		int(cred.NCommitted),
+		int(cred.NHidden),
+	)
+	rc := cl.NewRawCred(count)
+
+	attrs := cred.Attributes
+	for _, a := range attrs {
+		switch u := a.Type.(type) { // TODO make more intuitive
+		case *pb.CredAttribute_StringAttr:
+			fmt.Println("Client received string attribute", u.StringAttr)
+			strA := a.GetStringAttr().Attr
+			err := rc.AddEmptyStrAttr(strA.Name, strA.Known)
+			if err != nil {
+				return nil, err
+			}
+		case *pb.CredAttribute_IntAttr:
+			fmt.Println("Client received int attribute", u.IntAttr)
+			intA := a.GetIntAttr().Attr
+			err := rc.AddEmptyInt64Attr(intA.Name, intA.Known)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	return rawCred, nil
+	return rc, nil
 }
 
-func (c *CLClient) GetAcceptableCredentials() (map[string][]int, error) {
+func (c *CLClient) GetAcceptableCreds() (map[string][]string, error) {
 	creds, err := c.grpcClient.GetAcceptableCredentials(context.Background(), &empty.Empty{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve acceptable credentials info: %v", err)
 	}
 
-	accCreds := make(map[string][]int)
+	accCreds := make(map[string][]string)
 	for _, cred := range creds.Creds {
-		var indices []int
+		var attrs []string
 		for _, attr := range cred.GetRevealedAttrs() {
-			indices = append(indices, int(attr))
+			attrs = append(attrs, attr)
 		}
-		accCreds[cred.GetOrgName()] = indices
+		accCreds[cred.GetOrgName()] = attrs
 	}
 	return accCreds, nil
 }
 
+/*
 func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error) {
 	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
 		return nil, err
@@ -123,10 +152,10 @@ func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error
 	return nil, fmt.Errorf("credential not valid")
 }
 
-func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.RawCredential) (*cl.Cred,
+func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.RawCred) (*cl.Cred,
 	error) {
 	// refresh credManager with new credential values, works only for known attributes
-	credManager.RefreshRawCredential(rawCred)
+	credManager.Update(rawCred)
 	newKnownAttrs := rawCred.GetKnownValues()
 
 	if err := c.openStream(c.grpcClient, "UpdateCredential"); err != nil {
@@ -169,12 +198,12 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.Raw
 // revealedCommitmentsOfAttrsIndices parameters. All knownAttrs and commitmentsOfAttrs should be passed into
 // ProveCred - only those which are revealed are then passed to the server.
 func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
-	revealedAttrIndices []int) (bool, error) {
+	revealedAttrIndices []string) (string, error) {
 	var revealedKnownAttrsIndices []int
 	var revealedCommitmentsOfAttrsIndices []int
 	knownCount := 0
 	commCount := 0
-	attributes := credManager.RawCredential.GetAttributes()
+	attributes := credManager.RawCred.GetAttrs()
 	for i := 0; i < len(attributes); i++ { // not using range to force attributes appear in proper order
 		attr := attributes[i]
 		if common.Contains(revealedAttrIndices, attr.Index) {
@@ -227,3 +256,4 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 
 	return resp.GetStatus().Success, nil
 }
+*/

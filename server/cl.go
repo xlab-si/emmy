@@ -27,27 +27,68 @@ import (
 	pb "github.com/xlab-si/emmy/proto"
 )
 
-func (s *Server) GetCredentialStructure(ctx context.Context, _ *empty.Empty) (*pb.CredentialStructure, error) {
+func (s *Server) GetCredentialStructure(ctx context.Context, _ *empty.Empty) (*pb.CredStructure, error) {
 	s.Logger.Info("Client requested credential structure information")
-	attrs, err := config.LoadCredentialStructure()
+	/*
+		attrs, err := config.LoadCredentialStructure()
+		if err != nil {
+			return nil, err
+		}
+
+		attributes := make([]*pb.Attribute, len(attrs))
+		for i, a := range attrs {
+			attributes[i] = &pb.Attribute{
+				Index: int32(a.Index),
+				Name:  a.Name,
+				Type:  a.Type,
+				Known: a.Known,
+			}
+		}
+		cred := &pb.CredentialStructure{
+			Attributes: attributes,
+		}
+
+		return cred, nil
+	*/
+	structure, err := config.LoadCredentialStructure()
 	if err != nil {
 		return nil, err
 	}
 
-	attributes := make([]*pb.Attribute, len(attrs))
+	attrs, attrCount, err := cl.ParseAttrs(structure)
+	credAttrs := make([]*pb.CredAttribute, len(attrs))
+
 	for i, a := range attrs {
-		attributes[i] = &pb.Attribute{
-			Index: int32(a.Index),
-			Name:  a.Name,
-			Type:  a.Type,
-			Known: a.Known,
+		attr := &pb.Attribute{
+			Name:  a.GetName(),
+			Known: a.IsKnown(),
+		}
+		switch a.(type) {
+		case *cl.StrAttr:
+			credAttrs[i] = &pb.CredAttribute{
+				Type: &pb.CredAttribute_StringAttr{
+					StringAttr: &pb.StringAttribute{
+						Attr: attr,
+					},
+				},
+			}
+		case *cl.Int64Attr:
+			credAttrs[i] = &pb.CredAttribute{
+				Type: &pb.CredAttribute_IntAttr{
+					IntAttr: &pb.IntAttribute{
+						Attr: attr,
+					},
+				},
+			}
 		}
 	}
-	cred := &pb.CredentialStructure{
-		Attributes: attributes,
-	}
 
-	return cred, nil
+	return &pb.CredStructure{
+		NKnown:     int32(attrCount.Known),
+		NCommitted: int32(attrCount.Committed),
+		NHidden:    int32(attrCount.Hidden),
+		Attributes: credAttrs,
+	}, nil
 }
 
 func (s *Server) GetAcceptableCredentials(ctx context.Context, _ *empty.Empty) (*pb.AcceptableCreds, error) {
@@ -58,10 +99,10 @@ func (s *Server) GetAcceptableCredentials(ctx context.Context, _ *empty.Empty) (
 	}
 
 	var credentials []*pb.AcceptableCred
-	for name, indices := range accCreds {
+	for name, attrs := range accCreds {
 		cred := &pb.AcceptableCred{
 			OrgName:       name,
-			RevealedAttrs: indices,
+			RevealedAttrs: attrs,
 		}
 		credentials = append(credentials, cred)
 	}
@@ -77,7 +118,7 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
-	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	org, err := cl.LoadOrg("../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
 	if err != nil {
 		return err
 	}
@@ -134,7 +175,7 @@ func (s *Server) UpdateCredential(stream pb.CL_UpdateCredentialServer) error {
 		return err
 	}
 
-	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	org, err := cl.LoadOrg("../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
 	if err != nil {
 		return err
 	}
@@ -175,7 +216,7 @@ func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
 		return err
 	}
 
-	org, err := cl.LoadOrg("organization1", "../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	org, err := cl.LoadOrg("../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
 	if err != nil {
 		return err
 	}

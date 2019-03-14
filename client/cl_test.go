@@ -21,96 +21,86 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xlab-si/emmy/crypto/cl"
 )
 
 // TestCL requires a running server.
 func TestCL(t *testing.T) {
-
 	params := cl.GetDefaultParamSizes()
-
 	pubKey := new(cl.PubKey)
 	cl.ReadGob("testdata/clPubKey.gob", pubKey)
-
-	masterSecret := pubKey.GenerateUserMasterSecret()
 
 	client, err := NewCLClient(testGrpcClientConn)
 	if err != nil {
 		t.Errorf("Error when initializing NewCLClient")
 	}
 
-	rawCred, err := client.GetCredentialStructure()
+	rc, err := client.GetCredentialStructure()
 	if err != nil {
 		t.Errorf("error when retrieving credential structure: %v", err)
 	}
 
-	attrs := rawCred.GetAttributes()
+	t.Log("_--------------_________---")
+	t.Log(rc.GetAttrs())
 
-	// fill credential with values:
-	err = attrs[0].SetValue("Jack") // name
-	if err != nil {
-		t.Errorf("error when setting attribute values: %v", err)
-	}
+	name, _ := rc.GetAttr("name")
+	err = name.UpdateValue("Jack")
+	assert.NoError(t, err)
+	gender, _ := rc.GetAttr("gender")
+	err = gender.UpdateValue("M")
+	assert.NoError(t, err)
+	graduated, _ := rc.GetAttr("graduated")
+	err = graduated.UpdateValue("true")
+	assert.NoError(t, err)
+	age, _ := rc.GetAttr("age")
+	err = age.UpdateValue(50)
+	assert.NoError(t, err)
 
-	err = attrs[1].SetValue("M") // gender
-	if err != nil {
-		t.Errorf("error when setting attribute values: %v", err)
-	}
+	acceptableCreds, err := client.GetAcceptableCreds()
+	require.NoError(t, err)
+	revealedAttrs := acceptableCreds["org1"] // FIXME
 
-	err = attrs[2].SetValue("true") // graduated
-	if err != nil {
-		t.Errorf("error when setting attribute values: %v", err)
-	}
+	t.Log("---------------------------------")
+	t.Log(revealedAttrs)
 
-	err = attrs[3].SetValue("122") // age
-	if err != nil {
-		t.Errorf("error when setting attribute values: %v", err)
-	}
+	masterSecret := pubKey.GenerateUserMasterSecret()
 
-	credManager, err := cl.NewCredManager(params, pubKey, masterSecret, rawCred)
-	if err != nil {
-		t.Errorf("error when creating a credential manager: %v", err)
-	}
+	cm, err := cl.NewCredManager(params, pubKey, masterSecret, rc)
+	require.NoError(t, err)
 
-	credManagerPath := "../client/testdata/credManager.gob"
-	cl.WriteGob(credManagerPath, credManager)
+	regKey := "key1"
+	regKeyDB.Insert(regKey)
+	cred, err := client.IssueCredential(cm, regKey)
+	require.NoError(t, err)
 
-	cred, err := client.IssueCredential(credManager)
-	if err != nil {
-		t.Errorf("error when calling IssueCred: %v", err)
-	}
+	t.Log("_____")
+	t.Log(cred)
 
-	// create new CredManager (updating or proving usually does not happen at the same time
-	// as issuing)
-	cl.ReadGob(credManagerPath, credManager)
+	/*
+		// create new CredManager (updating or proving usually does not happen at the same time
+		// as issuing)
+		cm, err = cl.NewCredManagerFromExisting(cm.Nym, cm.V1,
+			cm.CredReqNonce, params.Config, pubKey, masterSecret, rc,
+			cm.CommitmentsOfAttrs)
+		require.NoError(t, err)
 
-	acceptableCreds, err := client.GetAcceptableCredentials()
-	if err != nil {
-		t.Errorf("error when retrieving acceptable credentials: %v", err)
-	}
-	revealedAttrIndices := acceptableCreds["org1"]
+		sessKey, err := client.ProveCredential(cm, cred, revealedAttrs)
+		require.NoError(t, err)
+		assert.NotNil(t, sessKey, "possesion of a credential proof failed")
 
-	proved, err := client.ProveCredential(credManager, cred, revealedAttrIndices)
-	if err != nil {
-		t.Errorf("error when proving possession of a credential: %v", err)
-	}
-	assert.True(t, proved, "possesion of a credential proof failed")
+		// modify some attributes and get updated credential
+		name, err = rc.GetAttr("name")
+		err = name.UpdateValue("Jim")
+		assert.NoError(t, err)
 
-	// modify some attributes and get updated credential
-	err = attrs[0].SetValue("John")
-	if err != nil {
-		t.Errorf("error when setting attribute value: %v", err)
-	}
+		cred1, err := client.UpdateCredential(cm, rc)
+		require.NoError(t, err)
 
-	cred1, err := client.UpdateCredential(credManager, rawCred)
-	if err != nil {
-		t.Errorf("error when updating credential: %v", err)
-	}
+		sessKey, err = client.ProveCredential(cm, cred1, revealedAttrs)
+		require.NoError(t, err)
+		assert.NotNil(t, sessKey,
+			"possesion of an updated credential proof failed")
+	*/
 
-	proved1, err := client.ProveCredential(credManager, cred1, revealedAttrIndices)
-	if err != nil {
-		t.Errorf("error when proving possession of an updated credential: %v", err)
-	}
-
-	assert.True(t, proved1, "possesion of an updated credential proof failed")
 }

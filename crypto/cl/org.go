@@ -23,6 +23,8 @@ import (
 	"math/big"
 
 	"crypto/rand"
+	"encoding/gob"
+	"os"
 
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/df"
@@ -30,41 +32,6 @@ import (
 	"github.com/xlab-si/emmy/crypto/qr"
 	"github.com/xlab-si/emmy/crypto/schnorr"
 )
-
-type PubKey struct {
-	N              *big.Int
-	S              *big.Int
-	Z              *big.Int
-	RsKnown        []*big.Int // one R corresponds to one attribute - these attributes are known to both - receiver and issuer
-	RsCommitted    []*big.Int // issuer knows only commitments of these attributes
-	RsHidden       []*big.Int // only receiver knows these attributes
-	PedersenParams *pedersen.Params
-	// the fields below are for commitments of the (committed) attributes
-	N1 *big.Int
-	G  *big.Int
-	H  *big.Int
-}
-
-// GenerateUserMasterSecret generates a secret key that needs to be encoded into every user's credential as a
-// sharing prevention mechanism.
-func (k *PubKey) GenerateUserMasterSecret() *big.Int {
-	return common.GetRandomInt(k.PedersenParams.Group.Q)
-}
-
-// GetContext concatenates public parameters and returns a corresponding number.
-func (k *PubKey) GetContext() *big.Int {
-	numbers := []*big.Int{k.N, k.S, k.Z}
-	numbers = append(numbers, k.RsKnown...)
-	numbers = append(numbers, k.RsCommitted...)
-	numbers = append(numbers, k.RsHidden...)
-	concatenated := common.ConcatenateNumbers(numbers...)
-	return new(big.Int).SetBytes(concatenated)
-}
-
-type SecKey struct {
-	RsaPrimes                  *qr.RSASpecialPrimes
-	AttributesSpecialRSAPrimes *qr.RSASpecialPrimes
-}
 
 type Org struct {
 	Params             *Params
@@ -74,8 +41,7 @@ type Org struct {
 	nymVerifier        *schnorr.Verifier
 	U                  *big.Int
 	UVerifier          *qr.RepresentationVerifier
-	PubKey             *PubKey
-	SecKey             *SecKey
+	Keys               *KeyPair
 	commitmentsOfAttrs []*big.Int
 	knownAttrs         []*big.Int
 	attrsVerifiers     []*df.OpeningVerifier // user proves the knowledge of commitment opening (committedAttrs)
@@ -83,85 +49,58 @@ type Org struct {
 	proveCredNonceOrg  *big.Int
 }
 
-func NewOrg(params *Params) (*Org, error) {
-	group, err := qr.NewRSASpecial(params.NLength / 2)
+func NewOrg(params *Params, attrCount *AttrCount) (*Org, error) {
+	keys, err := GenerateKeyPair(params, attrCount)
 	if err != nil {
-		return nil, fmt.Errorf("error when creating RSASpecial group: %s", err)
+		return nil, err
 	}
 
-	S, Z, RsKnown, RsCommitted, RsHidden, err := generateQuadraticResidues(group, params.KnownAttrsNum,
-		params.CommittedAttrsNum, params.HiddenAttrsNum)
-	if err != nil {
-		return nil, fmt.Errorf("error when creating quadratic residues: %s", err)
-	}
-
-	// for commitments of (committed) attributes:
-	commitmentReceiver, err := df.NewReceiver(params.NLength/2, params.SecParam)
-	if err != nil {
-		return nil, fmt.Errorf("error when creating DF commitment receiver: %s", err)
-	}
-
-	pedersenParams, err := pedersen.GenerateParams(params.RhoBitLen)
-	if err != nil {
-		return nil, fmt.Errorf("error when creating Pedersen receiver: %s", err)
-	}
-
-	pubKey := &PubKey{
-		N:              group.N,
-		S:              S,
-		Z:              Z,
-		RsKnown:        RsKnown,
-		RsCommitted:    RsCommitted,
-		RsHidden:       RsHidden,
-		PedersenParams: pedersenParams,
-		N1:             commitmentReceiver.QRSpecialRSA.N,
-		G:              commitmentReceiver.G,
-		H:              commitmentReceiver.H,
-	}
-
-	secKey := &SecKey{
-		RsaPrimes:                  group.GetPrimes(),
-		AttributesSpecialRSAPrimes: commitmentReceiver.QRSpecialRSA.GetPrimes(),
-	}
-
-	return NewOrgFromParams(params, pubKey, secKey)
+	return NewOrgFromParams(params, keys)
 }
 
 // FIXME
-func NewOrgFromParams(params *Params, pubKey *PubKey, secKey *SecKey) (*Org, error) {
+func NewOrgFromParams(params *Params, keys *KeyPair) (*Org, error) {
 	var group *qr.RSASpecial
 	var err error
-	if secKey != nil {
-		group, err = qr.NewRSASpecialFromParams(secKey.RsaPrimes)
+	if keys.Sec != nil {
+		group, err = qr.NewRSASpecialFromParams(keys.Sec.RsaPrimes)
 		if err != nil {
 			return nil, fmt.Errorf("error when creating RSASpecial group: %s", err)
 		}
 	} else {
-		// ProveCL requires only pub key which means some organization can check the validity of
+		// ProveCL requires only Pub key which means some organization can check the validity of
 		// credential only using public key of the organization that issued a credential.
-		group = qr.NewRSApecialPublic(pubKey.N)
+		group = qr.NewRSApecialPublic(keys.Pub.N)
 	}
 
-	pedersenReceiver := pedersen.NewReceiverFromParams(pubKey.PedersenParams)
+	pedersenReceiver := pedersen.NewReceiverFromParams(keys.Pub.PedersenParams)
 
 	return &Org{
 		Params:           params,
-		PubKey:           pubKey,
-		SecKey:           secKey,
+		Keys:             keys,
 		Group:            group,
 		pedersenReceiver: pedersenReceiver,
 	}, nil
 }
 
 // FIXME
-func LoadOrg(orgName, secKeyPath, pubKeyPath string) (*Org, error) {
+func LoadOrg(pubKeyPath, secKeyPath string) (*Org, error) {
 	pubKey := new(PubKey)
-	ReadGob(pubKeyPath, pubKey)
+	if err := ReadGob(pubKeyPath, pubKey); err != nil {
+		return nil, err
+	}
 	secKey := new(SecKey)
-	ReadGob(secKeyPath, secKey)
+	if err := ReadGob(secKeyPath, secKey); err != nil {
+		return nil, err
+	}
+
+	keys := &KeyPair{
+		Sec: secKey,
+		Pub: pubKey,
+	}
 
 	params := GetDefaultParamSizes()
-	org, err := NewOrgFromParams(params, pubKey, secKey)
+	org, err := NewOrgFromParams(params, keys)
 	if err != nil {
 		return nil, fmt.Errorf("error when loading CL org: %v", err)
 	}
@@ -181,14 +120,14 @@ func (o *Org) genCredRandoms() (*big.Int, *big.Int) {
 	b := new(big.Int).Exp(big.NewInt(2), exp, nil)
 	var e *big.Int
 	for {
-		er, _ := rand.Prime(rand.Reader, o.Params.E1BitLen-1)
+		er, _ := rand.Prime(rand.Reader, int(o.Params.E1BitLen)-1)
 		e = new(big.Int).Add(er, b)
 		if e.ProbablyPrime(20) { // e needs to be prime
 			break
 		}
 	}
 
-	vr, _ := rand.Prime(rand.Reader, o.Params.VBitLen-1)
+	vr, _ := rand.Prime(rand.Reader, int(o.Params.VBitLen)-1)
 	exp = big.NewInt(int64(o.Params.VBitLen - 1))
 	b = new(big.Int).Exp(big.NewInt(2), exp, nil)
 	v11 := new(big.Int).Add(vr, b)
@@ -197,7 +136,7 @@ func (o *Org) genCredRandoms() (*big.Int, *big.Int) {
 }
 
 func (o *Org) genAProof(nonceUser, context, eInv, Q, A *big.Int) *qr.RepresentationProof {
-	prover := qr.NewRepresentationProver(o.Group, o.Params.SecParam,
+	prover := qr.NewRepresentationProver(o.Group, int(o.Params.SecParam),
 		[]*big.Int{eInv}, []*big.Int{Q}, A)
 	proofRandomData := prover.GetProofRandomData(true)
 	// challenge = hash(context||Q||A||AProofRandomData||nonceUser)
@@ -215,7 +154,7 @@ type CredResult struct {
 
 func (o *Org) IssueCred(cr *CredRequest) (*CredResult, error) {
 	o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group)
-	o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+	o.UVerifier = qr.NewRepresentationVerifier(o.Group, int(o.Params.SecParam))
 
 	o.nym = cr.Nym
 	o.knownAttrs = cr.KnownAttrs
@@ -234,26 +173,26 @@ func (o *Org) IssueCred(cr *CredRequest) (*CredResult, error) {
 	// denom = U * S^v11 * R_1^attr_1 * ... * R_j^attr_j where only attributes from knownAttrs and committedAttrs
 	acc := big.NewInt(1)
 	for ind := 0; ind < len(o.knownAttrs); ind++ {
-		t1 := o.Group.Exp(o.PubKey.RsKnown[ind], o.knownAttrs[ind])
+		t1 := o.Group.Exp(o.Keys.Pub.RsKnown[ind], o.knownAttrs[ind])
 		acc = o.Group.Mul(acc, t1)
 	}
 
 	for ind := 0; ind < len(o.commitmentsOfAttrs); ind++ {
-		t1 := o.Group.Exp(o.PubKey.RsCommitted[ind], o.commitmentsOfAttrs[ind])
+		t1 := o.Group.Exp(o.Keys.Pub.RsCommitted[ind], o.commitmentsOfAttrs[ind])
 		acc = o.Group.Mul(acc, t1)
 	}
 
-	t := o.Group.Exp(o.PubKey.S, v11) // s^v11
-	denom := o.Group.Mul(t, o.U)      // U * s^v11
-	denom = o.Group.Mul(denom, acc)   // U * s^v11 * acc
+	t := o.Group.Exp(o.Keys.Pub.S, v11) // s^v11
+	denom := o.Group.Mul(t, o.U)        // U * s^v11
+	denom = o.Group.Mul(denom, acc)     // U * s^v11 * acc
 	denomInv := o.Group.Inv(denom)
-	Q := o.Group.Mul(o.PubKey.Z, denomInv)
+	Q := o.Group.Mul(o.Keys.Pub.Z, denomInv)
 
 	phiN := new(big.Int).Mul(o.Group.P1, o.Group.Q1)
 	eInv := new(big.Int).ModInverse(e, phiN)
 	A := o.Group.Exp(Q, eInv)
 
-	context := o.PubKey.GetContext()
+	context := o.Keys.Pub.GetContext()
 	AProof := o.genAProof(cr.Nonce, context, eInv, Q, A) // nonceUser!
 
 	res := &CredResult{
@@ -265,13 +204,13 @@ func (o *Org) IssueCred(cr *CredRequest) (*CredResult, error) {
 	return res, nil
 }
 
-func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int,
-	newKnownAttrs []*big.Int) (*CredResult, error) {
+func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int, newKnownAttrs []*big.Int) (*CredResult, error) {
 	if o.knownAttrs == nil { // for example when Org is instantiated and there is no call to IssueCred
 		o.knownAttrs = newKnownAttrs
 		o.setUpAttrVerifiers(rec.CommitmentsOfAttrs)
 		o.nymVerifier = schnorr.NewVerifier(o.pedersenReceiver.Params.Group) // pubKey.Params.Group
-		o.UVerifier = qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+		o.UVerifier = qr.NewRepresentationVerifier(o.Group,
+			int(o.Params.SecParam))
 	}
 
 	e, v11 := o.genCredRandoms()
@@ -279,11 +218,11 @@ func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int,
 
 	acc := big.NewInt(1)
 	for ind := 0; ind < len(o.knownAttrs); ind++ {
-		t1 := o.Group.Exp(o.PubKey.RsKnown[ind],
+		t1 := o.Group.Exp(o.Keys.Pub.RsKnown[ind],
 			new(big.Int).Sub(newKnownAttrs[ind], rec.KnownAttrs[ind]))
 		acc = o.Group.Mul(acc, t1)
 	}
-	t := o.Group.Exp(o.PubKey.S, v11Diff)
+	t := o.Group.Exp(o.Keys.Pub.S, v11Diff)
 	denom := o.Group.Mul(acc, t)
 	denomInv := o.Group.Inv(denom)
 	newQ := o.Group.Mul(rec.Q, denomInv)
@@ -292,7 +231,7 @@ func (o *Org) UpdateCred(nym *big.Int, rec *ReceiverRecord, nonceUser *big.Int,
 	eInv := new(big.Int).ModInverse(e, phiN)
 	newA := o.Group.Exp(newQ, eInv)
 
-	context := o.PubKey.GetContext()
+	context := o.Keys.Pub.GetContext()
 	AProof := o.genAProof(nonceUser, context, eInv, newQ, newA)
 	// currently commitmentsOfAttrs cannot be updated
 
@@ -320,40 +259,39 @@ func (o *Org) GetProveCredNonce() *big.Int {
 func (o *Org) ProveCred(A *big.Int, proof *qr.RepresentationProof,
 	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
 	revealedKnownAttrs, revealedCommitmentsOfAttrs []*big.Int) (bool, error) {
-
-	ver := qr.NewRepresentationVerifier(o.Group, o.Params.SecParam)
+	ver := qr.NewRepresentationVerifier(o.Group, int(o.Params.SecParam))
 	bases := []*big.Int{}
-	for i := 0; i < len(o.PubKey.RsKnown); i++ {
+	for i := 0; i < len(o.Keys.Pub.RsKnown); i++ {
 		if !common.Contains(revealedKnownAttrsIndices, i) {
-			bases = append(bases, o.PubKey.RsKnown[i])
+			bases = append(bases, o.Keys.Pub.RsKnown[i])
 		}
 	}
-	for i := 0; i < len(o.PubKey.RsCommitted); i++ {
+	for i := 0; i < len(o.Keys.Pub.RsCommitted); i++ {
 		if !common.Contains(revealedCommitmentsOfAttrsIndices, i) {
-			bases = append(bases, o.PubKey.RsCommitted[i])
+			bases = append(bases, o.Keys.Pub.RsCommitted[i])
 		}
 	}
-	bases = append(bases, o.PubKey.RsHidden...)
+	bases = append(bases, o.Keys.Pub.RsHidden...)
 	bases = append(bases, A)
-	bases = append(bases, o.PubKey.S)
+	bases = append(bases, o.Keys.Pub.S)
 
 	denom := big.NewInt(1)
 	for i := 0; i < len(revealedKnownAttrs); i++ {
 		rInd := revealedKnownAttrsIndices[i]
-		t1 := o.Group.Exp(o.PubKey.RsKnown[rInd], revealedKnownAttrs[i])
+		t1 := o.Group.Exp(o.Keys.Pub.RsKnown[rInd], revealedKnownAttrs[i])
 		denom = o.Group.Mul(denom, t1)
 	}
 
 	for i := 0; i < len(revealedCommitmentsOfAttrs); i++ {
 		rInd := revealedCommitmentsOfAttrsIndices[i]
-		t1 := o.Group.Exp(o.PubKey.RsCommitted[rInd], revealedCommitmentsOfAttrs[i])
+		t1 := o.Group.Exp(o.Keys.Pub.RsCommitted[rInd], revealedCommitmentsOfAttrs[i])
 		denom = o.Group.Mul(denom, t1)
 	}
 	denomInv := o.Group.Inv(denom)
-	y := o.Group.Mul(o.PubKey.Z, denomInv)
+	y := o.Group.Mul(o.Keys.Pub.Z, denomInv)
 	ver.SetProofRandomData(proof.ProofRandomData, bases, y)
 
-	context := o.PubKey.GetContext()
+	context := o.Keys.Pub.GetContext()
 	l := []*big.Int{context, proof.ProofRandomData, o.proveCredNonceOrg}
 	//l = append(l, ...) // TODO: add other values
 
@@ -375,6 +313,7 @@ type Cred struct {
 }
 
 func NewCred(A, e, v11 *big.Int) *Cred {
+	A.Bytes()
 	return &Cred{
 		A:   A,
 		E:   e,
@@ -437,7 +376,7 @@ func (o *Org) verifyNym(proof *schnorr.Proof) bool {
 
 func (o *Org) verifyU(UProof *qr.RepresentationProof) bool {
 	// bases are [R_1, ..., R_L, S]
-	bases := append(o.PubKey.RsHidden, o.PubKey.S)
+	bases := append(o.Keys.Pub.RsHidden, o.Keys.Pub.S)
 	o.UVerifier.SetProofRandomData(UProof.ProofRandomData, bases, o.U)
 	o.UVerifier.SetChallenge(UProof.Challenge)
 
@@ -448,13 +387,15 @@ func (o *Org) setUpAttrVerifiers(commitmentsOfAttrs []*big.Int) error {
 	attrsVerifiers := make([]*df.OpeningVerifier, len(commitmentsOfAttrs))
 	for i, attr := range commitmentsOfAttrs {
 		receiver, err := df.NewReceiverFromParams(
-			o.SecKey.AttributesSpecialRSAPrimes, o.PubKey.G, o.PubKey.H, o.Params.SecParam)
+			o.Keys.Sec.AttributesSpecialRSAPrimes, o.Keys.Pub.G, o.Keys.Pub.H,
+			int(o.Params.SecParam))
 		if err != nil {
 			return err
 		}
 		receiver.SetCommitment(attr)
 
-		verifier := df.NewOpeningVerifier(receiver, o.Params.ChallengeSpace)
+		verifier := df.NewOpeningVerifier(receiver,
+			int(o.Params.ChallengeSpace))
 		attrsVerifiers[i] = verifier
 	}
 
@@ -480,7 +421,7 @@ func (o *Org) verifyCommitmentsOfAttrs(commitmentsOfAttrs []*big.Int, proofs []*
 }
 
 func (o *Org) verifyChallenge(challenge *big.Int) bool {
-	context := o.PubKey.GetContext()
+	context := o.Keys.Pub.GetContext()
 	l := []*big.Int{context, o.U, o.nym, o.credIssueNonceOrg}
 	l = append(l, o.commitmentsOfAttrs...)
 	c := common.Hash(l...)
@@ -499,12 +440,12 @@ func (o *Org) verifyUProofDataLengths(UProofData []*big.Int) bool {
 	exp = big.NewInt(int64(b_v1))
 	b2 := new(big.Int).Exp(big.NewInt(2), exp, nil)
 
-	for ind := 0; ind < len(o.PubKey.RsHidden); ind++ {
+	for ind := 0; ind < len(o.Keys.Pub.RsHidden); ind++ {
 		if UProofData[ind].Cmp(b1) > 0 {
 			return false
 		}
 	}
-	if UProofData[len(o.PubKey.RsHidden)].Cmp(b2) > 0 {
+	if UProofData[len(o.Keys.Pub.RsHidden)].Cmp(b2) > 0 {
 		return false
 	}
 
@@ -540,4 +481,27 @@ func (r *ReceiverRecord) UnmarshalBinary(data []byte) error {
 	}
 
 	return nil
+}
+
+// TODO: where should we put WriteGob and ReadGob?
+func WriteGob(filePath string, object interface{}) error {
+	file, err := os.Create(filePath)
+	if err == nil {
+		encoder := gob.NewEncoder(file)
+		encoder.Encode(object)
+	}
+	file.Close()
+
+	return err
+}
+
+func ReadGob(filePath string, object interface{}) error {
+	file, err := os.Open(filePath)
+	if err == nil {
+		decoder := gob.NewDecoder(file)
+		err = decoder.Decode(object)
+	}
+	file.Close()
+
+	return err
 }
