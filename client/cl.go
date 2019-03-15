@@ -20,11 +20,14 @@ package client
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/xlab-si/emmy/crypto/cl"
 	pb "github.com/xlab-si/emmy/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type CLClient struct {
@@ -103,15 +106,21 @@ func (c *CLClient) GetAcceptableCreds() (map[string][]string, error) {
 	return accCreds, nil
 }
 
-/*
-func (c *CLClient) IssueCredential(credManager *cl.CredManager) (*cl.Cred, error) {
+func (c *CLClient) IssueCredential(credManager *cl.CredManager, regKey string) (*cl.Cred, error) {
 	if err := c.openStream(c.grpcClient, "IssueCredential"); err != nil {
 		return nil, err
 	}
 	defer c.closeStream()
 
+	initData := pb.RegKey{
+		RegKey: regKey,
+	}
+
 	initMsg := &pb.Message{
 		ClientId: c.id,
+		Content: &pb.Message_RegKey{
+			&initData,
+		},
 	}
 
 	resp, err := c.getResponseTo(initMsg)
@@ -156,7 +165,7 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.Raw
 	error) {
 	// refresh credManager with new credential values, works only for known attributes
 	credManager.Update(rawCred)
-	newKnownAttrs := rawCred.GetKnownValues()
+	newKnownAttrs := rawCred.GetKnownVals()
 
 	if err := c.openStream(c.grpcClient, "UpdateCredential"); err != nil {
 		return nil, err
@@ -193,35 +202,34 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.Raw
 	return nil, fmt.Errorf("credential not valid")
 }
 
-// ProveCred proves the possession of a valid credential and reveals only the attributes the user desires
+// ProveCredential proves the possession of a valid credential and reveals only the attributes the user desires
 // to reveal. Which knownAttrs and commitmentsOfAttrs are to be revealed are given by revealedKnownAttrsIndices and
 // revealedCommitmentsOfAttrsIndices parameters. All knownAttrs and commitmentsOfAttrs should be passed into
-// ProveCred - only those which are revealed are then passed to the server.
+// ProveCredential - only those which are revealed are then passed to the server.
 func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
-	revealedAttrIndices []string) (string, error) {
+	revealedAttrs []string) (*string, error) {
 	var revealedKnownAttrsIndices []int
 	var revealedCommitmentsOfAttrsIndices []int
-	knownCount := 0
-	commCount := 0
-	attributes := credManager.RawCred.GetAttrs()
-	for i := 0; i < len(attributes); i++ { // not using range to force attributes appear in proper order
-		attr := attributes[i]
-		if common.Contains(revealedAttrIndices, attr.Index) {
-			if attr.Known {
-				revealedKnownAttrsIndices = append(revealedKnownAttrsIndices, knownCount)
-			} else {
-				revealedCommitmentsOfAttrsIndices = append(revealedCommitmentsOfAttrsIndices, commCount)
-			}
+
+	for _, a := range revealedAttrs {
+		attr, err := credManager.RawCred.GetAttr(a)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"unexpected attribute: %s", a)
 		}
-		if attr.Known {
-			knownCount++
+		ind, err := credManager.RawCred.GetAttrInternalIndex(a)
+		if err != nil {
+			return nil, err
+		}
+		if attr.IsKnown() {
+			revealedKnownAttrsIndices = append(revealedKnownAttrsIndices, ind)
 		} else {
-			commCount++
+			revealedCommitmentsOfAttrsIndices = append(revealedCommitmentsOfAttrsIndices, ind)
 		}
 	}
 
 	if err := c.openStream(c.grpcClient, "ProveCredential"); err != nil {
-		return false, err
+		return nil, err
 	}
 	defer c.closeStream()
 
@@ -231,7 +239,7 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 
 	resp, err := c.getResponseTo(initMsg)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	nonce := new(big.Int).SetBytes(resp.GetBigint().X1)
@@ -239,7 +247,7 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 	randCred, proof, err := credManager.BuildProof(cred, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
-		return false, fmt.Errorf("error when building credential proof: %v", err)
+		return nil, fmt.Errorf("error when building credential proof: %v", err)
 	}
 
 	filteredKnownAttrs, filteredCommitmentsOfAttrs := credManager.FilterAttributes(revealedKnownAttrsIndices,
@@ -251,9 +259,9 @@ func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 	}
 	resp, err = c.getResponseTo(proveMsg)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return resp.GetStatus().Success, nil
+	sessKey := resp.GetSessionKey().Value
+	return &sessKey, nil
 }
-*/

@@ -139,30 +139,6 @@ func NewCredManager(params *Params, pubKey *PubKey,
 	return &credManager, nil
 }
 
-func NewCredManagerFromExisting(nym, v1, credReqNonce *big.Int,
-	params *Params, pubKey *PubKey, masterSecret *big.Int,
-	rawCred *RawCred, commitmentsOfAttrs []*big.Int) (*CredManager, error) {
-	// nymCommitter is needed only for IssueCred (when proving that nym can be opened), so we do not need it here
-	// the same for attrsCommitters
-
-	known := rawCred.GetKnownVals()
-	committed := rawCred.GetCommittedVals()
-	hidden := []*big.Int{} // currently not used
-	attrs := NewAttrs(known, committed, hidden)
-
-	return &CredManager{
-		Params:             params,
-		PubKey:             pubKey,
-		RawCred:            rawCred,
-		Attrs:              attrs,
-		CommitmentsOfAttrs: commitmentsOfAttrs,
-		masterSecret:       masterSecret,
-		Nym:                nym,
-		V1:                 v1,
-		CredReqNonce:       credReqNonce,
-	}, nil
-}
-
 // generateNym creates a pseudonym to be used with a given organization. Authentication can be done
 // with respect to the pseudonym or not.
 func (m *CredManager) generateNym() error {

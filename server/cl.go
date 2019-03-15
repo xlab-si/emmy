@@ -25,6 +25,8 @@ import (
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/cl"
 	pb "github.com/xlab-si/emmy/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Server) GetCredentialStructure(ctx context.Context, _ *empty.Empty) (*pb.CredStructure, error) {
@@ -118,7 +120,15 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
-	org, err := cl.LoadOrg("../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	initReq := req.GetRegKey()
+	regKeyOk, err := s.RegistrationManager.CheckRegistrationKey(initReq.RegKey)
+	if !regKeyOk || err != nil {
+		s.Logger.Debugf("registration key %s ok=%t, error=%v",
+			initReq.RegKey, regKeyOk, err)
+		return status.Error(codes.NotFound, "registration key verification failed")
+	}
+
+	org, err := cl.LoadOrg("../client/testdata/clPubKey.gob", "../client/testdata/clSecKey.gob")
 	if err != nil {
 		return err
 	}
@@ -175,7 +185,7 @@ func (s *Server) UpdateCredential(stream pb.CL_UpdateCredentialServer) error {
 		return err
 	}
 
-	org, err := cl.LoadOrg("../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	org, err := cl.LoadOrg("../client/testdata/clPubKey.gob", "../client/testdata/clSecKey.gob")
 	if err != nil {
 		return err
 	}
@@ -216,7 +226,7 @@ func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
 		return err
 	}
 
-	org, err := cl.LoadOrg("../client/testdata/clSecKey.gob", "../client/testdata/clPubKey.gob")
+	org, err := cl.LoadOrg("../client/testdata/clPubKey.gob", "../client/testdata/clSecKey.gob")
 	if err != nil {
 		return err
 	}
@@ -248,10 +258,32 @@ func (s *Server) ProveCredential(stream pb.CL_ProveCredentialServer) error {
 
 	verified, err := org.ProveCred(A, proof, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, knownAttrs, commitmentsOfAttrs)
+	if err != nil {
+		s.Logger.Debug(err)
+		return status.Error(codes.Internal, "error when proving credential")
+	}
+
+	if !verified {
+		s.Logger.Debug("User authentication failed")
+		return status.Error(codes.Unauthenticated, "user authentication failed")
+	}
+
+	sessionKey, err := s.GenerateSessionKey()
+	if err != nil {
+		s.Logger.Debug(err)
+		return status.Error(codes.Internal, "failed to obtain session key")
+	}
+
+	// TODO: here session key needs to be stored to enable validation
 
 	resp = &pb.Message{
-		Content: &pb.Message_Status{&pb.Status{Success: verified}},
+		Content: &pb.Message_SessionKey{
+			SessionKey: &pb.SessionKey{
+				Value: *sessionKey,
+			},
+		},
 	}
+
 	if err = s.send(resp, stream); err != nil {
 		return err
 	}

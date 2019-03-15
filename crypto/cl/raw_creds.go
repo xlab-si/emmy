@@ -25,16 +25,20 @@ import (
 // RawCred represents a credential to be used by application that
 // executes the scheme to prove possesion of an anonymous credential.
 type RawCred struct {
-	attrs       map[int]CredAttr
-	attrIndices map[string]int
-	attrCount   *AttrCount
+	attrs                map[int]CredAttr
+	attrIndices          map[string]int // positions of attributes amongst all attributes
+	attrCount            *AttrCount
+	attrKnownIndices     map[string]int // positions of known attributes amongst known attributes
+	attrCommittedIndices map[string]int // positions of commited attributes amongst committed attributes
 }
 
 func NewRawCred(c *AttrCount) *RawCred {
 	return &RawCred{
-		attrs:       make(map[int]CredAttr),
-		attrIndices: make(map[string]int),
-		attrCount:   c,
+		attrs:                make(map[int]CredAttr),
+		attrIndices:          make(map[string]int),
+		attrCount:            c,
+		attrKnownIndices:     make(map[string]int),
+		attrCommittedIndices: make(map[string]int),
 	}
 }
 
@@ -131,9 +135,26 @@ func (c *RawCred) GetAttrs() map[int]CredAttr {
 	return c.attrs
 }
 
+func (c *RawCred) GetAttrInternalIndex(attrName string) (int, error) {
+	a, err := c.GetAttr(attrName)
+	if err != nil {
+		return -1, err
+	}
+	if a.IsKnown() {
+		return c.attrKnownIndices[attrName], nil
+	} else {
+		return c.attrCommittedIndices[attrName], nil
+	}
+}
+
 func (c *RawCred) insertAttr(i int, a CredAttr) {
 	c.attrIndices[a.GetName()] = i
 	c.attrs[i] = a
+	if a.IsKnown() {
+		c.attrKnownIndices[a.GetName()] = len(c.attrKnownIndices)
+	} else {
+		c.attrCommittedIndices[a.GetName()] = len(c.attrCommittedIndices)
+	}
 }
 
 func (c *RawCred) validateAttr(name string, known bool) error {

@@ -190,34 +190,16 @@ func LoadServiceInfo() (string, string, string) {
 }
 
 func LoadCredentialStructure() (map[string]interface{}, error) {
-	//m := viper.GetStringMapString("attributes")
+	m := viper.GetStringMapString("attributes")
 
-	attrs := map[string]interface{}{
-		"name":      map[string]interface{}{"type": "string"},
-		"gender":    map[string]interface{}{"type": "string"},
-		"graduated": map[string]interface{}{"type": "string"},
-		"age": map[string]interface{}{
-			"type":  "int64",
-			"known": "false",
-		},
-	}
-
-	/*
-		var attrs []cl.Attribute
-		for k, v := range m {
-			vs := strings.Split(v, ",")
-			known := true
-			if strings.Trim(vs[2], " ") == "false" {
-				known = false
-			}
-			ks, err := strconv.Atoi(k)
-			if err != nil {
-				return nil, err
-			}
-			attr := cl.NewAttribute(ks, strings.Trim(vs[0], " "), strings.Trim(vs[1], " "), known, nil)
-			attrs = append(attrs, *attr)
+	attrs := make(map[string]interface{})
+	for _, v := range m {
+		vs := strings.Split(v, ",")
+		attrs[strings.Trim(vs[0], " ")] = map[string]interface{}{
+			"type":  strings.Trim(vs[1], " "),
+			"known": strings.Trim(vs[2], " "),
 		}
-	*/
+	}
 
 	return attrs, nil
 }

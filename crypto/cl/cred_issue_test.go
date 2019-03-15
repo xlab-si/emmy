@@ -32,6 +32,10 @@ func TestCL(t *testing.T) {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
+	// to prepare new testing keys
+	//WriteGob("../../client/testdata/clPubKey.gob", org.Keys.Pub)
+	//WriteGob("../../client/testdata/clSecKey.gob", org.Keys.Sec)
+
 	masterSecret := org.Keys.Pub.GenerateUserMasterSecret()
 
 	cred := NewRawCred(attrCount)
@@ -44,6 +48,9 @@ func TestCL(t *testing.T) {
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
+
+	credManagerPath := "../client/testdata/credManager.gob"
+	WriteGob(credManagerPath, credMgr)
 
 	credIssueNonceOrg := org.GetCredIssueNonce()
 
@@ -78,12 +85,7 @@ func TestCL(t *testing.T) {
 
 	// create new CredManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credMgr, err = NewCredManagerFromExisting(credMgr.Nym, credMgr.V1, credMgr.CredReqNonce,
-		params, org.Keys.Pub, masterSecret, cred,
-		credMgr.CommitmentsOfAttrs)
-	if err != nil {
-		t.Errorf("error when calling NewCredManagerFromExisting: %v", err)
-	}
+	ReadGob(credManagerPath, credMgr)
 
 	// TODO: update to rawcred
 	a, _ := cred.GetAttr("Name")

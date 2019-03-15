@@ -46,6 +46,7 @@ message Message {
 		CLCredential CLCredential = 32;
 		UpdateCLCredential update_cl_credential = 33;
 		ProveCLCredential prove_cl_credential = 34;
+		RegKey RegKey = 35;
 	}
 	int32 clientId = 28;
 }
@@ -299,6 +300,10 @@ message CSPaillierPubKey {
 
 message SessionKey {
 	string value = 1;
+}
+
+message RegKey {
+	string RegKey = 1;
 }
 
 message CLCredReq {
