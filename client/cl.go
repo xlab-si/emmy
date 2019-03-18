@@ -48,17 +48,6 @@ func (c *CLClient) GetCredentialStructure() (*cl.RawCred, error) {
 		return nil, fmt.Errorf("unable to retrieve credential structure info: %v", err)
 	}
 
-	/*
-		attributes := cred.GetAttributes()
-		rawCred := cl.NewRawCred()
-		for _, a := range attributes {
-			// attributes need to be properly indexed to enable preparation of lists of
-			// their values which are sent to the verifier (and need to be ordered by index)
-			rawCred.InsertAttribute(int(a.GetIndex()), a.GetName(), a.GetType(), a.GetKnown())
-		}
-
-		return rawCred, nil
-	*/
 	count := cl.NewAttrCount(
 		int(cred.NKnown),
 		int(cred.NCommitted),

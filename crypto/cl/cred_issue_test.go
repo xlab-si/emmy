@@ -25,14 +25,14 @@ import (
 
 func TestCL(t *testing.T) {
 	params := GetDefaultParamSizes()
-	attrCount := NewAttrCount(3, 1, 0)
+	attrCount := NewAttrCount(5, 1, 0) // TODO: integrate this into GetDefaultParamSizes
 
 	org, err := NewOrg(params, attrCount)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	// to prepare new testing keys
+	// to generate new testing keys
 	//WriteGob("../../client/testdata/clPubKey.gob", org.Keys.Pub)
 	//WriteGob("../../client/testdata/clSecKey.gob", org.Keys.Sec)
 
@@ -42,6 +42,8 @@ func TestCL(t *testing.T) {
 	_ = cred.AddStrAttr("Name", "Jack", true)
 	_ = cred.AddStrAttr("Gender", "M", true)
 	_ = cred.AddStrAttr("Graduated", "true", true)
+	_ = cred.AddInt64Attr("DateMin", 22342345, true)
+	_ = cred.AddInt64Attr("DateMax", 32342345, true)
 	_ = cred.AddInt64Attr("Age", 25, false)
 
 	credMgr, err := NewCredManager(params, org.Keys.Pub, masterSecret, cred)

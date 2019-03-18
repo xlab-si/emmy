@@ -47,6 +47,7 @@ func (c *AttrCount) String() string {
 // CredAttr represents an attribute for the CL scheme.
 type CredAttr interface {
 	GetValue() interface{}
+	FromInternalValue(*big.Int) (interface{}, error)
 	UpdateValue(interface{}) error
 	InternalValue() *big.Int
 	SetInternalValue() error
@@ -133,6 +134,10 @@ func (a *Int64Attr) GetValue() interface{} {
 	return a.val
 }
 
+func (a *Int64Attr) FromInternalValue(val *big.Int) (interface{}, error) {
+	return strconv.Atoi(val.String())
+}
+
 func (a *Int64Attr) UpdateValue(n interface{}) error {
 	switch n.(type) {
 	case int:
@@ -181,6 +186,10 @@ func (a *StrAttr) GetValue() interface{} {
 	return a.val
 }
 
+func (a *StrAttr) FromInternalValue(val *big.Int) (interface{}, error) {
+	return string(val.Bytes()), nil
+}
+
 func (a *StrAttr) UpdateValue(s interface{}) error {
 	a.val = s.(string)
 	return a.SetInternalValue()
@@ -193,7 +202,7 @@ func (a *StrAttr) String() string {
 // FIXME make nicer
 // Hook to organization?
 func ParseAttrs(specs map[string]interface{}) ([]CredAttr, *AttrCount, error) {
-	attrs := make([]CredAttr, 0)
+	attrs := make([]CredAttr, len(specs))
 	var nKnown, nCommitted int
 
 	for name, val := range specs {
@@ -205,6 +214,15 @@ func ParseAttrs(specs map[string]interface{}) ([]CredAttr, *AttrCount, error) {
 		t, ok := data["type"]
 		if !ok {
 			return nil, nil, fmt.Errorf("missing type specifier")
+		}
+
+		ind, ok := data["index"] // to make sure attributes are always sent in proper order to the client
+		if !ok {
+			return nil, nil, fmt.Errorf("missing index specifier")
+		}
+		index, err := strconv.Atoi(ind.(string))
+		if err != nil {
+			return nil, nil, fmt.Errorf("index must be string")
 		}
 
 		known := true
@@ -229,13 +247,13 @@ func ParseAttrs(specs map[string]interface{}) ([]CredAttr, *AttrCount, error) {
 			if err != nil {
 				return nil, nil, err
 			}
-			attrs = append(attrs, a)
+			attrs[index] = a
 		case "int64":
 			a, err := NewInt64Attr(name, 0, known) // FIXME
 			if err != nil {
 				return nil, nil, err
 			}
-			attrs = append(attrs, a)
+			attrs[index] = a
 		default:
 			return nil, nil, fmt.Errorf("unsupported attribute type: %s", t)
 		}

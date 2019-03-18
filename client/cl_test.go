@@ -50,6 +50,14 @@ func TestCL(t *testing.T) {
 	graduated, _ := rc.GetAttr("Graduated")
 	err = graduated.UpdateValue("true")
 	assert.NoError(t, err)
+
+	dateMin, _ := rc.GetAttr("DateMin")
+	err = dateMin.UpdateValue(1512643000) // Unix time
+	assert.NoError(t, err)
+	dateMax, _ := rc.GetAttr("DateMax")
+	err = dateMax.UpdateValue(1592643000) // Unix time
+	assert.NoError(t, err)
+
 	age, _ := rc.GetAttr("Age")
 	err = age.UpdateValue(50)
 	assert.NoError(t, err)

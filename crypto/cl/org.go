@@ -26,6 +26,7 @@ import (
 	"encoding/gob"
 	"os"
 
+	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/common"
 	"github.com/xlab-si/emmy/crypto/df"
 	"github.com/xlab-si/emmy/crypto/pedersen"
@@ -259,6 +260,74 @@ func (o *Org) GetProveCredNonce() *big.Int {
 func (o *Org) ProveCred(A *big.Int, proof *qr.RepresentationProof,
 	revealedKnownAttrsIndices, revealedCommitmentsOfAttrsIndices []int,
 	revealedKnownAttrs, revealedCommitmentsOfAttrs []*big.Int) (bool, error) {
+
+	structure, err := config.LoadCredentialStructure()
+	if err != nil {
+		return false, err
+	}
+
+	attrs, _, err := ParseAttrs(structure)
+	if err != nil {
+		return false, err
+	}
+
+	knownAttrs := make([]CredAttr, 0)
+	revealedIndices := make([]int, 0) // indices of known attributes with all attributes taken into account
+	count := 0
+	for _, a := range attrs { // attrs are ordered by index, so knownAttrs will be too
+		if a.IsKnown() {
+			knownAttrs = append(knownAttrs, a)
+			revealedIndices = append(revealedIndices, count)
+		}
+		count++
+	}
+
+	conditions, intValues, strValues, err := config.LoadConditions()
+	if err != nil {
+		return false, err
+	}
+
+	// TODO: check values in a separate component
+	count = 0
+	for _, ind := range revealedKnownAttrsIndices {
+		a := knownAttrs[ind]
+		val, err := a.FromInternalValue(revealedKnownAttrs[count])
+		if err != nil {
+			return false, err
+		}
+		count++
+
+		indexAll := revealedIndices[ind]
+		cond := conditions[indexAll]
+
+		switch val.(type) {
+		case int:
+			valInt := val.(int)
+			accVal := intValues[indexAll]
+
+			if cond == "greater" {
+				if accVal < valInt {
+					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
+				}
+			} else if cond == "lesser" {
+				if accVal > valInt {
+					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
+				}
+			} else if cond == "same" {
+				if valInt != accVal {
+					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
+				}
+			}
+		case string:
+			accVal := strValues[indexAll]
+			if cond == "same" {
+				if accVal != val {
+					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
+				}
+			}
+		}
+	}
+
 	ver := qr.NewRepresentationVerifier(o.Group, int(o.Params.SecParam))
 	bases := []*big.Int{}
 	for i := 0; i < len(o.Keys.Pub.RsKnown); i++ {

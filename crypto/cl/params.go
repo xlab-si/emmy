@@ -40,7 +40,7 @@ func GetDefaultParamSizes() *Params {
 	return &Params{
 		RhoBitLen:         256,
 		NLength:           256, // should be at least 2048 when not testing
-		KnownAttrsNum:     3,
+		KnownAttrsNum:     5,
 		CommittedAttrsNum: 1,
 		HiddenAttrsNum:    0,
 		AttrBitLen:        256,
