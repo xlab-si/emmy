@@ -305,25 +305,17 @@ func (o *Org) ProveCred(A *big.Int, proof *qr.RepresentationProof,
 			valInt := val.(int)
 			accVal := intValues[indexAll]
 
-			if cond == "greater" {
-				if accVal < valInt {
-					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
-				}
-			} else if cond == "lesser" {
-				if accVal > valInt {
-					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
-				}
-			} else if cond == "same" {
-				if valInt != accVal {
-					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
-				}
+			if cond == "greater" && accVal < valInt {
+				return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
+			} else if cond == "lesser" && accVal > valInt {
+				return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
+			} else if cond == "equal" && valInt != accVal {
+				return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
 			}
 		case string:
 			accVal := strValues[indexAll]
-			if cond == "same" {
-				if accVal != val {
-					return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
-				}
+			if cond == "equal" && accVal != val {
+				return false, fmt.Errorf("attribute value for %s not acceptable", a.GetName())
 			}
 		}
 	}

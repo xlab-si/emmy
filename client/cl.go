@@ -192,9 +192,7 @@ func (c *CLClient) UpdateCredential(credManager *cl.CredManager, rawCred *cl.Raw
 }
 
 // ProveCredential proves the possession of a valid credential and reveals only the attributes the user desires
-// to reveal. Which knownAttrs and commitmentsOfAttrs are to be revealed are given by revealedKnownAttrsIndices and
-// revealedCommitmentsOfAttrsIndices parameters. All knownAttrs and commitmentsOfAttrs should be passed into
-// ProveCredential - only those which are revealed are then passed to the server.
+// to reveal.
 func (c *CLClient) ProveCredential(credManager *cl.CredManager, cred *cl.Cred,
 	revealedAttrs []string) (*string, error) {
 	var revealedKnownAttrsIndices []int

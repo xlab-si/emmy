@@ -62,10 +62,6 @@ func TestCL(t *testing.T) {
 	err = age.UpdateValue(50)
 	assert.NoError(t, err)
 
-	acceptableCreds, err := client.GetAcceptableCreds()
-	require.NoError(t, err)
-	revealedAttrs := acceptableCreds["org1"] // FIXME
-
 	masterSecret := pubKey.GenerateUserMasterSecret()
 
 	cm, err := cl.NewCredManager(params, pubKey, masterSecret, rc)
@@ -82,6 +78,11 @@ func TestCL(t *testing.T) {
 	cl.ReadGob(credManagerPath, cm)
 	require.NoError(t, err)
 
+	acceptableCreds, err := client.GetAcceptableCreds()
+	require.NoError(t, err)
+	revealedAttrs := acceptableCreds["org1"] // FIXME
+
+	//revealedAttrs = []string{"Name", "Gender"}
 	sessKey, err := client.ProveCredential(cm, cred, revealedAttrs)
 	require.NoError(t, err)
 	assert.NotNil(t, sessKey, "possesion of a credential proof failed")

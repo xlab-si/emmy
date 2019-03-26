@@ -59,7 +59,7 @@ attributes: {0: "Name, string, true", 1: "Gender, string, true", 2: "Graduated, 
 
 # credentials from which organizations are accepted and which attributes need to be revealed
 acceptable_credentials: {"Org1": "Name, DateMin, DateMax", "Org2": "Gender"}
-#conditions: {3: "greater", 4: "lesser"}
+conditions: {3: "greater", 4: "lesser"}
 int_values: {3: 1562643000, 4: 1562643000}
 #str_values: {0: "Jack"}
 str_values: {}

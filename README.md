@@ -49,8 +49,9 @@ Vaccinated for yellow fever: true
 Note that the credential does not contain attributes as plaintext - the credential is received from the
 issuer by a zero-knowledge proof. When credential needs to be shown, another zero-knowledge proof
 is executed. These protocols are unlinkable - issuer and verifier cannot determine
-whether it is going on about the same credential (unless you reveal all attributes and some of these 
-attributes contain unique identifier).
+whether it is going on about the same credential (unless you reveal some unique attributes like address).
+In fact, even when user connects two times using the same credential, the verifier cannot know that the same
+credential has been used (that the same user is connecting).
 
 Let's assume there is a smart phone app which offers a UI to the emmy protocols. 
 
@@ -63,64 +64,69 @@ masterSecret := pubKey.GenerateUserMasterSecret()
 Here, pubKey is the public key of a clinic (clinic instantiates an `Org` from `crypto/cl/org.go` and
 uses it for issuing a credential).
 
-The communication between user and clinic can go for example over NFC - between user's phone and 
+The communication between user and clinic go for example over NFC - between user's phone and 
 some clinic terminal.
 
 User obtains a credential structure from a clinic (see `client/cl_test.go`):
 
 ```
-rawCred, err := GetCredentialStructure(testGrpcClientConn)
+rc, err := client.GetCredentialStructure()
 ```
 
 Credential structure for `Org` is defined in `config/defaults.yml`.
 User then fills the credential using an app and starts a protocol to obtain a credential:
 
 ```
-attrs := rawCred.GetAttributes()
-attrs[0].SetValue("Andrew") // name
-attrs[1].SetValue("McCain") // surname
-attrs[2].SetValue("45") // age
-attrs[3].SetValue("M") // gender
-attrs[4].SetValue("true") // vaccinated for yellow fever
+name, _ := rc.GetAttr("Name")
+name.UpdateValue("Andrew")
 
-credManager, err := cl.NewCredManager(params, pubKey, masterSecret, rawCred)
-if err != nil {
-    t.Errorf("error when creating a credential manager: %v", err)
-}
+surname, _ := rc.GetAttr("Surname")
+surnname.UpdateValue("McCain")
 
-client, err := NewCLClient(testGrpcClientConn)
-if err != nil {
-    t.Errorf("Error when initializing NewCLClient")
-}
+age, _ := rc.GetAttr("Age")
+age.UpdateValue(45)
 
-cred, err := client.IssueCredential(credManager)
+gender, _ := rc.GetAttr("Gender")
+gender.UpdateValue("M")
+
+vaccinated, _ := rc.GetAttr("Vaccinated")
+vaccinated.UpdateValue("true") // vaccinated for yellow fever
+
+cm, err := cl.NewCredManager(params, pubKey, masterSecret, rc)
+cred, err := client.IssueCredential(cm, "testRegKey5")
 ```
 
-The clinic verifies the validity of attributes (TODO: describe verification) and issues a credential.
+The clinic verifies the validity of attributes and issues a credential. The verification in this case
+is manual - an authorized person needs to verify the attributes and trigger the issuance of a credential.
 User now possesses a credential on his phone.
 
 When user arrives to a foreign country and a proof of vaccination is needed, he opens an app 
 which runs:
 
 ```
-acceptableCreds, err := GetAcceptableCredentials(testGrpcClientConn)
-if err != nil {
-    t.Errorf("error when retrieving acceptable credentials: %v", err)
-}
-revealedAttrIndices := acceptableCreds["South Loop Clinic"]
-
-proved, err := client.ProveCredential(credManager, cred, revealedAttrIndices)
-if err != nil {
-    t.Errorf("error when proving possession of a credential: %v", err)
-}
+acceptableCreds, err := client.GetAcceptableCreds()
 ```
 
-An app contacted a verifier (another emmy `Org`) and obtained acceptable credentials.
-South Loop Clinic is among the organizations whose credentials are accepted by verifier.
-Acceptable credentials information contain also a list which attributes need to be revealed. An app
-shows the list to a user and user confirms the disclosure - in this case only DiseaseName attribute
-needs to be revealed. Verifier learns nothing about the user except that he was vaccinated for a 
-certain disease.
+The server returns a list of organizations whose credentials it accepts. Additionally, the attributes
+that need to be revealed are specified:
+
+```
+revealedAttrs := acceptableCreds["South Loop Clinic"]
+```
+
+In our case this might be:
+
+```
+revealedAttrs = []string{"Vaccinated}
+```
+
+Now, the user can prove he has been vaccinated:
+
+```
+_, err := client.ProveCredential(cm, cred, revealedAttrs)
+```
+
+Verifier learns nothing about the user except that he was vaccinated for a certain disease.
 
 # Currently offered cryptographic primitives
 

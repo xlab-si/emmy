@@ -100,6 +100,9 @@ func (s *Server) IssueCredential(stream pb.CL_IssueCredentialServer) error {
 		return err
 	}
 
+	// TOD0: for known attributes IssueCredential should fill the values - attributes
+	// are stored (under registration key) in the DB and then obtained by Org.
+
 	initReq := req.GetRegKey()
 	regKeyOk, err := s.RegistrationManager.CheckRegistrationKey(initReq.RegKey)
 	if !regKeyOk || err != nil {
