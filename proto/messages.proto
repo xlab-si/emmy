@@ -46,6 +46,7 @@ message Message {
 		CLCredential CLCredential = 32;
 		UpdateCLCredential update_cl_credential = 33;
 		ProveCLCredential prove_cl_credential = 34;
+		RegKey RegKey = 35;
 	}
 	int32 clientId = 28;
 }
@@ -54,6 +55,43 @@ message ServiceInfo {
 	string name = 1;
 	string description = 2;
 	string provider = 3;
+}
+
+message AcceptableCred {
+	string orgName = 1;
+	repeated string revealedAttrs = 2;
+}
+
+message AcceptableCreds {
+	repeated AcceptableCred creds = 1;
+}
+
+message Attribute {
+	int32 index = 1;
+	string name = 2;
+	bool known = 4;
+}
+
+message IntAttribute {
+	Attribute attr = 1;
+}
+
+message StringAttribute {
+	Attribute attr = 2;
+}
+
+message CredAttribute {
+	oneof type {
+		StringAttribute stringAttr = 1;
+		IntAttribute intAttr = 2;
+	}
+}
+
+message CredStructure {
+	int32 nKnown = 1;
+	int32 nCommitted = 2;
+	int32 nHidden = 3;
+	repeated CredAttribute attributes = 4;
 }
 
 message Status {
@@ -262,6 +300,10 @@ message CSPaillierPubKey {
 
 message SessionKey {
 	string value = 1;
+}
+
+message RegKey {
+	string RegKey = 1;
 }
 
 message CLCredReq {

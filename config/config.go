@@ -20,6 +20,8 @@ package config
 import (
 	"fmt"
 	"math/big"
+	"strconv"
+	"strings"
 
 	"os"
 	"path/filepath"
@@ -186,6 +188,75 @@ func LoadServiceInfo() (string, string, string) {
 	serviceProvider := viper.GetString("service_info.provider")
 	serviceDescription := viper.GetString("service_info.description")
 	return serviceName, serviceProvider, serviceDescription
+}
+
+func LoadCredentialStructure() (map[string]interface{}, error) {
+	m := viper.GetStringMapString("attributes")
+
+	attrs := make(map[string]interface{})
+	for k, v := range m {
+		vs := strings.Split(v, ",")
+		attrs[strings.Trim(vs[0], " ")] = map[string]interface{}{
+			"index": k,
+			"type":  strings.Trim(vs[1], " "),
+			"known": strings.Trim(vs[2], " "),
+		}
+	}
+
+	return attrs, nil
+}
+
+func LoadAcceptableCredentials() (map[string][]string, error) {
+	m := viper.GetStringMapString("acceptable_credentials")
+	accCreds := make(map[string][]string)
+	for k, v := range m {
+		vs := strings.Split(v, ",")
+		var attrs []string
+		for _, i := range vs {
+			it := strings.Trim(i, " ")
+			attrs = append(attrs, it)
+		}
+		accCreds[k] = attrs
+	}
+
+	return accCreds, nil
+}
+
+func LoadConditions() (map[int]string, map[int]int, map[int]string, error) {
+	conditions := viper.GetStringMapString("conditions")
+	intValues := viper.GetStringMapString("int_values")
+	strValues := viper.GetStringMapString("str_values")
+
+	conds := make(map[int]string)
+	for k, v := range conditions {
+		ind, err := strconv.Atoi(k)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		conds[ind] = v
+	}
+	intVals := make(map[int]int)
+	for k, v := range intValues {
+		ind, err := strconv.Atoi(k)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		val, err := strconv.Atoi(v)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		intVals[ind] = val
+	}
+	strVals := make(map[int]string)
+	for k, v := range strValues {
+		ind, err := strconv.Atoi(k)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		strVals[ind] = v
+	}
+
+	return conds, intVals, strVals, nil
 }
 
 func LoadSessionKeyMinByteLen() int {

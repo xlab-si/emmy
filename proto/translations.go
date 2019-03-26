@@ -103,14 +103,14 @@ func ToPbCredRequest(r *cl.CredRequest) *CLCredReq {
 	}
 
 	return &CLCredReq{
-		Nym:                r.Nym.Bytes(),
-		KnownAttrs:         knownAttrs,
-		CommitmentsOfAttrs: commitmentsOfAttrs,
-		NymProof:           nymProof,
-		U:                  r.U.Bytes(),
-		UProof:             UProof,
+		Nym:                      r.Nym.Bytes(),
+		KnownAttrs:               knownAttrs,
+		CommitmentsOfAttrs:       commitmentsOfAttrs,
+		NymProof:                 nymProof,
+		U:                        r.U.Bytes(),
+		UProof:                   UProof,
 		CommitmentsOfAttrsProofs: proofs,
-		Nonce: r.Nonce.Bytes(),
+		Nonce:                    r.Nonce.Bytes(),
 	}
 }
 

@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	var regKeyDB server.RegistrationManager
-	testRegKeys := []string{"testRegKey1", "testRegKey2", "testRegKey3", "testRegKey4"}
+	testRegKeys := []string{"testRegKey1", "testRegKey2", "testRegKey3", "testRegKey4", "testRegKey5"}
 
 	var recDB cl.ReceiverRecordManager
 

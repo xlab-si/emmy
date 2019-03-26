@@ -18,35 +18,45 @@
 package cl
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab-si/emmy/crypto/common"
 )
 
 func TestCL(t *testing.T) {
 	params := GetDefaultParamSizes()
+	attrCount := NewAttrCount(5, 1, 0) // TODO: integrate this into GetDefaultParamSizes
 
-	org, err := NewOrg(params)
+	org, err := NewOrg(params, attrCount)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	masterSecret := org.PubKey.GenerateUserMasterSecret()
+	// to generate new testing keys
+	//WriteGob("../../client/testdata/clPubKey.gob", org.Keys.Pub)
+	//WriteGob("../../client/testdata/clSecKey.gob", org.Keys.Sec)
 
-	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
-	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
-	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := NewCredManager(params, org.PubKey, masterSecret, knownAttrs, committedAttrs,
-		hiddenAttrs)
+	masterSecret := org.Keys.Pub.GenerateUserMasterSecret()
+
+	cred := NewRawCred(attrCount)
+	_ = cred.AddStrAttr("Name", "Jack", true)
+	_ = cred.AddStrAttr("Gender", "M", true)
+	_ = cred.AddStrAttr("Graduated", "true", true)
+	_ = cred.AddInt64Attr("DateMin", 22342345, true)
+	_ = cred.AddInt64Attr("DateMax", 32342345, true)
+	_ = cred.AddInt64Attr("Age", 25, false)
+
+	credMgr, err := NewCredManager(params, org.Keys.Pub, masterSecret, cred)
 	if err != nil {
 		t.Errorf("error when creating a user: %v", err)
 	}
 
+	credManagerPath := "../client/testdata/credManager.gob"
+	WriteGob(credManagerPath, credMgr)
+
 	credIssueNonceOrg := org.GetCredIssueNonce()
 
-	credReq, err := credManager.GetCredRequest(credIssueNonceOrg)
+	credReq, err := credMgr.GetCredRequest(credIssueNonceOrg)
 	if err != nil {
 		t.Errorf("error when generating credential request: %v", err)
 	}
@@ -62,7 +72,7 @@ func TestCL(t *testing.T) {
 		t.Errorf("error saving record to db: %v", err)
 	}
 
-	userVerified, err := credManager.Verify(res.Cred, res.AProof)
+	userVerified, err := credMgr.Verify(res.Cred, res.AProof)
 	if err != nil {
 		t.Errorf("error when verifying credential: %v", err)
 	}
@@ -70,70 +80,59 @@ func TestCL(t *testing.T) {
 
 	// Before updating a credential, create a new Org object (obtaining and updating
 	// credential usually don't happen at the same time)
-	org, err = NewOrgFromParams(params, org.PubKey, org.SecKey)
+	org, err = NewOrgFromParams(params, org.Keys)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
 	// create new CredManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = NewCredManagerFromExisting(credManager.Nym, credManager.V1, credManager.CredReqNonce,
-		params, org.PubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
-		credManager.CommitmentsOfAttrs)
-	if err != nil {
-		t.Errorf("error when calling NewCredManagerFromExisting: %v", err)
-	}
+	ReadGob(credManagerPath, credMgr)
 
-	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-	credManager.Update(newKnownAttrs)
+	// TODO: update to rawcred
+	a, _ := cred.GetAttr("Name")
+	_ = a.UpdateValue("John")
+	credMgr.Update(cred)
 
-	rec, err := mockDb.Load(credManager.Nym)
+	rec, err := mockDb.Load(credMgr.Nym)
 	if err != nil {
 		t.Errorf("error saving record to db: %v", err)
 	}
-	res1, err := org.UpdateCred(credManager.Nym, rec, credReq.Nonce, newKnownAttrs)
+
+	newKnownAttrs := cred.GetKnownVals()
+	res1, err := org.UpdateCred(credMgr.Nym, rec, credReq.Nonce, newKnownAttrs)
 	if err != nil {
 		t.Errorf("error when updating credential: %v", err)
 	}
-	if err := mockDb.Store(credManager.Nym, res1.Record); err != nil {
+	if err := mockDb.Store(credMgr.Nym, res1.Record); err != nil {
 		t.Errorf("error saving record to db: %v", err)
 	}
 
-	userVerified, err = credManager.Verify(res1.Cred, res1.AProof)
+	userVerified, err = credMgr.Verify(res1.Cred, res1.AProof)
 	if err != nil {
 		t.Errorf("error when verifying updated credential: %v", err)
 	}
 	assert.Equal(t, true, userVerified, "credential update failed")
 
 	// Some other organization which would like to verify the credential can instantiate org without sec key.
-	// It only needs pub key of the organization that issued a credential.
-	org, err = NewOrgFromParams(params, org.PubKey, nil)
+	// It only needs Pub key of the organization that issued a credential.
+	org, err = NewOrgFromParams(params, org.Keys)
 	if err != nil {
 		t.Errorf("error when generating CL org: %v", err)
 	}
 
-	revealedKnownAttrsIndices := []int{1, 2}      // reveal only the second and third known attribute
+	revealedKnownAttrsIndices := []int{0}         // reveal only the first known attribute
 	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
 
-	revealedKnownAttrs := []*big.Int{}
-	revealedCommitmentsOfAttrs := []*big.Int{}
-	for i := 0; i < len(knownAttrs); i++ {
-		if common.Contains(revealedKnownAttrsIndices, i) {
-			revealedKnownAttrs = append(revealedKnownAttrs, newKnownAttrs[i])
-		}
-	}
-	for i := 0; i < len(credManager.CommitmentsOfAttrs); i++ {
-		if common.Contains(revealedCommitmentsOfAttrsIndices, i) {
-			revealedCommitmentsOfAttrs = append(revealedCommitmentsOfAttrs, credManager.CommitmentsOfAttrs[i])
-		}
-	}
-
 	nonce := org.GetProveCredNonce()
-	randCred, proof, err := credManager.BuildProof(res1.Cred, revealedKnownAttrsIndices,
+	randCred, proof, err := credMgr.BuildProof(res1.Cred, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, nonce)
 	if err != nil {
 		t.Errorf("error when building credential proof: %v", err)
 	}
+
+	revealedKnownAttrs, revealedCommitmentsOfAttrs := credMgr.FilterAttributes(revealedKnownAttrsIndices,
+		revealedCommitmentsOfAttrsIndices)
 
 	cVerified, err := org.ProveCred(randCred.A, proof, revealedKnownAttrsIndices,
 		revealedCommitmentsOfAttrsIndices, revealedKnownAttrs, revealedCommitmentsOfAttrs)

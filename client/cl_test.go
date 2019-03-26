@@ -18,73 +18,86 @@
 package client
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xlab-si/emmy/crypto/cl"
 )
 
 // TestCL requires a running server.
 func TestCL(t *testing.T) {
-
 	params := cl.GetDefaultParamSizes()
-
 	pubKey := new(cl.PubKey)
 	cl.ReadGob("testdata/clPubKey.gob", pubKey)
-
-	masterSecret := pubKey.GenerateUserMasterSecret()
-
-	knownAttrs := []*big.Int{big.NewInt(7), big.NewInt(6), big.NewInt(5), big.NewInt(22)}
-	committedAttrs := []*big.Int{big.NewInt(9), big.NewInt(17)}
-	hiddenAttrs := []*big.Int{big.NewInt(11), big.NewInt(13), big.NewInt(19)}
-	credManager, err := cl.NewCredManager(params, pubKey, masterSecret, knownAttrs, committedAttrs,
-		hiddenAttrs)
-
-	if err != nil {
-		t.Errorf("error when creating a user: %v", err)
-	}
 
 	client, err := NewCLClient(testGrpcClientConn)
 	if err != nil {
 		t.Errorf("Error when initializing NewCLClient")
 	}
 
-	cred, err := client.IssueCredential(credManager)
+	rc, err := client.GetCredentialStructure()
 	if err != nil {
-		t.Errorf("error when calling IssueCred: %v", err)
+		t.Errorf("error when retrieving credential structure: %v", err)
 	}
+
+	name, _ := rc.GetAttr("Name")
+	err = name.UpdateValue("Jack")
+	assert.NoError(t, err)
+	gender, _ := rc.GetAttr("Gender")
+	err = gender.UpdateValue("M")
+	assert.NoError(t, err)
+	graduated, _ := rc.GetAttr("Graduated")
+	err = graduated.UpdateValue("true")
+	assert.NoError(t, err)
+
+	dateMin, _ := rc.GetAttr("DateMin")
+	err = dateMin.UpdateValue(1512643000) // Unix time
+	assert.NoError(t, err)
+	dateMax, _ := rc.GetAttr("DateMax")
+	err = dateMax.UpdateValue(1592643000) // Unix time
+	assert.NoError(t, err)
+
+	age, _ := rc.GetAttr("Age")
+	err = age.UpdateValue(50)
+	assert.NoError(t, err)
+
+	masterSecret := pubKey.GenerateUserMasterSecret()
+
+	cm, err := cl.NewCredManager(params, pubKey, masterSecret, rc)
+	require.NoError(t, err)
+
+	credManagerPath := "../client/testdata/credManager.gob"
+	cl.WriteGob(credManagerPath, cm)
+
+	cred, err := client.IssueCredential(cm, "testRegKey5")
+	require.NoError(t, err)
 
 	// create new CredManager (updating or proving usually does not happen at the same time
 	// as issuing)
-	credManager, err = cl.NewCredManagerFromExisting(credManager.Nym, credManager.V1,
-		credManager.CredReqNonce, params, pubKey, masterSecret, knownAttrs, committedAttrs, hiddenAttrs,
-		credManager.CommitmentsOfAttrs)
-	if err != nil {
-		t.Errorf("error when calling NewCredManagerFromExisting: %v", err)
-	}
+	cl.ReadGob(credManagerPath, cm)
+	require.NoError(t, err)
 
-	revealedKnownAttrsIndices := []int{1, 2}      // reveal only the second and third known attribute
-	revealedCommitmentsOfAttrsIndices := []int{0} // reveal only the commitment of the first attribute (of those of which only commitments are known)
+	acceptableCreds, err := client.GetAcceptableCreds()
+	require.NoError(t, err)
+	revealedAttrs := acceptableCreds["org1"] // FIXME
 
-	proved, err := client.ProveCredential(credManager, cred, knownAttrs, revealedKnownAttrsIndices,
-		revealedCommitmentsOfAttrsIndices)
-	if err != nil {
-		t.Errorf("error when proving possession of a credential: %v", err)
-	}
-	assert.True(t, proved, "possesion of a credential proof failed")
+	//revealedAttrs = []string{"Name", "Gender"}
+	sessKey, err := client.ProveCredential(cm, cred, revealedAttrs)
+	require.NoError(t, err)
+	assert.NotNil(t, sessKey, "possesion of a credential proof failed")
 
-	newKnownAttrs := []*big.Int{big.NewInt(17), big.NewInt(18), big.NewInt(19), big.NewInt(27)}
-	cred1, err := client.UpdateCredential(credManager, newKnownAttrs)
-	if err != nil {
-		t.Errorf("error when updating credential: %v", err)
-	}
+	// modify some attributes and get updated credential
+	name, err = rc.GetAttr("Name")
+	err = name.UpdateValue("Jim")
+	assert.NoError(t, err)
 
-	proved1, err := client.ProveCredential(credManager, cred1, newKnownAttrs, revealedKnownAttrsIndices,
-		revealedCommitmentsOfAttrsIndices)
-	if err != nil {
-		t.Errorf("error when proving possession of an updated credential: %v", err)
-	}
+	cred1, err := client.UpdateCredential(cm, rc)
+	require.NoError(t, err)
 
-	assert.True(t, proved1, "possesion of an updated credential proof failed")
+	sessKey, err = client.ProveCredential(cm, cred1, revealedAttrs)
+	require.NoError(t, err)
+	assert.NotNil(t, sessKey,
+		"possesion of an updated credential proof failed")
+
 }

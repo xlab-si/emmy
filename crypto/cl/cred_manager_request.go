@@ -63,7 +63,7 @@ func (m *CredManager) computeU() (*big.Int, *big.Int) {
 	group := qr.NewRSApecialPublic(m.PubKey.N)
 	U := group.Exp(m.PubKey.S, v1)
 
-	for i, attr := range m.hiddenAttrs {
+	for i, attr := range m.Attrs.Hidden {
 		t := group.Exp(m.PubKey.RsHidden[i], attr) // R_i^m_i
 		U = group.Mul(U, t)
 	}
@@ -93,11 +93,11 @@ func (m *CredManager) getNymProver() (*schnorr.Prover, error) {
 func (m *CredManager) getUProver(U *big.Int) *qr.RepresentationProver {
 	group := qr.NewRSApecialPublic(m.PubKey.N)
 	// secrets are [attr_1, ..., attr_L, v1]
-	secrets := append(m.hiddenAttrs, m.V1)
+	secrets := append(m.Attrs.Hidden, m.V1)
 
 	// bases are [R_1, ..., R_L, S]
 	bases := append(m.PubKey.RsHidden, m.PubKey.S)
-	prover := qr.NewRepresentationProver(group, m.Params.SecParam,
+	prover := qr.NewRepresentationProver(group, int(m.Params.SecParam),
 		secrets[:], bases[:], U)
 	return prover
 }
@@ -110,9 +110,9 @@ func (m *CredManager) getUProofRandomData(prover *qr.RepresentationProver) (*big
 
 	boundaries := make([]int, len(m.PubKey.RsHidden))
 	for i := 0; i < len(m.PubKey.RsHidden); i++ {
-		boundaries[i] = b_m
+		boundaries[i] = int(b_m)
 	}
-	boundaries = append(boundaries, b_v1)
+	boundaries = append(boundaries, int(b_v1))
 
 	UTilde, err := prover.GetProofRandomDataGivenBoundaries(boundaries, true)
 	if err != nil {
