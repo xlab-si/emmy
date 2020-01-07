@@ -1,4 +1,4 @@
-# emmy - Library for zero-knowledge proofs [![Build Status](https://circleci.com/gh/xlab-si/emmy.svg?style=svg)](https://circleci.com/gh/xlab-si/emmy)
+# emmy - Library for zero-knowledge proofs 
 
 <p align="center">
 	<img src="emmy_logo.png" width="160" />
