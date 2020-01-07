@@ -26,7 +26,7 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/prometheus/client_golang/prometheus"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/xlab-si/emmy/config"
 	"github.com/xlab-si/emmy/crypto/cl"
 	"github.com/xlab-si/emmy/crypto/ec"
@@ -119,7 +119,7 @@ func (s *Server) Start(port int) error {
 	// Register Prometheus metrics handler and serve metrics page on the desired endpoint.
 	// Metrics are handled via HTTP in a separate goroutine as gRPC requests,
 	// as grpc server's performance over HTTP (GrpcServer.ServeHTTP) is much worse.
-	http.Handle("/metrics", prometheus.Handler())
+	http.Handle("/metrics", promhttp.Handler())
 
 	// After this, /metrics will be available, along with /debug/requests, /debug/events in
 	// case server's EnableTracing function is called.
