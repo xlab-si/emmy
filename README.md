@@ -12,7 +12,7 @@ of a secret without actually revealing the secret.
 Emmy also implements a communication layer supporting the execution of these protocols. 
 Communication between clients and the server is based on [Protobuffers](https://developers.google.com/protocol-buffers/) and [gRPC](http://www.grpc.io/). 
 Emmy server is capable of serving (verifying) thousands of clients (provers) concurrently. Currently, the communication 
-is implemented for the two anonymous credential schemes (see [Currently offered cryptographic schemes](#currently-offered-cryptograhpic-schemes)).
+is implemented for the two anonymous credential schemes (see [Currently offered cryptographic primitives](#currently-offered-cryptographic-primitives)).
 
 In addition, emmy is built with **mobile clients** in mind, as it comes with *compatibility* 
 package providing client wrappers and types that can be used for generating language bindings for 
